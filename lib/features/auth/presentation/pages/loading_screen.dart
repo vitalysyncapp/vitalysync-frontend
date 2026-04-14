@@ -1,8 +1,10 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../app/main_navigation.dart';
+import '../../../../features/log/data/log_api.dart';
 import 'login_page.dart';
 
 class LoadingScreen extends StatefulWidget {
@@ -21,7 +23,6 @@ class _LoadingScreenState extends State<LoadingScreen>
   void initState() {
     super.initState();
 
-    // Animation
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -33,7 +34,6 @@ class _LoadingScreenState extends State<LoadingScreen>
     );
 
     _controller.forward();
-
     _checkLoginStatus();
   }
 
@@ -42,23 +42,30 @@ class _LoadingScreenState extends State<LoadingScreen>
 
     final prefs = await SharedPreferences.getInstance();
     final email = prefs.getString('email');
-    final password = prefs.getInt('user_id');
+    final userId = prefs.getInt('user_id');
+
+    if (email != null && userId != null) {
+      try {
+        await LogApi.syncStreakFromBackend();
+      } catch (_) {
+        // Keep the cached streak if the refresh fails during boot.
+      }
+
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const MainNavigation()),
+      );
+      return;
+    }
 
     if (!mounted) return;
 
-    if (email != null && password != null) {
-      // Has saved account → HomePage
-      Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const MainNavigation()),
-        );
-    } else {
-      // No account → LoginPage
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginPage()),
-      );
-    }
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+    );
   }
 
   Widget glassContainer({required Widget child}) {
@@ -87,7 +94,6 @@ class _LoadingScreenState extends State<LoadingScreen>
     return Scaffold(
       body: Stack(
         children: [
-          // 🌈 Gradient Background
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -99,7 +105,6 @@ class _LoadingScreenState extends State<LoadingScreen>
               ),
             ),
           ),
-
           Center(
             child: FadeTransition(
               opacity: _fadeAnimation,
@@ -107,39 +112,29 @@ class _LoadingScreenState extends State<LoadingScreen>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // 🌀 Hero Logo
                     Hero(
-                      tag: "appLogo",
-                      child: Container(
-                      width: 110,
-                      height: 110,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                      ),
-                      child: ClipOval(
-                        child: Image.asset(
-                        "assets/images/logo.png",
-                        fit: BoxFit.cover,
+                      tag: 'appLogo',
+                      child: SizedBox(
+                        width: 110,
+                        height: 110,
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
-                      ),
                     ),
-
                     const SizedBox(height: 25),
-
-                    // 📱 App Name (optional but nice)
                     Text(
-                      "VitalySync",
+                      'VitalySync',
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: isDark ? Colors.white : Colors.black87,
                       ),
                     ),
-
                     const SizedBox(height: 20),
-
-                    // ⏳ Loading Indicator
                     const CircularProgressIndicator(),
                   ],
                 ),

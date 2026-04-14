@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:another_flushbar/flushbar.dart';
 
+import '../../../../shared/config/api_config.dart';
 import '../../../../shared/widgets/terms_privacy_widget.dart';
 import 'login_page.dart';
 
@@ -66,9 +67,7 @@ class _SignUpPageState extends State<SignUpPage> {
       _isLoading = true;
     });
 
-    final url = Uri.parse(
-      'https://vitalysync-backend.onrender.com/api/auth/signup',
-    );
+    final url = Uri.parse(ApiConfig.auth('/signup'));
 
     try {
       final response = await http.post(

@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 import '../../../../app/main_navigation.dart';
+import '../../../../features/log/data/log_api.dart';
+import '../../../../shared/config/api_config.dart';
 import 'sign_up_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -21,7 +23,7 @@ class _LoginPageState extends State<LoginPage> {
   bool isLoading = false;
 
   // 🌐 Backend URL
-  final String loginUrl = 'https://vitalysync-backend.onrender.com/api/auth/login';
+  final String loginUrl = ApiConfig.auth('/login');
 
   Future<void> login() async {
     setState(() => isLoading = true);
@@ -46,6 +48,7 @@ class _LoginPageState extends State<LoginPage> {
         await prefs.setInt('user_id', data['user']['user_id']);
         await prefs.setString('user_type', data['user']['user_type'] ?? '');
         await prefs.setString('gender', data['user']['gender'] ?? '');
+        await LogApi.persistStreakSnapshot(data['streak'] as Map<String, dynamic>?);
 
         // Navigate to HomePage
         if (!mounted) return;

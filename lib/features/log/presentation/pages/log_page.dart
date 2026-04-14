@@ -1,9 +1,10 @@
 import 'dart:math';
+
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../shared/widgets/app_bar.dart';
+import '../../data/log_api.dart';
 import '../widgets/LogWidgets.dart';
 
 class LogPage extends StatefulWidget {
@@ -14,54 +15,60 @@ class LogPage extends StatefulWidget {
 }
 
 class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
-  int currentStreak = 5; // This should ideally be loaded from SharedPreferences or a backend
+  int currentStreak = 0;
   double sleepHours = 7;
-  int sleepQuality = 2; // 0=Poor, 1=Fair, 2=Good, 3=Very Good, 4=Excellent
+  int sleepQuality = 2;
   int moodIndex = 3;
-  double energyLevel = 1; // 0=Low, 1=Medium, 2=High
+  double energyLevel = 1;
   double hydration = 1.5;
 
   final Set<String> selectedExercises = {};
   final Set<String> selectedSymptoms = {};
 
   final List<String> sleepLabels = [
-    "Poor",
-    "Fair",
-    "Good",
-    "Very Good",
-    "Excellent",
+    'Poor',
+    'Fair',
+    'Good',
+    'Very Good',
+    'Excellent',
   ];
 
   final List<int> sleepStars = [1, 2, 3, 4, 5];
 
-  final List<String> moods = ["😰", "😟", "😐", "🙂", "😊"];
+  final List<String> moods = [
+    '\u{1F61E}',
+    '\u{1F641}',
+    '\u{1F610}',
+    '\u{1F642}',
+    '\u{1F60A}',
+  ];
 
   final List<String> exercises = [
-    "Walking",
-    "Running",
-    "Gym",
-    "Yoga",
-    "Cycling",
-    "Swimming",
-    "None",
+    'Walking',
+    'Running',
+    'Gym',
+    'Yoga',
+    'Cycling',
+    'Swimming',
+    'None',
   ];
 
   final List<String> symptoms = [
-    "Headache",
-    "Fatigue",
-    "Irritability",
-    "Anxiety",
-    "Body Pain",
-    "Back Pain",
-    "None",
+    'Headache',
+    'Fatigue',
+    'Irritability',
+    'Anxiety',
+    'Body Pain',
+    'Back Pain',
+    'None',
   ];
 
   bool isSubmitted = false;
   bool isLoading = true;
+  bool hasSavedLogToday = false;
+  bool isSaving = false;
 
   late ConfettiController _confettiController;
-
-  static const String _lastLogDateKey = 'last_log_date';
 
   @override
   void initState() {
@@ -70,7 +77,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     _confettiController = ConfettiController(
       duration: const Duration(seconds: 2),
     );
-    _loadSubmissionState();
+    _loadLogState();
   }
 
   @override
@@ -83,42 +90,73 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _refreshForNewDay();
+      _loadLogState(showLoader: false);
     }
   }
 
-  String _todayKey() {
-    final now = DateTime.now();
-    final month = now.month.toString().padLeft(2, '0');
-    final day = now.day.toString().padLeft(2, '0');
-    return '${now.year}-$month-$day';
-  }
-
-  Future<void> _loadSubmissionState() async {
-    final prefs = await SharedPreferences.getInstance();
-    final lastSavedDate = prefs.getString(_lastLogDateKey);
-    final today = _todayKey();
-
-    if (!mounted) return;
-
-    setState(() {
-      isSubmitted = lastSavedDate == today;
-      isLoading = false;
-    });
-  }
-
-  Future<void> _refreshForNewDay() async {
-    final prefs = await SharedPreferences.getInstance();
-    final lastSavedDate = prefs.getString(_lastLogDateKey);
-    final today = _todayKey();
-
-    if (!mounted) return;
-
-    if (lastSavedDate != today && isSubmitted) {
+  Future<void> _loadLogState({bool showLoader = true}) async {
+    if (showLoader && mounted) {
       setState(() {
-        isSubmitted = false;
+        isLoading = true;
       });
     }
+
+    try {
+      final data = await LogApi.fetchTodayLog();
+      final streak = data['streak'] as Map<String, dynamic>?;
+      final hasLog = data['has_log'] == true;
+
+      if (!mounted) return;
+
+      setState(() {
+        currentStreak = LogApi.parseInt(streak?['current_streak']);
+        hasSavedLogToday = hasLog;
+        isSubmitted = hasLog;
+        isLoading = false;
+      });
+
+      if (hasLog) {
+        _populateFromLog(data['log'] as Map<String, dynamic>);
+      } else {
+        setState(() {
+          _resetForm();
+        });
+      }
+
+      await refreshAppBarStreak();
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to load today\'s log: $error')),
+      );
+    }
+  }
+
+  void _populateFromLog(Map<String, dynamic> log) {
+    setState(() {
+      sleepHours = LogApi.parseDouble(log['sleep_hours'], fallback: 7);
+      sleepQuality = LogApi.parseInt(log['sleep_quality'], fallback: 2);
+      moodIndex = LogApi.parseInt(log['mood_index'], fallback: 3);
+      energyLevel = LogApi.parseDouble(log['energy_level'], fallback: 1);
+      hydration = LogApi.parseDouble(log['hydration_liters'], fallback: 1.5);
+      selectedExercises
+        ..clear()
+        ..addAll(
+          ((log['exercise_names'] as List<dynamic>? ?? const [])
+              .map((item) => item.toString())),
+        );
+      selectedSymptoms
+        ..clear()
+        ..addAll(
+          ((log['symptom_names'] as List<dynamic>? ?? const [])
+              .map((item) => item.toString())),
+        );
+    });
   }
 
   bool _validateLog() {
@@ -133,42 +171,56 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            "Please complete hydration, exercise, and symptoms before saving.",
+            'Please complete hydration, exercise, and symptoms before saving.',
           ),
         ),
       );
       return;
     }
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_lastLogDateKey, _todayKey());
-
-    await refreshAppBarStreak();
-
-    if (!mounted) return;
-
     setState(() {
-      isSubmitted = true;
+      isSaving = true;
     });
 
-    _confettiController.play();
+    try {
+      final data = await LogApi.saveDailyLog(
+        sleepHours: sleepHours,
+        sleepQuality: sleepQuality,
+        moodIndex: moodIndex,
+        energyLevel: energyLevel.round(),
+        hydrationLiters: hydration,
+        exerciseNames: selectedExercises.toList()..sort(),
+        symptomNames: selectedSymptoms.toList()..sort(),
+      );
+
+      final streak = data['streak'] as Map<String, dynamic>?;
+
+      if (!mounted) return;
+
+      setState(() {
+        currentStreak = LogApi.parseInt(streak?['current_streak']);
+        hasSavedLogToday = true;
+        isSubmitted = true;
+        isSaving = false;
+      });
+
+      await refreshAppBarStreak();
+      _confettiController.play();
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        isSaving = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to save log: $error')),
+      );
+    }
   }
 
   void _redoLog() {
     setState(() {
-      isSubmitted = false;
-    });
-  }
-
-  Future<void> _logNew() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_lastLogDateKey);
-    await refreshAppBarStreak();
-
-    if (!mounted) return;
-
-    setState(() {
-      _resetForm();
       isSubmitted = false;
     });
   }
@@ -185,16 +237,16 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
 
   void _toggleExercise(String exercise) {
     setState(() {
-      if (exercise == "None") {
-        if (selectedExercises.contains("None")) {
-          selectedExercises.remove("None");
+      if (exercise == 'None') {
+        if (selectedExercises.contains('None')) {
+          selectedExercises.remove('None');
         } else {
           selectedExercises
             ..clear()
-            ..add("None");
+            ..add('None');
         }
       } else {
-        selectedExercises.remove("None");
+        selectedExercises.remove('None');
         if (selectedExercises.contains(exercise)) {
           selectedExercises.remove(exercise);
         } else {
@@ -206,16 +258,16 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
 
   void _toggleSymptom(String symptom) {
     setState(() {
-      if (symptom == "None") {
-        if (selectedSymptoms.contains("None")) {
-          selectedSymptoms.remove("None");
+      if (symptom == 'None') {
+        if (selectedSymptoms.contains('None')) {
+          selectedSymptoms.remove('None');
         } else {
           selectedSymptoms
             ..clear()
-            ..add("None");
+            ..add('None');
         }
       } else {
-        selectedSymptoms.remove("None");
+        selectedSymptoms.remove('None');
         if (selectedSymptoms.contains(symptom)) {
           selectedSymptoms.remove(symptom);
         } else {
@@ -341,7 +393,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       width: double.infinity,
       height: 64,
       child: ElevatedButton(
-        onPressed: _saveLog,
+        onPressed: isSaving ? null : _saveLog,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF2563EB),
           foregroundColor: Colors.white,
@@ -350,13 +402,24 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        child: const Text(
-          "Save Daily Check-in",
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        child: isSaving
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: Colors.white,
+                ),
+              )
+            : Text(
+                hasSavedLogToday
+                    ? 'Update Today\'s Check-in'
+                    : 'Save Daily Check-in',
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
       ),
     );
   }
@@ -402,7 +465,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
             ),
             const SizedBox(height: 26),
             const Text(
-              "Check-in Saved!",
+              'Check-in Saved!',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 28,
@@ -412,7 +475,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
             ),
             const SizedBox(height: 10),
             const Text(
-              "Your daily wellness log has been recorded successfully.",
+              'Your daily wellness log has been recorded. Come back tomorrow for your next check-in, or redo today\'s entry if you need to update it.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
@@ -421,29 +484,6 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
               ),
             ),
             const SizedBox(height: 34),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: _logNew,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: const Text(
-                  "Log New",
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               height: 56,
@@ -456,7 +496,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                   ),
                 ),
                 child: const Text(
-                  "Redo Log",
+                  'Redo Today\'s Log',
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
@@ -472,80 +512,77 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   }
 
   Widget _buildLogHeaderCard() {
-  return Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: const Color(0xFFE5E7EB)),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
-        ),
-      ],
-    ),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 🔹 LEFT SIDE (Title + Note)
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text(
-                "Log Your Day",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              SizedBox(height: 6),
-              Text(
-                "It’s recommended to log after your day or at night.",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF64748B),
-                  height: 1.4,
-                ),
-              ),
-            ],
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-        ),
-
-        const SizedBox(width: 12),
-
-        // 🔥 RIGHT SIDE (Streak)
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFF7ED),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFFED7AA)),
-          ),
-          child: Row(
-            children: [
-              Text(
-                "$currentStreak",
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF9A3412),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  'Log Your Day',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F172A),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 6),
-              const Text(
-                "🔥",
-                style: TextStyle(fontSize: 18),
-              ),
-            ],
+                SizedBox(height: 6),
+                Text(
+                  'It is recommended to log after your day or at night.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF64748B),
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF7ED),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFFED7AA)),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  '$currentStreak',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF9A3412),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Icon(
+                  Icons.local_fire_department_rounded,
+                  size: 18,
+                  color: Color(0xFFFF6B35),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

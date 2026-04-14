@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../features/auth/presentation/pages/login_page.dart';
+import '../../features/log/data/log_api.dart';
 import '../../features/notifications/presentation/pages/notification_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
@@ -155,8 +156,11 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
               final avatarImage = getAvatarImage(gender, userType);
 
               final currentStreak = prefs?.getInt('log_streak') ?? 0;
-              final lastLogDate = prefs?.getString('last_log_date');
-              final loggedToday = lastLogDate == todayKey();
+              final lastLogDate = LogApi.normalizeDateString(
+                prefs?.getString('last_log_date'),
+              );
+              final loggedToday =
+                  currentStreak > 0 && lastLogDate == todayKey();
 
               return Row(
                 children: [
