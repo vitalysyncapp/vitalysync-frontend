@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 
 import '../../../shared/config/api_config.dart';
 
@@ -121,6 +122,83 @@ class LogApi {
 
     await persistStreakSnapshot(data['streak'] as Map<String, dynamic>?);
     return data;
+  }
+
+  static Future<Map<String, dynamic>> fetchLatestLog() async {
+    final userId = await getStoredUserId();
+    if (userId == null) {
+      throw Exception('Missing logged-in user');
+    }
+
+    final response = await http.get(
+      Uri.parse('${ApiConfig.logs('/latest')}?user_id=$userId'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (response.statusCode != 200) {
+      throw Exception(data['message'] ?? 'Failed to fetch latest log');
+    }
+
+    await persistStreakSnapshot(data['streak'] as Map<String, dynamic>?);
+    return data;
+  }
+
+  static String formatSleepHours(dynamic value) {
+    final hours = parseDouble(value);
+
+    if (hours == 0) {
+      return '--';
+    }
+
+    if (hours == hours.roundToDouble()) {
+      return '${hours.toInt()}h';
+    }
+
+    return '${hours.toStringAsFixed(1)}h';
+  }
+
+  static String formatHydrationLiters(dynamic value) {
+    final liters = parseDouble(value);
+
+    if (liters == 0) {
+      return '--';
+    }
+
+    final formatted = liters == liters.roundToDouble()
+        ? liters.toInt().toString()
+        : liters.toStringAsFixed(1);
+
+    return '${formatted}L';
+  }
+
+  static String formatLogDateLabel(dynamic value) {
+    final normalized = normalizeDateString(value);
+
+    if (normalized == null) {
+      return 'No log yet';
+    }
+
+    final parsedDate = DateTime.tryParse(normalized);
+    if (parsedDate == null) {
+      return 'Last logged';
+    }
+
+    final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
+    final logDate = DateTime(parsedDate.year, parsedDate.month, parsedDate.day);
+    final difference = todayDate.difference(logDate).inDays;
+
+    if (difference == 0) {
+      return 'Today';
+    }
+
+    if (difference == 1) {
+      return 'Yesterday';
+    }
+
+    return DateFormat('MMM d').format(logDate);
   }
 
   static Future<Map<String, dynamic>> saveDailyLog({

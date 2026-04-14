@@ -6,6 +6,7 @@ class InfoCard extends StatelessWidget {
   final String value;
   final String subtitle;
   final Color color;
+  final bool isLoading;
 
   const InfoCard({
     Key? key,
@@ -14,6 +15,7 @@ class InfoCard extends StatelessWidget {
     required this.value,
     required this.subtitle,
     required this.color,
+    this.isLoading = false,
   }) : super(key: key);
 
   @override
@@ -58,13 +60,27 @@ class InfoCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: textColor,
-            ),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: isLoading
+                ? SizedBox(
+                    key: const ValueKey('loading'),
+                    height: 34,
+                    width: 34,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: color,
+                    ),
+                  )
+                : Text(
+                    value,
+                    key: ValueKey(value),
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                    ),
+                  ),
           ),
           const SizedBox(height: 4),
           Text(
