@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
 import '../../data/log_api.dart';
 import '../widgets/LogWidgets.dart';
@@ -280,16 +281,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Color.fromARGB(255, 229, 241, 255),
-            Color(0xFFFFFFFF),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
+      decoration: buildPageDecoration(context),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: buildAppBar(context),
@@ -464,13 +456,13 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
               ),
             ),
             const SizedBox(height: 26),
-            const Text(
+            Text(
               'Check-in Saved!',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF0F172A),
+                color: pagePrimaryTextColor(context),
               ),
             ),
             const SizedBox(height: 10),
@@ -516,9 +508,9 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: pageSurfaceColor(context),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: pageBorderColor(context)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -533,21 +525,21 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
                   'Log Your Day',
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF0F172A),
+                    color: pagePrimaryTextColor(context),
                   ),
                 ),
-                SizedBox(height: 6),
+                const SizedBox(height: 6),
                 Text(
                   'It is recommended to log after your day or at night.',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF64748B),
+                    color: pageSecondaryTextColor(context),
                     height: 1.4,
                   ),
                 ),

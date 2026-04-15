@@ -5,6 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../app/main_navigation.dart';
 import '../../../../features/log/data/log_api.dart';
+import '../../../../features/onboarding/data/onboarding_api.dart';
+import '../../../../features/onboarding/presentation/pages/onboarding_page.dart';
+import '../../../../shared/preferences/user_session.dart';
 import 'login_page.dart';
 
 class LoadingScreen extends StatefulWidget {
@@ -40,22 +43,41 @@ class _LoadingScreenState extends State<LoadingScreen>
   Future<void> _checkLoginStatus() async {
     await Future.delayed(const Duration(seconds: 2));
 
+    final session = await UserSessionController.instance.load();
     final prefs = await SharedPreferences.getInstance();
-    final email = prefs.getString('email');
-    final userId = prefs.getInt('user_id');
+    final email = session.email ?? prefs.getString('email');
+    final userId = session.userId ?? prefs.getInt('user_id');
+    final isDemoMode = session.isDemoMode;
+    var onboardingCompleted = session.onboardingCompleted;
 
-    if (email != null && userId != null) {
+    if ((email != null && userId != null) || isDemoMode) {
       try {
         await LogApi.syncStreakFromBackend();
       } catch (_) {
         // Keep the cached streak if the refresh fails during boot.
       }
 
+       if (!isDemoMode && userId != null && userId > 0) {
+        try {
+          final summary = await OnboardingApi.fetchSummary(userId);
+          onboardingCompleted = summary['onboarding_completed'] == true;
+          await UserSessionController.instance.updateOnboardingCompleted(
+            onboardingCompleted,
+          );
+        } catch (_) {
+          // Fall back to the locally cached onboarding state.
+        }
+      }
+
       if (!mounted) return;
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const MainNavigation()),
+        MaterialPageRoute(
+          builder: (_) => (isDemoMode || onboardingCompleted)
+              ? const MainNavigation()
+              : OnboardingPage(userId: userId!),
+        ),
       );
       return;
     }

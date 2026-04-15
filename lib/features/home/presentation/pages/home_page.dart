@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../../features/log/data/log_api.dart';
+import '../../../../shared/preferences/user_session.dart';
+import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
 import '../../../../shared/widgets/glass_card.dart';
 import '../widgets/BurnoutCard.dart';
@@ -11,7 +13,7 @@ import '../widgets/SmartNudge.dart';
 import '../widgets/WeeklyAnalytics.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({Key? key}) : super(key: key);
+  const HomePage({super.key});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -23,6 +25,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   String _hydrationValue = '--';
   String _hydrationSubtitle = 'No log yet';
   bool _isLoadingSummary = true;
+  bool _isOfflineSummary = false;
+  bool _isDemoMode = false;
 
   @override
   void initState() {
@@ -45,11 +49,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Future<void> _loadLatestSummary({bool showLoader = true}) async {
-    if (showLoader && mounted) {
-      setState(() {
+    final session = await UserSessionController.instance.load();
+
+    if (!mounted) return;
+
+    setState(() {
+      _isDemoMode = session.isDemoMode;
+      if (showLoader) {
         _isLoadingSummary = true;
-      });
-    }
+      }
+      _isOfflineSummary = false;
+    });
 
     try {
       final data = await LogApi.fetchLatestLog();
@@ -61,9 +71,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       if (!hasLog || log == null) {
         setState(() {
           _sleepValue = '--';
-          _sleepSubtitle = 'No log yet';
           _hydrationValue = '--';
-          _hydrationSubtitle = 'No log yet';
+          _sleepSubtitle =
+              _isDemoMode ? 'Start with a demo check-in' : 'No log yet';
+          _hydrationSubtitle =
+              _isDemoMode ? 'Start with a demo check-in' : 'No log yet';
           _isLoadingSummary = false;
         });
         return;
@@ -82,7 +94,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       if (!mounted) return;
 
       setState(() {
+        _sleepSubtitle = _isDemoMode
+            ? 'Demo summary unavailable'
+            : 'Offline - summary unavailable';
+        _hydrationSubtitle = _sleepSubtitle;
         _isLoadingSummary = false;
+        _isOfflineSummary = true;
       });
     }
   }
@@ -90,16 +107,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Color.fromARGB(255, 229, 241, 255),
-            Color(0xFFFFFFFF),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
+      decoration: buildPageDecoration(context),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: buildAppBar(context),
@@ -108,6 +116,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
             child: Column(
               children: [
+                if (_isOfflineSummary) ...[
+                  _buildStatusBanner(context),
+                  const SizedBox(height: 12),
+                ],
                 GlassCard(
                   child: const BurnoutCard(
                     score: 41,
@@ -147,7 +159,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 const SizedBox(height: 16),
                 GlassCard(
                   child: const EnvironmentalCard(
-                    weather: 'Sunny, 28Â°C',
+                    weather: 'Sunny, 28°C',
                     weatherStatus: 'Good',
                     airQuality: 'AQI 152',
                     airStatus: 'Unhealthy',
@@ -155,8 +167,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 ),
                 const SizedBox(height: 16),
                 GlassCard(
-                  child: const SmartNudgeCard(
-                    message: "Today's Smart Nudge",
+                  child: SmartNudgeCard(
+                    message: _isDemoMode
+                        ? 'Demo mode is active. You can still explore check-ins, nutrition, and profile editing locally.'
+                        : 'Remember to take a 5-minute break every hour to maintain focus and reduce burnout risk.',
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -170,7 +184,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     ),
                     WeeklyStatItem(
                       label: 'Mood Trend',
-                      value: 'â†‘ Improving',
+                      value: 'Improving',
                       valueColor: Color(0xFF12A150),
                     ),
                     WeeklyStatItem(
@@ -178,15 +192,53 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       value: '4 of 7',
                     ),
                   ],
-                  onViewAll: () {
-                    // navigate to analytics page
-                  },
                 ),
                 const SizedBox(height: 16),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBanner(BuildContext context) {
+    final message = _isDemoMode
+        ? 'Demo mode is active. Local screens still work even when the backend is unavailable.'
+        : 'You appear to be offline. The app can still show saved screens, but live summary data is unavailable right now.';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF1E293B)
+            : const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white10
+              : const Color(0xFFBFDBFE),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.wifi_off_rounded,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                height: 1.4,
+                color: pagePrimaryTextColor(context),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

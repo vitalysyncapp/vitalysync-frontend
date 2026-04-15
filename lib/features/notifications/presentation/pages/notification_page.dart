@@ -1,64 +1,76 @@
 import 'package:flutter/material.dart';
 
-class NotificationPage extends StatelessWidget {
-  const NotificationPage({Key? key}) : super(key: key);
+import '../../../../shared/theme/app_page_style.dart';
+
+class NotificationPage extends StatefulWidget {
+  const NotificationPage({super.key});
+
+  @override
+  State<NotificationPage> createState() => _NotificationPageState();
+}
+
+class _NotificationPageState extends State<NotificationPage> {
+  late final List<_NotificationItem> _notifications;
+
+  @override
+  void initState() {
+    super.initState();
+    _notifications = [
+      _NotificationItem(
+        icon: Icons.nightlight_round,
+        iconBg: const Color(0xFFE7E9FF),
+        iconColor: const Color(0xFF5A4CFF),
+        title: 'Sleep Reminder',
+        message:
+            'Your bedtime is in 30 minutes. Start winding down for better sleep quality.',
+        time: '2 hours ago',
+        showAction: true,
+        isUnread: true,
+      ),
+      _NotificationItem(
+        icon: Icons.warning_amber_rounded,
+        iconBg: const Color(0xFFFFE5E5),
+        iconColor: const Color(0xFFFF3B30),
+        title: 'Burnout Risk Increasing',
+        message:
+            'Your burnout score increased by 7 points this week. Consider taking rest breaks.',
+        time: '5 hours ago',
+        isUnread: true,
+      ),
+      _NotificationItem(
+        icon: Icons.water_drop_outlined,
+        iconBg: const Color(0xFFDDF7FA),
+        iconColor: const Color(0xFF00A7C4),
+        title: 'Hydration Checkpoint',
+        message: 'You have had 0.8L today. Remember to drink water regularly.',
+        time: '6 hours ago',
+        isUnread: true,
+      ),
+      _NotificationItem(
+        icon: Icons.show_chart,
+        iconBg: const Color(0xFFDDF5E6),
+        iconColor: const Color(0xFF22A55D),
+        title: 'Great Progress',
+        message:
+            'You have been staying consistent. Keep following your healthy routine.',
+        time: '1 day ago',
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
-    final notifications = [
-      {
-        "icon": Icons.nightlight_round,
-        "iconBg": const Color(0xFFE7E9FF),
-        "iconColor": const Color(0xFF5A4CFF),
-        "title": "Sleep Reminder",
-        "message":
-            "Your bedtime is in 30 minutes. Start winding down for better sleep quality.",
-        "time": "2 hours ago",
-        "showAction": true,
-      },
-      {
-        "icon": Icons.warning_amber_rounded,
-        "iconBg": const Color(0xFFFFE5E5),
-        "iconColor": const Color(0xFFFF3B30),
-        "title": "Burnout Risk Increasing",
-        "message":
-            "Your burnout score increased by 7 points this week. Consider taking rest breaks.",
-        "time": "5 hours ago",
-        "showAction": false,
-      },
-      {
-        "icon": Icons.water_drop_outlined,
-        "iconBg": const Color(0xFFDDF7FA),
-        "iconColor": const Color(0xFF00A7C4),
-        "title": "Hydration Checkpoint",
-        "message":
-            "You've had 0.8L today. Remember to drink water regularly.",
-        "time": "6 hours ago",
-        "showAction": false,
-      },
-      {
-        "icon": Icons.show_chart,
-        "iconBg": const Color(0xFFDDF5E6),
-        "iconColor": const Color(0xFF22A55D),
-        "title": "Great Progress!",
-        "message":
-            "You’ve been staying consistent. Keep following your healthy routine.",
-        "time": "1 day ago",
-        "showAction": false,
-      },
-    ];
+    final unreadCount = _notifications.where((item) => item.isUnread).length;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFFF6F7FB),
-      ),
+      decoration: buildPageDecoration(context),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: SafeArea(
           child: Column(
             children: [
-              _buildHeader(context),
-              const Divider(height: 1, color: Color(0xFFE2E6EF)),
+              _buildHeader(context, unreadCount),
+              Divider(height: 1, color: pageBorderColor(context)),
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.symmetric(
@@ -66,21 +78,23 @@ class NotificationPage extends StatelessWidget {
                     vertical: 20,
                   ),
                   children: [
-                    _buildSmartNudgeCard(),
+                    _buildSmartNudgeCard(context),
                     const SizedBox(height: 22),
-                    ...notifications.map(
+                    ..._notifications.map(
                       (item) => Padding(
                         padding: const EdgeInsets.only(bottom: 14),
                         child: NotificationCard(
-                          icon: item["icon"] as IconData,
-                          iconBackgroundColor: item["iconBg"] as Color,
-                          iconColor: item["iconColor"] as Color,
-                          title: item["title"] as String,
-                          message: item["message"] as String,
-                          time: item["time"] as String,
-                          isUnread: true,
-                          showAction: item["showAction"] as bool,
-                          onActionTap: () {},
+                          item: item,
+                          onTap: () {
+                            setState(() {
+                              item.isUnread = false;
+                            });
+                          },
+                          onActionTap: () {
+                            setState(() {
+                              item.isUnread = false;
+                            });
+                          },
                         ),
                       ),
                     ),
@@ -94,7 +108,7 @@ class NotificationPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, int unreadCount) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 12, 14, 14),
       child: Row(
@@ -102,9 +116,9 @@ class NotificationPage extends StatelessWidget {
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_back_ios_new_rounded,
-              color: Color(0xFF5B6475),
+              color: pagePrimaryTextColor(context),
               size: 22,
             ),
           ),
@@ -113,21 +127,21 @@ class NotificationPage extends StatelessWidget {
               padding: const EdgeInsets.only(top: 2),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
-                    "Notifications",
+                    'Notifications',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF0E1A2B),
+                      color: pagePrimaryTextColor(context),
                     ),
                   ),
-                  SizedBox(height: 2),
+                  const SizedBox(height: 2),
                   Text(
-                    "3 unread",
+                    '$unreadCount unread',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Color(0xFF7B8595),
+                      color: pageSecondaryTextColor(context),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -138,9 +152,15 @@ class NotificationPage extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: GestureDetector(
-              onTap: () {},
+              onTap: () {
+                setState(() {
+                  for (final item in _notifications) {
+                    item.isUnread = false;
+                  }
+                });
+              },
               child: const Text(
-                "Mark all read",
+                'Mark all read',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -154,22 +174,22 @@ class NotificationPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSmartNudgeCard() {
+  Widget _buildSmartNudgeCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 22),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         gradient: const LinearGradient(
           colors: [
-            Color(0xFFA64DFF),
             Color(0xFF2563FF),
+            Color(0xFF0891B2),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF5D5FEF).withOpacity(0.25),
+            color: const Color(0xFF2563FF).withOpacity(0.25),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -187,7 +207,7 @@ class NotificationPage extends StatelessWidget {
               ),
               SizedBox(width: 10),
               Text(
-                "Smart Nudge Engine",
+                'Smart Reminders',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 17,
@@ -198,7 +218,7 @@ class NotificationPage extends StatelessWidget {
           ),
           SizedBox(height: 14),
           Text(
-            "Notifications are personalized based on your behavior\npatterns and compliance history.",
+            'These reminders currently use local app preferences and preview content while deeper personalization is still being connected.',
             style: TextStyle(
               color: Colors.white,
               fontSize: 15,
@@ -213,128 +233,137 @@ class NotificationPage extends StatelessWidget {
 }
 
 class NotificationCard extends StatelessWidget {
+  final _NotificationItem item;
+  final VoidCallback onTap;
+  final VoidCallback? onActionTap;
+
+  const NotificationCard({
+    super.key,
+    required this.item,
+    required this.onTap,
+    this.onActionTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+        decoration: BoxDecoration(
+          color: pageSurfaceColor(context),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: pageBorderColor(context)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(
+                Theme.of(context).brightness == Brightness.dark ? 0.16 : 0.08,
+              ),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: item.iconBg,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(item.icon, color: item.iconColor, size: 26),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: pagePrimaryTextColor(context),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    item.message,
+                    style: TextStyle(
+                      fontSize: 14,
+                      height: 1.45,
+                      color: pageSecondaryTextColor(context),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Text(
+                        item.time,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF98A2B3),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const Spacer(),
+                      if (item.showAction)
+                        GestureDetector(
+                          onTap: onActionTap,
+                          child: const Text(
+                            'Take Action',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF246BFF),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            if (item.isUnread)
+              Container(
+                width: 10,
+                height: 10,
+                margin: const EdgeInsets.only(top: 4),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF246BFF),
+                  shape: BoxShape.circle,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NotificationItem {
   final IconData icon;
-  final Color iconBackgroundColor;
+  final Color iconBg;
   final Color iconColor;
   final String title;
   final String message;
   final String time;
-  final bool isUnread;
   final bool showAction;
-  final VoidCallback? onActionTap;
+  bool isUnread;
 
-  const NotificationCard({
-    Key? key,
+  _NotificationItem({
     required this.icon,
-    required this.iconBackgroundColor,
+    required this.iconBg,
     required this.iconColor,
     required this.title,
     required this.message,
     required this.time,
-    this.isUnread = false,
     this.showAction = false,
-    this.onActionTap,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: const Color(0xFFD6E7FF),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF8AAAE5).withOpacity(0.12),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: iconBackgroundColor,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              icon,
-              color: iconColor,
-              size: 26,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF101828),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  message,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    height: 1.45,
-                    color: Color(0xFF475467),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Text(
-                      time,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF98A2B3),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const Spacer(),
-                    if (showAction)
-                      GestureDetector(
-                        onTap: onActionTap,
-                        child: const Text(
-                          "Take Action",
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF246BFF),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          if (isUnread)
-            Container(
-              width: 10,
-              height: 10,
-              margin: const EdgeInsets.only(top: 4),
-              decoration: const BoxDecoration(
-                color: Color(0xFF246BFF),
-                shape: BoxShape.circle,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
+    this.isUnread = false,
+  });
 }

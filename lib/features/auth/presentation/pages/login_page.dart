@@ -1,12 +1,14 @@
+import 'dart:convert';
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 
 import '../../../../app/main_navigation.dart';
 import '../../../../features/log/data/log_api.dart';
+import '../../../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../../../shared/config/api_config.dart';
+import '../../../../shared/preferences/user_session.dart';
 import 'sign_up_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -21,8 +23,6 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController passwordController = TextEditingController();
 
   bool isLoading = false;
-
-  // 🌐 Backend URL
   final String loginUrl = ApiConfig.auth('/login');
 
   Future<void> login() async {
@@ -39,36 +39,64 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
 
-        // Save user info to SharedPreferences
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('email', data['user']['email']);
-        await prefs.setString('username', data['user']['username']);
-        await prefs.setInt('user_id', data['user']['user_id']);
-        await prefs.setString('user_type', data['user']['user_type'] ?? '');
-        await prefs.setString('gender', data['user']['gender'] ?? '');
-        await LogApi.persistStreakSnapshot(data['streak'] as Map<String, dynamic>?);
+        await UserSessionController.instance.saveUser(
+          Map<String, dynamic>.from(data['user'] as Map<String, dynamic>),
+          isDemoMode: false,
+        );
+        await LogApi.persistStreakSnapshot(
+          data['streak'] as Map<String, dynamic>?,
+        );
 
-        // Navigate to HomePage
+        final onboardingCompleted =
+            (data['user'] as Map<String, dynamic>)['onboarding_completed'] == true;
+
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const MainNavigation()),
+          MaterialPageRoute(
+            builder: (_) => onboardingCompleted
+                ? const MainNavigation()
+                : OnboardingPage(
+                    userId: (data['user'] as Map<String, dynamic>)['user_id'] as int,
+                  ),
+          ),
         );
       } else {
-        final errorData = jsonDecode(response.body);
+        final errorData = jsonDecode(response.body) as Map<String, dynamic>;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorData['message'] ?? 'Login failed')),
         );
       }
-    } catch (e) {
+    } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
+        const SnackBar(
+          content: Text(
+            'Unable to reach the server right now. You can try again or continue in demo mode.',
+          ),
+        ),
       );
     } finally {
-      setState(() => isLoading = false);
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
+  }
+
+  Future<void> _continueInDemoMode() async {
+    setState(() => isLoading = true);
+
+    await UserSessionController.instance.enableDemoMode();
+    await LogApi.syncStreakFromBackend();
+
+    if (!mounted) return;
+
+    setState(() => isLoading = false);
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const MainNavigation()),
+    );
   }
 
   Widget glassContainer({required Widget child}) {
@@ -102,25 +130,30 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: Stack(
         children: [
-          // 🌈 Background gradient
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: isDark
                     ? [Colors.black, Colors.grey.shade900]
-                    : [const Color.fromARGB(255, 33, 149, 245), Colors.white],
+                    : [const Color(0xFF2196F3), Colors.white],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
             ),
           ),
-
           Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
@@ -128,43 +161,30 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // 🖼 Logo
                     Image.asset(
                       'assets/images/logo.png',
                       height: 80,
                     ),
-
                     const SizedBox(height: 20),
-
-                    // 📧 Email
                     TextField(
                       controller: emailController,
-                      decoration: inputDecoration("Email"),
+                      decoration: inputDecoration('Email'),
                     ),
-
                     const SizedBox(height: 15),
-
-                    // 🔒 Password
                     TextField(
                       controller: passwordController,
                       obscureText: true,
-                      decoration: inputDecoration("Password"),
+                      decoration: inputDecoration('Password'),
                     ),
-
                     const SizedBox(height: 10),
-
-                    // 🔗 Forgot Password
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
                         onPressed: () {},
-                        child: const Text("Forgot Password?"),
+                        child: const Text('Forgot Password?'),
                       ),
                     ),
-
                     const SizedBox(height: 10),
-
-                    // 🔘 Login Button
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -176,16 +196,26 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                         child: isLoading
-                            ? const CircularProgressIndicator(
-                                color: Colors.white,
-                              )
-                            : const Text("Login"),
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text('Login'),
                       ),
                     ),
-
-                    const SizedBox(height: 15),
-
-                    // 🆕 Create Account
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: isLoading ? null : _continueInDemoMode,
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: Colors.white.withOpacity(0.35)),
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                        ),
+                        child: const Text('Continue in Demo Mode'),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     TextButton(
                       onPressed: () {
                         Navigator.push(
@@ -193,7 +223,7 @@ class _LoginPageState extends State<LoginPage> {
                           MaterialPageRoute(builder: (_) => const SignUpPage()),
                         );
                       },
-                      child: const Text("Create Account"),
+                      child: const Text('Create Account'),
                     ),
                   ],
                 ),

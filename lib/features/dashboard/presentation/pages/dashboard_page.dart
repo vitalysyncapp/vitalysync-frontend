@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
 import '../widgets/burnout_risk_trend_card.dart';
 import '../widgets/dashboard_header_card.dart';
@@ -16,16 +17,7 @@ class Dashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Color.fromARGB(255, 229, 241, 255),
-            Color(0xFFFFFFFF),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
+      decoration: buildPageDecoration(context),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: buildAppBar(context),

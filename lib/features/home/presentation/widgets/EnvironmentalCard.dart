@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/theme/app_page_style.dart';
+
 class EnvironmentalCard extends StatelessWidget {
   final String weather;
   final String weatherStatus;
@@ -7,42 +9,33 @@ class EnvironmentalCard extends StatelessWidget {
   final String airStatus;
 
   const EnvironmentalCard({
-    Key? key,
+    super.key,
     required this.weather,
     required this.weatherStatus,
     required this.airQuality,
     required this.airStatus,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // Adaptive colors
-    final cardBackground = isDark ? Colors.grey[850] : Colors.white;
-    final textColor = isDark ? Colors.white : Colors.black87;
-    final subtitleColor = isDark ? Colors.white70 : Colors.grey[700];
-
-    // Status colors
-    final weatherColor = weatherStatus.toLowerCase() == 'good'
-        ? Colors.greenAccent
-        : Colors.orangeAccent;
-    final airColor = airStatus.toLowerCase() == 'good'
-        ? Colors.greenAccent
-        : Colors.redAccent;
+    final weatherColor =
+        weatherStatus.toLowerCase() == 'good' ? Colors.green : Colors.orange;
+    final airColor =
+        airStatus.toLowerCase() == 'good' ? Colors.green : Colors.redAccent;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: cardBackground,
+        color: pageSurfaceColor(context),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: pageBorderColor(context)),
         boxShadow: [
           BoxShadow(
-            color: isDark
-                ? Colors.black.withOpacity(0.4)
-                : Colors.grey.withOpacity(0.2),
-            blurRadius: 8,
+            color: Colors.black.withOpacity(
+              Theme.of(context).brightness == Brightness.dark ? 0.18 : 0.08,
+            ),
+            blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
@@ -55,67 +48,61 @@ class EnvironmentalCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: textColor,
+              color: pagePrimaryTextColor(context),
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.wb_sunny, color: Colors.amber),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Weather: $weather',
-                    style: TextStyle(color: textColor),
-                  ),
-                ],
-              ),
-              Text(
-                weatherStatus,
-                style: TextStyle(
-                  color: weatherColor,
-                  fontWeight: FontWeight.normal,
-                ),
-              ),
-            ],
+          _row(
+            context: context,
+            icon: Icons.wb_sunny_rounded,
+            iconColor: Colors.amber,
+            label: 'Weather',
+            value: weather,
+            status: weatherStatus,
+            statusColor: weatherColor,
           ),
           const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.air, color: Colors.blueAccent),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Air Quality: $airQuality',
-                    style: TextStyle(color: textColor),
-                  ),
-                ],
-              ),
-              Text(
-                airStatus,
-                style: TextStyle(
-                  color: airColor,
-                  fontWeight: FontWeight.normal,
-                ),
-              ),
-            ],
+          _row(
+            context: context,
+            icon: Icons.air_rounded,
+            iconColor: Colors.blueAccent,
+            label: 'Air Quality',
+            value: airQuality,
+            status: airStatus,
+            statusColor: airColor,
           ),
         ],
       ),
     );
   }
-}
 
-// Sample usage
-Widget sampleEnvironmentalCard() {
-  return EnvironmentalCard(
-    weather: '26°C',
-    weatherStatus: 'Good',
-    airQuality: 'Moderate',
-    airStatus: 'Moderate',
-  );
+  Widget _row({
+    required BuildContext context,
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required String value,
+    required String status,
+    required Color statusColor,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, color: iconColor),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            '$label: $value',
+            style: TextStyle(color: pagePrimaryTextColor(context)),
+          ),
+        ),
+        Text(
+          status,
+          style: TextStyle(
+            color: statusColor,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
 }

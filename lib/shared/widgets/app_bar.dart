@@ -7,6 +7,7 @@ import '../../features/log/data/log_api.dart';
 import '../../features/notifications/presentation/pages/notification_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
+import '../preferences/user_session.dart';
 
 final ValueNotifier<int> streakRefreshNotifier = ValueNotifier<int>(0);
 
@@ -16,10 +17,16 @@ Future<void> refreshAppBarStreak() async {
 
 PreferredSizeWidget buildAppBar(BuildContext context) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
-  final today = DateFormat('EEEE, MMMM d').format(DateTime.now());
+  final localeCode = Localizations.localeOf(context).languageCode;
+  final today = DateFormat('EEEE, MMMM d', localeCode).format(DateTime.now());
 
   String greeting() {
     final hour = DateTime.now().hour;
+    if (localeCode == 'fil') {
+      if (hour < 12) return "Magandang Umaga";
+      if (hour < 18) return "Magandang Hapon";
+      return "Magandang Gabi";
+    }
     if (hour < 12) return "Good Morning";
     if (hour < 18) return "Good Afternoon";
     return "Good Evening";
@@ -27,7 +34,11 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
 
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    await UserSessionController.instance.clearSession();
+    await LogApi.clearLocalDemoData();
+    await prefs.remove('log_streak');
+    await prefs.remove('longest_log_streak');
+    await prefs.remove('last_log_date');
     await refreshAppBarStreak();
 
     if (!context.mounted) return;
@@ -123,7 +134,7 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "${greeting()}, \n$username 👋",
+              '${greeting()},\n$username',
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,

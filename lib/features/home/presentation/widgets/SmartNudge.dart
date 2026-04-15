@@ -2,29 +2,29 @@ import 'package:flutter/material.dart';
 
 class SmartNudgeCard extends StatelessWidget {
   final String message;
-  final String messageSample = "🌟 Remember to take a 5-minute break every hour to maintain focus and reduce burnout risk!";
 
-  const SmartNudgeCard({Key? key, required this.message}) : super(key: key);
+  const SmartNudgeCard({
+    super.key,
+    required this.message,
+  });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Background gradient based on theme
     final backgroundGradient = isDark
-        ? LinearGradient(
-            colors: [Colors.orange.shade900, Colors.orange.shade700],
+        ? const LinearGradient(
+            colors: [Color(0xFF7C2D12), Color(0xFFB45309)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           )
-        : LinearGradient(
-            colors: [Colors.yellow.shade200, Colors.yellow.shade100],
+        : const LinearGradient(
+            colors: [Color(0xFFFDE68A), Color(0xFFFDE68A), Color(0xFFFFF7CC)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           );
 
-    // Text color adapts
-    final textColor = isDark ? Colors.white : Colors.black87;
+    final textColor = isDark ? Colors.white : const Color(0xFF3F2A00);
 
     return Container(
       width: double.infinity,
@@ -36,8 +36,8 @@ class SmartNudgeCard extends StatelessWidget {
           BoxShadow(
             color: isDark
                 ? Colors.black.withOpacity(0.4)
-                : Colors.grey.withOpacity(0.3),
-            blurRadius: 8,
+                : Colors.amber.withOpacity(0.18),
+            blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
@@ -45,14 +45,22 @@ class SmartNudgeCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             "Today's Smart Nudge",
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.normal),
+            style: TextStyle(
+              fontSize: 14,
+              color: textColor.withOpacity(0.85),
+            ),
           ),
           const SizedBox(height: 12),
           Text(
-            messageSample,
-            style: TextStyle(fontSize: 14, color: textColor, fontWeight: FontWeight.bold),
+            message,
+            style: TextStyle(
+              fontSize: 14,
+              color: textColor,
+              fontWeight: FontWeight.bold,
+              height: 1.45,
+            ),
           ),
         ],
       ),

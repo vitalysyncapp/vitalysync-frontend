@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:another_flushbar/flushbar.dart';
 
+import '../../../../features/log/data/log_api.dart';
+import '../../../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../../../shared/config/api_config.dart';
+import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/widgets/terms_privacy_widget.dart';
 import 'login_page.dart';
 
@@ -88,6 +91,19 @@ class _SignUpPageState extends State<SignUpPage> {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        await UserSessionController.instance.saveUser(
+          Map<String, dynamic>.from(data['user'] as Map<String, dynamic>),
+          isDemoMode: false,
+        );
+        await UserSessionController.instance.saveSupplementalProfile(
+          age: int.tryParse(_ageController.text.trim()),
+          gender: _selectedGender,
+          userType: _selectedUserType,
+        );
+        await LogApi.persistStreakSnapshot(
+          data['streak'] as Map<String, dynamic>?,
+        );
+
         _showFlushbar(
           data['message']?.toString() ?? 'Account created successfully',
         );
@@ -111,7 +127,11 @@ class _SignUpPageState extends State<SignUpPage> {
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const LoginPage()),
+          MaterialPageRoute(
+            builder: (_) => OnboardingPage(
+              userId: (data['user'] as Map<String, dynamic>)['user_id'] as int,
+            ),
+          ),
         );
       } else {
         _showFlushbar(
@@ -408,7 +428,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         DropdownButtonFormField<String>(
                           value: _selectedUserType,
                           decoration: _inputDecoration(
-                            label: 'User Type (optional)',
+                            label: 'Current Role (optional)',
                             icon: Icons.work_outline,
                           ),
                           borderRadius: BorderRadius.circular(16),

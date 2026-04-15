@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/theme/app_page_style.dart';
+
 class WellnessProfileCard extends StatelessWidget {
-  final String lifestyleType; // Sedentary, Active, etc.
-  final String occupationalStatus; // Student, Working Professional, etc.
-  final String workIntensity; // Low, Medium, High
-  final String waterGoal; // e.g. 2.5 L
-  final String exerciseTarget; // e.g. 5 days/week
+  final String lifestyleType;
+  final String currentRole;
+  final String workIntensity;
+  final String waterGoal;
+  final String exerciseTarget;
 
   const WellnessProfileCard({
-    Key? key,
+    super.key,
     required this.lifestyleType,
-    required this.occupationalStatus,
+    required this.currentRole,
     required this.workIntensity,
     required this.waterGoal,
     required this.exerciseTarget,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -22,12 +24,14 @@ class WellnessProfileCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.95),
+        color: pageSurfaceColor(context),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE7ECF5)),
+        border: Border.all(color: pageBorderColor(context)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF8AA4D6).withOpacity(0.10),
+            color: Colors.black.withOpacity(
+              Theme.of(context).brightness == Brightness.dark ? 0.18 : 0.08,
+            ),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -36,69 +40,71 @@ class WellnessProfileCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Wellness Profile",
+          Text(
+            'Wellness Profile',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF102A56),
+              color: pagePrimaryTextColor(context),
             ),
           ),
           const SizedBox(height: 18),
-
-          _rowItem("Lifestyle Type", lifestyleType),
+          _rowItem(context, 'Lifestyle Type', lifestyleType),
           const SizedBox(height: 14),
-
-          _rowItem("Occupational Status", occupationalStatus),
+          _rowItem(context, 'Current Role', currentRole),
           const SizedBox(height: 14),
-
-          _rowItemWithBadge("Work Intensity", workIntensity),
+          _rowItemWithBadge(context, 'Work Intensity', workIntensity),
           const SizedBox(height: 14),
-
-          _rowItem("Daily Water Goal", waterGoal),
+          _rowItem(context, 'Daily Water Goal', waterGoal),
           const SizedBox(height: 14),
-
-          _rowItem("Exercise Target", exerciseTarget),
+          _rowItem(context, 'Exercise Target', exerciseTarget),
         ],
       ),
     );
   }
 
-  Widget _rowItem(String label, String value) {
+  Widget _rowItem(BuildContext context, String label, String value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14.5,
-            color: Color(0xFF5B6B7F),
+            color: pageSecondaryTextColor(context),
           ),
         ),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 15.5,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF102A56),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontSize: 15.5,
+              fontWeight: FontWeight.w600,
+              color: pagePrimaryTextColor(context),
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _rowItemWithBadge(String label, String value) {
+  Widget _rowItemWithBadge(BuildContext context, String label, String value) {
     Color badgeColor;
+    Color textColor;
 
     switch (value.toLowerCase()) {
       case 'high':
         badgeColor = const Color(0xFFFFE5D0);
+        textColor = Colors.red;
         break;
       case 'medium':
         badgeColor = const Color(0xFFFFF4CC);
+        textColor = Colors.orange;
         break;
       default:
         badgeColor = const Color(0xFFE6F4EA);
+        textColor = Colors.green;
     }
 
     return Row(
@@ -106,9 +112,9 @@ class WellnessProfileCard extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14.5,
-            color: Color(0xFF5B6B7F),
+            color: pageSecondaryTextColor(context),
           ),
         ),
         Container(
@@ -122,11 +128,7 @@ class WellnessProfileCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: value.toLowerCase() == 'high'
-                  ? Colors.red
-                  : value.toLowerCase() == 'medium'
-                      ? Colors.orange
-                      : Colors.green,
+              color: textColor,
             ),
           ),
         ),

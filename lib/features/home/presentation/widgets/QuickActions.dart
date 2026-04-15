@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/main_navigation.dart';
+import '../../../../shared/theme/app_page_style.dart';
 
 class QuickActionCard extends StatelessWidget {
-  final String icon;
+  final IconData icon;
   final String title;
   final VoidCallback onTap;
   final Color backgroundColor;
@@ -11,20 +12,17 @@ class QuickActionCard extends StatelessWidget {
   final Color titleColor;
 
   const QuickActionCard({
-    Key? key,
+    super.key,
     required this.icon,
     required this.title,
     required this.onTap,
     required this.backgroundColor,
     required this.iconColor,
     required this.titleColor,
-  }) : super(key: key);
-
+  });
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Expanded(
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -39,16 +37,13 @@ class QuickActionCard extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                icon,
-                style: TextStyle(color: iconColor, fontSize: 28),
-              ),
+              Icon(icon, color: iconColor, size: 28),
               const SizedBox(height: 12),
               Text(
                 title,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: titleColor ?? (isDark ? Colors.white : const Color(0xFF0F2E6E)),
+                  color: titleColor,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -62,24 +57,22 @@ class QuickActionCard extends StatelessWidget {
 }
 
 class QuickActionsSection extends StatelessWidget {
-  const QuickActionsSection({Key? key}) : super(key: key);
+  const QuickActionsSection({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        color: pageSurfaceColor(context),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark ? Colors.white10 : const Color(0xFFE8E8E8),
-        ),
+        border: Border.all(color: pageBorderColor(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.25 : 0.06),
+            color: Colors.black.withOpacity(
+              Theme.of(context).brightness == Brightness.dark ? 0.25 : 0.06,
+            ),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -93,35 +86,39 @@ class QuickActionsSection extends StatelessWidget {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : const Color(0xFF0D2240),
+              color: pagePrimaryTextColor(context),
             ),
           ),
           const SizedBox(height: 16),
           Row(
             children: [
               QuickActionCard(
-                icon: '🫀',
+                icon: Icons.monitor_heart_rounded,
                 title: 'Daily Check-in',
-                backgroundColor: const Color.fromARGB(255, 216, 231, 255),
+                backgroundColor: const Color(0xFFD8E7FF),
                 iconColor: const Color(0xFF2F66F3),
                 titleColor: const Color(0xFF163D8C),
                 onTap: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (_) => const MainNavigation(initialIndex: 1)),
+                    MaterialPageRoute(
+                      builder: (_) => const MainNavigation(initialIndex: 1),
+                    ),
                   );
                 },
               ),
               QuickActionCard(
-                icon: '🍽️',
+                icon: Icons.restaurant_menu_rounded,
                 title: 'Log Meal',
-                backgroundColor: const Color.fromARGB(255, 201, 251, 214),
-                iconColor: const Color(0xFFB8A8D9),
+                backgroundColor: const Color(0xFFC9FBD6),
+                iconColor: const Color(0xFF15803D),
                 titleColor: const Color(0xFF145A1F),
                 onTap: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (_) => const MainNavigation(initialIndex: 2)),
+                    MaterialPageRoute(
+                      builder: (_) => const MainNavigation(initialIndex: 2),
+                    ),
                   );
                 },
               ),
