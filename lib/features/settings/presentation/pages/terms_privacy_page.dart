@@ -28,9 +28,14 @@ class TermsPrivacyPage extends StatelessWidget {
             ),
           ),
         ),
-        body: const SafeArea(
+        body: SafeArea(
           child: TermsPrivacyWidget(
-            padding: EdgeInsets.fromLTRB(16, 8, 16, 24),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              8,
+              16,
+              pageBottomContentPadding(context),
+            ),
           ),
         ),
       ),

@@ -38,7 +38,12 @@ class AppPreferencesPage extends StatelessWidget {
             ),
             body: SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  8,
+                  16,
+                  pageBottomContentPadding(context),
+                ),
                 child: Column(
                   children: [
                     _buildSectionCard(

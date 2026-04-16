@@ -15,6 +15,10 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   static const _sleepScheduleKey = 'profile_sleep_schedule';
   static const _waterGoalKey = 'profile_water_goal';
+  static const List<String> _genderOptions = ['Male', 'Female', 'Other'];
+  static const List<String> _roleOptions = ['Student', 'Working Professional', 'Young Professional', 'Freelance', 'Self-Employed', 'Others'];
+  static const List<String> _lifestyleOptions = ['Sedentary', 'Balanced', 'Active'];
+  static const List<String> _workIntensityOptions = ['Low', 'Medium', 'High'];
 
   bool _isLoading = true, _isSaving = false, _isDemoMode = false;
   int? _userId, _age;
@@ -42,6 +46,32 @@ class _ProfilePageState extends State<ProfilePage> {
   String _workIntensityFromHours(int hours) => hours >= 10 ? 'High' : hours >= 7 ? 'Medium' : 'Low';
   int _workHoursFromIntensity(String intensity) => intensity.toLowerCase() == 'high' ? 10 : intensity.toLowerCase() == 'low' ? 6 : 8;
   String _waterGoalFromActivity(String activity) => activity.toLowerCase() == 'active' ? '3.0 L' : activity.toLowerCase() == 'sedentary' ? '2.0 L' : '2.5 L';
+
+  String? _dropdownValueOrNull(
+    String? value,
+    List<String> options, {
+    Map<String, String> aliases = const {},
+  }) {
+    final normalized = value?.trim();
+    if (normalized == null || normalized.isEmpty) return null;
+
+    for (final option in options) {
+      if (option.toLowerCase() == normalized.toLowerCase()) {
+        return option;
+      }
+    }
+
+    final aliasMatch = aliases[normalized.toLowerCase()];
+    if (aliasMatch == null) return null;
+
+    for (final option in options) {
+      if (option.toLowerCase() == aliasMatch.toLowerCase()) {
+        return option;
+      }
+    }
+
+    return null;
+  }
 
   String _formatTimeForDisplay(String value) {
     final parts = value.split(':');
@@ -242,97 +272,58 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _showEditProfileSheet() async {
-    final usernameController = TextEditingController(text: _username), emailController = TextEditingController(text: _email), ageController = TextEditingController(text: _age == null ? '' : _age.toString()), sleepController = TextEditingController(text: _sleepSchedule), waterGoalController = TextEditingController(text: _waterGoal), exerciseTargetController = TextEditingController(text: _exerciseTarget);
-    String? selectedGender = _gender, selectedUserType = _userType;
-    var selectedLifestyle = _lifestyleType, selectedIntensity = _workIntensity;
-    final formKey = GlobalKey<FormState>();
-
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          final isDark = Theme.of(context).brightness == Brightness.dark;
-          return Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-            child: Container(
-              decoration: BoxDecoration(color: isDark ? const Color(0xFF162033) : Colors.white, borderRadius: const BorderRadius.vertical(top: Radius.circular(28))),
-              child: SafeArea(
-                top: false,
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                  child: Form(
-                    key: formKey,
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Center(child: Container(width: 44, height: 5, decoration: BoxDecoration(color: isDark ? Colors.white24 : const Color(0xFFD3DAE6), borderRadius: BorderRadius.circular(20)))),
-                      const SizedBox(height: 18),
-                      Text('Edit Profile', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: pagePrimaryTextColor(context))),
-                      const SizedBox(height: 18),
-                      _buildTextField(context: context, controller: usernameController, label: 'Username', validator: (value) => value == null || value.trim().isEmpty ? 'Enter a username' : null),
-                      const SizedBox(height: 12),
-                      _buildTextField(
-                        context: context,
-                        controller: emailController,
-                        label: 'Email',
-                        keyboardType: TextInputType.emailAddress,
-                        validator: (value) {
-                          final text = value?.trim() ?? '';
-                          if (text.isEmpty) return 'Enter an email';
-                          if (!RegExp(r'\S+@\S+\.\S+').hasMatch(text)) return 'Enter a valid email';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      _buildTextField(context: context, controller: ageController, label: 'Age', keyboardType: TextInputType.number),
-                      const SizedBox(height: 12),
-                      _buildDropdownField(context: context, label: 'Gender', value: selectedGender, items: const ['Male', 'Female', 'Other'], onChanged: (value) => setModalState(() => selectedGender = value)),
-                      const SizedBox(height: 12),
-                      _buildDropdownField(context: context, label: 'Current Role', value: selectedUserType, items: const ['Student', 'Working Professional', 'Young Professional', 'Freelance', 'Self-Employed', 'Others'], onChanged: (value) => setModalState(() => selectedUserType = value)),
-                      const SizedBox(height: 12),
-                      _buildDropdownField(context: context, label: 'Lifestyle Type', value: selectedLifestyle, items: const ['Sedentary', 'Balanced', 'Active'], onChanged: (value) { if (value != null) setModalState(() => selectedLifestyle = value); }),
-                      const SizedBox(height: 12),
-                      _buildDropdownField(context: context, label: 'Work Intensity', value: selectedIntensity, items: const ['Low', 'Medium', 'High'], onChanged: (value) { if (value != null) setModalState(() => selectedIntensity = value); }),
-                      const SizedBox(height: 12),
-                      _buildTextField(context: context, controller: sleepController, label: 'Sleep Schedule'),
-                      const SizedBox(height: 12),
-                      _buildTextField(context: context, controller: waterGoalController, label: 'Daily Water Goal'),
-                      const SizedBox(height: 12),
-                      _buildTextField(context: context, controller: exerciseTargetController, label: 'Exercise Target'),
-                      const SizedBox(height: 20),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _isSaving ? null : () async {
-                            if (!formKey.currentState!.validate()) return;
-                            final didSave = await _saveProfileChanges(
-                              username: usernameController.text.trim(),
-                              email: emailController.text.trim(),
-                              age: int.tryParse(ageController.text.trim()),
-                              gender: selectedGender,
-                              userType: selectedUserType,
-                              lifestyleType: selectedLifestyle,
-                              workIntensity: selectedIntensity,
-                              sleepSchedule: sleepController.text.trim(),
-                              waterGoal: waterGoalController.text.trim(),
-                              exerciseTarget: exerciseTargetController.text.trim(),
-                            );
-                            if (didSave && mounted) Navigator.pop(context);
-                          },
-                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), padding: const EdgeInsets.symmetric(vertical: 16)),
-                          child: _isSaving ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white)) : const Text('Save Changes', style: TextStyle(fontWeight: FontWeight.w700)),
-                        ),
-                      ),
-                    ]),
-                  ),
-                ),
-              ),
-            ),
+      builder: (sheetContext) => _EditProfileSheet(
+        initialUsername: _username,
+        initialEmail: _email,
+        initialAge: _age,
+        initialGender: _dropdownValueOrNull(_gender, _genderOptions),
+        initialUserType: _dropdownValueOrNull(
+          _userType,
+          _roleOptions,
+          aliases: const {
+            'freelancer': 'Freelance',
+            'self employed': 'Self-Employed',
+            'working professional': 'Working Professional',
+            'young professional': 'Young Professional',
+            'other': 'Others',
+          },
+        ),
+        initialLifestyle: _dropdownValueOrNull(_lifestyleType, _lifestyleOptions) ?? 'Balanced',
+        initialWorkIntensity: _dropdownValueOrNull(_workIntensity, _workIntensityOptions) ?? 'Medium',
+        initialSleepSchedule: _sleepSchedule,
+        initialWaterGoal: _waterGoal,
+        initialExerciseTarget: _exerciseTarget,
+        onSave: ({
+          required String username,
+          required String email,
+          required int? age,
+          required String? gender,
+          required String? userType,
+          required String lifestyleType,
+          required String workIntensity,
+          required String sleepSchedule,
+          required String waterGoal,
+          required String exerciseTarget,
+        }) {
+          return _saveProfileChanges(
+            username: username,
+            email: email,
+            age: age,
+            gender: gender,
+            userType: userType,
+            lifestyleType: lifestyleType,
+            workIntensity: workIntensity,
+            sleepSchedule: sleepSchedule,
+            waterGoal: waterGoal,
+            exerciseTarget: exerciseTarget,
           );
         },
       ),
     );
-    usernameController.dispose(); emailController.dispose(); ageController.dispose(); sleepController.dispose(); waterGoalController.dispose(); exerciseTargetController.dispose();
   }
 
   Widget _buildTextField({required BuildContext context, required TextEditingController controller, required String label, TextInputType? keyboardType, String? Function(String?)? validator}) {
@@ -393,7 +384,12 @@ class _ProfilePageState extends State<ProfilePage> {
           title: Text('Profile', style: TextStyle(color: pagePrimaryTextColor(context), fontSize: 22, fontWeight: FontWeight.bold)),
         ),
         body: _isLoading ? const Center(child: CircularProgressIndicator()) : SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            pageBottomContentPadding(context),
+          ),
           child: Column(children: [
             Container(
               width: double.infinity,
@@ -485,6 +481,261 @@ class _ProfilePageState extends State<ProfilePage> {
           ]),
         ),
       ),
+    );
+  }
+}
+
+typedef _SaveProfileCallback = Future<bool> Function({
+  required String username,
+  required String email,
+  required int? age,
+  required String? gender,
+  required String? userType,
+  required String lifestyleType,
+  required String workIntensity,
+  required String sleepSchedule,
+  required String waterGoal,
+  required String exerciseTarget,
+});
+
+class _EditProfileSheet extends StatefulWidget {
+  const _EditProfileSheet({
+    required this.initialUsername,
+    required this.initialEmail,
+    required this.initialAge,
+    required this.initialGender,
+    required this.initialUserType,
+    required this.initialLifestyle,
+    required this.initialWorkIntensity,
+    required this.initialSleepSchedule,
+    required this.initialWaterGoal,
+    required this.initialExerciseTarget,
+    required this.onSave,
+  });
+
+  final String initialUsername;
+  final String initialEmail;
+  final int? initialAge;
+  final String? initialGender;
+  final String? initialUserType;
+  final String initialLifestyle;
+  final String initialWorkIntensity;
+  final String initialSleepSchedule;
+  final String initialWaterGoal;
+  final String initialExerciseTarget;
+  final _SaveProfileCallback onSave;
+
+  @override
+  State<_EditProfileSheet> createState() => _EditProfileSheetState();
+}
+
+class _EditProfileSheetState extends State<_EditProfileSheet> {
+  static const List<String> _genderOptions = ['Male', 'Female', 'Other'];
+  static const List<String> _roleOptions = ['Student', 'Working Professional', 'Young Professional', 'Freelance', 'Self-Employed', 'Others'];
+  static const List<String> _lifestyleOptions = ['Sedentary', 'Balanced', 'Active'];
+  static const List<String> _workIntensityOptions = ['Low', 'Medium', 'High'];
+
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _usernameController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _ageController;
+  late final TextEditingController _sleepController;
+  late final TextEditingController _waterGoalController;
+  late final TextEditingController _exerciseTargetController;
+
+  late String? _selectedGender;
+  late String? _selectedUserType;
+  late String _selectedLifestyle;
+  late String _selectedIntensity;
+  bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _usernameController = TextEditingController(text: widget.initialUsername);
+    _emailController = TextEditingController(text: widget.initialEmail);
+    _ageController = TextEditingController(text: widget.initialAge?.toString() ?? '');
+    _sleepController = TextEditingController(text: widget.initialSleepSchedule);
+    _waterGoalController = TextEditingController(text: widget.initialWaterGoal);
+    _exerciseTargetController = TextEditingController(text: widget.initialExerciseTarget);
+    _selectedGender = widget.initialGender;
+    _selectedUserType = widget.initialUserType;
+    _selectedLifestyle = widget.initialLifestyle;
+    _selectedIntensity = widget.initialWorkIntensity;
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _emailController.dispose();
+    _ageController.dispose();
+    _sleepController.dispose();
+    _waterGoalController.dispose();
+    _exerciseTargetController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSave() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSubmitting = true);
+    try {
+      final didSave = await widget.onSave(
+        username: _usernameController.text.trim(),
+        email: _emailController.text.trim(),
+        age: int.tryParse(_ageController.text.trim()),
+        gender: _selectedGender,
+        userType: _selectedUserType,
+        lifestyleType: _selectedLifestyle,
+        workIntensity: _selectedIntensity,
+        sleepSchedule: _sleepController.text.trim(),
+        waterGoal: _waterGoalController.text.trim(),
+        exerciseTarget: _exerciseTargetController.text.trim(),
+      );
+
+      if (didSave && mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF162033) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              20,
+              16,
+              20,
+              pageBottomContentPadding(context),
+            ),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(child: Container(width: 44, height: 5, decoration: BoxDecoration(color: isDark ? Colors.white24 : const Color(0xFFD3DAE6), borderRadius: BorderRadius.circular(20)))),
+                  const SizedBox(height: 18),
+                  Text('Edit Profile', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: pagePrimaryTextColor(context))),
+                  const SizedBox(height: 18),
+                  _buildSheetTextField(context: context, controller: _usernameController, label: 'Username', validator: (value) => value == null || value.trim().isEmpty ? 'Enter a username' : null),
+                  const SizedBox(height: 12),
+                  _buildSheetTextField(
+                    context: context,
+                    controller: _emailController,
+                    label: 'Email',
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      final text = value?.trim() ?? '';
+                      if (text.isEmpty) return 'Enter an email';
+                      if (!RegExp(r'\S+@\S+\.\S+').hasMatch(text)) return 'Enter a valid email';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _buildSheetTextField(context: context, controller: _ageController, label: 'Age', keyboardType: TextInputType.number),
+                  const SizedBox(height: 12),
+                  _buildSheetDropdownField(
+                    context: context,
+                    label: 'Gender',
+                    value: _selectedGender,
+                    items: _genderOptions,
+                    onChanged: (value) => setState(() => _selectedGender = value),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildSheetDropdownField(
+                    context: context,
+                    label: 'Current Role',
+                    value: _selectedUserType,
+                    items: _roleOptions,
+                    onChanged: (value) => setState(() => _selectedUserType = value),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildSheetDropdownField(
+                    context: context,
+                    label: 'Lifestyle Type',
+                    value: _selectedLifestyle,
+                    items: _lifestyleOptions,
+                    onChanged: (value) {
+                      if (value != null) setState(() => _selectedLifestyle = value);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _buildSheetDropdownField(
+                    context: context,
+                    label: 'Work Intensity',
+                    value: _selectedIntensity,
+                    items: _workIntensityOptions,
+                    onChanged: (value) {
+                      if (value != null) setState(() => _selectedIntensity = value);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _buildSheetTextField(context: context, controller: _sleepController, label: 'Sleep Schedule'),
+                  const SizedBox(height: 12),
+                  _buildSheetTextField(context: context, controller: _waterGoalController, label: 'Daily Water Goal'),
+                  const SizedBox(height: 12),
+                  _buildSheetTextField(context: context, controller: _exerciseTargetController, label: 'Exercise Target'),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isSubmitting ? null : _handleSave,
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), padding: const EdgeInsets.symmetric(vertical: 16)),
+                      child: _isSubmitting ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white)) : const Text('Save Changes', style: TextStyle(fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSheetTextField({required BuildContext context, required TextEditingController controller, required String label, TextInputType? keyboardType, String? Function(String?)? validator}) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      validator: validator,
+      decoration: InputDecoration(
+        labelText: label,
+        filled: true,
+        fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.white.withOpacity(0.05) : const Color(0xFFF8FAFF),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: pageBorderColor(context))),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)),
+      ),
+    );
+  }
+
+  Widget _buildSheetDropdownField({required BuildContext context, required String label, required String? value, required List<String> items, required ValueChanged<String?> onChanged}) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        labelText: label,
+        filled: true,
+        fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.white.withOpacity(0.05) : const Color(0xFFF8FAFF),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: pageBorderColor(context))),
+      ),
+      items: items.map((item) => DropdownMenuItem<String>(value: item, child: Text(item))).toList(),
     );
   }
 }

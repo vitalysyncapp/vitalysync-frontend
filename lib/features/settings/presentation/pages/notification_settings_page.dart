@@ -222,7 +222,12 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    8,
+                    16,
+                    pageBottomContentPadding(context),
+                  ),
                   children: [
                     _SettingsBlock(
                       title: 'Reminder Preferences',

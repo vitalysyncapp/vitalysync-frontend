@@ -44,3 +44,10 @@ Color pageBorderColor(BuildContext context) {
       ? Colors.white.withOpacity(0.10)
       : Colors.grey.withOpacity(0.12);
 }
+
+double pageBottomContentPadding(
+  BuildContext context, {
+  double extra = 36,
+}) {
+  return MediaQuery.paddingOf(context).bottom + extra;
+}

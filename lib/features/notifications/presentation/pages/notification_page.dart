@@ -73,9 +73,11 @@ class _NotificationPageState extends State<NotificationPage> {
               Divider(height: 1, color: pageBorderColor(context)),
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 20,
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    20,
+                    20,
+                    pageBottomContentPadding(context),
                   ),
                   children: [
                     _buildSmartNudgeCard(context),

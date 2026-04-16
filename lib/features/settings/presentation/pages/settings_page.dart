@@ -4,13 +4,16 @@ import '../../../../features/onboarding/data/onboarding_api.dart';
 import '../../../../shared/preferences/app_preferences.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
-import '../../../auth/presentation/pages/login_page.dart';
-import '../../../log/data/log_api.dart';
 import 'app_preferences_page.dart';
+import 'about_page.dart';
+import 'clear_account_data_page.dart';
+import 'delete_account_page.dart';
 import 'help_support_page.dart';
+import 'location_settings_page.dart';
 import 'notification_settings_page.dart';
 import 'privacy_security_page.dart';
 import 'terms_privacy_page.dart';
+import 'version_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({Key? key}) : super(key: key);
@@ -23,6 +26,7 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _isLoadingReminderSummary = true;
   String _notificationSubtitle =
       'Loading your saved reminder preferences...';
+  UserSessionSnapshot _session = UserSessionSnapshot.empty;
 
   @override
   void initState() {
@@ -40,6 +44,7 @@ class _SettingsPageState extends State<SettingsPage> {
     if (session.isDemoMode || session.userId == null) {
       final prefs = AppPreferencesController.instance.notifier.value;
       setState(() {
+        _session = session;
         _notificationSubtitle = _buildLocalNotificationSummary(prefs);
         _isLoadingReminderSummary = false;
       });
@@ -69,6 +74,7 @@ class _SettingsPageState extends State<SettingsPage> {
       }
 
       setState(() {
+        _session = session;
         _notificationSubtitle = _buildAccountNotificationSummary(
           dailyReminder: dailyReminder,
           hydrationReminder: hydrationReminder,
@@ -84,6 +90,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
       final prefs = AppPreferencesController.instance.notifier.value;
       setState(() {
+        _session = session;
         _notificationSubtitle = _buildLocalNotificationSummary(prefs);
         _isLoadingReminderSummary = false;
       });
@@ -128,6 +135,178 @@ class _SettingsPageState extends State<SettingsPage> {
     return '${joined[0].toUpperCase()}${joined.substring(1)} reminders are enabled$timeSuffix';
   }
 
+  String get _accountActionSubtitle {
+    if (_session.isDemoMode) {
+      return 'Unavailable in demo mode';
+    }
+
+    if (!_session.isLoggedIn) {
+      return 'Sign in to manage account actions';
+    }
+
+    return 'Password required before continuing';
+  }
+
+  Future<void> _openProtectedAccountPage({
+    required String actionTitle,
+    required Widget Function(String verifiedPassword) builder,
+  }) async {
+    final session = await UserSessionController.instance.load();
+
+    if (!mounted) {
+      return;
+    }
+
+    if (session.isDemoMode) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account actions are not available in demo mode.'),
+        ),
+      );
+      return;
+    }
+
+    if (!session.isLoggedIn || session.email?.trim().isEmpty != false) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please sign in again to manage account settings.'),
+        ),
+      );
+      return;
+    }
+
+    final verifiedPassword = await _promptForPasswordVerification(
+      actionTitle: actionTitle,
+      email: session.email!.trim(),
+    );
+
+    if (!mounted || verifiedPassword == null) {
+      return;
+    }
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => builder(verifiedPassword),
+      ),
+    );
+  }
+
+  Future<String?> _promptForPasswordVerification({
+    required String actionTitle,
+    required String email,
+  }) async {
+    final controller = TextEditingController();
+    var isSubmitting = false;
+    var errorText = '';
+    var obscurePassword = true;
+
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: !isSubmitting,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            Future<void> verifyPassword() async {
+              final password = controller.text.trim();
+
+              if (password.isEmpty) {
+                setDialogState(() {
+                  errorText = 'Enter your password to continue.';
+                });
+                return;
+              }
+
+              setDialogState(() {
+                isSubmitting = true;
+                errorText = '';
+              });
+
+              try {
+                await UserSessionController.instance.reauthenticateWithPassword(
+                  password: password,
+                );
+
+                if (!dialogContext.mounted) {
+                  return;
+                }
+
+                Navigator.pop(dialogContext, password);
+              } catch (error) {
+                setDialogState(() {
+                  errorText =
+                      error.toString().replaceFirst('Exception: ', '');
+                  isSubmitting = false;
+                });
+              }
+            }
+
+            return AlertDialog(
+              title: Text(actionTitle),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Enter the password for $email before continuing.',
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: controller,
+                    obscureText: obscurePassword,
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      errorText: errorText.isEmpty ? null : errorText,
+                      suffixIcon: IconButton(
+                        onPressed: () {
+                          setDialogState(() {
+                            obscurePassword = !obscurePassword;
+                          });
+                        },
+                        icon: Icon(
+                          obscurePassword
+                              ? Icons.visibility_off_rounded
+                              : Icons.visibility_rounded,
+                        ),
+                      ),
+                    ),
+                    onSubmitted: (_) {
+                      if (!isSubmitting) {
+                        verifyPassword();
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSubmitting
+                      ? null
+                      : () => Navigator.pop(dialogContext),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: isSubmitting ? null : verifyPassword,
+                  child: isSubmitting
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Continue'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    controller.dispose();
+    return result;
+  }
+
   @override
   Widget build(BuildContext context) {
     final preferences = AppPreferencesController.instance;
@@ -158,7 +337,12 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             body: SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  8,
+                  16,
+                  pageBottomContentPadding(context),
+                ),
                 child: Column(
                   children: [
                     _buildSectionCard(
@@ -230,6 +414,61 @@ class _SettingsPageState extends State<SettingsPage> {
                           },
                         ),
                         _buildDivider(context),
+                        _buildSettingsTile(
+                          context: context,
+                          icon: Icons.location_on_outlined,
+                          iconBg: const Color(0xFFE2F7EC),
+                          iconColor: const Color(0xFF1F9D63),
+                          title: "Location Settings",
+                          subtitle:
+                              "Current: ${prefs.locationPermissionLabel}",
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const LocationSettingsPage(),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _buildSectionCard(
+                      context: context,
+                      title: "Account Settings",
+                      children: [
+                        _buildSettingsTile(
+                          context: context,
+                          icon: Icons.cleaning_services_outlined,
+                          iconBg: const Color(0xFFFFF2E2),
+                          iconColor: const Color(0xFFCC7A00),
+                          title: "Clear Data for This Account",
+                          subtitle: _accountActionSubtitle,
+                          onTap: () {
+                            _openProtectedAccountPage(
+                              actionTitle: 'Confirm password to clear local data',
+                              builder: (_) => const ClearAccountDataPage(),
+                            );
+                          },
+                        ),
+                        _buildDivider(context),
+                        _buildSettingsTile(
+                          context: context,
+                          icon: Icons.person_remove_outlined,
+                          iconBg: const Color(0xFFFFE3E3),
+                          iconColor: const Color(0xFFD14343),
+                          title: "Delete Account",
+                          subtitle: _accountActionSubtitle,
+                          onTap: () {
+                            _openProtectedAccountPage(
+                              actionTitle: 'Confirm password to delete account',
+                              builder: (verifiedPassword) => DeleteAccountPage(
+                                verifiedPassword: verifiedPassword,
+                              ),
+                            );
+                          },
+                        ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -270,10 +509,42 @@ class _SettingsPageState extends State<SettingsPage> {
                             );
                           },
                         ),
+                        _buildDivider(context),
+                        _buildSettingsTile(
+                          context: context,
+                          icon: Icons.info_outline_rounded,
+                          iconBg: const Color(0xFFF1F3F5),
+                          iconColor: const Color(0xFF4B5563),
+                          title: "About",
+                          subtitle: null,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AboutPage(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildDivider(context),
+                        _buildSettingsTile(
+                          context: context,
+                          icon: Icons.verified_outlined,
+                          iconBg: const Color(0xFFF1F3F5),
+                          iconColor: const Color(0xFF4B5563),
+                          title: "Version",
+                          subtitle: null,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const VersionPage(),
+                              ),
+                            );
+                          },
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 20),
-                    _buildDeleteButton(context),
                   ],
                 ),
               ),
@@ -400,89 +671,6 @@ class _SettingsPageState extends State<SettingsPage> {
       color: pageBorderColor(context),
       indent: 18,
       endIndent: 18,
-    );
-  }
-
-  Widget _buildDeleteButton(BuildContext context) { 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFFFFC9C9),
-        ),
-        color: pageSurfaceColor(context),
-      ),
-      child: TextButton.icon(
-        onPressed: () => _showClearDataDialog(context),
-        icon: const Icon(
-          Icons.delete_outline_rounded,
-          color: Colors.red,
-        ),
-        label: const Padding(
-          padding: EdgeInsets.symmetric(vertical: 14),
-          child: Text(
-            "Clear Local App Data",
-            style: TextStyle(
-              color: Colors.red,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        style: TextButton.styleFrom(
-          foregroundColor: Colors.red,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showClearDataDialog(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Clear local data?'),
-          content: const Text(
-            'This will remove saved preferences, demo data, and the local session on this device. Your server account will not be deleted.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text(
-                'Clear',
-                style: TextStyle(color: Colors.red),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirmed != true || !mounted) {
-      return;
-    }
-
-    final preferences = AppPreferencesController.instance;
-    await preferences.resetToDefaults();
-    await LogApi.clearLocalDemoData();
-    await UserSessionController.instance.clearSession();
-
-    if (!mounted) {
-      return;
-    }
-
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginPage()),
-      (route) => false,
     );
   }
 }

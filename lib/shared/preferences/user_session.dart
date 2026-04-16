@@ -157,6 +157,71 @@ class UserSessionController {
     await prefs.remove(_demoModeKey);
   }
 
+  Future<void> reauthenticateWithPassword({
+    required String password,
+  }) async {
+    final session = await load();
+    final email = session.email?.trim() ?? '';
+    final normalizedPassword = password.trim();
+
+    if (session.isDemoMode || !session.isLoggedIn || email.isEmpty) {
+      throw Exception('Account re-authentication is only available for signed-in accounts.');
+    }
+
+    if (normalizedPassword.isEmpty) {
+      throw Exception('Password is required.');
+    }
+
+    final response = await http.post(
+      Uri.parse(ApiConfig.auth('/login')),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': email,
+        'password': normalizedPassword,
+      }),
+    );
+
+    final data = _decodeResponseBody(response.body);
+
+    if (response.statusCode != 200) {
+      throw Exception(data['message'] ?? 'Password verification failed.');
+    }
+  }
+
+  Future<void> deleteAccount({
+    required String password,
+  }) async {
+    final session = await load();
+    final email = session.email?.trim() ?? '';
+    final normalizedPassword = password.trim();
+
+    if (session.isDemoMode || !session.isLoggedIn || session.userId == null) {
+      throw Exception('Delete account is only available for signed-in accounts.');
+    }
+
+    if (email.isEmpty || normalizedPassword.isEmpty) {
+      throw Exception('Email and password are required.');
+    }
+
+    final response = await http.delete(
+      Uri.parse(ApiConfig.auth('/account')),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'user_id': session.userId,
+        'email': email,
+        'password': normalizedPassword,
+      }),
+    );
+
+    final data = _decodeResponseBody(response.body);
+
+    if (response.statusCode != 200) {
+      throw Exception(data['message'] ?? 'Failed to delete account.');
+    }
+
+    await clearSession();
+  }
+
   Future<Map<String, dynamic>> updateProfile({
     required int userId,
     required String username,
@@ -243,5 +308,18 @@ class UserSessionController {
   String? _normalizedNullable(String? value) {
     final trimmed = value?.trim() ?? '';
     return trimmed.isEmpty ? null : trimmed;
+  }
+
+  Map<String, dynamic> _decodeResponseBody(String body) {
+    if (body.trim().isEmpty) {
+      return const <String, dynamic>{};
+    }
+
+    final decoded = jsonDecode(body);
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+
+    return const <String, dynamic>{};
   }
 }
