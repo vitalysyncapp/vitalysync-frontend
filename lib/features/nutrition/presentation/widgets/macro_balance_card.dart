@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'white_card.dart';
 
 class MacroBalanceCard extends StatelessWidget {
@@ -6,41 +7,47 @@ class MacroBalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const WhiteCard(
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompact = screenWidth < 380;
+
+    return WhiteCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Macro Balance',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: isCompact ? 17 : 18,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF0F172A),
+              color: const Color(0xFF0F172A),
             ),
           ),
-          SizedBox(height: 22),
+          SizedBox(height: isCompact ? 16 : 22),
           MacroProgressRow(
             label: 'Protein',
             current: '54g',
             goal: '100g',
             progress: 0.54,
-            color: Color(0xFFA855F7),
+            color: const Color(0xFFA855F7),
+            isCompact: isCompact,
           ),
-          SizedBox(height: 18),
+          SizedBox(height: isCompact ? 14 : 18),
           MacroProgressRow(
             label: 'Carbs',
             current: '126g',
             goal: '200g',
             progress: 0.63,
-            color: Color(0xFFF97316),
+            color: const Color(0xFFF97316),
+            isCompact: isCompact,
           ),
-          SizedBox(height: 18),
+          SizedBox(height: isCompact ? 14 : 18),
           MacroProgressRow(
             label: 'Fats',
             current: '31g',
             goal: '65g',
             progress: 0.48,
-            color: Color(0xFFEF4444),
+            color: const Color(0xFFEF4444),
+            isCompact: isCompact,
           ),
         ],
       ),
@@ -54,6 +61,7 @@ class MacroProgressRow extends StatelessWidget {
   final String goal;
   final double progress;
   final Color color;
+  final bool isCompact;
 
   const MacroProgressRow({
     Key? key,
@@ -62,6 +70,7 @@ class MacroProgressRow extends StatelessWidget {
     required this.goal,
     required this.progress,
     required this.color,
+    required this.isCompact,
   }) : super(key: key);
 
   @override
@@ -74,30 +83,30 @@ class MacroProgressRow extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFF334155),
+                style: TextStyle(
+                  fontSize: isCompact ? 14 : 16,
+                  color: const Color(0xFF334155),
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ),
             Text(
               '$current / $goal',
-              style: const TextStyle(
-                fontSize: 16,
-                color: Color(0xFF0F172A),
+              style: TextStyle(
+                fontSize: isCompact ? 14 : 16,
+                color: const Color(0xFF0F172A),
                 fontWeight: FontWeight.w700,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: isCompact ? 8 : 10),
         ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: LinearProgressIndicator(
             value: progress,
-            minHeight: 10,
-            backgroundColor: Color(0xFFE5E7EB),
+            minHeight: isCompact ? 8 : 10,
+            backgroundColor: const Color(0xFFE5E7EB),
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),

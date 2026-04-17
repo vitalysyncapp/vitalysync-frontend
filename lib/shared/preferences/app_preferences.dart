@@ -5,6 +5,8 @@ enum AppLanguage { english, filipino }
 
 enum AppFontSize { small, medium, large }
 
+enum AppLocationPermissionChoice { undecided, allowed, denied }
+
 @immutable
 class AppPreferencesState {
   final ThemeMode themeMode;
@@ -15,6 +17,7 @@ class AppPreferencesState {
   final bool hydrationReminderEnabled;
   final bool hideSensitiveContent;
   final bool biometricLockEnabled;
+  final AppLocationPermissionChoice locationPermissionChoice;
   final bool isLoaded;
 
   const AppPreferencesState({
@@ -26,6 +29,7 @@ class AppPreferencesState {
     required this.hydrationReminderEnabled,
     required this.hideSensitiveContent,
     required this.biometricLockEnabled,
+    required this.locationPermissionChoice,
     required this.isLoaded,
   });
 
@@ -38,6 +42,7 @@ class AppPreferencesState {
         hydrationReminderEnabled = true,
         hideSensitiveContent = false,
         biometricLockEnabled = false,
+        locationPermissionChoice = AppLocationPermissionChoice.undecided,
         isLoaded = false;
 
   AppPreferencesState copyWith({
@@ -49,6 +54,7 @@ class AppPreferencesState {
     bool? hydrationReminderEnabled,
     bool? hideSensitiveContent,
     bool? biometricLockEnabled,
+    AppLocationPermissionChoice? locationPermissionChoice,
     bool? isLoaded,
   }) {
     return AppPreferencesState(
@@ -64,6 +70,8 @@ class AppPreferencesState {
           hideSensitiveContent ?? this.hideSensitiveContent,
       biometricLockEnabled:
           biometricLockEnabled ?? this.biometricLockEnabled,
+      locationPermissionChoice:
+          locationPermissionChoice ?? this.locationPermissionChoice,
       isLoaded: isLoaded ?? this.isLoaded,
     );
   }
@@ -107,6 +115,20 @@ class AppPreferencesState {
         return 'Large';
     }
   }
+
+  bool get isLocationAccessEnabled =>
+      locationPermissionChoice == AppLocationPermissionChoice.allowed;
+
+  String get locationPermissionLabel {
+    switch (locationPermissionChoice) {
+      case AppLocationPermissionChoice.allowed:
+        return 'Allowed';
+      case AppLocationPermissionChoice.denied:
+        return 'Denied';
+      case AppLocationPermissionChoice.undecided:
+        return 'Ask next time';
+    }
+  }
 }
 
 class AppPreferencesController {
@@ -123,6 +145,8 @@ class AppPreferencesController {
   static const String _hydrationReminderKey = 'hydration_reminder_enabled';
   static const String _hideSensitiveContentKey = 'hide_sensitive_content';
   static const String _biometricLockKey = 'biometric_lock_enabled';
+  static const String _locationPermissionChoiceKey =
+      'location_permission_choice';
 
   final ValueNotifier<AppPreferencesState> notifier =
       ValueNotifier<AppPreferencesState>(
@@ -139,6 +163,8 @@ class AppPreferencesController {
     final hydrationReminderEnabled = prefs.getBool(_hydrationReminderKey);
     final hideSensitiveContent = prefs.getBool(_hideSensitiveContentKey);
     final biometricLockEnabled = prefs.getBool(_biometricLockKey);
+    final locationPermissionChoice =
+        prefs.getString(_locationPermissionChoiceKey);
 
     notifier.value = AppPreferencesState(
       themeMode: _themeModeFromString(themeModeName),
@@ -149,6 +175,8 @@ class AppPreferencesController {
       hydrationReminderEnabled: hydrationReminderEnabled ?? true,
       hideSensitiveContent: hideSensitiveContent ?? false,
       biometricLockEnabled: biometricLockEnabled ?? false,
+      locationPermissionChoice:
+          _locationPermissionChoiceFromString(locationPermissionChoice),
       isLoaded: true,
     );
   }
@@ -202,6 +230,20 @@ class AppPreferencesController {
     notifier.value = notifier.value.copyWith(biometricLockEnabled: value);
   }
 
+  Future<void> updateLocationPermissionChoice(
+    AppLocationPermissionChoice choice,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if (choice == AppLocationPermissionChoice.undecided) {
+      await prefs.remove(_locationPermissionChoiceKey);
+    } else {
+      await prefs.setString(_locationPermissionChoiceKey, choice.name);
+    }
+
+    notifier.value = notifier.value.copyWith(locationPermissionChoice: choice);
+  }
+
   Future<void> syncNotificationPreferences({
     required bool notificationsEnabled,
     required bool bedtimeReminderEnabled,
@@ -228,6 +270,7 @@ class AppPreferencesController {
     await prefs.remove(_hydrationReminderKey);
     await prefs.remove(_hideSensitiveContentKey);
     await prefs.remove(_biometricLockKey);
+    await prefs.remove(_locationPermissionChoiceKey);
     notifier.value = AppPreferencesState.defaults().copyWith(
       isLoaded: true,
     );
@@ -251,6 +294,15 @@ class AppPreferencesController {
     return AppFontSize.values.firstWhere(
       (fontSize) => fontSize.name == value,
       orElse: () => AppFontSize.medium,
+    );
+  }
+
+  AppLocationPermissionChoice _locationPermissionChoiceFromString(
+    String? value,
+  ) {
+    return AppLocationPermissionChoice.values.firstWhere(
+      (choice) => choice.name == value,
+      orElse: () => AppLocationPermissionChoice.undecided,
     );
   }
 }

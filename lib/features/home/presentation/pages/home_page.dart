@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
+import '../../data/device_location_service.dart';
+import '../../data/environment_api.dart';
+import '../../data/environment_model.dart';
 import '../../../../features/log/data/log_api.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
@@ -20,19 +24,26 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
+  static const double _fallbackLatitude = 9.65;
+  static const double _fallbackLongitude = 123.85;
+
   String _sleepValue = '--';
   String _sleepSubtitle = 'No log yet';
   String _hydrationValue = '--';
   String _hydrationSubtitle = 'No log yet';
   bool _isLoadingSummary = true;
+  bool _isLoadingEnvironment = true;
   bool _isOfflineSummary = false;
   bool _isDemoMode = false;
+  String? _environmentError;
+  EnvironmentSnapshot? _environmentSnapshot;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _loadLatestSummary();
+    _loadEnvironment();
   }
 
   @override
@@ -45,6 +56,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _loadLatestSummary(showLoader: false);
+      _loadEnvironment(showLoader: false);
     }
   }
 
@@ -86,7 +98,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       setState(() {
         _sleepValue = LogApi.formatSleepHours(log['sleep_hours']);
         _sleepSubtitle = dateLabel;
-        _hydrationValue = LogApi.formatHydrationLiters(log['hydration_liters']);
+        _hydrationValue =
+            LogApi.formatHydrationLiters(log['hydration_liters']);
         _hydrationSubtitle = dateLabel;
         _isLoadingSummary = false;
       });
@@ -100,6 +113,44 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         _hydrationSubtitle = _sleepSubtitle;
         _isLoadingSummary = false;
         _isOfflineSummary = true;
+      });
+    }
+  }
+
+  Future<void> _loadEnvironment({bool showLoader = true}) async {
+    if (!mounted) return;
+
+    setState(() {
+      if (showLoader) {
+        _isLoadingEnvironment = true;
+      }
+      _environmentError = null;
+    });
+
+    try {
+      final coordinates = await DeviceLocationService.getCurrentCoordinates();
+      final snapshot = await EnvironmentApi.fetchEnvironment(
+        lat: coordinates?.latitude ?? _fallbackLatitude,
+        lon: coordinates?.longitude ?? _fallbackLongitude,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _environmentSnapshot = snapshot;
+        _environmentError = null;
+        _isLoadingEnvironment = false;
+      });
+    } catch (error) {
+      debugPrint('Environment load failed: $error');
+      if (!mounted) return;
+
+      setState(() {
+        final fallbackMessage = 'Live environment data is unavailable right now.';
+        _environmentError = kDebugMode
+            ? '$fallbackMessage\n$error'
+            : fallbackMessage;
+        _isLoadingEnvironment = false;
       });
     }
   }
@@ -120,6 +171,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   _buildStatusBanner(context),
                   const SizedBox(height: 12),
                 ],
+                GlassCard(
+                  child: SmartNudgeCard(
+                    message: _isDemoMode
+                        ? 'Demo mode is active. You can still explore check-ins, nutrition, and profile editing locally.'
+                        : 'Remember to take a 5-minute break every hour to maintain focus and reduce burnout risk.',
+                  ),
+                ),
+                const SizedBox(height: 16),
                 GlassCard(
                   child: const BurnoutCard(
                     score: 41,
@@ -158,19 +217,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 ),
                 const SizedBox(height: 16),
                 GlassCard(
-                  child: const EnvironmentalCard(
-                    weather: 'Sunny, 28°C',
-                    weatherStatus: 'Good',
-                    airQuality: 'AQI 152',
-                    airStatus: 'Unhealthy',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                GlassCard(
-                  child: SmartNudgeCard(
-                    message: _isDemoMode
-                        ? 'Demo mode is active. You can still explore check-ins, nutrition, and profile editing locally.'
-                        : 'Remember to take a 5-minute break every hour to maintain focus and reduce burnout risk.',
+                  child: EnvironmentalCard(
+                    snapshot: _environmentSnapshot,
+                    isLoading: _isLoadingEnvironment,
+                    errorMessage: _environmentError,
                   ),
                 ),
                 const SizedBox(height: 16),

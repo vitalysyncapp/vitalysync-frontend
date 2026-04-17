@@ -1,5 +1,7 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
+
 import 'white_card.dart';
 
 class LogNewMealCard extends StatelessWidget {
@@ -16,6 +18,9 @@ class LogNewMealCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompact = screenWidth < 380;
+
     return WhiteCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -23,21 +28,24 @@ class LogNewMealCard extends StatelessWidget {
           const Text(
             'Log New Meal',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 17,
               fontWeight: FontWeight.w800,
               color: Color(0xFF0F172A),
             ),
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: isCompact ? 14 : 18),
           InkWell(
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(isCompact ? 18 : 22),
             onTap: onTakePhoto,
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+              padding: EdgeInsets.symmetric(
+                vertical: isCompact ? 24 : 36,
+                horizontal: isCompact ? 16 : 20,
+              ),
               decoration: BoxDecoration(
                 color: const Color(0xFFF3F7FF),
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(isCompact ? 18 : 22),
                 border: Border.all(
                   color: const Color(0xFF82B5FF),
                   width: 1.4,
@@ -47,80 +55,84 @@ class LogNewMealCard extends StatelessWidget {
                 children: [
                   if (selectedImage != null) ...[
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(isCompact ? 12 : 16),
                       child: Image.file(
                         selectedImage!,
-                        height: 180,
+                        height: isCompact ? 140 : 180,
                         width: double.infinity,
                         fit: BoxFit.cover,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: isCompact ? 12 : 16),
                   ] else ...[
                     Container(
-                      width: 82,
-                      height: 82,
+                      width: isCompact ? 64 : 82,
+                      height: isCompact ? 64 : 82,
                       decoration: const BoxDecoration(
                         color: Color(0xFF2563EB),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.camera_alt_outlined,
                         color: Colors.white,
-                        size: 34,
+                        size: isCompact ? 28 : 34,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: isCompact ? 12 : 16),
                   ],
-                  const Text(
+                  Text(
                     'Take Photo',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: isCompact ? 16 : 18,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1D4ED8),
+                      color: const Color(0xFF1D4ED8),
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: isCompact ? 4 : 6),
                   Text(
                     selectedImage == null
                         ? 'Snap a picture of your meal'
                         : 'Tap to retake meal photo',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF2563EB),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: isCompact ? 13 : 14,
+                      color: const Color(0xFF2563EB),
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: isCompact ? 14 : 18),
           InkWell(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(isCompact ? 16 : 18),
             onTap: onChooseFromGallery,
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+              padding: EdgeInsets.symmetric(
+                vertical: isCompact ? 14 : 18,
+                horizontal: isCompact ? 14 : 16,
+              ),
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(isCompact ? 16 : 18),
                 border: Border.all(color: const Color(0xFFE5E7EB)),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     Icons.photo_library_outlined,
-                    color: Color(0xFF475569),
-                    size: 26,
+                    color: const Color(0xFF475569),
+                    size: isCompact ? 22 : 26,
                   ),
-                  SizedBox(width: 10),
+                  SizedBox(width: isCompact ? 8 : 10),
                   Text(
                     'Choose from Gallery',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: isCompact ? 14 : 16,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF334155),
+                      color: const Color(0xFF334155),
                     ),
                   ),
                 ],

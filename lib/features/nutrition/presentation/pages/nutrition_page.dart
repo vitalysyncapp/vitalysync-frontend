@@ -72,6 +72,11 @@ class _NutritionPageState extends State<NutritionPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompact = screenWidth < 380;
+    final pagePadding = isCompact ? 12.0 : 16.0;
+    final sectionSpacing = isCompact ? 12.0 : 16.0;
+
     return Container(
       decoration: buildPageDecoration(context),
       child: Scaffold(
@@ -79,26 +84,26 @@ class _NutritionPageState extends State<NutritionPage> {
         appBar: buildAppBar(context),
         body: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(pagePadding),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const NutritionHeaderCard(),
-                const SizedBox(height: 16),
+                SizedBox(height: sectionSpacing),
                 const TodayNutritionCard(),
-                const SizedBox(height: 16),
+                SizedBox(height: sectionSpacing),
                 LogNewMealCard(
                   selectedImage: _selectedImage,
                   onTakePhoto: _pickFromCamera,
                   onChooseFromGallery: _pickFromGallery,
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: sectionSpacing),
                 TodaysMealsCard(
                   onAddTap: _onAddMeal,
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: sectionSpacing),
                 const MacroBalanceCard(),
-                const SizedBox(height: 24),
+                SizedBox(height: isCompact ? 16 : 24),
               ],
             ),
           ),

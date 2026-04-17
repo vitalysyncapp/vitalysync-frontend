@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'white_card.dart';
 
 class TodaysMealsCard extends StatelessWidget {
@@ -11,6 +12,9 @@ class TodaysMealsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompact = screenWidth < 380;
+
     return WhiteCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -21,7 +25,7 @@ class TodaysMealsCard extends StatelessWidget {
               const Text(
                 "Today's Meals",
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 17,
                   fontWeight: FontWeight.w800,
                   color: Color(0xFF0F172A),
                 ),
@@ -34,14 +38,14 @@ class TodaysMealsCard extends StatelessWidget {
                   child: Icon(
                     Icons.add,
                     color: Color(0xFF2563EB),
-                    size: 28,
+                    size: 24,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 18),
-          const MealItemCard(
+          SizedBox(height: isCompact ? 14 : 18),
+          MealItemCard(
             mealName: 'Breakfast',
             time: '8:30 AM',
             calories: '420 cal',
@@ -49,9 +53,10 @@ class TodaysMealsCard extends StatelessWidget {
             protein: '12g',
             carbs: '78g',
             fats: '9g',
+            isCompact: isCompact,
           ),
-          const SizedBox(height: 14),
-          const MealItemCard(
+          SizedBox(height: isCompact ? 10 : 14),
+          MealItemCard(
             mealName: 'Lunch',
             time: '1:15 PM',
             calories: '580 cal',
@@ -59,6 +64,7 @@ class TodaysMealsCard extends StatelessWidget {
             protein: '42g',
             carbs: '48g',
             fats: '22g',
+            isCompact: isCompact,
           ),
         ],
       ),
@@ -74,6 +80,7 @@ class MealItemCard extends StatelessWidget {
   final String protein;
   final String carbs;
   final String fats;
+  final bool isCompact;
 
   const MealItemCard({
     Key? key,
@@ -84,16 +91,17 @@ class MealItemCard extends StatelessWidget {
     required this.protein,
     required this.carbs,
     required this.fats,
+    required this.isCompact,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(isCompact ? 14 : 18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(isCompact ? 14 : 18),
         border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
       child: Column(
@@ -104,64 +112,66 @@ class MealItemCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   mealName,
-                  style: const TextStyle(
-                    fontSize: 17,
+                  style: TextStyle(
+                    fontSize: isCompact ? 15 : 17,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF0F172A),
+                    color: const Color(0xFF0F172A),
                   ),
                 ),
               ),
               Text(
                 calories,
-                style: const TextStyle(
-                  fontSize: 17,
+                style: TextStyle(
+                  fontSize: isCompact ? 15 : 17,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
+                  color: const Color(0xFF0F172A),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: isCompact ? 2 : 4),
           Text(
             time,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF64748B),
+            style: TextStyle(
+              fontSize: isCompact ? 12 : 14,
+              color: const Color(0xFF64748B),
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: isCompact ? 10 : 12),
           Text(
             foods,
-            style: const TextStyle(
-              fontSize: 15,
-              color: Color(0xFF334155),
+            maxLines: isCompact ? 2 : 3,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: isCompact ? 13 : 15,
+              color: const Color(0xFF334155),
               height: 1.4,
             ),
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: isCompact ? 10 : 14),
           Row(
             children: [
               Text(
                 'P: $protein',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF9333EA),
+                style: TextStyle(
+                  fontSize: isCompact ? 12 : 14,
+                  color: const Color(0xFF9333EA),
                 ),
               ),
-              const SizedBox(width: 18),
+              SizedBox(width: isCompact ? 12 : 18),
               Text(
                 'C: $carbs',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFFF97316),
+                style: TextStyle(
+                  fontSize: isCompact ? 12 : 14,
+                  color: const Color(0xFFF97316),
                 ),
               ),
-              const SizedBox(width: 18),
+              SizedBox(width: isCompact ? 12 : 18),
               Text(
                 'F: $fats',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFFEF4444),
+                style: TextStyle(
+                  fontSize: isCompact ? 12 : 14,
+                  color: const Color(0xFFEF4444),
                 ),
               ),
             ],

@@ -30,21 +30,6 @@ class _SignUpPageState extends State<SignUpPage> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
-  final TextEditingController _ageController = TextEditingController();
-
-  String? _selectedGender;
-  String? _selectedUserType;
-
-  final List<String> _genders = ['Male', 'Female', 'Other'];
-
-  final List<String> _userTypes = [
-    'Student',
-    'Working Professional',
-    'Young Professional',
-    'Freelance',
-    'Self-Employed',
-    'Others'
-  ];
 
   void _showFlushbar(
     String message, {
@@ -80,11 +65,6 @@ class _SignUpPageState extends State<SignUpPage> {
           "username": _usernameController.text.trim(),
           "email": _emailController.text.trim(),
           "password": _passwordController.text.trim(),
-          "age": _ageController.text.trim().isEmpty
-              ? null
-              : int.tryParse(_ageController.text.trim()),
-          "gender": _selectedGender,
-          "user_type": _selectedUserType,
         }),
       );
 
@@ -94,11 +74,6 @@ class _SignUpPageState extends State<SignUpPage> {
         await UserSessionController.instance.saveUser(
           Map<String, dynamic>.from(data['user'] as Map<String, dynamic>),
           isDemoMode: false,
-        );
-        await UserSessionController.instance.saveSupplementalProfile(
-          age: int.tryParse(_ageController.text.trim()),
-          gender: _selectedGender,
-          userType: _selectedUserType,
         );
         await LogApi.persistStreakSnapshot(
           data['streak'] as Map<String, dynamic>?,
@@ -113,9 +88,6 @@ class _SignUpPageState extends State<SignUpPage> {
           _usernameController.clear();
           _passwordController.clear();
           _confirmPasswordController.clear();
-          _ageController.clear();
-          _selectedGender = null;
-          _selectedUserType = null;
           _agreeTerms = false;
         });
 
@@ -185,27 +157,6 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
-  Widget _buildBackToLogin({bool top = false}) {
-    return Align(
-      alignment: top ? Alignment.centerLeft : Alignment.center,
-      child: TextButton(
-        onPressed: () {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const LoginPage()),
-          );
-        },
-        child: const Text(
-          'Back to Login',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Color.fromARGB(255, 0, 13, 255),
-          ),
-        ),
-      ),
-    );
-  }
-
   void _showTermsModal() {
     showModalBottomSheet(
       context: context,
@@ -269,7 +220,6 @@ class _SignUpPageState extends State<SignUpPage> {
     _usernameController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _ageController.dispose();
     super.dispose();
   }
 
@@ -295,9 +245,6 @@ class _SignUpPageState extends State<SignUpPage> {
             padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
             child: Column(
               children: [
-                _buildBackToLogin(top: true),
-                const SizedBox(height: 8),
-
                 Center(
                   child: Image.asset(
                     'assets/images/logo.png',
@@ -389,62 +336,6 @@ class _SignUpPageState extends State<SignUpPage> {
                               value == null || value.isEmpty
                                   ? 'Enter username'
                                   : null,
-                        ),
-                        const SizedBox(height: 14),
-
-                        TextFormField(
-                          controller: _ageController,
-                          keyboardType: TextInputType.number,
-                          decoration: _inputDecoration(
-                            label: 'Age (optional)',
-                            icon: Icons.cake_outlined,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-
-                        DropdownButtonFormField<String>(
-                          value: _selectedGender,
-                          decoration: _inputDecoration(
-                            label: 'Gender (optional)',
-                            icon: Icons.wc_outlined,
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                          items: _genders
-                              .map(
-                                (g) => DropdownMenuItem(
-                                  value: g,
-                                  child: Text(g),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedGender = value;
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 14),
-
-                        DropdownButtonFormField<String>(
-                          value: _selectedUserType,
-                          decoration: _inputDecoration(
-                            label: 'Current Role (optional)',
-                            icon: Icons.work_outline,
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                          items: _userTypes
-                              .map(
-                                (type) => DropdownMenuItem(
-                                  value: type,
-                                  child: Text(type),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedUserType = value;
-                            });
-                          },
                         ),
                         const SizedBox(height: 14),
 
