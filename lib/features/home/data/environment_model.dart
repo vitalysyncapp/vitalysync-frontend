@@ -30,13 +30,20 @@ class EnvironmentSnapshot {
           DateTime.now(),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'location': location,
+      'coordinates': coordinates.toJson(),
+      'weather': weather.toJson(),
+      'air_quality': airQuality.toJson(),
+      'fetched_at': fetchedAt.toIso8601String(),
+    };
+  }
 }
 
 class EnvironmentCoordinates {
-  const EnvironmentCoordinates({
-    required this.lat,
-    required this.lon,
-  });
+  const EnvironmentCoordinates({required this.lat, required this.lon});
 
   final double lat;
   final double lon;
@@ -46,6 +53,10 @@ class EnvironmentCoordinates {
       lat: _readDouble(json['lat']),
       lon: _readDouble(json['lon']),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'lat': lat, 'lon': lon};
   }
 }
 
@@ -73,8 +84,8 @@ class EnvironmentWeather {
   factory EnvironmentWeather.fromJson(Map<String, dynamic> json) {
     return EnvironmentWeather(
       main: (json['main'] ?? 'Unknown').toString(),
-      description:
-          (json['description'] ?? 'No description available').toString(),
+      description: (json['description'] ?? 'No description available')
+          .toString(),
       icon: (json['icon'] ?? '').toString(),
       temperatureC: _readDouble(json['temperature_c']),
       feelsLikeC: _readDouble(json['feels_like_c']),
@@ -82,6 +93,19 @@ class EnvironmentWeather {
       pressure: _readInt(json['pressure']),
       windSpeed: _readDouble(json['wind_speed']),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'main': main,
+      'description': description,
+      'icon': icon,
+      'temperature_c': temperatureC,
+      'feels_like_c': feelsLikeC,
+      'humidity': humidity,
+      'pressure': pressure,
+      'wind_speed': windSpeed,
+    };
   }
 }
 
@@ -104,6 +128,14 @@ class EnvironmentAirQuality {
         Map<String, dynamic>.from(json['components'] as Map? ?? const {}),
       ),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'aqi': aqi,
+      'aqi_label': aqiLabel,
+      'components': components.toJson(),
+    };
   }
 }
 
@@ -133,6 +165,17 @@ class EnvironmentAirComponents {
       so2: _readDouble(json['so2']),
       co: _readDouble(json['co']),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'pm2_5': pm25,
+      'pm10': pm10,
+      'o3': o3,
+      'no2': no2,
+      'so2': so2,
+      'co': co,
+    };
   }
 }
 

@@ -7,6 +7,8 @@ class InfoCard extends StatelessWidget {
   final String subtitle;
   final Color color;
   final bool isLoading;
+  final String? statusHint;
+  final Color? statusColor;
 
   const InfoCard({
     Key? key,
@@ -16,6 +18,8 @@ class InfoCard extends StatelessWidget {
     required this.subtitle,
     required this.color,
     this.isLoading = false,
+    this.statusHint,
+    this.statusColor,
   }) : super(key: key);
 
   @override
@@ -83,13 +87,30 @@ class InfoCard extends StatelessWidget {
                   ),
           ),
           const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: TextStyle(
-              color: subtitleColor,
-              fontSize: 12,
+          Text(subtitle, style: TextStyle(color: subtitleColor, fontSize: 12)),
+          if (statusHint != null && statusHint!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: (statusColor ?? color).withOpacity(0.12),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: (statusColor ?? color).withOpacity(0.22),
+                ),
+              ),
+              child: Text(
+                statusHint!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  color: statusColor ?? color,
+                ),
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );

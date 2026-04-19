@@ -31,10 +31,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   String _sleepSubtitle = 'No log yet';
   String _hydrationValue = '--';
   String _hydrationSubtitle = 'No log yet';
+  String? _hydrationLevel;
+  Color _hydrationLevelColor = Colors.green;
   bool _isLoadingSummary = true;
   bool _isLoadingEnvironment = true;
   bool _isOfflineSummary = false;
   bool _isDemoMode = false;
+  bool _isUsingCachedEnvironment = false;
   String? _environmentError;
   EnvironmentSnapshot? _environmentSnapshot;
 
@@ -84,23 +87,31 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         setState(() {
           _sleepValue = '--';
           _hydrationValue = '--';
-          _sleepSubtitle =
-              _isDemoMode ? 'Start with a demo check-in' : 'No log yet';
-          _hydrationSubtitle =
-              _isDemoMode ? 'Start with a demo check-in' : 'No log yet';
+          _sleepSubtitle = _isDemoMode
+              ? 'Start with a demo check-in'
+              : 'No log yet';
+          _hydrationSubtitle = _isDemoMode
+              ? 'Start with a demo check-in'
+              : 'No log yet';
+          _hydrationLevel = null;
+          _hydrationLevelColor = Colors.green;
           _isLoadingSummary = false;
         });
         return;
       }
 
       final dateLabel = LogApi.formatLogDateLabel(log['log_date']);
+      final hydrationStatus = LogApi.getHydrationStatus(
+        log['hydration_liters'],
+      );
 
       setState(() {
         _sleepValue = LogApi.formatSleepHours(log['sleep_hours']);
         _sleepSubtitle = dateLabel;
-        _hydrationValue =
-            LogApi.formatHydrationLiters(log['hydration_liters']);
+        _hydrationValue = LogApi.formatHydrationLiters(log['hydration_liters']);
         _hydrationSubtitle = dateLabel;
+        _hydrationLevel = hydrationStatus.shortLabel;
+        _hydrationLevelColor = Color(hydrationStatus.colorValue);
         _isLoadingSummary = false;
       });
     } catch (_) {
@@ -111,6 +122,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ? 'Demo summary unavailable'
             : 'Offline - summary unavailable';
         _hydrationSubtitle = _sleepSubtitle;
+        _hydrationLevel = null;
+        _hydrationLevelColor = Colors.green;
         _isLoadingSummary = false;
         _isOfflineSummary = true;
       });
@@ -138,18 +151,25 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
       setState(() {
         _environmentSnapshot = snapshot;
+        _isUsingCachedEnvironment = false;
         _environmentError = null;
         _isLoadingEnvironment = false;
       });
     } catch (error) {
       debugPrint('Environment load failed: $error');
+      final cachedSnapshot = await EnvironmentApi.loadCachedSnapshot();
       if (!mounted) return;
 
       setState(() {
-        final fallbackMessage = 'Live environment data is unavailable right now.';
-        _environmentError = kDebugMode
-            ? '$fallbackMessage\n$error'
-            : fallbackMessage;
+        _environmentSnapshot = cachedSnapshot;
+        _isUsingCachedEnvironment = cachedSnapshot != null;
+        final fallbackMessage =
+            'Live environment data is unavailable right now.';
+        _environmentError = cachedSnapshot == null
+            ? kDebugMode
+                  ? '$fallbackMessage\n$error'
+                  : fallbackMessage
+            : null;
         _isLoadingEnvironment = false;
       });
     }
@@ -210,6 +230,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           subtitle: _hydrationSubtitle,
                           color: Colors.green,
                           isLoading: _isLoadingSummary,
+                          statusHint: _hydrationLevel,
+                          statusColor: _hydrationLevelColor,
                         ),
                       ),
                     ),
@@ -220,6 +242,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   child: EnvironmentalCard(
                     snapshot: _environmentSnapshot,
                     isLoading: _isLoadingEnvironment,
+                    isCached: _isUsingCachedEnvironment,
                     errorMessage: _environmentError,
                   ),
                 ),
@@ -228,19 +251,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 const SizedBox(height: 12),
                 WeeklyAnalyticsCard(
                   items: const [
-                    WeeklyStatItem(
-                      label: 'Average Sleep',
-                      value: '6.8 hours',
-                    ),
+                    WeeklyStatItem(label: 'Average Sleep', value: '6.8 hours'),
                     WeeklyStatItem(
                       label: 'Mood Trend',
                       value: 'Improving',
                       valueColor: Color(0xFF12A150),
                     ),
-                    WeeklyStatItem(
-                      label: 'Exercise Days',
-                      value: '4 of 7',
-                    ),
+                    WeeklyStatItem(label: 'Exercise Days', value: '4 of 7'),
                   ],
                 ),
                 const SizedBox(height: 16),

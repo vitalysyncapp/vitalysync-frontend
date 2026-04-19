@@ -7,6 +7,18 @@ import 'package:intl/intl.dart';
 import '../../../shared/config/api_config.dart';
 import '../../../shared/preferences/user_session.dart';
 
+class HydrationStatus {
+  final String level;
+  final String shortLabel;
+  final int colorValue;
+
+  const HydrationStatus({
+    required this.level,
+    required this.shortLabel,
+    required this.colorValue,
+  });
+}
+
 class LogApi {
   static const String _localLogsKey = 'demo_local_logs';
 
@@ -72,7 +84,9 @@ class LogApi {
     return text.length >= 10 ? text.substring(0, 10) : text;
   }
 
-  static Future<void> persistStreakSnapshot(Map<String, dynamic>? streak) async {
+  static Future<void> persistStreakSnapshot(
+    Map<String, dynamic>? streak,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     final currentStreak = parseInt(streak?['current_streak']);
     final longestStreak = parseInt(streak?['longest_streak']);
@@ -194,6 +208,43 @@ class LogApi {
     return '${formatted}L';
   }
 
+  static HydrationStatus getHydrationStatus(
+    dynamic value, {
+    bool dangerousByRate = false,
+  }) {
+    final liters = parseDouble(value);
+
+    if (dangerousByRate || liters >= 7) {
+      return const HydrationStatus(
+        level: 'Dangerous Level',
+        shortLabel: 'Danger',
+        colorValue: 0xFFDC2626,
+      );
+    }
+
+    if (liters >= 5) {
+      return const HydrationStatus(
+        level: 'Overhydration Risk',
+        shortLabel: 'Overhydration Risk',
+        colorValue: 0xFFF97316,
+      );
+    }
+
+    if (liters >= 3.5) {
+      return const HydrationStatus(
+        level: 'High Intake Warning',
+        shortLabel: 'High Intake',
+        colorValue: 0xFFEAB308,
+      );
+    }
+
+    return const HydrationStatus(
+      level: 'Normal Zone',
+      shortLabel: 'Normal',
+      colorValue: 0xFF16A34A,
+    );
+  }
+
   static String formatLogDateLabel(dynamic value) {
     final normalized = normalizeDateString(value);
 
@@ -306,7 +357,9 @@ class LogApi {
       'symptom_names': symptomNames,
     };
 
-    final existingIndex = logs.indexWhere((item) => item['log_date'] == logDate);
+    final existingIndex = logs.indexWhere(
+      (item) => item['log_date'] == logDate,
+    );
     if (existingIndex >= 0) {
       logs[existingIndex] = newLog;
     } else {
@@ -349,11 +402,7 @@ class LogApi {
       log = logs.last;
     }
 
-    return {
-      'has_log': log != null,
-      'log': log,
-      'streak': streak,
-    };
+    return {'has_log': log != null, 'log': log, 'streak': streak};
   }
 
   static Future<List<Map<String, dynamic>>> _readLocalLogs() async {
@@ -380,11 +429,12 @@ class LogApi {
       };
     }
 
-    final dates = logs
-        .map((log) => DateTime.parse(log['log_date'] as String))
-        .map((date) => DateTime(date.year, date.month, date.day))
-        .toList()
-      ..sort((a, b) => a.compareTo(b));
+    final dates =
+        logs
+            .map((log) => DateTime.parse(log['log_date'] as String))
+            .map((date) => DateTime(date.year, date.month, date.day))
+            .toList()
+          ..sort((a, b) => a.compareTo(b));
 
     int longest = 1;
     int currentRun = 1;

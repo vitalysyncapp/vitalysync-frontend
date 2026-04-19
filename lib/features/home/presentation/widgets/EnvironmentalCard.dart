@@ -6,12 +6,14 @@ import '../../../../shared/theme/app_page_style.dart';
 class EnvironmentalCard extends StatelessWidget {
   final EnvironmentSnapshot? snapshot;
   final bool isLoading;
+  final bool isCached;
   final String? errorMessage;
 
   const EnvironmentalCard({
     super.key,
     required this.snapshot,
     required this.isLoading,
+    this.isCached = false,
     this.errorMessage,
   });
 
@@ -63,6 +65,10 @@ class EnvironmentalCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (isCached) ...[
+          _buildCachedBanner(context, snapshot),
+          const SizedBox(height: 14),
+        ],
         Text(
           snapshot.location,
           style: TextStyle(
@@ -106,6 +112,47 @@ class EnvironmentalCard extends StatelessWidget {
     );
   }
 
+  Widget _buildCachedBanner(
+    BuildContext context,
+    EnvironmentSnapshot snapshot,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF1E293B)
+            : const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white10
+              : const Color(0xFFBFDBFE),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.history_rounded,
+            size: 18,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Using last saved environment snapshot from ${_formatSnapshotTime(snapshot.fetchedAt)}.',
+              style: TextStyle(
+                height: 1.35,
+                color: pagePrimaryTextColor(context),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildLoadingState(BuildContext context) {
     return Row(
       children: [
@@ -140,10 +187,7 @@ class EnvironmentalCard extends StatelessWidget {
         Expanded(
           child: Text(
             message,
-            style: TextStyle(
-              height: 1.4,
-              color: pagePrimaryTextColor(context),
-            ),
+            style: TextStyle(height: 1.4, color: pagePrimaryTextColor(context)),
           ),
         ),
       ],
@@ -180,6 +224,14 @@ class EnvironmentalCard extends StatelessWidget {
     return main;
   }
 
+  String _formatSnapshotTime(DateTime fetchedAt) {
+    final localTime = fetchedAt.toLocal();
+    final hour = localTime.hour % 12 == 0 ? 12 : localTime.hour % 12;
+    final minute = localTime.minute.toString().padLeft(2, '0');
+    final period = localTime.hour >= 12 ? 'PM' : 'AM';
+    return '${localTime.month}/${localTime.day}/${localTime.year} at $hour:$minute $period';
+  }
+
   Widget _row({
     required BuildContext context,
     required IconData icon,
@@ -201,10 +253,7 @@ class EnvironmentalCard extends StatelessWidget {
         ),
         Text(
           status,
-          style: TextStyle(
-            color: statusColor,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(color: statusColor, fontWeight: FontWeight.w600),
         ),
       ],
     );
