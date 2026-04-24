@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../../data/nutrition_api.dart';
 import 'white_card.dart';
 
 class TodaysMealsCard extends StatelessWidget {
   final VoidCallback onAddTap;
+  final List<NutritionMealLog> meals;
 
   const TodaysMealsCard({
     Key? key,
     required this.onAddTap,
+    required this.meals,
   }) : super(key: key);
 
   @override
@@ -45,36 +48,45 @@ class TodaysMealsCard extends StatelessWidget {
             ],
           ),
           SizedBox(height: isCompact ? 14 : 18),
-          MealItemCard(
-            mealName: 'Breakfast',
-            time: '8:30 AM',
-            calories: '420 cal',
-            foods: 'Oatmeal with berries • Banana • Coffee',
-            protein: '12g',
-            carbs: '78g',
-            fats: '9g',
-            isCompact: isCompact,
-          ),
-          SizedBox(height: isCompact ? 10 : 14),
-          MealItemCard(
-            mealName: 'Lunch',
-            time: '1:15 PM',
-            calories: '580 cal',
-            foods: 'Grilled chicken salad • Quinoa • Olive oil dressing',
-            protein: '42g',
-            carbs: '48g',
-            fats: '22g',
-            isCompact: isCompact,
-          ),
+          if (meals.isEmpty)
+            Text(
+              'No meals logged yet today.',
+              style: TextStyle(
+                fontSize: isCompact ? 13 : 15,
+                color: const Color(0xFF64748B),
+              ),
+            )
+          else
+            ...meals.map(
+              (meal) => Padding(
+                padding: EdgeInsets.only(bottom: isCompact ? 10 : 14),
+                child: MealItemCard(
+                  mealName: _mealLabel(meal.mealType),
+                  calories: '${meal.totalCalories.round()} cal',
+                  foods: meal.items.map((item) => item.foodName).join(', '),
+                  protein: '${meal.totalProteinG.round()}g',
+                  carbs: '${meal.totalCarbsG.round()}g',
+                  fats: '${meal.totalFatG.round()}g',
+                  isCompact: isCompact,
+                ),
+              ),
+            ),
         ],
       ),
     );
+  }
+
+  String _mealLabel(String value) {
+    if (value.isEmpty) {
+      return 'Meal';
+    }
+
+    return value[0].toUpperCase() + value.substring(1);
   }
 }
 
 class MealItemCard extends StatelessWidget {
   final String mealName;
-  final String time;
   final String calories;
   final String foods;
   final String protein;
@@ -85,7 +97,6 @@ class MealItemCard extends StatelessWidget {
   const MealItemCard({
     Key? key,
     required this.mealName,
-    required this.time,
     required this.calories,
     required this.foods,
     required this.protein,
@@ -129,17 +140,9 @@ class MealItemCard extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: isCompact ? 2 : 4),
-          Text(
-            time,
-            style: TextStyle(
-              fontSize: isCompact ? 12 : 14,
-              color: const Color(0xFF64748B),
-            ),
-          ),
           SizedBox(height: isCompact ? 10 : 12),
           Text(
-            foods,
+            foods.isEmpty ? 'Saved meal items' : foods,
             maxLines: isCompact ? 2 : 3,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(

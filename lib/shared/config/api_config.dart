@@ -26,6 +26,8 @@ class ApiConfig {
 
   static String logs(String path) => '$baseUrl/api/logs$path';
 
+  static String nutrition(String path) => '$baseUrl/api/nutrition$path';
+
   static String onboarding(String path) => '$baseUrl/api/onboarding$path';
 
   static String environment({

@@ -1,13 +1,23 @@
 import 'package:flutter/material.dart';
 
 class TodayNutritionCard extends StatelessWidget {
-  const TodayNutritionCard({Key? key}) : super(key: key);
+  final double calories;
+  final double proteinG;
+  final double carbsG;
+  final double fatG;
+
+  const TodayNutritionCard({
+    Key? key,
+    required this.calories,
+    required this.proteinG,
+    required this.carbsG,
+    required this.fatG,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    const double calories = 1000;
     const double goal = 2000;
-    final double progress = calories / goal;
+    final double progress = (calories / goal).clamp(0, 1).toDouble();
     final screenWidth = MediaQuery.of(context).size.width;
     final isCompact = screenWidth < 380;
 
@@ -45,7 +55,7 @@ class TodayNutritionCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '1,000',
+                      calories.round().toString(),
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: isCompact ? 30 : 38,
@@ -103,17 +113,17 @@ class TodayNutritionCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _MacroMiniStat(
-                value: '54g',
+                value: '${proteinG.round()}g',
                 label: 'Protein',
                 isCompact: isCompact,
               ),
               _MacroMiniStat(
-                value: '126g',
+                value: '${carbsG.round()}g',
                 label: 'Carbs',
                 isCompact: isCompact,
               ),
               _MacroMiniStat(
-                value: '31g',
+                value: '${fatG.round()}g',
                 label: 'Fats',
                 isCompact: isCompact,
               ),

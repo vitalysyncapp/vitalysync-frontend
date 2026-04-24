@@ -7,12 +7,20 @@ import 'white_card.dart';
 class LogNewMealCard extends StatelessWidget {
   final VoidCallback onTakePhoto;
   final VoidCallback onChooseFromGallery;
+  final VoidCallback onAnalyze;
+  final ValueChanged<String> onMealTypeChanged;
   final File? selectedImage;
+  final String selectedMealType;
+  final bool isAnalyzing;
 
   const LogNewMealCard({
     Key? key,
     required this.onTakePhoto,
     required this.onChooseFromGallery,
+    required this.onAnalyze,
+    required this.onMealTypeChanged,
+    required this.selectedMealType,
+    required this.isAnalyzing,
     this.selectedImage,
   }) : super(key: key);
 
@@ -32,6 +40,31 @@ class LogNewMealCard extends StatelessWidget {
               fontWeight: FontWeight.w800,
               color: Color(0xFF0F172A),
             ),
+          ),
+          SizedBox(height: isCompact ? 14 : 18),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: const [
+              _MealChoice(label: 'Breakfast', value: 'breakfast'),
+              _MealChoice(label: 'Lunch', value: 'lunch'),
+              _MealChoice(label: 'Dinner', value: 'dinner'),
+              _MealChoice(label: 'Snack', value: 'snack'),
+            ].map((choice) {
+              final isSelected = selectedMealType == choice.value;
+              return ChoiceChip(
+                label: Text(choice.label),
+                selected: isSelected,
+                onSelected: (_) => onMealTypeChanged(choice.value),
+                selectedColor: const Color(0xFFDCFCE7),
+                labelStyle: TextStyle(
+                  color: isSelected
+                      ? const Color(0xFF15803D)
+                      : const Color(0xFF475569),
+                  fontWeight: FontWeight.w700,
+                ),
+              );
+            }).toList(),
           ),
           SizedBox(height: isCompact ? 14 : 18),
           InkWell(
@@ -139,8 +172,44 @@ class LogNewMealCard extends StatelessWidget {
               ),
             ),
           ),
+          SizedBox(height: isCompact ? 14 : 18),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: isAnalyzing ? null : onAnalyze,
+              icon: isAnalyzing
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.auto_awesome_rounded),
+              label: Text(isAnalyzing ? 'Analyzing...' : 'Analyze Meal'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF16A34A),
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(vertical: isCompact ? 12 : 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(isCompact ? 14 : 16),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
+}
+
+class _MealChoice {
+  final String label;
+  final String value;
+
+  const _MealChoice({
+    required this.label,
+    required this.value,
+  });
 }
