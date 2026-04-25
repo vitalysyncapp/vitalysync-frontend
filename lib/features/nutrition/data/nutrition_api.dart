@@ -238,11 +238,15 @@ class NutritionApi {
     request.fields['user_id'] = userId.toString();
     request.fields['meal_type'] = mealType;
     request.fields['log_date'] = logDate;
+    request.headers['Accept'] = 'application/json';
     request.files.add(await http.MultipartFile.fromPath('image', image.path));
 
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
-    final data = _decodeBody(response.body);
+    final data = _decodeBody(
+      response,
+      fallbackMessage: 'Food analysis failed.',
+    );
 
     if (response.statusCode != 200) {
       throw Exception(data['message'] ?? 'Food analysis failed.');
@@ -274,7 +278,10 @@ class NutritionApi {
     final userId = await _currentUserId();
     final response = await http.post(
       Uri.parse(ApiConfig.nutrition('/confirm')),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
       body: jsonEncode({
         'user_id': userId,
         'attempt_id': attemptId,
@@ -284,7 +291,10 @@ class NutritionApi {
         'notes': notes,
       }),
     );
-    final data = _decodeBody(response.body);
+    final data = _decodeBody(
+      response,
+      fallbackMessage: 'Failed to save nutrition log.',
+    );
 
     if (response.statusCode != 200) {
       throw Exception(data['message'] ?? 'Failed to save nutrition log.');
@@ -295,13 +305,19 @@ class NutritionApi {
     final userId = await _currentUserId();
     final response = await http.post(
       Uri.parse(ApiConfig.nutrition('/discard-attempt')),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
       body: jsonEncode({
         'user_id': userId,
         'attempt_id': attemptId,
       }),
     );
-    final data = _decodeBody(response.body);
+    final data = _decodeBody(
+      response,
+      fallbackMessage: 'Failed to cancel nutrition attempt.',
+    );
 
     if (response.statusCode != 200) {
       throw Exception(data['message'] ?? 'Failed to cancel nutrition attempt.');
@@ -315,9 +331,12 @@ class NutritionApi {
       Uri.parse(
         '${ApiConfig.nutrition('/daily')}?user_id=$userId&date=$logDate',
       ),
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Accept': 'application/json'},
     );
-    final data = _decodeBody(response.body);
+    final data = _decodeBody(
+      response,
+      fallbackMessage: 'Failed to load daily nutrition.',
+    );
 
     if (response.statusCode != 200) {
       throw Exception(data['message'] ?? 'Failed to load daily nutrition.');
@@ -335,9 +354,12 @@ class NutritionApi {
       Uri.parse(
         '${ApiConfig.nutrition('/history')}?user_id=$userId&start=$start&end=$end',
       ),
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Accept': 'application/json'},
     );
-    final data = _decodeBody(response.body);
+    final data = _decodeBody(
+      response,
+      fallbackMessage: 'Failed to load nutrition history.',
+    );
 
     if (response.statusCode != 200) {
       throw Exception(data['message'] ?? 'Failed to load nutrition history.');
@@ -352,13 +374,35 @@ class NutritionApi {
         .toList();
   }
 
-  static Map<String, dynamic> _decodeBody(String body) {
+  static Map<String, dynamic> _decodeBody(
+    http.Response response, {
+    required String fallbackMessage,
+  }) {
+    final body = response.body.trim();
     if (body.trim().isEmpty) {
       return const <String, dynamic>{};
     }
 
-    final decoded = jsonDecode(body);
-    return decoded is Map<String, dynamic> ? decoded : const <String, dynamic>{};
+    try {
+      final decoded = jsonDecode(body);
+      return decoded is Map<String, dynamic>
+          ? decoded
+          : const <String, dynamic>{};
+    } on FormatException {
+      throw Exception(_nonJsonMessage(response, fallbackMessage));
+    }
+  }
+
+  static String _nonJsonMessage(http.Response response, String fallbackMessage) {
+    final url = response.request?.url.toString() ?? ApiConfig.baseUrl;
+    final body = response.body.trimLeft();
+
+    if (response.statusCode == 404 || body.startsWith('<!DOCTYPE html>')) {
+      return 'Nutrition service returned an HTML page instead of JSON. '
+          'Check that $url is deployed and points to the API backend.';
+    }
+
+    return '$fallbackMessage Please try again later.';
   }
 }
 
