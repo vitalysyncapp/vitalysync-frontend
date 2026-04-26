@@ -7,6 +7,8 @@ import 'package:http/http.dart' as http;
 import '../../../../app/main_navigation.dart';
 import '../../../../features/log/data/log_api.dart';
 import '../../../../features/onboarding/presentation/pages/onboarding_page.dart';
+import '../../../../features/onboarding/services/onboarding_service.dart';
+import '../../../../features/onboarding/data/onboarding_api.dart';
 import '../../../../shared/config/api_config.dart';
 import '../../../../shared/preferences/user_session.dart';
 import 'sign_up_page.dart';
@@ -45,12 +47,22 @@ class _LoginPageState extends State<LoginPage> {
           Map<String, dynamic>.from(data['user'] as Map<String, dynamic>),
           isDemoMode: false,
         );
-        await LogApi.persistStreakSnapshot(
+        await LogApi.persistServerStreakSnapshot(
           data['streak'] as Map<String, dynamic>?,
         );
 
-        final onboardingCompleted =
-            (data['user'] as Map<String, dynamic>)['onboarding_completed'] == true;
+        final user = data['user'] as Map<String, dynamic>;
+        final userId = user['user_id'] as int;
+        final onboardingCompleted = user['onboarding_completed'] == true;
+
+        if (onboardingCompleted) {
+          try {
+            final summary = await OnboardingApi.fetchSummary(userId);
+            await OnboardingService.saveDefaultsFromSummary(summary);
+          } catch (_) {
+            // Home and Profile can still use any locally cached defaults.
+          }
+        }
 
         if (!mounted) return;
         Navigator.pushReplacement(
@@ -58,9 +70,7 @@ class _LoginPageState extends State<LoginPage> {
           MaterialPageRoute(
             builder: (_) => onboardingCompleted
                 ? const MainNavigation()
-                : OnboardingPage(
-                    userId: (data['user'] as Map<String, dynamic>)['user_id'] as int,
-                  ),
+                : OnboardingPage(userId: userId),
           ),
         );
       } else {
@@ -161,10 +171,7 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Image.asset(
-                      'assets/images/logo.png',
-                      height: 80,
-                    ),
+                    Image.asset('assets/images/logo.png', height: 80),
                     const SizedBox(height: 20),
                     TextField(
                       controller: emailController,
@@ -196,7 +203,9 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                         child: isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
                             : const Text('Login'),
                       ),
                     ),
@@ -206,7 +215,9 @@ class _LoginPageState extends State<LoginPage> {
                       child: OutlinedButton(
                         onPressed: isLoading ? null : _continueInDemoMode,
                         style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: Colors.white.withOpacity(0.35)),
+                          side: BorderSide(
+                            color: Colors.white.withOpacity(0.35),
+                          ),
                           padding: const EdgeInsets.symmetric(vertical: 15),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(15),

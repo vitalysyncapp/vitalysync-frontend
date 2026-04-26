@@ -4,6 +4,7 @@ import '../../../../shared/preferences/app_preferences.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 import '../../../log/data/log_api.dart';
+import '../../../onboarding/services/onboarding_service.dart';
 import '../../../../shared/preferences/user_session.dart';
 
 class ClearAccountDataPage extends StatefulWidget {
@@ -23,7 +24,7 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
         return AlertDialog(
           title: const Text('Clear local account data?'),
           content: const Text(
-            'This removes saved preferences, cached demo data, and your local session on this device. Your server account will stay active.',
+            'This removes saved preferences, cached logs, pending offline logs, and your local session on this device. Your server account will stay active.',
           ),
           actions: [
             TextButton(
@@ -51,6 +52,7 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
     try {
       await AppPreferencesController.instance.resetToDefaults();
       await LogApi.clearLocalDemoData();
+      await OnboardingService.clearDefaults();
       await UserSessionController.instance.clearSession();
 
       if (!mounted) {
@@ -147,7 +149,9 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: _isSubmitting ? null : _clearLocalAccountData,
+                          onPressed: _isSubmitting
+                              ? null
+                              : _clearLocalAccountData,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFD14343),
                             foregroundColor: Colors.white,
@@ -194,10 +198,7 @@ class _SectionCard extends StatelessWidget {
   final String title;
   final List<Widget> children;
 
-  const _SectionCard({
-    required this.title,
-    required this.children,
-  });
+  const _SectionCard({required this.title, required this.children});
 
   @override
   Widget build(BuildContext context) {
@@ -240,9 +241,7 @@ class _SectionCard extends StatelessWidget {
 class _InfoBlock extends StatelessWidget {
   final String text;
 
-  const _InfoBlock({
-    required this.text,
-  });
+  const _InfoBlock({required this.text});
 
   @override
   Widget build(BuildContext context) {
@@ -250,10 +249,7 @@ class _InfoBlock extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
       child: Text(
         text,
-        style: TextStyle(
-          height: 1.45,
-          color: pageSecondaryTextColor(context),
-        ),
+        style: TextStyle(height: 1.45, color: pageSecondaryTextColor(context)),
       ),
     );
   }

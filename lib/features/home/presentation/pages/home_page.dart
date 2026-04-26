@@ -5,15 +5,16 @@ import '../../data/device_location_service.dart';
 import '../../data/environment_api.dart';
 import '../../data/environment_model.dart';
 import '../../../../features/log/data/log_api.dart';
+import '../../../../features/onboarding/services/onboarding_service.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
 import '../../../../shared/widgets/glass_card.dart';
+import '../../../../shared/widgets/reveal_on_build.dart';
 import '../widgets/BurnoutCard.dart';
 import '../widgets/EnvironmentalCard.dart';
 import '../widgets/InfoCard.dart';
 import '../widgets/QuickActions.dart';
-import '../widgets/SmartNudge.dart';
 import '../widgets/WeeklyAnalytics.dart';
 
 class HomePage extends StatefulWidget {
@@ -33,6 +34,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   String _hydrationSubtitle = 'No log yet';
   String? _hydrationLevel;
   Color _hydrationLevelColor = Colors.green;
+  int _burnoutScore = 40;
+  String _burnoutStatus = 'Baseline pending';
   bool _isLoadingSummary = true;
   bool _isLoadingEnvironment = true;
   bool _isOfflineSummary = false;
@@ -45,6 +48,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _loadBurnoutBaseline();
     _loadLatestSummary();
     _loadEnvironment();
   }
@@ -58,8 +62,33 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      _loadBurnoutBaseline();
       _loadLatestSummary(showLoader: false);
       _loadEnvironment(showLoader: false);
+    }
+  }
+
+  Future<void> _loadBurnoutBaseline() async {
+    final defaults = await OnboardingService.loadDefaults();
+
+    if (!mounted) return;
+
+    setState(() {
+      _burnoutScore = defaults.burnoutScoreForDisplay;
+      _burnoutStatus = _burnoutStatusForLevel(defaults.initialBurnoutLevel);
+    });
+  }
+
+  String _burnoutStatusForLevel(String? level) {
+    switch (level) {
+      case 'Low':
+        return 'Low - Keep protecting your recovery';
+      case 'Moderate':
+        return 'Moderate - Pay attention to recovery';
+      case 'High':
+        return 'High - Make room for support and rest';
+      default:
+        return 'Complete onboarding to set your baseline';
     }
   }
 
@@ -80,6 +109,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       final data = await LogApi.fetchLatestLog();
       final hasLog = data['has_log'] == true;
       final log = data['log'] as Map<String, dynamic>?;
+      final isOfflineSummary = data['is_offline'] == true;
 
       if (!mounted) return;
 
@@ -96,6 +126,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           _hydrationLevel = null;
           _hydrationLevelColor = Colors.green;
           _isLoadingSummary = false;
+          _isOfflineSummary = isOfflineSummary;
         });
         return;
       }
@@ -113,6 +144,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         _hydrationLevel = hydrationStatus.shortLabel;
         _hydrationLevelColor = Color(hydrationStatus.colorValue);
         _isLoadingSummary = false;
+        _isOfflineSummary = isOfflineSummary;
       });
     } catch (_) {
       if (!mounted) return;
@@ -184,81 +216,96 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         appBar: buildAppBar(context),
         body: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              16,
+              16,
+              pageBottomContentPadding(context, extra: 26),
+            ),
             child: Column(
               children: [
                 if (_isOfflineSummary) ...[
-                  _buildStatusBanner(context),
+                  RevealOnBuild(child: _buildStatusBanner(context)),
                   const SizedBox(height: 12),
                 ],
-                GlassCard(
-                  child: SmartNudgeCard(
-                    message: _isDemoMode
-                        ? 'Demo mode is active. You can still explore check-ins, nutrition, and profile editing locally.'
-                        : 'Remember to take a 5-minute break every hour to maintain focus and reduce burnout risk.',
+                RevealOnBuild(
+                  delay: const Duration(milliseconds: 100),
+                  child: GlassCard(
+                    child: BurnoutCard(
+                      score: _burnoutScore,
+                      status: _burnoutStatus,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                GlassCard(
-                  child: const BurnoutCard(
-                    score: 41,
-                    status: 'Moderate - Pay attention to recovery',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: GlassCard(
-                        child: InfoCard(
-                          icon: Icons.bedtime,
-                          title: 'Sleep',
-                          value: _sleepValue,
-                          subtitle: _sleepSubtitle,
-                          color: Colors.blue,
-                          isLoading: _isLoadingSummary,
+                RevealOnBuild(
+                  delay: const Duration(milliseconds: 160),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: GlassCard(
+                          child: InfoCard(
+                            icon: Icons.bedtime,
+                            title: 'Sleep',
+                            value: _sleepValue,
+                            subtitle: _sleepSubtitle,
+                            color: Colors.blue,
+                            isLoading: _isLoadingSummary,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: GlassCard(
-                        child: InfoCard(
-                          icon: Icons.opacity,
-                          title: 'Hydration',
-                          value: _hydrationValue,
-                          subtitle: _hydrationSubtitle,
-                          color: Colors.green,
-                          isLoading: _isLoadingSummary,
-                          statusHint: _hydrationLevel,
-                          statusColor: _hydrationLevelColor,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: GlassCard(
+                          child: InfoCard(
+                            icon: Icons.opacity,
+                            title: 'Hydration',
+                            value: _hydrationValue,
+                            subtitle: _hydrationSubtitle,
+                            color: Colors.green,
+                            isLoading: _isLoadingSummary,
+                            statusHint: _hydrationLevel,
+                            statusColor: _hydrationLevelColor,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                GlassCard(
-                  child: EnvironmentalCard(
-                    snapshot: _environmentSnapshot,
-                    isLoading: _isLoadingEnvironment,
-                    isCached: _isUsingCachedEnvironment,
-                    errorMessage: _environmentError,
+                    ],
                   ),
                 ),
                 const SizedBox(height: 16),
-                const QuickActionsSection(),
+                RevealOnBuild(
+                  delay: const Duration(milliseconds: 220),
+                  child: GlassCard(
+                    child: EnvironmentalCard(
+                      snapshot: _environmentSnapshot,
+                      isLoading: _isLoadingEnvironment,
+                      isCached: _isUsingCachedEnvironment,
+                      errorMessage: _environmentError,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const RevealOnBuild(
+                  delay: Duration(milliseconds: 280),
+                  child: QuickActionsSection(),
+                ),
                 const SizedBox(height: 12),
-                WeeklyAnalyticsCard(
-                  items: const [
-                    WeeklyStatItem(label: 'Average Sleep', value: '6.8 hours'),
-                    WeeklyStatItem(
-                      label: 'Mood Trend',
-                      value: 'Improving',
-                      valueColor: Color(0xFF12A150),
-                    ),
-                    WeeklyStatItem(label: 'Exercise Days', value: '4 of 7'),
-                  ],
+                RevealOnBuild(
+                  delay: const Duration(milliseconds: 340),
+                  child: WeeklyAnalyticsCard(
+                    items: const [
+                      WeeklyStatItem(
+                        label: 'Average Sleep',
+                        value: '6.8 hours',
+                      ),
+                      WeeklyStatItem(
+                        label: 'Mood Trend',
+                        value: 'Improving',
+                        valueColor: Color(0xFF12A150),
+                      ),
+                      WeeklyStatItem(label: 'Exercise Days', value: '4 of 7'),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 16),
               ],

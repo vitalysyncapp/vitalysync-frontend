@@ -7,6 +7,7 @@ import '../../../../app/main_navigation.dart';
 import '../../../../features/log/data/log_api.dart';
 import '../../../../features/onboarding/data/onboarding_api.dart';
 import '../../../../features/onboarding/presentation/pages/onboarding_page.dart';
+import '../../../../features/onboarding/services/onboarding_service.dart';
 import '../../../../shared/preferences/user_session.dart';
 import 'login_page.dart';
 
@@ -31,10 +32,7 @@ class _LoadingScreenState extends State<LoadingScreen>
       duration: const Duration(seconds: 2),
     );
 
-    _fadeAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeIn,
-    );
+    _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
 
     _controller.forward();
     _checkLoginStatus();
@@ -57,10 +55,13 @@ class _LoadingScreenState extends State<LoadingScreen>
         // Keep the cached streak if the refresh fails during boot.
       }
 
-       if (!isDemoMode && userId != null && userId > 0) {
+      if (!isDemoMode && userId != null && userId > 0) {
         try {
           final summary = await OnboardingApi.fetchSummary(userId);
           onboardingCompleted = summary['onboarding_completed'] == true;
+          if (onboardingCompleted) {
+            await OnboardingService.saveDefaultsFromSummary(summary);
+          }
           await UserSessionController.instance.updateOnboardingCompleted(
             onboardingCompleted,
           );
@@ -95,10 +96,7 @@ class _LoadingScreenState extends State<LoadingScreen>
       borderRadius: BorderRadius.circular(25),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          padding: const EdgeInsets.all(30),
-          child: child,
-        ),
+        child: Container(padding: const EdgeInsets.all(30), child: child),
       ),
     );
   }

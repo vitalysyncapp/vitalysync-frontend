@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
+import '../../../../shared/widgets/reveal_on_build.dart';
+import '../../../onboarding/services/onboarding_service.dart';
 import '../../data/log_api.dart';
 import '../widgets/LogWidgets.dart';
 
@@ -22,6 +24,9 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   int moodIndex = 3;
   double energyLevel = 1;
   double hydration = 1.5;
+  double defaultSleepHours = 7;
+  String exerciseGoalLabel = '3–4 days';
+  int? workloadContext;
 
   final Set<String> selectedExercises = {};
   final Set<String> selectedSymptoms = {};
@@ -68,6 +73,9 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   bool isLoading = true;
   bool hasSavedLogToday = false;
   bool isSaving = false;
+  bool hasPendingSync = false;
+  bool lastSaveWasOffline = false;
+  int pendingSyncCount = 0;
 
   late ConfettiController _confettiController;
 
@@ -103,16 +111,24 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     }
 
     try {
+      final defaults = await OnboardingService.loadDefaults();
       final data = await LogApi.fetchTodayLog();
       final streak = data['streak'] as Map<String, dynamic>?;
       final hasLog = data['has_log'] == true;
+      final pendingCount = LogApi.parseInt(data['pending_sync_count']);
 
       if (!mounted) return;
 
       setState(() {
         currentStreak = LogApi.parseInt(streak?['current_streak']);
+        defaultSleepHours = defaults.sleepHours();
+        exerciseGoalLabel = defaults.exerciseGoalDays ?? '3–4 days';
+        workloadContext = defaults.workloadLevel;
         hasSavedLogToday = hasLog;
         isSubmitted = hasLog;
+        hasPendingSync = pendingCount > 0;
+        lastSaveWasOffline = data['is_offline'] == true && pendingCount > 0;
+        pendingSyncCount = pendingCount;
         isLoading = false;
       });
 
@@ -148,14 +164,16 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       selectedExercises
         ..clear()
         ..addAll(
-          ((log['exercise_names'] as List<dynamic>? ?? const [])
-              .map((item) => item.toString())),
+          ((log['exercise_names'] as List<dynamic>? ?? const []).map(
+            (item) => item.toString(),
+          )),
         );
       selectedSymptoms
         ..clear()
         ..addAll(
-          ((log['symptom_names'] as List<dynamic>? ?? const [])
-              .map((item) => item.toString())),
+          ((log['symptom_names'] as List<dynamic>? ?? const []).map(
+            (item) => item.toString(),
+          )),
         );
     });
   }
@@ -195,6 +213,8 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       );
 
       final streak = data['streak'] as Map<String, dynamic>?;
+      final pendingCount = LogApi.parseInt(data['pending_sync_count']);
+      final savedOffline = data['is_offline'] == true;
 
       if (!mounted) return;
 
@@ -202,11 +222,26 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
         currentStreak = LogApi.parseInt(streak?['current_streak']);
         hasSavedLogToday = true;
         isSubmitted = true;
+        hasPendingSync = pendingCount > 0;
+        lastSaveWasOffline = savedOffline;
+        pendingSyncCount = pendingCount;
         isSaving = false;
       });
 
       await refreshAppBarStreak();
+      if (!mounted) return;
+
       _confettiController.play();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            savedOffline
+                ? 'Saved offline. $pendingCount check-in${pendingCount == 1 ? '' : 's'} waiting to sync.'
+                : 'Daily check-in synced successfully.',
+          ),
+        ),
+      );
     } catch (error) {
       if (!mounted) return;
 
@@ -214,9 +249,9 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
         isSaving = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unable to save log: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Unable to save log: $error')));
     }
   }
 
@@ -227,7 +262,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   }
 
   void _resetForm() {
-    sleepHours = 7;
+    sleepHours = defaultSleepHours;
     sleepQuality = 2;
     moodIndex = 3;
     energyLevel = 1;
@@ -298,64 +333,82 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                           ? _buildSuccessScreen()
                           : SingleChildScrollView(
                               key: const ValueKey('log_form'),
-                              padding: const EdgeInsets.fromLTRB(14, 12, 14, 20),
+                              padding: EdgeInsets.fromLTRB(
+                                14,
+                                12,
+                                14,
+                                pageBottomContentPadding(context, extra: 16),
+                              ),
                               child: Column(
                                 children: [
-                                  _buildLogHeaderCard(),
+                                  RevealOnBuild(child: _buildLogHeaderCard()),
                                   const SizedBox(height: 18),
-                                  LogWidgets(
-                                    sleepHours: sleepHours,
-                                    sleepQuality: sleepQuality,
-                                    moodIndex: moodIndex,
-                                    energyLevel: energyLevel,
-                                    hydration: hydration,
-                                    selectedExercises: selectedExercises,
-                                    selectedSymptoms: selectedSymptoms,
-                                    sleepLabels: sleepLabels,
-                                    sleepStars: sleepStars,
-                                    moods: moods,
-                                    exercises: exercises,
-                                    symptoms: symptoms,
-                                    onSleepChanged: (value) {
-                                      setState(() {
-                                        sleepHours = value;
-                                      });
-                                    },
-                                    onSleepQualityChanged: (value) {
-                                      setState(() {
-                                        sleepQuality = value;
-                                      });
-                                    },
-                                    onMoodChanged: (value) {
-                                      setState(() {
-                                        moodIndex = value;
-                                      });
-                                    },
-                                    onEnergyChanged: (value) {
-                                      setState(() {
-                                        energyLevel = value;
-                                      });
-                                    },
-                                    onHydrationAdd: (value) {
-                                      setState(() {
-                                        hydration = (hydration + value).clamp(0, 10);
-                                      });
-                                    },
-                                    onHydrationSubtract: () {
-                                      setState(() {
-                                        hydration = (hydration - 0.25).clamp(0, 10);
-                                      });
-                                    },
-                                    onHydrationReset: () {
-                                      setState(() {
-                                        hydration = 0;
-                                      });
-                                    },
-                                    onExerciseToggle: _toggleExercise,
-                                    onSymptomToggle: _toggleSymptom,
+                                  RevealOnBuild(
+                                    delay: const Duration(milliseconds: 90),
+                                    child: LogWidgets(
+                                      sleepHours: sleepHours,
+                                      sleepQuality: sleepQuality,
+                                      moodIndex: moodIndex,
+                                      energyLevel: energyLevel,
+                                      hydration: hydration,
+                                      selectedExercises: selectedExercises,
+                                      selectedSymptoms: selectedSymptoms,
+                                      sleepLabels: sleepLabels,
+                                      sleepStars: sleepStars,
+                                      moods: moods,
+                                      exercises: exercises,
+                                      symptoms: symptoms,
+                                      exerciseGoalLabel: exerciseGoalLabel,
+                                      onSleepChanged: (value) {
+                                        setState(() {
+                                          sleepHours = value;
+                                        });
+                                      },
+                                      onSleepQualityChanged: (value) {
+                                        setState(() {
+                                          sleepQuality = value;
+                                        });
+                                      },
+                                      onMoodChanged: (value) {
+                                        setState(() {
+                                          moodIndex = value;
+                                        });
+                                      },
+                                      onEnergyChanged: (value) {
+                                        setState(() {
+                                          energyLevel = value;
+                                        });
+                                      },
+                                      onHydrationAdd: (value) {
+                                        setState(() {
+                                          hydration = (hydration + value).clamp(
+                                            0,
+                                            10,
+                                          );
+                                        });
+                                      },
+                                      onHydrationSubtract: () {
+                                        setState(() {
+                                          hydration = (hydration - 0.25).clamp(
+                                            0,
+                                            10,
+                                          );
+                                        });
+                                      },
+                                      onHydrationReset: () {
+                                        setState(() {
+                                          hydration = 0;
+                                        });
+                                      },
+                                      onExerciseToggle: _toggleExercise,
+                                      onSymptomToggle: _toggleSymptom,
+                                    ),
                                   ),
                                   const SizedBox(height: 22),
-                                  _buildSaveButton(),
+                                  RevealOnBuild(
+                                    delay: const Duration(milliseconds: 180),
+                                    child: _buildSaveButton(),
+                                  ),
                                 ],
                               ),
                             ),
@@ -387,7 +440,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       child: ElevatedButton(
         onPressed: isSaving ? null : _saveLog,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF2563EB),
+          backgroundColor: const Color(0xFF1FB489),
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -425,14 +478,11 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.85, end: 1),
+              tween: Tween<double>(begin: 0.85, end: 1),
               duration: const Duration(milliseconds: 450),
               curve: Curves.easeOutBack,
               builder: (context, scale, child) {
-                return Transform.scale(
-                  scale: scale,
-                  child: child,
-                );
+                return Transform.scale(scale: scale, child: child);
               },
               child: Container(
                 width: 112,
@@ -457,7 +507,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
             ),
             const SizedBox(height: 26),
             Text(
-              'Check-in Saved!',
+              lastSaveWasOffline ? 'Check-in Saved Offline' : 'Check-in Saved!',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 28,
@@ -466,15 +516,21 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
               ),
             ),
             const SizedBox(height: 10),
-            const Text(
-              'Your daily wellness log has been recorded. Come back tomorrow for your next check-in, or redo today\'s entry if you need to update it.',
+            Text(
+              hasPendingSync
+                  ? 'Your daily wellness log is saved on this device. It will sync automatically when internet access is available again.'
+                  : 'Your daily wellness log has been recorded. Come back tomorrow for your next check-in, or redo today\'s entry if you need to update it.',
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
                 color: Color(0xFF64748B),
                 height: 1.4,
               ),
             ),
+            if (hasPendingSync) ...[
+              const SizedBox(height: 18),
+              _buildPendingSyncBanner(),
+            ],
             const SizedBox(height: 34),
             SizedBox(
               width: double.infinity,
@@ -499,6 +555,34 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPendingSyncBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFBFDBFE)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.cloud_upload_outlined, color: Color(0xFF2563EB)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              '$pendingSyncCount pending check-in${pendingSyncCount == 1 ? '' : 's'} will upload in the background.',
+              style: const TextStyle(
+                color: Color(0xFF1E3A8A),
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -543,6 +627,26 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                     height: 1.4,
                   ),
                 ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildDefaultChip(
+                      Icons.bedtime_outlined,
+                      'Sleep ${defaultSleepHours.toStringAsFixed(defaultSleepHours % 1 == 0 ? 0 : 1)}h',
+                    ),
+                    _buildDefaultChip(
+                      Icons.fitness_center_rounded,
+                      'Goal $exerciseGoalLabel',
+                    ),
+                    if (workloadContext != null)
+                      _buildDefaultChip(
+                        Icons.work_outline_rounded,
+                        'Workload $workloadContext/5',
+                      ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -571,6 +675,34 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                   color: Color(0xFFFF6B35),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDefaultChip(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? Colors.white.withOpacity(0.06)
+            : const Color(0xFFEFFAF6),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: pageBorderColor(context)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+              color: pagePrimaryTextColor(context),
             ),
           ),
         ],

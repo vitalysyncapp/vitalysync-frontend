@@ -5,14 +5,12 @@ import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 import '../../../log/data/log_api.dart';
+import '../../../onboarding/services/onboarding_service.dart';
 
 class DeleteAccountPage extends StatefulWidget {
   final String verifiedPassword;
 
-  const DeleteAccountPage({
-    super.key,
-    required this.verifiedPassword,
-  });
+  const DeleteAccountPage({super.key, required this.verifiedPassword});
 
   @override
   State<DeleteAccountPage> createState() => _DeleteAccountPageState();
@@ -33,7 +31,9 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
   Future<void> _deleteAccount() async {
     if (!_canDelete) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Type DELETE to confirm account removal.')),
+        const SnackBar(
+          content: Text('Type DELETE to confirm account removal.'),
+        ),
       );
       return;
     }
@@ -74,6 +74,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
         password: widget.verifiedPassword,
       );
       await AppPreferencesController.instance.resetToDefaults();
+      await OnboardingService.clearDefaults();
       await LogApi.clearLocalDemoData();
 
       if (!mounted) {
@@ -91,7 +92,9 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+        ),
       );
     } finally {
       if (mounted) {
@@ -180,8 +183,8 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                         decoration: InputDecoration(
                           hintText: 'Type DELETE',
                           filled: true,
-                          fillColor: Theme.of(context).brightness ==
-                                  Brightness.dark
+                          fillColor:
+                              Theme.of(context).brightness == Brightness.dark
                               ? Colors.white.withOpacity(0.04)
                               : const Color(0xFFF8FAFC),
                           border: OutlineInputBorder(
@@ -208,8 +211,9 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed:
-                              _isDeleting || !_canDelete ? null : _deleteAccount,
+                          onPressed: _isDeleting || !_canDelete
+                              ? null
+                              : _deleteAccount,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFD14343),
                             foregroundColor: Colors.white,
@@ -246,10 +250,7 @@ class _SectionCard extends StatelessWidget {
   final String title;
   final List<Widget> children;
 
-  const _SectionCard({
-    required this.title,
-    required this.children,
-  });
+  const _SectionCard({required this.title, required this.children});
 
   @override
   Widget build(BuildContext context) {
@@ -292,9 +293,7 @@ class _SectionCard extends StatelessWidget {
 class _InfoBlock extends StatelessWidget {
   final String text;
 
-  const _InfoBlock({
-    required this.text,
-  });
+  const _InfoBlock({required this.text});
 
   @override
   Widget build(BuildContext context) {
@@ -302,10 +301,7 @@ class _InfoBlock extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
       child: Text(
         text,
-        style: TextStyle(
-          height: 1.45,
-          color: pageSecondaryTextColor(context),
-        ),
+        style: TextStyle(height: 1.45, color: pageSecondaryTextColor(context)),
       ),
     );
   }

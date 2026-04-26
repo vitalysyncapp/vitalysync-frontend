@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 class ApiConfig {
   static const String _configuredBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
@@ -9,14 +7,6 @@ class ApiConfig {
   static String get baseUrl {
     if (_configuredBaseUrl.isNotEmpty) {
       return _configuredBaseUrl;
-    }
-
-    if (kDebugMode) {
-      if (defaultTargetPlatform == TargetPlatform.android) {
-        return 'http://10.0.2.2:3000';
-      }
-
-      return 'http://127.0.0.1:3000';
     }
 
     return 'https://vitalysync-backend.onrender.com';
@@ -29,6 +19,8 @@ class ApiConfig {
   static String nutrition(String path) => '$baseUrl/api/nutrition$path';
 
   static String onboarding(String path) => '$baseUrl/api/onboarding$path';
+
+  static String profile(String path) => '$baseUrl/api/profile$path';
 
   static String environment({
     required double lat,

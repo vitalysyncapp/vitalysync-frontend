@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../data/log_api.dart';
+
 class LogWidgets extends StatelessWidget {
   final double sleepHours;
   final int sleepQuality;
@@ -15,6 +17,7 @@ class LogWidgets extends StatelessWidget {
   final List<String> moods;
   final List<String> exercises;
   final List<String> symptoms;
+  final String exerciseGoalLabel;
 
   final ValueChanged<double> onSleepChanged;
   final ValueChanged<int> onSleepQualityChanged;
@@ -40,6 +43,7 @@ class LogWidgets extends StatelessWidget {
     required this.moods,
     required this.exercises,
     required this.symptoms,
+    required this.exerciseGoalLabel,
     required this.onSleepChanged,
     required this.onSleepQualityChanged,
     required this.onMoodChanged,
@@ -90,10 +94,12 @@ class LogWidgets extends StatelessWidget {
                 child: SliderTheme(
                   data: SliderTheme.of(context).copyWith(
                     trackHeight: 6,
-                    thumbShape:
-                        const RoundSliderThumbShape(enabledThumbRadius: 10),
-                    overlayShape:
-                        const RoundSliderOverlayShape(overlayRadius: 18),
+                    thumbShape: const RoundSliderThumbShape(
+                      enabledThumbRadius: 10,
+                    ),
+                    overlayShape: const RoundSliderOverlayShape(
+                      overlayRadius: 18,
+                    ),
                     activeTrackColor: const Color(0xFF4B3FF2),
                     inactiveTrackColor: const Color(0xFFD8DCE2),
                     thumbColor: const Color(0xFF4B3FF2),
@@ -144,8 +150,9 @@ class LogWidgets extends StatelessWidget {
               children: List.generate(sleepLabels.length, (index) {
                 final selected = sleepQuality == index;
                 final starCount = sleepStars[index];
-                final starSize =
-                    (26 - (starCount * 2)).clamp(14, 22).toDouble();
+                final starSize = (26 - (starCount * 2))
+                    .clamp(14, 22)
+                    .toDouble();
 
                 return Padding(
                   padding: EdgeInsets.only(
@@ -173,8 +180,9 @@ class LogWidgets extends StatelessWidget {
                         boxShadow: selected
                             ? [
                                 BoxShadow(
-                                  color: const Color(0xFF4B3FF2)
-                                      .withOpacity(0.16),
+                                  color: const Color(
+                                    0xFF4B3FF2,
+                                  ).withOpacity(0.16),
                                   blurRadius: 14,
                                   spreadRadius: 1,
                                   offset: const Offset(0, 4),
@@ -209,8 +217,9 @@ class LogWidgets extends StatelessWidget {
                                         ? BoxDecoration(
                                             boxShadow: [
                                               BoxShadow(
-                                                color: const Color(0xFFF4C430)
-                                                    .withOpacity(0.45),
+                                                color: const Color(
+                                                  0xFFF4C430,
+                                                ).withOpacity(0.45),
                                                 blurRadius: 10,
                                                 spreadRadius: 1,
                                               ),
@@ -236,16 +245,17 @@ class LogWidgets extends StatelessWidget {
                                       horizontal: 1,
                                     ),
                                     child: AnimatedContainer(
-                                      duration:
-                                          const Duration(milliseconds: 250),
+                                      duration: const Duration(
+                                        milliseconds: 250,
+                                      ),
                                       curve: Curves.easeOut,
                                       decoration: selected
                                           ? BoxDecoration(
                                               boxShadow: [
                                                 BoxShadow(
-                                                  color:
-                                                      const Color(0xFFF4C430)
-                                                          .withOpacity(0.45),
+                                                  color: const Color(
+                                                    0xFFF4C430,
+                                                  ).withOpacity(0.45),
                                                   blurRadius: 10,
                                                   spreadRadius: 1,
                                                 ),
@@ -399,6 +409,9 @@ class LogWidgets extends StatelessWidget {
   }
 
   Widget _buildHydrationCard() {
+    final hydrationStatus = LogApi.getHydrationStatus(hydration);
+    final hydrationAccent = Color(hydrationStatus.colorValue);
+
     return _buildCard(
       child: Column(
         children: [
@@ -445,15 +458,16 @@ class LogWidgets extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 22),
             decoration: BoxDecoration(
-              color: const Color(0xFFDFF4F8),
+              color: hydrationAccent.withOpacity(0.12),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF00A3D7).withOpacity(0.15),
+                  color: hydrationAccent.withOpacity(0.16),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
               ],
+              border: Border.all(color: hydrationAccent.withOpacity(0.24)),
             ),
             child: Column(
               children: [
@@ -472,11 +486,11 @@ class LogWidgets extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   "Goal: 2.5L",
                   style: TextStyle(
                     fontSize: 17,
-                    color: Color(0xFF64748B),
+                    color: hydrationAccent.withOpacity(0.82),
                   ),
                 ),
               ],
@@ -490,31 +504,51 @@ class LogWidgets extends StatelessWidget {
   Widget _buildExerciseCard() {
     return _buildCard(
       child: Column(
-      children: [
-        _sectionHeader(
-        icon: Icons.fitness_center,
-        iconBg: const Color(0xFFDDF8E4),
-        iconColor: const Color(0xFF16A34A),
-        title: "Exercise",
-        subtitle: "Activity type",
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          alignment: WrapAlignment.center,
-        spacing: 8,
-        runSpacing: 8,
-        children: exercises.map((exercise) {
-          final selected = selectedExercises.contains(exercise);
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionHeader(
+            icon: Icons.fitness_center,
+            iconBg: const Color(0xFFDDF8E4),
+            iconColor: const Color(0xFF16A34A),
+            title: "Exercise",
+            subtitle: "Goal: $exerciseGoalLabel per week",
+          ),
+          const SizedBox(height: 12),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const spacing = 8.0;
+              final isSingleColumn = constraints.maxWidth < 340;
+              final itemWidth = isSingleColumn
+                  ? constraints.maxWidth
+                  : (constraints.maxWidth - spacing) / 2;
 
-          return _selectionBox(
-          label: exercise,
-          selected: selected,
-          width: 180,
-          onTap: () => onExerciseToggle(exercise),
-          );
-        }).toList(),
-        ),
-      ],
+              return Wrap(
+                alignment: WrapAlignment.start,
+                spacing: spacing,
+                runSpacing: spacing,
+                children: exercises.map((exercise) {
+                  final selected = selectedExercises.contains(exercise);
+
+                  return _selectionBox(
+                    label: exercise,
+                    selected: selected,
+                    width: itemWidth,
+                    height: 48,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    alignment: Alignment.centerLeft,
+                    leadingIcon: exercise == 'None'
+                        ? Icons.block_rounded
+                        : Icons.directions_run_rounded,
+                    onTap: () => onExerciseToggle(exercise),
+                  );
+                }).toList(),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -544,9 +578,7 @@ class LogWidgets extends StatelessWidget {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: selected
-                        ? const Color(0xFFFFF1F2)
-                        : Colors.white,
+                    color: selected ? const Color(0xFFFFF1F2) : Colors.white,
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(
                       color: selected
@@ -569,8 +601,7 @@ class LogWidgets extends StatelessWidget {
                     symptom,
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight:
-                          selected ? FontWeight.w600 : FontWeight.w500,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                       color: selected
                           ? const Color(0xFFB91C1C)
                           : const Color(0xFF334155),
@@ -592,10 +623,7 @@ class LogWidgets extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFFDFDFE),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: const Color(0xFFE5E7EB),
-          width: 1,
-        ),
+        border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -641,10 +669,7 @@ class LogWidgets extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               subtitle,
-              style: const TextStyle(
-                fontSize: 15,
-                color: Color(0xFF64748B),
-              ),
+              style: const TextStyle(fontSize: 15, color: Color(0xFF64748B)),
             ),
           ],
         ),
@@ -701,30 +726,66 @@ class LogWidgets extends StatelessWidget {
     required bool selected,
     required VoidCallback onTap,
     double width = 150,
+    double height = 56,
+    EdgeInsetsGeometry contentPadding = const EdgeInsets.symmetric(
+      horizontal: 12,
+    ),
+    AlignmentGeometry alignment = Alignment.center,
+    IconData? leadingIcon,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: width,
-        height: 56,
+        height: height,
+        padding: contentPadding,
         decoration: BoxDecoration(
           color: selected ? const Color(0xFFF8FAFC) : Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: selected
-                ? const Color(0xFF2563EB)
-                : const Color(0xFFD1D5DB),
+            color: selected ? const Color(0xFF2563EB) : const Color(0xFFD1D5DB),
             width: selected ? 2 : 1.3,
           ),
         ),
-        child: Center(
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF334155),
-            ),
+        child: Align(
+          alignment: alignment,
+          child: Row(
+            children: [
+              if (leadingIcon != null) ...[
+                Icon(
+                  leadingIcon,
+                  size: 18,
+                  color: selected
+                      ? const Color(0xFF2563EB)
+                      : const Color(0xFF64748B),
+                ),
+                const SizedBox(width: 8),
+              ],
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                    color: selected
+                        ? const Color(0xFF1D4ED8)
+                        : const Color(0xFF334155),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                selected
+                    ? Icons.check_circle_rounded
+                    : Icons.radio_button_unchecked_rounded,
+                size: 18,
+                color: selected
+                    ? const Color(0xFF2563EB)
+                    : const Color(0xFF94A3B8),
+              ),
+            ],
           ),
         ),
       ),

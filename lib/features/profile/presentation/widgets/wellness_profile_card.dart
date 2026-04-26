@@ -5,17 +5,27 @@ import '../../../../shared/theme/app_page_style.dart';
 class WellnessProfileCard extends StatelessWidget {
   final String lifestyleType;
   final String currentRole;
+  final String wellnessGoal;
+  final String usualSleepTime;
+  final String usualWakeTime;
   final String workIntensity;
   final String waterGoal;
   final String exerciseTarget;
+  final String burnoutLevel;
+  final int burnoutScore;
 
   const WellnessProfileCard({
     super.key,
     required this.lifestyleType,
     required this.currentRole,
+    required this.wellnessGoal,
+    required this.usualSleepTime,
+    required this.usualWakeTime,
     required this.workIntensity,
     required this.waterGoal,
     required this.exerciseTarget,
+    required this.burnoutLevel,
+    required this.burnoutScore,
   });
 
   @override
@@ -53,11 +63,31 @@ class WellnessProfileCard extends StatelessWidget {
           const SizedBox(height: 14),
           _rowItem(context, 'Current Role', currentRole),
           const SizedBox(height: 14),
+          _rowItem(context, 'Wellness Goal', wellnessGoal),
+          const SizedBox(height: 14),
+          _rowItem(context, 'Usual Sleep Time', usualSleepTime),
+          const SizedBox(height: 14),
+          _rowItem(context, 'Usual Wake Time', usualWakeTime),
+          const SizedBox(height: 14),
           _rowItemWithBadge(context, 'Work Intensity', workIntensity),
           const SizedBox(height: 14),
           _rowItem(context, 'Daily Water Goal', waterGoal),
           const SizedBox(height: 14),
           _rowItem(context, 'Exercise Target', exerciseTarget),
+          const SizedBox(height: 14),
+          _rowItem(
+            context,
+            'Initial Burnout',
+            '$burnoutLevel ($burnoutScore%)',
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Your baseline helps VitalySync compare your daily logs with your usual routine.',
+            style: TextStyle(
+              height: 1.45,
+              color: pageSecondaryTextColor(context),
+            ),
+          ),
         ],
       ),
     );

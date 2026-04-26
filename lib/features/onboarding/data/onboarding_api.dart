@@ -5,15 +5,73 @@ import 'package:http/http.dart' as http;
 import '../../../shared/config/api_config.dart';
 
 class OnboardingApi {
+  static Map<String, dynamic> _decodeMap(http.Response response) {
+    final decoded = jsonDecode(response.body);
+    return decoded is Map<String, dynamic>
+        ? decoded
+        : Map<String, dynamic>.from(decoded as Map);
+  }
+
   static Future<Map<String, dynamic>> fetchSummary(int userId) async {
     final response = await http.get(
       Uri.parse(ApiConfig.onboarding('/$userId')),
       headers: {'Content-Type': 'application/json'},
     );
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final data = _decodeMap(response);
     if (response.statusCode != 200) {
       throw Exception(data['message'] ?? 'Failed to fetch onboarding summary');
+    }
+
+    return data;
+  }
+
+  static Future<Map<String, dynamic>> fetchStatus(int userId) async {
+    final response = await http.get(
+      Uri.parse(ApiConfig.onboarding('/status/$userId')),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    final data = _decodeMap(response);
+    if (response.statusCode != 200) {
+      throw Exception(data['message'] ?? 'Failed to fetch onboarding status');
+    }
+
+    return data;
+  }
+
+  static Future<Map<String, dynamic>> submitRequiredOnboarding({
+    required int userId,
+    required Map<String, dynamic> profile,
+    required List<Map<String, dynamic>> burnoutAnswers,
+  }) async {
+    final response = await http.post(
+      Uri.parse(ApiConfig.onboarding('/submit')),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'user_id': userId,
+        'profile': profile,
+        'burnout_answers': burnoutAnswers,
+      }),
+    );
+
+    final data = _decodeMap(response);
+    if (response.statusCode != 201 && response.statusCode != 200) {
+      throw Exception(data['message'] ?? 'Failed to submit onboarding');
+    }
+
+    return data;
+  }
+
+  static Future<Map<String, dynamic>> fetchProfile(int userId) async {
+    final response = await http.get(
+      Uri.parse(ApiConfig.profile('/$userId')),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    final data = _decodeMap(response);
+    if (response.statusCode != 200) {
+      throw Exception(data['message'] ?? 'Failed to fetch profile');
     }
 
     return data;
@@ -29,7 +87,7 @@ class OnboardingApi {
       body: jsonEncode(onboarding),
     );
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final data = _decodeMap(response);
     if (response.statusCode != 200) {
       throw Exception(data['message'] ?? 'Failed to save onboarding');
     }
@@ -47,7 +105,7 @@ class OnboardingApi {
       body: jsonEncode(preferences),
     );
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final data = _decodeMap(response);
     if (response.statusCode != 200) {
       throw Exception(data['message'] ?? 'Failed to save preferences');
     }

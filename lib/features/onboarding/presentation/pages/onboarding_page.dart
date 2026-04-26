@@ -1,151 +1,381 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/main_navigation.dart';
-import '../../../../shared/preferences/app_preferences.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../data/onboarding_api.dart';
+import '../../models/onboarding_question.dart';
+import '../../services/onboarding_service.dart';
+import '../../widgets/likert_question.dart';
+import '../../widgets/onboarding_card.dart';
 
 class OnboardingPage extends StatefulWidget {
   final int userId;
-  final bool canSkip;
 
-  const OnboardingPage({
-    super.key,
-    required this.userId,
-    this.canSkip = true,
-  });
+  const OnboardingPage({super.key, required this.userId});
 
   @override
   State<OnboardingPage> createState() => _OnboardingPageState();
 }
 
 class _OnboardingPageState extends State<OnboardingPage> {
+  static const _roles = [
+    'Student',
+    'Working Professional',
+    'Freelancer',
+    'Unemployed',
+    'Other',
+  ];
+  static const _lifestyles = [
+    'Sedentary',
+    'Lightly Active',
+    'Moderately Active',
+    'Active',
+    'Very Active',
+  ];
+  static const _wellnessGoals = [
+    'Reduce stress',
+    'Improve sleep',
+    'Be more active',
+    'Improve focus',
+    'Build healthier habits',
+    'Manage burnout',
+  ];
+  static const _exerciseGoalOptions = [
+    '0 days',
+    '1–2 days',
+    '3–4 days',
+    '5+ days',
+  ];
+  static const _workloadScale = [
+    LikertOption(value: 1, label: 'Very Light'),
+    LikertOption(value: 2, label: 'Light'),
+    LikertOption(value: 3, label: 'Moderate'),
+    LikertOption(value: 4, label: 'Heavy'),
+    LikertOption(value: 5, label: 'Very Heavy'),
+  ];
+  static const _extraResponsibilityScale = [
+    LikertOption(value: 1, label: 'Not demanding'),
+    LikertOption(value: 2, label: 'Slightly demanding'),
+    LikertOption(value: 3, label: 'Moderately demanding'),
+    LikertOption(value: 4, label: 'Very demanding'),
+    LikertOption(value: 5, label: 'Extremely demanding'),
+  ];
+  static const _burnoutScale = [
+    LikertOption(value: 1, label: 'Never'),
+    LikertOption(value: 2, label: 'Rarely'),
+    LikertOption(value: 3, label: 'Sometimes'),
+    LikertOption(value: 4, label: 'Often'),
+    LikertOption(value: 5, label: 'Always'),
+  ];
+  static const _burnoutSections = [
+    BurnoutSection(
+      title: '😵 Emotional Exhaustion',
+      category: 'emotional_exhaustion',
+      questions: [
+        BurnoutQuestion(
+          questionKey: 'ee_01',
+          questionText:
+              'I feel emotionally drained by my daily responsibilities.',
+          category: 'emotional_exhaustion',
+        ),
+        BurnoutQuestion(
+          questionKey: 'ee_02',
+          questionText: 'I feel tired even before starting my day.',
+          category: 'emotional_exhaustion',
+        ),
+        BurnoutQuestion(
+          questionKey: 'ee_03',
+          questionText: 'I feel overwhelmed by my tasks.',
+          category: 'emotional_exhaustion',
+        ),
+        BurnoutQuestion(
+          questionKey: 'ee_04',
+          questionText: 'I feel fatigued most of the time.',
+          category: 'emotional_exhaustion',
+        ),
+        BurnoutQuestion(
+          questionKey: 'ee_05',
+          questionText: 'I feel I have no energy left at the end of the day.',
+          category: 'emotional_exhaustion',
+        ),
+      ],
+    ),
+    BurnoutSection(
+      title: '🧊 Detachment',
+      category: 'depersonalization',
+      questions: [
+        BurnoutQuestion(
+          questionKey: 'dp_01',
+          questionText: 'I feel detached from my responsibilities.',
+          category: 'depersonalization',
+        ),
+        BurnoutQuestion(
+          questionKey: 'dp_02',
+          questionText:
+              'I have become less interested in things I used to enjoy.',
+          category: 'depersonalization',
+        ),
+        BurnoutQuestion(
+          questionKey: 'dp_03',
+          questionText: 'I feel indifferent toward my tasks.',
+          category: 'depersonalization',
+        ),
+        BurnoutQuestion(
+          questionKey: 'dp_04',
+          questionText: 'I feel less emotionally connected to others.',
+          category: 'depersonalization',
+        ),
+        BurnoutQuestion(
+          questionKey: 'dp_05',
+          questionText:
+              'I sometimes feel like I’m just going through the motions.',
+          category: 'depersonalization',
+        ),
+      ],
+    ),
+    BurnoutSection(
+      title: '🏆 Personal Accomplishment',
+      category: 'personal_accomplishment',
+      questions: [
+        BurnoutQuestion(
+          questionKey: 'pa_01',
+          questionText: 'I feel productive in my daily life.',
+          category: 'personal_accomplishment',
+          isReverseScored: true,
+        ),
+        BurnoutQuestion(
+          questionKey: 'pa_02',
+          questionText: 'I feel I am achieving meaningful results.',
+          category: 'personal_accomplishment',
+          isReverseScored: true,
+        ),
+        BurnoutQuestion(
+          questionKey: 'pa_03',
+          questionText: 'I feel confident handling my responsibilities.',
+          category: 'personal_accomplishment',
+          isReverseScored: true,
+        ),
+        BurnoutQuestion(
+          questionKey: 'pa_04',
+          questionText: 'I feel motivated to accomplish my goals.',
+          category: 'personal_accomplishment',
+          isReverseScored: true,
+        ),
+        BurnoutQuestion(
+          questionKey: 'pa_05',
+          questionText: 'I feel satisfied with what I achieve each day.',
+          category: 'personal_accomplishment',
+          isReverseScored: true,
+        ),
+      ],
+    ),
+  ];
+
   final PageController _pageController = PageController();
+  final Map<String, int> _burnoutAnswers = {};
 
   int _currentStep = 0;
   bool _isSaving = false;
 
-  final _roleController = TextEditingController();
-  final _workHoursController = TextEditingController(text: '8');
-  final _sleepHoursController = TextEditingController(text: '7.5');
-  final _exerciseDaysController = TextEditingController(text: '3');
+  String? _role;
+  String? _lifestyleType;
+  String? _wellnessGoal;
+  TimeOfDay? _usualSleepTime;
+  TimeOfDay? _usualWakeTime;
+  String? _exerciseGoalDays;
+  int? _workloadLevel;
+  bool? _hasExtraResponsibilities;
+  int? _extraResponsibilityLevel;
 
-  final _preferredLogTimeController = TextEditingController(text: '20:30');
-  final _wakeTimeController = TextEditingController(text: '06:30');
-  final _sleepTimeController = TextEditingController(text: '22:30');
-  final _workStartController = TextEditingController(text: '09:00');
-  final _workEndController = TextEditingController(text: '18:00');
-  final _reminderTimeController = TextEditingController(text: '20:00');
+  List<_OnboardingStep> get _steps {
+    return [
+      _OnboardingStep(
+        sectionTitle: '👤 About You',
+        title: 'What best describes you?',
+        isComplete: () => _role != null,
+        builder: (context) => _buildChoicePage(
+          context,
+          question: const OnboardingQuestion(
+            title: 'What best describes you?',
+            field: 'role',
+            options: _roles,
+          ),
+          value: _role,
+          onChanged: (value) => setState(() => _role = value),
+        ),
+      ),
+      _OnboardingStep(
+        sectionTitle: '👤 About You',
+        title: 'How would you describe your lifestyle?',
+        isComplete: () => _lifestyleType != null,
+        builder: (context) => _buildChoicePage(
+          context,
+          question: const OnboardingQuestion(
+            title: 'How would you describe your lifestyle?',
+            field: 'lifestyle_type',
+            options: _lifestyles,
+          ),
+          value: _lifestyleType,
+          onChanged: (value) => setState(() => _lifestyleType = value),
+        ),
+      ),
+      _OnboardingStep(
+        sectionTitle: '👤 About You',
+        title: 'What is your main wellness goal?',
+        isComplete: () => _wellnessGoal != null,
+        builder: (context) => _buildChoicePage(
+          context,
+          question: const OnboardingQuestion(
+            title: 'What is your main wellness goal?',
+            field: 'wellness_goal',
+            options: _wellnessGoals,
+          ),
+          value: _wellnessGoal,
+          onChanged: (value) => setState(() => _wellnessGoal = value),
+        ),
+      ),
+      _OnboardingStep(
+        sectionTitle: '🌙 Routine Defaults',
+        title: 'What time do you usually sleep?',
+        isComplete: () => _usualSleepTime != null,
+        builder: (context) => _buildTimePage(
+          context,
+          title: 'What time do you usually sleep?',
+          value: _usualSleepTime,
+          fallback: const TimeOfDay(hour: 22, minute: 30),
+          onChanged: (value) => setState(() => _usualSleepTime = value),
+        ),
+      ),
+      _OnboardingStep(
+        sectionTitle: '🌙 Routine Defaults',
+        title: 'What time do you usually wake up?',
+        isComplete: () => _usualWakeTime != null,
+        builder: (context) => _buildTimePage(
+          context,
+          title: 'What time do you usually wake up?',
+          value: _usualWakeTime,
+          fallback: const TimeOfDay(hour: 6, minute: 30),
+          onChanged: (value) => setState(() => _usualWakeTime = value),
+        ),
+      ),
+      _OnboardingStep(
+        sectionTitle: '🌙 Routine Defaults',
+        title: 'How many days per week do you want to exercise?',
+        isComplete: () => _exerciseGoalDays != null,
+        builder: (context) => _buildChoicePage(
+          context,
+          question: const OnboardingQuestion(
+            title: 'How many days per week do you want to exercise?',
+            field: 'exercise_goal_days',
+            options: _exerciseGoalOptions,
+          ),
+          value: _exerciseGoalDays,
+          onChanged: (value) => setState(() => _exerciseGoalDays = value),
+        ),
+      ),
+      _OnboardingStep(
+        sectionTitle: '🌙 Routine Defaults',
+        title: 'How heavy is your usual workload?',
+        isComplete: () => _workloadLevel != null,
+        builder: (context) => _buildLikertPage(
+          context,
+          title: 'How heavy is your usual workload?',
+          helperText: _workloadHelperText,
+          value: _workloadLevel,
+          options: _workloadScale,
+          onChanged: (value) => setState(() => _workloadLevel = value),
+        ),
+      ),
+      _OnboardingStep(
+        sectionTitle: '🌙 Routine Defaults',
+        title: 'Do you usually have extra responsibilities?',
+        isComplete: () => _hasExtraResponsibilities != null,
+        builder: (context) => _buildYesNoPage(context),
+      ),
+      if (_hasExtraResponsibilities == true)
+        _OnboardingStep(
+          sectionTitle: '🌙 Routine Defaults',
+          title: 'How demanding are those extra responsibilities?',
+          isComplete: () => _extraResponsibilityLevel != null,
+          builder: (context) => _buildLikertPage(
+            context,
+            title: 'How demanding are those extra responsibilities?',
+            value: _extraResponsibilityLevel,
+            options: _extraResponsibilityScale,
+            onChanged: (value) =>
+                setState(() => _extraResponsibilityLevel = value),
+          ),
+        ),
+      ..._burnoutSections.map(
+        (section) => _OnboardingStep(
+          sectionTitle: '🔥 Burnout Baseline',
+          title: section.title,
+          isComplete: () => section.questions.every(
+            (question) => _burnoutAnswers[question.questionKey] != null,
+          ),
+          builder: (context) => _buildBurnoutSectionPage(context, section),
+        ),
+      ),
+    ];
+  }
 
-  String _activityLevel = 'Balanced';
-  String _mealRegularness = 'Mostly Regular';
-  String _preferredNudgeStyle = 'Gentle';
-  String _primaryGoal = 'Reduce stress';
-
-  double _stressLevel = 3;
-  double _mentalDrainLevel = 3;
-  double _focusDifficultyLevel = 3;
-  double _overwhelmLevel = 3;
-  double _recoveryLevel = 3;
-  double _motivationLevel = 3;
-
-  bool _prefersDailyReminder = true;
-  bool _prefersHydrationReminder = true;
-  bool _prefersExerciseReminder = true;
-  bool _prefersSleepReminder = true;
-
-  final Set<int> _busyDays = {1, 3, 5};
+  String get _workloadHelperText {
+    switch (_role) {
+      case 'Student':
+        return 'Include classes, assignments, projects, reviews, and school responsibilities.';
+      case 'Working Professional':
+        return 'Include job tasks, overtime, meetings, deadlines, and work pressure.';
+      case 'Freelancer':
+        return 'Include client work, inconsistent schedules, deadlines, and multitasking.';
+      default:
+        return 'Include household tasks, personal responsibilities, job searching, or other daily demands.';
+    }
+  }
 
   @override
   void dispose() {
     _pageController.dispose();
-    _roleController.dispose();
-    _workHoursController.dispose();
-    _sleepHoursController.dispose();
-    _exerciseDaysController.dispose();
-    _preferredLogTimeController.dispose();
-    _wakeTimeController.dispose();
-    _sleepTimeController.dispose();
-    _workStartController.dispose();
-    _workEndController.dispose();
-    _reminderTimeController.dispose();
     super.dispose();
   }
 
-  Future<void> _saveAndFinish({required bool skipped}) async {
-    setState(() {
-      _isSaving = true;
-    });
+  Future<void> _submitOnboarding() async {
+    setState(() => _isSaving = true);
+
+    final profile = {
+      'role': _role,
+      'lifestyle_type': _lifestyleType,
+      'wellness_goal': _wellnessGoal,
+      'usual_sleep_time': _formatTimeForApi(_usualSleepTime!),
+      'usual_wake_time': _formatTimeForApi(_usualWakeTime!),
+      'exercise_goal_days': _exerciseGoalDays,
+      'workload_level': _workloadLevel,
+      'has_extra_responsibilities': _hasExtraResponsibilities,
+      'extra_responsibility_level': _hasExtraResponsibilities == true
+          ? _extraResponsibilityLevel
+          : null,
+    };
 
     try {
-      final onboardingPayload = <String, dynamic>{
-        'role_type': _normalizedOrDefault(
-          _roleController.text,
-          skipped ? 'Skipped' : 'Student',
-        ),
-        'work_hours_per_day': int.tryParse(_workHoursController.text.trim()) ?? 8,
-        'sleep_hours': double.tryParse(_sleepHoursController.text.trim()) ?? 7.5,
-        'activity_level': _activityLevel,
-        'exercise_days_per_week':
-            int.tryParse(_exerciseDaysController.text.trim()) ?? 3,
-        'meal_regularness': _mealRegularness,
-        'stress_level': _stressLevel.round(),
-        'mental_drain_level': _mentalDrainLevel.round(),
-        'focus_difficulty_level': _focusDifficultyLevel.round(),
-        'overwhelm_level': _overwhelmLevel.round(),
-        'recovery_level': _recoveryLevel.round(),
-        'motivation_level': _motivationLevel.round(),
-        'skipped': skipped,
-      };
-
-      final preferencesPayload = <String, dynamic>{
-        'preferred_log_time': _preferredLogTimeController.text.trim(),
-        'default_wake_time': _wakeTimeController.text.trim(),
-        'default_sleep_time': _sleepTimeController.text.trim(),
-        'default_work_start': _workStartController.text.trim(),
-        'default_work_end': _workEndController.text.trim(),
-        'prefers_daily_reminder': _prefersDailyReminder,
-        'reminder_time': _reminderTimeController.text.trim(),
-        'prefers_hydration_reminder': _prefersHydrationReminder,
-        'prefers_exercise_reminder': _prefersExerciseReminder,
-        'prefers_sleep_reminder': _prefersSleepReminder,
-        'preferred_nudge_style': _preferredNudgeStyle,
-        'primary_goal': _primaryGoal,
-        'busy_days': _busyDays.toList()..sort(),
-      };
-
-      await OnboardingApi.upsertOnboarding(
+      final response = await OnboardingApi.submitRequiredOnboarding(
         userId: widget.userId,
-        onboarding: onboardingPayload,
-      );
-      await OnboardingApi.upsertPreferences(
-        userId: widget.userId,
-        preferences: preferencesPayload,
+        profile: profile,
+        burnoutAnswers: _buildBurnoutAnswerPayload(),
       );
 
+      final savedProfile = Map<String, dynamic>.from(
+        response['profile'] as Map? ?? profile,
+      );
+      await OnboardingService.saveDefaultsFromProfile(savedProfile);
       await UserSessionController.instance.updateOnboardingCompleted(true);
       await UserSessionController.instance.saveSupplementalProfile(
-        userType: onboardingPayload['role_type'] as String?,
-      );
-      await AppPreferencesController.instance.syncNotificationPreferences(
-        notificationsEnabled: _prefersDailyReminder,
-        bedtimeReminderEnabled: _prefersSleepReminder,
-        hydrationReminderEnabled: _prefersHydrationReminder,
+        userType: _role,
       );
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            skipped
-                ? 'Onboarding skipped for now. You can update preferences later.'
-                : 'Onboarding saved successfully.',
-          ),
-        ),
+        const SnackBar(content: Text('Your VitalySync baseline is ready 💙')),
       );
 
       Navigator.pushAndRemoveUntil(
@@ -154,598 +384,494 @@ class _OnboardingPageState extends State<OnboardingPage> {
         (route) => false,
       );
     } catch (error) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unable to save onboarding: $error')),
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+        ),
       );
     } finally {
       if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
+        setState(() => _isSaving = false);
       }
     }
   }
 
-  String _normalizedOrDefault(String value, String fallback) {
-    final trimmed = value.trim();
-    return trimmed.isEmpty ? fallback : trimmed;
+  List<Map<String, dynamic>> _buildBurnoutAnswerPayload() {
+    final answers = <Map<String, dynamic>>[];
+
+    for (final section in _burnoutSections) {
+      for (final question in section.questions) {
+        answers.add(question.toPayload(_burnoutAnswers[question.questionKey]!));
+      }
+    }
+
+    return answers;
   }
 
   void _goToStep(int step) {
-    setState(() {
-      _currentStep = step;
-    });
+    setState(() => _currentStep = step);
     _pageController.animateToPage(
       step,
-      duration: const Duration(milliseconds: 260),
-      curve: Curves.easeOut,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
     );
+  }
+
+  void _handleNext(List<_OnboardingStep> steps) {
+    if (_currentStep == steps.length - 1) {
+      _submitOnboarding();
+      return;
+    }
+
+    _goToStep(_currentStep + 1);
+  }
+
+  String _formatTimeForApi(TimeOfDay time) {
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: buildPageDecoration(context),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          elevation: 0,
+    final steps = _steps;
+    final safeStepIndex = _currentStep.clamp(0, steps.length - 1).toInt();
+    final currentStep = steps[safeStepIndex];
+    final canContinue = currentStep.isComplete() && !_isSaving;
+    final progress = (safeStepIndex + 1) / steps.length;
+
+    return PopScope(
+      canPop: false,
+      child: Container(
+        decoration: buildPageDecoration(context),
+        child: Scaffold(
           backgroundColor: Colors.transparent,
-          foregroundColor: pagePrimaryTextColor(context),
-          automaticallyImplyLeading: false,
-          title: Text(
-            'Welcome to VitalySync',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: pagePrimaryTextColor(context),
-            ),
-          ),
-          actions: [
-            if (widget.canSkip)
-              TextButton(
-                onPressed: _isSaving ? null : () => _saveAndFinish(skipped: true),
-                child: const Text('Skip'),
-              ),
-          ],
-        ),
-        body: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: Row(
-                  children: List.generate(3, (index) {
-                    final selected = index == _currentStep;
-                    return Expanded(
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 220),
-                        height: 8,
-                        margin: EdgeInsets.only(right: index == 2 ? 0 : 8),
-                        decoration: BoxDecoration(
-                          color: selected
-                              ? Theme.of(context).colorScheme.primary
-                              : pageBorderColor(context),
-                          borderRadius: BorderRadius.circular(999),
+          body: SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        currentStep.sectionTitle,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: pagePrimaryTextColor(context),
                         ),
                       ),
-                    );
-                  }),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(999),
+                              child: LinearProgressIndicator(
+                                value: progress,
+                                minHeight: 9,
+                                backgroundColor: pageBorderColor(context),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Step ${safeStepIndex + 1} of ${steps.length}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: pageSecondaryTextColor(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              Expanded(
-                child: PageView(
-                  controller: _pageController,
-                  physics: const NeverScrollableScrollPhysics(),
-                  children: [
-                    _buildQuestionnaireStep(context),
-                    _buildWellnessStep(context),
-                    _buildPreferencesStep(context),
-                  ],
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: steps.length,
+                    itemBuilder: (context, index) {
+                      return AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 220),
+                        child: steps[index].builder(context),
+                      );
+                    },
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
-                child: Row(
-                  children: [
-                    if (_currentStep > 0)
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    10,
+                    20,
+                    pageBottomContentPadding(context, extra: 18),
+                  ),
+                  child: Row(
+                    children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: _isSaving
+                          onPressed: _isSaving || _currentStep == 0
                               ? null
                               : () => _goToStep(_currentStep - 1),
                           child: const Text('Back'),
                         ),
                       ),
-                    if (_currentStep > 0) const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: _isSaving
-                            ? null
-                            : _currentStep == 2
-                                ? () => _saveAndFinish(skipped: false)
-                                : () => _goToStep(_currentStep + 1),
-                        child: _isSaving
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.4,
-                                  color: Colors.white,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton(
+                          onPressed: canContinue
+                              ? () => _handleNext(steps)
+                              : null,
+                          child: _isSaving
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.4,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Text(
+                                  _currentStep == steps.length - 1
+                                      ? 'Finish Setup'
+                                      : 'Next',
                                 ),
-                              )
-                            : Text(_currentStep == 2 ? 'Finish Setup' : 'Next'),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChoicePage(
+    BuildContext context, {
+    required OnboardingQuestion question,
+    required String? value,
+    required ValueChanged<String> onChanged,
+  }) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+      children: [
+        OnboardingCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _QuestionTitle(question.title),
+              if (question.helperText != null) ...[
+                const SizedBox(height: 8),
+                _HelperText(question.helperText!),
+              ],
+              const SizedBox(height: 22),
+              ...question.options.map(
+                (option) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _OptionTile(
+                    label: option,
+                    selected: value == option,
+                    onTap: () => onChanged(option),
+                  ),
                 ),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildQuestionnaireStep(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      children: [
-        _buildIntroCard(
-          context,
-          title: 'Tell us about your routine',
-          subtitle:
-              'We will use this first-time setup to personalize reminders, defaults, and later wellness guidance.',
-        ),
-        const SizedBox(height: 16),
-        _buildSurfaceCard(
-          context,
-          child: Column(
-            children: [
-              _buildTextField(
-                context,
-                controller: _roleController,
-                label: 'Current Role',
-                hint: 'Student, Working Professional, Freelancer...',
-              ),
-              const SizedBox(height: 14),
-              _buildTextField(
-                context,
-                controller: _workHoursController,
-                label: 'Work Hours Per Day',
-                hint: '8',
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 14),
-              _buildTextField(
-                context,
-                controller: _sleepHoursController,
-                label: 'Average Sleep Hours',
-                hint: '7.5',
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              ),
-              const SizedBox(height: 14),
-              _buildChoiceChips(
-                context,
-                label: 'Activity Level',
-                selectedValue: _activityLevel,
-                options: const ['Sedentary', 'Balanced', 'Active'],
-                onSelected: (value) {
-                  setState(() {
-                    _activityLevel = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 14),
-              _buildTextField(
-                context,
-                controller: _exerciseDaysController,
-                label: 'Exercise Days Per Week',
-                hint: '3',
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 14),
-              _buildChoiceChips(
-                context,
-                label: 'Meal Regularness',
-                selectedValue: _mealRegularness,
-                options: const [
-                  'Very Irregular',
-                  'Irregular',
-                  'Mostly Regular',
-                  'Very Regular',
-                ],
-                onSelected: (value) {
-                  setState(() {
-                    _mealRegularness = value;
-                  });
-                },
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }
 
-  Widget _buildWellnessStep(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      children: [
-        _buildIntroCard(
-          context,
-          title: 'Check in on how things feel',
-          subtitle:
-              'These answers help establish your baseline so the app can start with better defaults.',
-        ),
-        const SizedBox(height: 16),
-        _buildSurfaceCard(
-          context,
-          child: Column(
-            children: [
-              _buildSliderTile(
-                context,
-                label: 'Stress Level',
-                value: _stressLevel,
-                onChanged: (value) => setState(() => _stressLevel = value),
-              ),
-              _buildSliderTile(
-                context,
-                label: 'Mental Drain Level',
-                value: _mentalDrainLevel,
-                onChanged: (value) => setState(() => _mentalDrainLevel = value),
-              ),
-              _buildSliderTile(
-                context,
-                label: 'Focus Difficulty',
-                value: _focusDifficultyLevel,
-                onChanged: (value) =>
-                    setState(() => _focusDifficultyLevel = value),
-              ),
-              _buildSliderTile(
-                context,
-                label: 'Overwhelm Level',
-                value: _overwhelmLevel,
-                onChanged: (value) => setState(() => _overwhelmLevel = value),
-              ),
-              _buildSliderTile(
-                context,
-                label: 'Recovery Level',
-                value: _recoveryLevel,
-                onChanged: (value) => setState(() => _recoveryLevel = value),
-              ),
-              _buildSliderTile(
-                context,
-                label: 'Motivation Level',
-                value: _motivationLevel,
-                onChanged: (value) => setState(() => _motivationLevel = value),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPreferencesStep(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      children: [
-        _buildIntroCard(
-          context,
-          title: 'Set your preferences',
-          subtitle:
-              'These can be updated later, but this gets your first reminders and default values ready.',
-        ),
-        const SizedBox(height: 16),
-        _buildSurfaceCard(
-          context,
-          child: Column(
-            children: [
-              _buildTextField(
-                context,
-                controller: _preferredLogTimeController,
-                label: 'Preferred Log Time',
-                hint: '20:30',
-              ),
-              const SizedBox(height: 14),
-              _buildTextField(
-                context,
-                controller: _wakeTimeController,
-                label: 'Default Wake Time',
-                hint: '06:30',
-              ),
-              const SizedBox(height: 14),
-              _buildTextField(
-                context,
-                controller: _sleepTimeController,
-                label: 'Default Sleep Time',
-                hint: '22:30',
-              ),
-              const SizedBox(height: 14),
-              _buildTextField(
-                context,
-                controller: _workStartController,
-                label: 'Default Work Start',
-                hint: '09:00',
-              ),
-              const SizedBox(height: 14),
-              _buildTextField(
-                context,
-                controller: _workEndController,
-                label: 'Default Work End',
-                hint: '18:00',
-              ),
-              const SizedBox(height: 14),
-              _buildTextField(
-                context,
-                controller: _reminderTimeController,
-                label: 'Reminder Time',
-                hint: '20:00',
-              ),
-              const SizedBox(height: 14),
-              _buildSwitchTile(
-                context,
-                title: 'Daily Reminder',
-                value: _prefersDailyReminder,
-                onChanged: (value) =>
-                    setState(() => _prefersDailyReminder = value),
-              ),
-              _buildSwitchTile(
-                context,
-                title: 'Hydration Reminder',
-                value: _prefersHydrationReminder,
-                onChanged: (value) =>
-                    setState(() => _prefersHydrationReminder = value),
-              ),
-              _buildSwitchTile(
-                context,
-                title: 'Exercise Reminder',
-                value: _prefersExerciseReminder,
-                onChanged: (value) =>
-                    setState(() => _prefersExerciseReminder = value),
-              ),
-              _buildSwitchTile(
-                context,
-                title: 'Sleep Reminder',
-                value: _prefersSleepReminder,
-                onChanged: (value) =>
-                    setState(() => _prefersSleepReminder = value),
-              ),
-              const SizedBox(height: 14),
-              _buildChoiceChips(
-                context,
-                label: 'Preferred Nudge Style',
-                selectedValue: _preferredNudgeStyle,
-                options: const ['Gentle', 'Direct', 'Motivational', 'Data-Driven'],
-                onSelected: (value) {
-                  setState(() {
-                    _preferredNudgeStyle = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 14),
-              _buildChoiceChips(
-                context,
-                label: 'Primary Goal',
-                selectedValue: _primaryGoal,
-                options: const [
-                  'Reduce stress',
-                  'Improve sleep',
-                  'Build consistency',
-                  'Eat better',
-                  'Move more',
-                ],
-                onSelected: (value) {
-                  setState(() {
-                    _primaryGoal = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 14),
-              _buildBusyDaysPicker(context),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildIntroCard(
+  Widget _buildTimePage(
     BuildContext context, {
     required String title,
-    required String subtitle,
+    required TimeOfDay? value,
+    required TimeOfDay fallback,
+    required ValueChanged<TimeOfDay> onChanged,
   }) {
-    return _buildSurfaceCard(
-      context,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 19,
-              fontWeight: FontWeight.w800,
-              color: pagePrimaryTextColor(context),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: TextStyle(
-              height: 1.5,
-              color: pageSecondaryTextColor(context),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSurfaceCard(BuildContext context, {required Widget child}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: pageSurfaceColor(context),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: pageBorderColor(context)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(
-              Theme.of(context).brightness == Brightness.dark ? 0.18 : 0.05,
-            ),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: child,
-    );
-  }
-
-  Widget _buildTextField(
-    BuildContext context, {
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    TextInputType? keyboardType,
-  }) {
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildChoiceChips(
-    BuildContext context, {
-    required String label,
-    required String selectedValue,
-    required List<String> options,
-    required ValueChanged<String> onSelected,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            color: pagePrimaryTextColor(context),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: options.map((option) {
-            return ChoiceChip(
-              label: Text(option),
-              selected: selectedValue == option,
-              onSelected: (_) => onSelected(option),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
+        OnboardingCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _QuestionTitle(title),
+              const SizedBox(height: 24),
+              InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () async {
+                  final picked = await showTimePicker(
+                    context: context,
+                    initialTime: value ?? fallback,
+                  );
 
-  Widget _buildSliderTile(
-    BuildContext context, {
-    required String label,
-    required double value,
-    required ValueChanged<double> onChanged,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '$label: ${value.round()}',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: pagePrimaryTextColor(context),
-            ),
-          ),
-          Slider(
-            value: value,
-            min: 1,
-            max: 5,
-            divisions: 4,
-            label: value.round().toString(),
-            onChanged: onChanged,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSwitchTile(
-    BuildContext context, {
-    required String title,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return SwitchListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(
-        title,
-        style: TextStyle(
-          fontWeight: FontWeight.w700,
-          color: pagePrimaryTextColor(context),
-        ),
-      ),
-      value: value,
-      onChanged: onChanged,
-    );
-  }
-
-  Widget _buildBusyDaysPicker(BuildContext context) {
-    const labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Busy Days',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            color: pagePrimaryTextColor(context),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: List.generate(labels.length, (index) {
-            final selected = _busyDays.contains(index);
-            return FilterChip(
-              label: Text(labels[index]),
-              selected: selected,
-              onSelected: (value) {
-                setState(() {
-                  if (value) {
-                    _busyDays.add(index);
-                  } else {
-                    _busyDays.remove(index);
+                  if (picked != null) {
+                    onChanged(picked);
                   }
-                });
-              },
-            );
-          }),
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 22,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white.withOpacity(0.06)
+                        : const Color(0xFFF5FBF9),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: pageBorderColor(context)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.schedule_rounded,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          value == null ? 'Choose time' : value.format(context),
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: pagePrimaryTextColor(context),
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: pageSecondaryTextColor(context),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
+    );
+  }
+
+  Widget _buildLikertPage(
+    BuildContext context, {
+    required String title,
+    String? helperText,
+    required int? value,
+    required List<LikertOption> options,
+    required ValueChanged<int> onChanged,
+  }) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+      children: [
+        OnboardingCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              LikertQuestion(
+                question: title,
+                value: value,
+                options: options,
+                onChanged: onChanged,
+              ),
+              if (helperText != null) ...[
+                const SizedBox(height: 14),
+                _HelperText(helperText),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildYesNoPage(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+      children: [
+        OnboardingCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _QuestionTitle(
+                'Do you usually have extra responsibilities outside your main role?',
+              ),
+              const SizedBox(height: 22),
+              _OptionTile(
+                label: 'Yes',
+                selected: _hasExtraResponsibilities == true,
+                onTap: () => setState(() => _hasExtraResponsibilities = true),
+              ),
+              const SizedBox(height: 12),
+              _OptionTile(
+                label: 'No',
+                selected: _hasExtraResponsibilities == false,
+                onTap: () => setState(() {
+                  _hasExtraResponsibilities = false;
+                  _extraResponsibilityLevel = null;
+                }),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBurnoutSectionPage(
+    BuildContext context,
+    BurnoutSection section,
+  ) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+      children: [
+        OnboardingCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _QuestionTitle(section.title),
+              const SizedBox(height: 8),
+              const _HelperText('Use 1 for Never and 5 for Always.'),
+              const SizedBox(height: 22),
+              ...section.questions.map(
+                (question) => Padding(
+                  padding: const EdgeInsets.only(bottom: 22),
+                  child: LikertQuestion(
+                    question: question.questionText,
+                    value: _burnoutAnswers[question.questionKey],
+                    options: _burnoutScale,
+                    onChanged: (value) => setState(
+                      () => _burnoutAnswers[question.questionKey] = value,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _OnboardingStep {
+  final String sectionTitle;
+  final String title;
+  final WidgetBuilder builder;
+  final bool Function() isComplete;
+
+  const _OnboardingStep({
+    required this.sectionTitle,
+    required this.title,
+    required this.builder,
+    required this.isComplete,
+  });
+}
+
+class _QuestionTitle extends StatelessWidget {
+  final String text;
+
+  const _QuestionTitle(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: TextStyle(
+        height: 1.22,
+        fontSize: 25,
+        fontWeight: FontWeight.w900,
+        color: pagePrimaryTextColor(context),
+      ),
+    );
+  }
+}
+
+class _HelperText extends StatelessWidget {
+  final String text;
+
+  const _HelperText(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: TextStyle(
+        height: 1.45,
+        fontSize: 14.5,
+        color: pageSecondaryTextColor(context),
+      ),
+    );
+  }
+}
+
+class _OptionTile extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _OptionTile({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: selected
+              ? Theme.of(context).colorScheme.primary.withOpacity(0.14)
+              : isDark
+              ? Colors.white.withOpacity(0.05)
+              : const Color(0xFFF6FBF9),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            width: selected ? 1.6 : 1,
+            color: selected
+                ? Theme.of(context).colorScheme.primary
+                : pageBorderColor(context),
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: pagePrimaryTextColor(context),
+                ),
+              ),
+            ),
+            Icon(
+              selected
+                  ? Icons.check_circle_rounded
+                  : Icons.radio_button_unchecked_rounded,
+              color: selected
+                  ? Theme.of(context).colorScheme.primary
+                  : pageSecondaryTextColor(context),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
