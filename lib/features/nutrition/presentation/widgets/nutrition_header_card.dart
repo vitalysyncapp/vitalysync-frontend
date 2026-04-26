@@ -10,20 +10,17 @@ class NutritionHeaderCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(isCompact ? 10 : 12),
+      padding: EdgeInsets.all(isCompact ? 12 : 14),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(isCompact ? 8 : 10),
+        borderRadius: BorderRadius.circular(isCompact ? 14 : 18),
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFF1E88E5),
-            Color.fromARGB(255, 85, 170, 240),
-          ],
+          colors: [Color(0xFF1FB489), Color(0xFF5DB8F0)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.18),
+            color: const Color(0xFF39B7C3).withOpacity(0.18),
             blurRadius: isCompact ? 14 : 18,
             offset: Offset(0, isCompact ? 6 : 8),
           ),

@@ -24,8 +24,7 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   bool _isLoadingReminderSummary = true;
-  String _notificationSubtitle =
-      'Loading your saved reminder preferences...';
+  String _notificationSubtitle = 'Loading your saved reminder preferences...';
   UserSessionSnapshot _session = UserSessionSnapshot.empty;
 
   @override
@@ -53,15 +52,17 @@ class _SettingsPageState extends State<SettingsPage> {
 
     try {
       final summary = await OnboardingApi.fetchSummary(session.userId!);
-      final preferences =
-          Map<String, dynamic>.from(summary['preferences'] as Map? ?? {});
+      final preferences = Map<String, dynamic>.from(
+        summary['preferences'] as Map? ?? {},
+      );
 
       final dailyReminder = preferences['prefers_daily_reminder'] == true;
       final hydrationReminder =
           preferences['prefers_hydration_reminder'] == true;
       final sleepReminder = preferences['prefers_sleep_reminder'] == true;
-      final reminderTime =
-          (preferences['reminder_time'] ?? '').toString().trim();
+      final reminderTime = (preferences['reminder_time'] ?? '')
+          .toString()
+          .trim();
 
       await AppPreferencesController.instance.syncNotificationPreferences(
         notificationsEnabled: dailyReminder,
@@ -186,9 +187,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
     await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => builder(verifiedPassword),
-      ),
+      MaterialPageRoute(builder: (_) => builder(verifiedPassword)),
     );
   }
 
@@ -196,115 +195,12 @@ class _SettingsPageState extends State<SettingsPage> {
     required String actionTitle,
     required String email,
   }) async {
-    final controller = TextEditingController();
-    var isSubmitting = false;
-    var errorText = '';
-    var obscurePassword = true;
-
-    final result = await showDialog<String>(
+    return showDialog<String>(
       context: context,
-      barrierDismissible: !isSubmitting,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            Future<void> verifyPassword() async {
-              final password = controller.text.trim();
-
-              if (password.isEmpty) {
-                setDialogState(() {
-                  errorText = 'Enter your password to continue.';
-                });
-                return;
-              }
-
-              setDialogState(() {
-                isSubmitting = true;
-                errorText = '';
-              });
-
-              try {
-                await UserSessionController.instance.reauthenticateWithPassword(
-                  password: password,
-                );
-
-                if (!dialogContext.mounted) {
-                  return;
-                }
-
-                Navigator.pop(dialogContext, password);
-              } catch (error) {
-                setDialogState(() {
-                  errorText =
-                      error.toString().replaceFirst('Exception: ', '');
-                  isSubmitting = false;
-                });
-              }
-            }
-
-            return AlertDialog(
-              title: Text(actionTitle),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Enter the password for $email before continuing.',
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: controller,
-                    obscureText: obscurePassword,
-                    autofocus: true,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      errorText: errorText.isEmpty ? null : errorText,
-                      suffixIcon: IconButton(
-                        onPressed: () {
-                          setDialogState(() {
-                            obscurePassword = !obscurePassword;
-                          });
-                        },
-                        icon: Icon(
-                          obscurePassword
-                              ? Icons.visibility_off_rounded
-                              : Icons.visibility_rounded,
-                        ),
-                      ),
-                    ),
-                    onSubmitted: (_) {
-                      if (!isSubmitting) {
-                        verifyPassword();
-                      }
-                    },
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: isSubmitting
-                      ? null
-                      : () => Navigator.pop(dialogContext),
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: isSubmitting ? null : verifyPassword,
-                  child: isSubmitting
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Continue'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+      barrierDismissible: false,
+      builder: (_) =>
+          _PasswordVerificationDialog(actionTitle: actionTitle, email: email),
     );
-
-    controller.dispose();
-    return result;
   }
 
   @override
@@ -400,7 +296,8 @@ class _SettingsPageState extends State<SettingsPage> {
                           iconBg: const Color(0xFFFFE3E3),
                           iconColor: const Color(0xFFFF2D2D),
                           title: "Privacy Settings",
-                          subtitle: prefs.hideSensitiveContent ||
+                          subtitle:
+                              prefs.hideSensitiveContent ||
                                   prefs.biometricLockEnabled
                               ? "Local privacy controls are active"
                               : "Data control and privacy preferences",
@@ -420,8 +317,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           iconBg: const Color(0xFFE2F7EC),
                           iconColor: const Color(0xFF1F9D63),
                           title: "Location Settings",
-                          subtitle:
-                              "Current: ${prefs.locationPermissionLabel}",
+                          subtitle: "Current: ${prefs.locationPermissionLabel}",
                           onTap: () {
                             Navigator.push(
                               context,
@@ -447,7 +343,8 @@ class _SettingsPageState extends State<SettingsPage> {
                           subtitle: _accountActionSubtitle,
                           onTap: () {
                             _openProtectedAccountPage(
-                              actionTitle: 'Confirm password to clear local data',
+                              actionTitle:
+                                  'Confirm password to clear local data',
                               builder: (_) => const ClearAccountDataPage(),
                             );
                           },
@@ -620,11 +517,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 color: iconBg,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(
-                icon,
-                color: iconColor,
-                size: 24,
-              ),
+              child: Icon(icon, color: iconColor, size: 24),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -671,6 +564,134 @@ class _SettingsPageState extends State<SettingsPage> {
       color: pageBorderColor(context),
       indent: 18,
       endIndent: 18,
+    );
+  }
+}
+
+class _PasswordVerificationDialog extends StatefulWidget {
+  final String actionTitle;
+  final String email;
+
+  const _PasswordVerificationDialog({
+    required this.actionTitle,
+    required this.email,
+  });
+
+  @override
+  State<_PasswordVerificationDialog> createState() =>
+      _PasswordVerificationDialogState();
+}
+
+class _PasswordVerificationDialogState
+    extends State<_PasswordVerificationDialog> {
+  final TextEditingController _controller = TextEditingController();
+  bool _isSubmitting = false;
+  bool _obscurePassword = true;
+  String _errorText = '';
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _verifyPassword() async {
+    final password = _controller.text.trim();
+
+    if (password.isEmpty) {
+      setState(() {
+        _errorText = 'Enter your password to continue.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+      _errorText = '';
+    });
+
+    try {
+      await UserSessionController.instance.reauthenticateWithPassword(
+        password: password,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.of(context).pop(password);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _errorText = error.toString().replaceFirst('Exception: ', '');
+        _isSubmitting = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: !_isSubmitting,
+      child: AlertDialog(
+        title: Text(widget.actionTitle),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Enter the password for ${widget.email} before continuing.'),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _controller,
+              obscureText: _obscurePassword,
+              autofocus: true,
+              enabled: !_isSubmitting,
+              decoration: InputDecoration(
+                labelText: 'Password',
+                errorText: _errorText.isEmpty ? null : _errorText,
+                suffixIcon: IconButton(
+                  onPressed: _isSubmitting
+                      ? null
+                      : () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_off_rounded
+                        : Icons.visibility_rounded,
+                  ),
+                ),
+              ),
+              onSubmitted: (_) {
+                if (!_isSubmitting) {
+                  _verifyPassword();
+                }
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: _isSubmitting ? null : _verifyPassword,
+            child: _isSubmitting
+                ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Continue'),
+          ),
+        ],
+      ),
     );
   }
 }

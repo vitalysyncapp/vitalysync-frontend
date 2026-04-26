@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../app/main_navigation.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
 import '../../../../shared/widgets/reveal_on_build.dart';
@@ -22,12 +23,15 @@ class NutritionPage extends StatefulWidget {
 
 class _NutritionPageState extends State<NutritionPage> {
   final ImagePicker _picker = ImagePicker();
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _logNewMealCardKey = GlobalKey();
   File? _selectedImage;
   String _selectedMealType = 'breakfast';
   bool _isAnalyzing = false;
   bool _isSaving = false;
   bool _isLoadingDaily = true;
   int? _attemptId;
+  int _handledNutritionLogFocusRequest = 0;
   List<NutritionReviewItem> _reviewItems = [];
   DailyNutritionSummary _dailySummary = DailyNutritionSummary.empty();
 
@@ -35,6 +39,31 @@ class _NutritionPageState extends State<NutritionPage> {
   void initState() {
     super.initState();
     _loadDailyNutrition(showErrors: false);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final controller = MainNavigationController.maybeOf(context);
+    if (controller == null || controller.currentIndex != 2) {
+      return;
+    }
+
+    final request = controller.nutritionLogFocusRequest;
+    if (request <= _handledNutritionLogFocusRequest) {
+      return;
+    }
+
+    _handledNutritionLogFocusRequest = request;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToLogNewMealCard();
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _pickFromCamera() async {
@@ -84,6 +113,20 @@ class _NutritionPageState extends State<NutritionPage> {
 
   void _onAddMeal() {
     _showSnackBar('Choose a meal type and add a food photo.');
+  }
+
+  Future<void> _scrollToLogNewMealCard() async {
+    final targetContext = _logNewMealCardKey.currentContext;
+    if (!mounted || targetContext == null) {
+      return;
+    }
+
+    await Scrollable.ensureVisible(
+      targetContext,
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeInOutCubic,
+      alignment: 0.06,
+    );
   }
 
   Future<void> _loadDailyNutrition({bool showErrors = true}) async {
@@ -293,6 +336,7 @@ class _NutritionPageState extends State<NutritionPage> {
         appBar: buildAppBar(context),
         body: SafeArea(
           child: SingleChildScrollView(
+            controller: _scrollController,
             padding: EdgeInsets.fromLTRB(
               pagePadding,
               pagePadding,
@@ -316,20 +360,23 @@ class _NutritionPageState extends State<NutritionPage> {
                 SizedBox(height: sectionSpacing),
                 RevealOnBuild(
                   delay: const Duration(milliseconds: 140),
-                  child: LogNewMealCard(
-                    selectedImage: _selectedImage,
-                    selectedMealType: _selectedMealType,
-                    isAnalyzing: _isAnalyzing,
-                    onTakePhoto: _pickFromCamera,
-                    onChooseFromGallery: _pickFromGallery,
-                    onAnalyze: _analyzeSelectedMeal,
-                    onMealTypeChanged: (value) {
-                      setState(() {
-                        _selectedMealType = value;
-                        _attemptId = null;
-                        _reviewItems = [];
-                      });
-                    },
+                  child: Container(
+                    key: _logNewMealCardKey,
+                    child: LogNewMealCard(
+                      selectedImage: _selectedImage,
+                      selectedMealType: _selectedMealType,
+                      isAnalyzing: _isAnalyzing,
+                      onTakePhoto: _pickFromCamera,
+                      onChooseFromGallery: _pickFromGallery,
+                      onAnalyze: _analyzeSelectedMeal,
+                      onMealTypeChanged: (value) {
+                        setState(() {
+                          _selectedMealType = value;
+                          _attemptId = null;
+                          _reviewItems = [];
+                        });
+                      },
+                    ),
                   ),
                 ),
                 if (_reviewItems.isNotEmpty) ...[

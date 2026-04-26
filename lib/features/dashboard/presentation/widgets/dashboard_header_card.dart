@@ -7,47 +7,70 @@ class DashboardHeaderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(20),
-      gradient: const LinearGradient(
-        colors: [
-        Color.fromARGB(255, 30, 203, 154),
-        Color.fromARGB(255, 55, 164, 222),
+        borderRadius: BorderRadius.circular(24),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1FB489), Color(0xFF5DB8F0)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF3CB7C8).withOpacity(0.18),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
         ],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
       ),
-      boxShadow: [
-        BoxShadow(
-        color: Colors.blue.withOpacity(0.18),
-        blurRadius: 18,
-        offset: const Offset(0, 8),
-        ),
-      ],
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Your Wellness Analytics Dashboard",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  "Track your wellness trends, sleep, mood, symptoms, and overall performance.",
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    height: 1.45,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: 16),
+          _HeaderIcon(),
+        ],
       ),
-      child: const Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-        "Your Wellness Analytics Dashboard",
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-        ),
-        ),
-        SizedBox(height: 6),
-        Text(
-        "Track your wellness trends, sleep, mood, symptoms, and overall performance.",
-        style: TextStyle(
-          color: Colors.white70,
-          fontSize: 13,
-          height: 1.4,
-        ),
-        ),
-      ],
+    );
+  }
+}
+
+class _HeaderIcon extends StatelessWidget {
+  const _HeaderIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 52,
+      height: 52,
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(18),
       ),
+      child: const Icon(Icons.insights_rounded, color: Colors.white, size: 28),
     );
   }
 }

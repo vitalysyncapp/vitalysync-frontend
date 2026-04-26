@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import '../../data/device_location_service.dart';
 import '../../data/environment_api.dart';
 import '../../data/environment_model.dart';
+import '../../../../features/activity/data/activity_service.dart';
+import '../../../../features/activity/presentation/widgets/activity_summary_card.dart';
 import '../../../../features/log/data/log_api.dart';
 import '../../../../features/onboarding/services/onboarding_service.dart';
 import '../../../../shared/preferences/user_session.dart';
@@ -48,6 +50,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    ActivityService.instance.startTracking();
     _loadBurnoutBaseline();
     _loadLatestSummary();
     _loadEnvironment();
@@ -62,6 +65,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      ActivityService.instance.startTracking();
       _loadBurnoutBaseline();
       _loadLatestSummary(showLoader: false);
       _loadEnvironment(showLoader: false);
@@ -275,6 +279,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 const SizedBox(height: 16),
                 RevealOnBuild(
                   delay: const Duration(milliseconds: 220),
+                  child: ValueListenableBuilder<ActivityTrackingState>(
+                    valueListenable: ActivityService.instance.notifier,
+                    builder: (context, activityState, _) {
+                      return ActivitySummaryCard(
+                        state: activityState,
+                        onRefresh: () => ActivityService.instance.refresh(),
+                        onEditGoal: ActivityService.instance.updateGoalSteps,
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+                RevealOnBuild(
+                  delay: const Duration(milliseconds: 280),
                   child: GlassCard(
                     child: EnvironmentalCard(
                       snapshot: _environmentSnapshot,
@@ -286,12 +304,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 ),
                 const SizedBox(height: 16),
                 const RevealOnBuild(
-                  delay: Duration(milliseconds: 280),
+                  delay: Duration(milliseconds: 340),
                   child: QuickActionsSection(),
                 ),
                 const SizedBox(height: 12),
                 RevealOnBuild(
-                  delay: const Duration(milliseconds: 340),
+                  delay: const Duration(milliseconds: 400),
                   child: WeeklyAnalyticsCard(
                     items: const [
                       WeeklyStatItem(

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:another_flushbar/flushbar.dart';
 
@@ -18,31 +19,33 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
+  static const List<String> _genderOptions = ['Male', 'Female', 'Other'];
+
   final _formKey = GlobalKey<FormState>();
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreeTerms = false;
   bool _isLoading = false;
+  String? _selectedGender;
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _ageController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
 
-  void _showFlushbar(
-    String message, {
-    bool isError = false,
-  }) {
+  void _showFlushbar(String message, {bool isError = false}) {
     Flushbar(
       message: message,
       duration: const Duration(seconds: 3),
       margin: const EdgeInsets.all(16),
       borderRadius: BorderRadius.circular(14),
       flushbarPosition: FlushbarPosition.TOP,
-      backgroundColor:
-          isError ? const Color(0xFFE53935) : const Color(0xFF2563EB),
+      backgroundColor: isError
+          ? const Color(0xFFE53935)
+          : const Color(0xFF2563EB),
       icon: Icon(
         isError ? Icons.error_outline : Icons.check_circle_outline,
         color: Colors.white,
@@ -64,6 +67,8 @@ class _SignUpPageState extends State<SignUpPage> {
         body: jsonEncode({
           "username": _usernameController.text.trim(),
           "email": _emailController.text.trim(),
+          "age": int.tryParse(_ageController.text.trim()),
+          "gender": _selectedGender,
           "password": _passwordController.text.trim(),
         }),
       );
@@ -75,7 +80,7 @@ class _SignUpPageState extends State<SignUpPage> {
           Map<String, dynamic>.from(data['user'] as Map<String, dynamic>),
           isDemoMode: false,
         );
-        await LogApi.persistStreakSnapshot(
+        await LogApi.persistServerStreakSnapshot(
           data['streak'] as Map<String, dynamic>?,
         );
 
@@ -86,8 +91,10 @@ class _SignUpPageState extends State<SignUpPage> {
         setState(() {
           _emailController.clear();
           _usernameController.clear();
+          _ageController.clear();
           _passwordController.clear();
           _confirmPasswordController.clear();
+          _selectedGender = null;
           _agreeTerms = false;
         });
 
@@ -218,6 +225,7 @@ class _SignUpPageState extends State<SignUpPage> {
   void dispose() {
     _emailController.dispose();
     _usernameController.dispose();
+    _ageController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -279,9 +287,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         offset: const Offset(0, 12),
                       ),
                     ],
-                    border: Border.all(
-                      color: const Color(0xFFE5EEF9),
-                    ),
+                    border: Border.all(color: const Color(0xFFE5EEF9)),
                   ),
                   child: Form(
                     key: _formKey,
@@ -332,10 +338,65 @@ class _SignUpPageState extends State<SignUpPage> {
                             label: 'Username',
                             icon: Icons.person_outline,
                           ),
+                          validator: (value) => value == null || value.isEmpty
+                              ? 'Enter username'
+                              : null,
+                        ),
+                        const SizedBox(height: 14),
+
+                        TextFormField(
+                          controller: _ageController,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          decoration: _inputDecoration(
+                            label: 'Age',
+                            icon: Icons.cake_outlined,
+                          ),
+                          validator: (value) {
+                            final ageText = value?.trim() ?? '';
+                            if (ageText.isEmpty) {
+                              return 'Enter your age';
+                            }
+
+                            final age = int.tryParse(ageText);
+                            if (age == null) {
+                              return 'Enter a valid age';
+                            }
+                            if (age < 1 || age > 120) {
+                              return 'Age must be between 1 and 120';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 14),
+
+                        DropdownButtonFormField<String>(
+                          key: ValueKey(_selectedGender),
+                          initialValue: _selectedGender,
+                          isExpanded: true,
+                          decoration: _inputDecoration(
+                            label: 'Gender',
+                            icon: Icons.wc_outlined,
+                          ),
+                          items: _genderOptions
+                              .map(
+                                (gender) => DropdownMenuItem<String>(
+                                  value: gender,
+                                  child: Text(gender),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedGender = value;
+                            });
+                          },
                           validator: (value) =>
-                              value == null || value.isEmpty
-                                  ? 'Enter username'
-                                  : null,
+                              value == null || value.trim().isEmpty
+                              ? 'Select your gender'
+                              : null,
                         ),
                         const SizedBox(height: 14),
 
@@ -434,7 +495,8 @@ class _SignUpPageState extends State<SignUpPage> {
                                 child: Padding(
                                   padding: const EdgeInsets.only(top: 10),
                                   child: Wrap(
-                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
                                     children: [
                                       const Text(
                                         'I agree to the Terms and Conditions and Privacy Policy ',

@@ -14,6 +14,8 @@ class ApiConfig {
 
   static String auth(String path) => '$baseUrl/api/auth$path';
 
+  static String activity(String path) => '$baseUrl/api/activity$path';
+
   static String logs(String path) => '$baseUrl/api/logs$path';
 
   static String nutrition(String path) => '$baseUrl/api/nutrition$path';
@@ -29,5 +31,9 @@ class ApiConfig {
   }) {
     final userIdQuery = userId == null ? '' : '&user_id=$userId';
     return '$baseUrl/api/environment?lat=$lat&lon=$lon$userIdQuery';
+  }
+
+  static String exerciseGoals(String path) {
+    return '$baseUrl/api/exercise-goals$path';
   }
 }

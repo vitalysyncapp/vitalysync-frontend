@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/main_navigation.dart';
+import '../../../../shared/theme/app_page_style.dart';
 
 class WeeklyAnalyticsCard extends StatelessWidget {
   final String title;
@@ -18,27 +19,28 @@ class WeeklyAnalyticsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final cardColor = isDark ? const Color(0xFF1F1F1F) : Colors.white;
-    final titleColor = isDark ? Colors.white : Colors.black87;
-    final labelColor = isDark ? Colors.white70 : const Color(0xFF5F6368);
-    final defaultValueColor = isDark ? Colors.white : Colors.black87;
-    final linkColor = const Color(0xFF3366FF);
-    final borderColor = isDark ? Colors.white10 : const Color(0xFFE6E6E6);
+    final cardColor = pageSurfaceColor(context);
+    final titleColor = pagePrimaryTextColor(context);
+    final labelColor = pageSecondaryTextColor(context);
+    final defaultValueColor = pagePrimaryTextColor(context);
+    final linkColor = isDark
+        ? const Color(0xFF82DFFF)
+        : const Color(0xFF2088D8);
+    final borderColor = pageBorderColor(context);
 
     return Container(
-      margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
             color: isDark
                 ? Colors.black.withOpacity(0.25)
-                : Colors.black.withOpacity(0.06),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
+                : Colors.black.withOpacity(0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -57,11 +59,19 @@ class WeeklyAnalyticsCard extends StatelessWidget {
                 ),
               ),
               TextButton(
-                onPressed:() {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (_) => const MainNavigation(initialIndex: 3)),
-                      );
+                onPressed: () {
+                  final controller = MainNavigationController.maybeOf(context);
+                  if (controller != null) {
+                    controller.onTabSelected(3);
+                    return;
+                  }
+
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const MainNavigation(initialIndex: 3),
+                    ),
+                  );
                 },
                 style: TextButton.styleFrom(
                   padding: EdgeInsets.zero,
@@ -83,7 +93,9 @@ class WeeklyAnalyticsCard extends StatelessWidget {
           ...List.generate(items.length, (index) {
             final item = items[index];
             return Padding(
-              padding: EdgeInsets.only(bottom: index == items.length - 1 ? 0 : 18),
+              padding: EdgeInsets.only(
+                bottom: index == items.length - 1 ? 0 : 18,
+              ),
               child: _buildStatRow(
                 label: item.label,
                 value: item.value,

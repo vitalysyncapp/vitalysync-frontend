@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/theme/app_page_style.dart';
+
 class DashboardStatCard extends StatelessWidget {
   final String title;
   final String value;
@@ -20,22 +22,22 @@ class DashboardStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.92),
-          borderRadius: BorderRadius.circular(20),
+          color: pageSurfaceColor(context),
+          borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
             ),
           ],
-          border: Border.all(
-            color: Colors.grey.withOpacity(0.10),
-          ),
+          border: Border.all(color: pageBorderColor(context)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,9 +47,9 @@ class DashboardStatCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
-                      color: Color(0xFF5C6B80),
+                      color: pageSecondaryTextColor(context),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -58,10 +60,10 @@ class DashboardStatCard extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF0B1F44),
+                color: pagePrimaryTextColor(context),
               ),
             ),
             const SizedBox(height: 8),

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../../features/activity/data/activity_service.dart';
+import '../../../../features/activity/presentation/widgets/activity_summary_card.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
+import '../../../../shared/widgets/reveal_on_build.dart';
 import '../widgets/burnout_risk_trend_card.dart';
 import '../widgets/dashboard_header_card.dart';
 import '../widgets/dashboard_stat_card.dart';
@@ -23,47 +26,85 @@ class Dashboard extends StatelessWidget {
         appBar: buildAppBar(context),
         body: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              16,
+              16,
+              pageBottomContentPadding(context, extra: 26),
+            ),
             child: Column(
-              children: const [
-                DashboardHeaderCard(),
-                SizedBox(height: 16),
-
-                Row(
-                  children: [
-                    DashboardStatCard(
-                      title: "Burnout Risk",
-                      value: "42",
-                      subtitle: "+7 from last week",
-                      subtitleColor: Colors.red,
-                      icon: Icons.trending_up,
-                      iconColor: Colors.red,
-                    ),
-                    SizedBox(width: 12),
-                    DashboardStatCard(
-                      title: "Avg Sleep",
-                      value: "7.1h",
-                      subtitle: "+0.3h from last week",
-                      subtitleColor: Colors.green,
-                      icon: Icons.trending_down,
-                      iconColor: Colors.green,
-                    ),
-                  ],
+              children: [
+                const RevealOnBuild(child: DashboardHeaderCard()),
+                const SizedBox(height: 16),
+                const RevealOnBuild(
+                  delay: Duration(milliseconds: 70),
+                  child: Row(
+                    children: [
+                      DashboardStatCard(
+                        title: "Burnout Risk",
+                        value: "42",
+                        subtitle: "+7 from last week",
+                        subtitleColor: Colors.red,
+                        icon: Icons.trending_up,
+                        iconColor: Colors.red,
+                      ),
+                      SizedBox(width: 12),
+                      DashboardStatCard(
+                        title: "Avg Sleep",
+                        value: "7.1h",
+                        subtitle: "+0.3h from last week",
+                        subtitleColor: Colors.green,
+                        icon: Icons.trending_down,
+                        iconColor: Colors.green,
+                      ),
+                    ],
+                  ),
                 ),
-
-                SizedBox(height: 16),
-                BurnoutRiskTrendCard(),
-                SizedBox(height: 16),
-                SleepPatternCard(),
-                SizedBox(height: 16),
-                WellnessIndexCard(),
-                SizedBox(height: 16),
-                MoodVolatilityCard(),
-                SizedBox(height: 16),
-                SymptomFrequencyCard(),
-                SizedBox(height: 16),
-                WeeklyPerformanceCard(),
-                SizedBox(height: 24),
+                const SizedBox(height: 16),
+                RevealOnBuild(
+                  delay: Duration(milliseconds: 130),
+                  child: ValueListenableBuilder<ActivityTrackingState>(
+                    valueListenable: ActivityService.instance.notifier,
+                    builder: (context, activityState, _) {
+                      return WeeklyStepAnalyticsCard(
+                        state: activityState,
+                        compact: true,
+                        onRefresh: () => ActivityService.instance.refresh(),
+                        onEditGoal: ActivityService.instance.updateGoalSteps,
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const RevealOnBuild(
+                  delay: Duration(milliseconds: 190),
+                  child: BurnoutRiskTrendCard(),
+                ),
+                const SizedBox(height: 16),
+                const RevealOnBuild(
+                  delay: Duration(milliseconds: 250),
+                  child: SleepPatternCard(),
+                ),
+                const SizedBox(height: 16),
+                const RevealOnBuild(
+                  delay: Duration(milliseconds: 310),
+                  child: WellnessIndexCard(),
+                ),
+                const SizedBox(height: 16),
+                const RevealOnBuild(
+                  delay: Duration(milliseconds: 370),
+                  child: MoodVolatilityCard(),
+                ),
+                const SizedBox(height: 16),
+                const RevealOnBuild(
+                  delay: Duration(milliseconds: 430),
+                  child: SymptomFrequencyCard(),
+                ),
+                const SizedBox(height: 16),
+                const RevealOnBuild(
+                  delay: Duration(milliseconds: 490),
+                  child: WeeklyPerformanceCard(),
+                ),
               ],
             ),
           ),

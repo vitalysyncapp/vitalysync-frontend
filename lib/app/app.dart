@@ -15,6 +15,16 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final AppPreferencesController _preferences =
       AppPreferencesController.instance;
+  static const _pageTransitionsTheme = PageTransitionsTheme(
+    builders: {
+      TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+      TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
+      TargetPlatform.linux: FadeUpwardsPageTransitionsBuilder(),
+      TargetPlatform.fuchsia: FadeUpwardsPageTransitionsBuilder(),
+    },
+  );
 
   @override
   void initState() {
@@ -33,10 +43,7 @@ class _MyAppState extends State<MyApp> {
           title: 'VitalySync',
           debugShowCheckedModeBanner: false,
           locale: prefs.locale,
-          supportedLocales: const [
-            Locale('en'),
-            Locale('fil'),
-          ],
+          supportedLocales: const [Locale('en'), Locale('fil')],
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
@@ -66,23 +73,44 @@ class _MyAppState extends State<MyApp> {
       useMaterial3: true,
       brightness: Brightness.light,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF2563EB),
+        seedColor: const Color(0xFF1EAD83),
         brightness: Brightness.light,
       ),
     );
 
     return base.copyWith(
-      scaffoldBackgroundColor: const Color(0xFFF7FAFF),
+      scaffoldBackgroundColor: const Color(0xFFF3FBF8),
+      pageTransitionsTheme: _pageTransitionsTheme,
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
       ),
-      cardTheme: CardThemeData(
-        color: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: const Color(0xFF14324A),
+        contentTextStyle: const TextStyle(color: Colors.white),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF1EAD83),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
         ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: Colors.white.withOpacity(0.92),
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
     );
   }
@@ -92,36 +120,48 @@ class _MyAppState extends State<MyApp> {
       useMaterial3: true,
       brightness: Brightness.dark,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF60A5FA),
+        seedColor: const Color(0xFF5BDEC1),
         brightness: Brightness.dark,
       ),
     );
 
     return base.copyWith(
-      scaffoldBackgroundColor: const Color(0xFF0F172A),
+      scaffoldBackgroundColor: const Color(0xFF091320),
+      pageTransitionsTheme: _pageTransitionsTheme,
       dialogTheme: DialogThemeData(
-        backgroundColor: const Color(0xFF182235),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        backgroundColor: const Color(0xFF162338),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: const Color(0xFF142030),
         contentTextStyle: const TextStyle(color: Colors.white),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF26B590),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
         ),
       ),
       cardTheme: CardThemeData(
-        color: const Color(0xFF172235),
+        color: const Color(0xFF162338),
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
     );
   }

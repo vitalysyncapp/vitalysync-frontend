@@ -6,6 +6,8 @@
 	<string>This app uses the camera to take meal photos.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>This app uses your location to show local weather and air quality.</string>
+	<key>NSMotionUsageDescription</key>
+	<string>VitalySync uses motion data to estimate your daily steps and walking distance.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -49,5 +51,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>processing</string>
+	</array>
 </dict>
 </plist>
