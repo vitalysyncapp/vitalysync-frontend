@@ -8,10 +8,10 @@ class TodaysMealsCard extends StatelessWidget {
   final List<NutritionMealLog> meals;
 
   const TodaysMealsCard({
-    Key? key,
+    super.key,
     required this.onAddTap,
     required this.meals,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -33,15 +33,40 @@ class TodaysMealsCard extends StatelessWidget {
                   color: Color(0xFF0F172A),
                 ),
               ),
-              InkWell(
-                onTap: onAddTap,
-                borderRadius: BorderRadius.circular(50),
-                child: const Padding(
-                  padding: EdgeInsets.all(4),
-                  child: Icon(
-                    Icons.add,
-                    color: Color(0xFF2563EB),
-                    size: 24,
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(999),
+                  onTap: onAddTap,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isCompact ? 10 : 12,
+                      vertical: isCompact ? 6 : 7,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: const Color(0xFFBFDBFE)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.add,
+                          color: const Color(0xFF2563EB),
+                          size: isCompact ? 18 : 20,
+                        ),
+                        SizedBox(width: isCompact ? 4 : 6),
+                        Text(
+                          'Manual Log',
+                          style: TextStyle(
+                            fontSize: isCompact ? 11.5 : 12,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF2563EB),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -95,7 +120,7 @@ class MealItemCard extends StatelessWidget {
   final bool isCompact;
 
   const MealItemCard({
-    Key? key,
+    super.key,
     required this.mealName,
     required this.calories,
     required this.foods,
@@ -103,7 +128,7 @@ class MealItemCard extends StatelessWidget {
     required this.carbs,
     required this.fats,
     required this.isCompact,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

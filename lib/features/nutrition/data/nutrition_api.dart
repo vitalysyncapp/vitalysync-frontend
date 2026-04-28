@@ -173,6 +173,26 @@ class NutritionAnalysisResult {
   });
 }
 
+class ManualNutritionInput {
+  final String mealName;
+  final String quantity;
+  final String notes;
+
+  const ManualNutritionInput({
+    required this.mealName,
+    required this.quantity,
+    required this.notes,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'meal_name': mealName.trim(),
+      'quantity': quantity.trim(),
+      'notes': notes.trim(),
+    };
+  }
+}
+
 class NutritionHistoryDay {
   final String logDate;
   final double totalCalories;
@@ -213,7 +233,7 @@ class NutritionApi {
     final session = await UserSessionController.instance.load();
 
     if (session.isDemoMode) {
-      throw Exception('Nutrition image analysis is unavailable in demo mode.');
+      throw Exception('Nutrition logging is unavailable in demo mode.');
     }
 
     final userId = session.userId;
@@ -250,6 +270,54 @@ class NutritionApi {
 
     if (response.statusCode != 200) {
       throw Exception(data['message'] ?? 'Food analysis failed.');
+    }
+
+    final rawAttempt = data['attempt'] is Map
+        ? Map<String, dynamic>.from(data['attempt'] as Map)
+        : const <String, dynamic>{};
+    final rawItems = data['items'] is List ? data['items'] as List : const [];
+
+    return NutritionAnalysisResult(
+      attemptId: _parseInt(rawAttempt['attempt_id']),
+      items: rawItems
+          .whereType<Map>()
+          .map((item) => NutritionReviewItem.fromJson(
+                Map<String, dynamic>.from(item),
+              ))
+          .toList(),
+    );
+  }
+
+  static Future<NutritionAnalysisResult> analyzeManualMeal({
+    required List<ManualNutritionInput> meals,
+    required String mealType,
+    required String logDate,
+  }) async {
+    final userId = await _currentUserId();
+    final response = await http.post(
+      Uri.parse(ApiConfig.nutrition('/analyze')),
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'user_id': userId,
+        'input_type': 'manual',
+        'meal_type': mealType,
+        'log_date': logDate,
+        'meal_name': meals.isEmpty ? '' : meals.first.mealName.trim(),
+        'quantity': meals.isEmpty ? '' : meals.first.quantity.trim(),
+        'notes': meals.isEmpty ? '' : meals.first.notes.trim(),
+        'manual_items': meals.map((meal) => meal.toJson()).toList(),
+      }),
+    );
+    final data = _decodeBody(
+      response,
+      fallbackMessage: 'Manual food analysis failed.',
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(data['message'] ?? 'Manual food analysis failed.');
     }
 
     final rawAttempt = data['attempt'] is Map

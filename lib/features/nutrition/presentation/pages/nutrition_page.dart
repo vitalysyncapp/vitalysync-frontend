@@ -15,7 +15,7 @@ import '../widgets/todays_meals_card.dart';
 import '../widgets/white_card.dart';
 
 class NutritionPage extends StatefulWidget {
-  const NutritionPage({Key? key}) : super(key: key);
+  const NutritionPage({super.key});
 
   @override
   State<NutritionPage> createState() => _NutritionPageState();
@@ -25,6 +25,7 @@ class _NutritionPageState extends State<NutritionPage> {
   final ImagePicker _picker = ImagePicker();
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _logNewMealCardKey = GlobalKey();
+  final GlobalKey _firstReviewItemKey = GlobalKey();
   File? _selectedImage;
   String _selectedMealType = 'breakfast';
   bool _isAnalyzing = false;
@@ -111,8 +112,18 @@ class _NutritionPageState extends State<NutritionPage> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  void _onAddMeal() {
-    _showSnackBar('Choose a meal type and add a food photo.');
+  Future<void> _onAddMeal() async {
+    final meals = await showDialog<List<ManualNutritionInput>>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => const _ManualLogDialog(),
+    );
+
+    if (!mounted || meals == null || meals.isEmpty) {
+      return;
+    }
+
+    await _analyzeManualMeals(meals);
   }
 
   Future<void> _scrollToLogNewMealCard() async {
@@ -126,6 +137,20 @@ class _NutritionPageState extends State<NutritionPage> {
       duration: const Duration(milliseconds: 420),
       curve: Curves.easeInOutCubic,
       alignment: 0.06,
+    );
+  }
+
+  Future<void> _scrollToFirstReviewItem() async {
+    final targetContext = _firstReviewItemKey.currentContext;
+    if (!mounted || targetContext == null) {
+      return;
+    }
+
+    await Scrollable.ensureVisible(
+      targetContext,
+      duration: const Duration(milliseconds: 460),
+      curve: Curves.easeInOutCubic,
+      alignment: 0.12,
     );
   }
 
@@ -172,7 +197,49 @@ class _NutritionPageState extends State<NutritionPage> {
         _attemptId = result.attemptId;
         _reviewItems = result.items;
       });
+      if (result.items.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToFirstReviewItem();
+        });
+      }
       _showSnackBar('Review the detected food before saving.');
+    } catch (e) {
+      _showSnackBar(_friendlyError(e));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isAnalyzing = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _analyzeManualMeals(List<ManualNutritionInput> meals) async {
+    setState(() {
+      _isAnalyzing = true;
+      _reviewItems = [];
+      _attemptId = null;
+    });
+
+    try {
+      final result = await NutritionApi.analyzeManualMeal(
+        meals: meals,
+        mealType: _selectedMealType,
+        logDate: NutritionApi.todayKey(),
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _selectedImage = null;
+        _attemptId = result.attemptId;
+        _reviewItems = result.items;
+      });
+      if (result.items.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToFirstReviewItem();
+        });
+      }
+      _showSnackBar('Review the estimated food before saving.');
     } catch (e) {
       _showSnackBar(_friendlyError(e));
     } finally {
@@ -264,17 +331,30 @@ class _NutritionPageState extends State<NutritionPage> {
           ),
           SizedBox(height: isCompact ? 12 : 16),
           ..._reviewItems.asMap().entries.map(
-                (entry) => _ReviewItemEditor(
-                  key: ValueKey('review-${entry.key}-${entry.value.foodName}'),
-                  item: entry.value,
-                  isCompact: isCompact,
-                  onChanged: () => setState(() {}),
-                  onRemove: () {
-                    setState(() {
-                      _reviewItems.removeAt(entry.key);
-                    });
-                  },
-                ),
+                (entry) {
+                  final editor = _ReviewItemEditor(
+                    key: ValueKey(
+                      'review-${entry.key}-${entry.value.foodName}',
+                    ),
+                    item: entry.value,
+                    isCompact: isCompact,
+                    onChanged: () => setState(() {}),
+                    onRemove: () {
+                      setState(() {
+                        _reviewItems.removeAt(entry.key);
+                      });
+                    },
+                  );
+
+                  if (entry.key != 0) {
+                    return editor;
+                  }
+
+                  return KeyedSubtree(
+                    key: _firstReviewItemKey,
+                    child: editor,
+                  );
+                },
               ),
           SizedBox(height: isCompact ? 10 : 14),
           Row(
@@ -414,6 +494,348 @@ class _NutritionPageState extends State<NutritionPage> {
   }
 }
 
+class _ManualLogDialog extends StatefulWidget {
+  const _ManualLogDialog();
+
+  @override
+  State<_ManualLogDialog> createState() => _ManualLogDialogState();
+}
+
+class _ManualLogDialogState extends State<_ManualLogDialog> {
+  final List<_ManualMealDraft> _drafts = [_ManualMealDraft()];
+  String? _errorText;
+
+  @override
+  void dispose() {
+    for (final draft in _drafts) {
+      draft.dispose();
+    }
+    super.dispose();
+  }
+
+  void _addMealForm() {
+    setState(() {
+      _errorText = null;
+      _drafts.add(_ManualMealDraft());
+    });
+  }
+
+  void _removeMealForm(int index) {
+    if (_drafts.length == 1) {
+      _drafts[index].clear();
+      return;
+    }
+
+    setState(() {
+      _errorText = null;
+      final removed = _drafts.removeAt(index);
+      removed.dispose();
+    });
+  }
+
+  void _submit() {
+    final filledDrafts = _drafts.where((draft) => draft.hasAnyInput).toList();
+
+    if (filledDrafts.isEmpty) {
+      setState(() {
+        _errorText = 'Add at least one meal to analyze.';
+      });
+      return;
+    }
+
+    final hasIncompleteDraft = filledDrafts.any(
+      (draft) => draft.mealName.isEmpty || draft.quantity.isEmpty,
+    );
+
+    if (hasIncompleteDraft) {
+      setState(() {
+        _errorText = 'Meal name and quantity are required.';
+      });
+      return;
+    }
+
+    Navigator.of(context).pop(
+      filledDrafts
+          .map(
+            (draft) => ManualNutritionInput(
+              mealName: draft.mealName,
+              quantity: draft.quantity,
+              notes: draft.notes,
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final isCompact = width < 380;
+
+    return Dialog(
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: isCompact ? 14 : 22,
+        vertical: 24,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(isCompact ? 20 : 24),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520, maxHeight: 680),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(isCompact ? 20 : 24),
+          child: Container(
+            color: Colors.white,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    isCompact ? 16 : 20,
+                    isCompact ? 16 : 20,
+                    isCompact ? 8 : 12,
+                    10,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Manual Log',
+                              style: TextStyle(
+                                fontSize: isCompact ? 18 : 20,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF0F172A),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Estimate nutrition from typed meal details.',
+                              style: TextStyle(
+                                fontSize: isCompact ? 12 : 13,
+                                color: const Color(0xFF64748B),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Use English food names for better estimates.',
+                              style: TextStyle(
+                                fontSize: isCompact ? 11.5 : 12,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF15803D),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: _addMealForm,
+                        tooltip: 'Add meal',
+                        icon: const Icon(Icons.add_circle_outline_rounded),
+                        color: const Color(0xFF16A34A),
+                      ),
+                    ],
+                  ),
+                ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isCompact ? 16 : 20,
+                    ),
+                    child: Column(
+                      children: [
+                        ..._drafts.asMap().entries.map(
+                              (entry) => _ManualMealForm(
+                                key: ValueKey(entry.value.id),
+                                draft: entry.value,
+                                index: entry.key,
+                                canRemove: _drafts.length > 1,
+                                onRemove: () => _removeMealForm(entry.key),
+                                isCompact: isCompact,
+                              ),
+                            ),
+                        if (_errorText != null) ...[
+                          const SizedBox(height: 2),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              _errorText!,
+                              style: const TextStyle(
+                                color: Color(0xFFDC2626),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.all(isCompact ? 16 : 20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Cancel'),
+                        ),
+                      ),
+                      SizedBox(width: isCompact ? 10 : 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _submit,
+                          icon: const Icon(Icons.auto_awesome_rounded),
+                          label: const Text('Analyze'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF16A34A),
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(
+                              vertical: isCompact ? 12 : 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ManualMealDraft {
+  static int _nextId = 0;
+
+  final int id = _nextId++;
+  final TextEditingController mealNameController = TextEditingController();
+  final TextEditingController quantityController = TextEditingController();
+  final TextEditingController notesController = TextEditingController();
+
+  String get mealName => mealNameController.text.trim();
+  String get quantity => quantityController.text.trim();
+  String get notes => notesController.text.trim();
+
+  bool get hasAnyInput =>
+      mealName.isNotEmpty || quantity.isNotEmpty || notes.isNotEmpty;
+
+  void clear() {
+    mealNameController.clear();
+    quantityController.clear();
+    notesController.clear();
+  }
+
+  void dispose() {
+    mealNameController.dispose();
+    quantityController.dispose();
+    notesController.dispose();
+  }
+}
+
+class _ManualMealForm extends StatelessWidget {
+  final _ManualMealDraft draft;
+  final int index;
+  final bool canRemove;
+  final VoidCallback onRemove;
+  final bool isCompact;
+
+  const _ManualMealForm({
+    super.key,
+    required this.draft,
+    required this.index,
+    required this.canRemove,
+    required this.onRemove,
+    required this.isCompact,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(bottom: isCompact ? 12 : 14),
+      padding: EdgeInsets.all(isCompact ? 12 : 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(isCompact ? 16 : 18),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Meal ${index + 1}',
+                  style: TextStyle(
+                    fontSize: isCompact ? 14 : 15,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF0F172A),
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: onRemove,
+                tooltip: canRemove ? 'Remove meal' : 'Clear meal',
+                icon: Icon(
+                  canRemove
+                      ? Icons.remove_circle_outline_rounded
+                      : Icons.cleaning_services_outlined,
+                ),
+                color: const Color(0xFFEF4444),
+              ),
+            ],
+          ),
+          SizedBox(height: isCompact ? 8 : 10),
+          TextField(
+            controller: draft.mealNameController,
+            textInputAction: TextInputAction.next,
+            decoration: _inputDecoration('Meal Name'),
+          ),
+          SizedBox(height: isCompact ? 8 : 10),
+          TextField(
+            controller: draft.quantityController,
+            textInputAction: TextInputAction.next,
+            decoration: _inputDecoration('Quantity'),
+          ),
+          SizedBox(height: isCompact ? 8 : 10),
+          TextField(
+            controller: draft.notesController,
+            minLines: 2,
+            maxLines: 4,
+            decoration: _inputDecoration('Optional Notes'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(isCompact ? 12 : 14),
+        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(isCompact ? 12 : 14),
+        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(isCompact ? 12 : 14),
+        borderSide: const BorderSide(color: Color(0xFF16A34A), width: 1.4),
+      ),
+    );
+  }
+}
+
 class _ReviewItemEditor extends StatelessWidget {
   final NutritionReviewItem item;
   final bool isCompact;
@@ -421,12 +843,12 @@ class _ReviewItemEditor extends StatelessWidget {
   final VoidCallback onRemove;
 
   const _ReviewItemEditor({
-    Key? key,
+    super.key,
     required this.item,
     required this.isCompact,
     required this.onChanged,
     required this.onRemove,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
