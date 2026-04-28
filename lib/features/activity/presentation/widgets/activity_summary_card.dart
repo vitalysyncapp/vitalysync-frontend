@@ -256,15 +256,11 @@ class ActivitySummaryCard extends StatelessWidget {
 
 class WeeklyStepAnalyticsCard extends StatefulWidget {
   final ActivityTrackingState state;
-  final VoidCallback? onRefresh;
-  final Future<void> Function(int goalSteps)? onEditGoal;
   final bool compact;
 
   const WeeklyStepAnalyticsCard({
     super.key,
     required this.state,
-    this.onRefresh,
-    this.onEditGoal,
     this.compact = false,
   });
 
@@ -340,41 +336,6 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
     }
   }
 
-  Future<void> _handleEditGoal(BuildContext context) async {
-    if (widget.onEditGoal == null) {
-      return;
-    }
-
-    final updatedGoal = await _showStepGoalDialog(
-      context,
-      initialGoalSteps: widget.state.log.goalSteps,
-    );
-    if (updatedGoal == null) {
-      return;
-    }
-
-    try {
-      await widget.onEditGoal!(updatedGoal);
-      if (!context.mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Daily step goal updated to ${NumberFormat.decimalPattern().format(updatedGoal)}.',
-          ),
-        ),
-      );
-    } catch (_) {
-      if (!context.mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to update your daily step goal.')),
-      );
-    }
-  }
-
   List<ActivityLog> _weeklyLogs(ActivityLog todayLog) {
     final logsByDate = <String, ActivityLog>{};
     for (final log in _historyLogs) {
@@ -417,9 +378,6 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
               (item.goalSteps > 0 && item.steps >= item.goalSteps),
         )
         .length;
-    final weeklyProgress = weeklyLogs.isEmpty
-        ? 0.0
-        : (goalDays / weeklyLogs.length).clamp(0.0, 1.0);
     final bestDay = weeklyLogs.reduce(
       (current, next) => current.steps >= next.steps ? current : next,
     );
@@ -436,11 +394,7 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
         : totalSteps > 0
         ? 'Keep moving'
         : 'Start your streak';
-    final syncLabel = widget.state.pendingSyncCount > 0
-        ? 'Sync pending'
-        : _isOffline
-        ? 'Offline cache'
-        : 'Last 7 days';
+    final syncLabel = _isOffline ? 'Offline cache' : 'Last 7 days';
 
     return Container(
       width: double.infinity,
@@ -517,27 +471,6 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
                           ],
                         ),
                       ),
-                      if (widget.onRefresh != null || widget.onEditGoal != null)
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (widget.onRefresh != null)
-                              IconButton(
-                                tooltip: 'Retry activity sync',
-                                onPressed: () {
-                                  widget.onRefresh?.call();
-                                  _loadHistory();
-                                },
-                                icon: const Icon(Icons.refresh_rounded),
-                              ),
-                            if (widget.onEditGoal != null)
-                              IconButton(
-                                tooltip: 'Edit daily step goal',
-                                onPressed: () => _handleEditGoal(context),
-                                icon: const Icon(Icons.edit_rounded),
-                              ),
-                          ],
-                        ),
                     ],
                   ),
                   const SizedBox(height: 18),
@@ -561,65 +494,20 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
                   const SizedBox(height: 16),
                   Row(
                     children: [
-                      Expanded(
-                        child: Text(
-                          'Daily step goal',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: pageSecondaryTextColor(context),
-                          ),
-                        ),
-                      ),
-                      Text(
-                        '${numberFormat.format(log.goalSteps)} steps',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: pagePrimaryTextColor(context),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: LinearProgressIndicator(
-                      minHeight: 10,
-                      value: weeklyProgress,
-                      backgroundColor: pageBorderColor(context),
-                      valueColor: AlwaysStoppedAnimation<Color>(statusColor),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Flexible(
-                        child: _StatusPill(
-                          label: '$bestDayLabel best: ${numberFormat.format(bestDay.steps)}',
-                          color: const Color(0xFF0EA5E9),
-                        ),
+                      _StatusPill(
+                        label:
+                            '$bestDayLabel best: ${numberFormat.format(bestDay.steps)}',
+                        color: const Color(0xFF0EA5E9),
                       ),
                       const SizedBox(width: 8),
-                      Flexible(
-                        child: _StatusPill(label: statusLabel, color: statusColor),
-                      ),
+                      _StatusPill(label: statusLabel, color: statusColor),
                     ],
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
                       Text(
-                        '$goalDays of ${weeklyLogs.length} goal days',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: pagePrimaryTextColor(context),
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '${(weeklyProgress * 100).round()}%',
+                        '$goalDays of ${weeklyLogs.length} goal days reached',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
@@ -650,20 +538,28 @@ Future<int?> _showStepGoalDialog(
   BuildContext context, {
   required int initialGoalSteps,
 }) async {
-  final controller = TextEditingController(text: initialGoalSteps.toString());
+  var goalInput = initialGoalSteps.toString();
   String? errorText;
 
-  final result = await showDialog<int>(
+  return showDialog<int>(
     context: context,
     builder: (dialogContext) {
       return StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
             title: const Text('Edit Daily Step Goal'),
-            content: TextField(
-              controller: controller,
+            content: TextFormField(
+              initialValue: goalInput,
               autofocus: true,
               keyboardType: TextInputType.number,
+              onChanged: (value) {
+                goalInput = value;
+                if (errorText != null) {
+                  setDialogState(() {
+                    errorText = null;
+                  });
+                }
+              },
               decoration: InputDecoration(
                 labelText: 'Goal steps',
                 hintText: '5000',
@@ -677,7 +573,7 @@ Future<int?> _showStepGoalDialog(
               ),
               FilledButton(
                 onPressed: () {
-                  final parsedGoal = int.tryParse(controller.text.trim());
+                  final parsedGoal = int.tryParse(goalInput.trim());
                   if (parsedGoal == null || parsedGoal < 1000) {
                     setDialogState(() {
                       errorText = 'Enter at least 1000 steps.';
@@ -702,9 +598,6 @@ Future<int?> _showStepGoalDialog(
       );
     },
   );
-
-  controller.dispose();
-  return result;
 }
 
 class _ActivityMetric extends StatelessWidget {

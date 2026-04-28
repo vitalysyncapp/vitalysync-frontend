@@ -16,6 +16,8 @@ class ApiConfig {
 
   static String activity(String path) => '$baseUrl/api/activity$path';
 
+  static String adaptive(String path) => '$baseUrl/api/adaptive$path';
+
   static String logs(String path) => '$baseUrl/api/logs$path';
 
   static String nutrition(String path) => '$baseUrl/api/nutrition$path';

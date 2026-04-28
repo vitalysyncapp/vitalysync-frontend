@@ -69,8 +69,6 @@ class Dashboard extends StatelessWidget {
                       return WeeklyStepAnalyticsCard(
                         state: activityState,
                         compact: true,
-                        onRefresh: () => ActivityService.instance.refresh(),
-                        onEditGoal: ActivityService.instance.updateGoalSteps,
                       );
                     },
                   ),

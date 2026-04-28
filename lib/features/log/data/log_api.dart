@@ -22,7 +22,18 @@ class HydrationStatus {
 }
 
 class LogApi {
+  static const List<String> workloadHoursBandOptions = [
+    'None',
+    '1-2 hours',
+    '3-4 hours',
+    '5-6 hours',
+    '6-7 hours',
+    '8-9 hours',
+    '10-12 hours',
+  ];
+
   static const String _localLogsKey = 'demo_local_logs';
+  static const String _localWeeklyPulseKeyPrefix = 'local_weekly_pulse';
   static const String _pendingLogsKeyPrefix = 'offline_pending_logs';
   static const String _cachedLogsKeyPrefix = 'cached_daily_logs';
   static const String _syncedStreakKeyPrefix = 'synced_log_streak';
@@ -33,6 +44,17 @@ class LogApi {
     final month = now.month.toString().padLeft(2, '0');
     final day = now.day.toString().padLeft(2, '0');
     return '${now.year}-$month-$day';
+  }
+
+  static String weekStartKey([DateTime? date]) {
+    final value = date ?? DateTime.now();
+    final normalized = DateTime(value.year, value.month, value.day);
+    final weekStart = normalized.subtract(
+      Duration(days: normalized.weekday - DateTime.monday),
+    );
+    final month = weekStart.month.toString().padLeft(2, '0');
+    final day = weekStart.day.toString().padLeft(2, '0');
+    return '${weekStart.year}-$month-$day';
   }
 
   static Future<int?> getStoredUserId() async {
@@ -75,6 +97,16 @@ class LogApi {
     }
 
     return fallback;
+  }
+
+  static String? normalizeWorkloadHoursBand(dynamic value) {
+    final normalized = value?.toString().trim() ?? '';
+    return workloadHoursBandOptions.contains(normalized) ? normalized : null;
+  }
+
+  static int? parseLikert(dynamic value) {
+    final parsed = parseInt(value, fallback: 0);
+    return parsed >= 1 && parsed <= 5 ? parsed : null;
   }
 
   static String? normalizeDateString(dynamic value) {
@@ -376,6 +408,9 @@ class LogApi {
     required int moodIndex,
     required int energyLevel,
     required double hydrationLiters,
+    required String workloadHoursBand,
+    required int perceivedStressLevel,
+    int? breakQualityLevel,
     required List<String> exerciseNames,
     required List<String> symptomNames,
   }) async {
@@ -389,6 +424,9 @@ class LogApi {
         moodIndex: moodIndex,
         energyLevel: energyLevel,
         hydrationLiters: hydrationLiters,
+        workloadHoursBand: workloadHoursBand,
+        perceivedStressLevel: perceivedStressLevel,
+        breakQualityLevel: breakQualityLevel,
         exerciseNames: exerciseNames,
         symptomNames: symptomNames,
         exerciseGoalMetadata: exerciseGoalMetadata,
@@ -407,6 +445,9 @@ class LogApi {
       'mood_index': moodIndex,
       'energy_level': energyLevel,
       'hydration_liters': hydrationLiters,
+      'workload_hours_band': workloadHoursBand,
+      'perceived_stress_level': perceivedStressLevel,
+      'break_quality_level': breakQualityLevel,
       'exercise_names': exerciseNames,
       'symptom_names': symptomNames,
       ...exerciseGoalMetadata,
@@ -444,11 +485,100 @@ class LogApi {
     }
   }
 
+  static Future<Map<String, dynamic>> fetchWeeklyPulseStatus() async {
+    final weekStart = weekStartKey();
+
+    if (await isDemoMode()) {
+      return _buildLocalWeeklyPulseStatus(weekStart);
+    }
+
+    final userId = await getStoredUserId();
+    if (userId == null) {
+      throw Exception('Missing logged-in user');
+    }
+
+    final response = await http
+        .get(
+          Uri.parse(
+            '${ApiConfig.logs('/weekly-pulse/status')}?user_id=$userId&date=${todayKey()}',
+          ),
+          headers: {'Content-Type': 'application/json'},
+        )
+        .timeout(_requestTimeout);
+
+    final data = _decodeResponseMap(response);
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        data['message']?.toString() ?? 'Failed to fetch weekly pulse',
+      );
+    }
+
+    return data;
+  }
+
+  static Future<Map<String, dynamic>> saveWeeklyPulse({
+    required int productivityFocusLevel,
+    required int recoveryRestLevel,
+    required int detachmentLevel,
+    required int accomplishmentLevel,
+  }) async {
+    if (parseLikert(productivityFocusLevel) == null ||
+        parseLikert(recoveryRestLevel) == null ||
+        parseLikert(detachmentLevel) == null ||
+        parseLikert(accomplishmentLevel) == null) {
+      throw Exception('Weekly pulse answers must be from 1 to 5');
+    }
+
+    final weekStart = weekStartKey();
+
+    if (await isDemoMode()) {
+      return _saveLocalWeeklyPulse(
+        weekStart: weekStart,
+        productivityFocusLevel: productivityFocusLevel,
+        recoveryRestLevel: recoveryRestLevel,
+        detachmentLevel: detachmentLevel,
+        accomplishmentLevel: accomplishmentLevel,
+      );
+    }
+
+    final userId = await getStoredUserId();
+    if (userId == null) {
+      throw Exception('Missing logged-in user');
+    }
+
+    final response = await http
+        .post(
+          Uri.parse(ApiConfig.logs('/weekly-pulse')),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'user_id': userId,
+            'response_date': todayKey(),
+            'productivity_focus_level': productivityFocusLevel,
+            'recovery_rest_level': recoveryRestLevel,
+            'detachment_level': detachmentLevel,
+            'accomplishment_level': accomplishmentLevel,
+          }),
+        )
+        .timeout(_requestTimeout);
+
+    final data = _decodeResponseMap(response);
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception(
+        data['message']?.toString() ?? 'Failed to save weekly pulse',
+      );
+    }
+
+    return data;
+  }
+
   static Future<void> clearLocalDemoData() async {
     final prefs = await SharedPreferences.getInstance();
     final logKeys = prefs.getKeys().where(
       (key) =>
           key == _localLogsKey ||
+          key.startsWith(_localWeeklyPulseKeyPrefix) ||
           key.startsWith(_pendingLogsKeyPrefix) ||
           key.startsWith(_cachedLogsKeyPrefix) ||
           key.startsWith(_syncedStreakKeyPrefix),
@@ -524,6 +654,9 @@ class LogApi {
     required int moodIndex,
     required int energyLevel,
     required double hydrationLiters,
+    required String workloadHoursBand,
+    required int perceivedStressLevel,
+    int? breakQualityLevel,
     required List<String> exerciseNames,
     required List<String> symptomNames,
     required Map<String, dynamic> exerciseGoalMetadata,
@@ -539,6 +672,9 @@ class LogApi {
       'mood_index': moodIndex,
       'energy_level': energyLevel,
       'hydration_liters': hydrationLiters,
+      'workload_hours_band': workloadHoursBand,
+      'perceived_stress_level': perceivedStressLevel,
+      'break_quality_level': breakQualityLevel,
       'exercise_names': exerciseNames,
       'symptom_names': symptomNames,
       ...exerciseGoalMetadata,
@@ -685,6 +821,10 @@ class LogApi {
       'mood_index': parseInt(log['mood_index']),
       'energy_level': parseInt(log['energy_level']),
       'hydration_liters': parseDouble(log['hydration_liters']),
+      'workload_hours_band':
+          normalizeWorkloadHoursBand(log['workload_hours_band']) ?? 'None',
+      'perceived_stress_level': parseLikert(log['perceived_stress_level']),
+      'break_quality_level': parseLikert(log['break_quality_level']),
       'exercise_names': _stringList(log['exercise_names']),
       'symptom_names': _stringList(log['symptom_names']),
       'exercise_goal_name': _nullableString(log['exercise_goal_name']),
@@ -927,6 +1067,12 @@ class LogApi {
     normalized['mood_index'] = parseInt(log['mood_index']);
     normalized['energy_level'] = parseInt(log['energy_level']);
     normalized['hydration_liters'] = parseDouble(log['hydration_liters']);
+    normalized['workload_hours_band'] =
+        normalizeWorkloadHoursBand(log['workload_hours_band']) ?? 'None';
+    normalized['perceived_stress_level'] = parseLikert(
+      log['perceived_stress_level'],
+    );
+    normalized['break_quality_level'] = parseLikert(log['break_quality_level']);
     normalized['exercise_names'] = _stringList(log['exercise_names']);
     normalized['symptom_names'] = _stringList(log['symptom_names']);
     normalized['exercise_goal_name'] = _nullableString(
@@ -1036,6 +1182,65 @@ class LogApi {
 
   static String _syncedStreakKey(int userId) {
     return '${_syncedStreakKeyPrefix}_$userId';
+  }
+
+  static String _localWeeklyPulseKey(String weekStart) {
+    return '${_localWeeklyPulseKeyPrefix}_$weekStart';
+  }
+
+  static Future<Map<String, dynamic>> _buildLocalWeeklyPulseStatus(
+    String weekStart,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_localWeeklyPulseKey(weekStart));
+    Map<String, dynamic>? response;
+
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is Map) {
+          response = Map<String, dynamic>.from(decoded);
+        }
+      } catch (_) {
+        response = null;
+      }
+    }
+
+    return {
+      'week_start_date': weekStart,
+      'has_response': response != null,
+      'response': response,
+    };
+  }
+
+  static Future<Map<String, dynamic>> _saveLocalWeeklyPulse({
+    required String weekStart,
+    required int productivityFocusLevel,
+    required int recoveryRestLevel,
+    required int detachmentLevel,
+    required int accomplishmentLevel,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final now = DateTime.now().toIso8601String();
+    final response = <String, dynamic>{
+      'pulse_id': 0,
+      'user_id': 0,
+      'week_start_date': weekStart,
+      'productivity_focus_level': productivityFocusLevel,
+      'recovery_rest_level': recoveryRestLevel,
+      'detachment_level': detachmentLevel,
+      'accomplishment_level': accomplishmentLevel,
+      'created_at': now,
+      'updated_at': now,
+    };
+
+    await prefs.setString(_localWeeklyPulseKey(weekStart), jsonEncode(response));
+
+    return {
+      'message': 'Weekly pulse saved locally',
+      'week_start_date': weekStart,
+      'response': response,
+    };
   }
 
   static Future<List<Map<String, dynamic>>> _readLocalLogs() async {

@@ -11,6 +11,7 @@ import '../../features/exercise/data/exercise_recommendation_model.dart';
 import '../../features/exercise/data/exercise_recommendation_service.dart';
 import '../../features/exercise/presentation/widgets/assistant_exercise_card.dart';
 import '../../features/exercise/presentation/widgets/selected_exercise_goal_card.dart';
+import '../../features/log/data/log_api.dart';
 import '../theme/app_page_style.dart';
 
 const _assistantAnimationPath = 'assets/animations/Assistant.json';
@@ -682,6 +683,13 @@ class _AssistantExerciseDialogState extends State<_AssistantExerciseDialog> {
   late List<ExerciseRecommendationModel> _recommendations;
   int _pageIndex = 0;
   bool _isLoadingRecommendations = false;
+  bool _isLoadingWeeklyPulse = true;
+  bool _isSavingWeeklyPulse = false;
+  bool _hasWeeklyPulseResponse = false;
+  int? _productivityFocusLevel;
+  int? _recoveryRestLevel;
+  int? _detachmentLevel;
+  int? _accomplishmentLevel;
 
   @override
   void initState() {
@@ -690,6 +698,7 @@ class _AssistantExerciseDialogState extends State<_AssistantExerciseDialog> {
     if (_recommendations.isEmpty) {
       _loadRecommendations();
     }
+    _loadWeeklyPulseStatus();
   }
 
   @override
@@ -711,6 +720,91 @@ class _AssistantExerciseDialogState extends State<_AssistantExerciseDialog> {
       _recommendations = recommendations;
       _isLoadingRecommendations = false;
     });
+  }
+
+  Future<void> _loadWeeklyPulseStatus() async {
+    setState(() {
+      _isLoadingWeeklyPulse = true;
+    });
+
+    try {
+      final data = await LogApi.fetchWeeklyPulseStatus();
+      final response = data['response'] as Map<String, dynamic>?;
+      if (!mounted) return;
+
+      setState(() {
+        _hasWeeklyPulseResponse = data['has_response'] == true;
+        _productivityFocusLevel = LogApi.parseLikert(
+          response?['productivity_focus_level'],
+        );
+        _recoveryRestLevel = LogApi.parseLikert(
+          response?['recovery_rest_level'],
+        );
+        _detachmentLevel = LogApi.parseLikert(response?['detachment_level']);
+        _accomplishmentLevel = LogApi.parseLikert(
+          response?['accomplishment_level'],
+        );
+        _isLoadingWeeklyPulse = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoadingWeeklyPulse = false;
+      });
+    }
+  }
+
+  Future<void> _saveWeeklyPulse() async {
+    final productivityFocusLevel = _productivityFocusLevel;
+    final recoveryRestLevel = _recoveryRestLevel;
+    final detachmentLevel = _detachmentLevel;
+    final accomplishmentLevel = _accomplishmentLevel;
+
+    if (productivityFocusLevel == null ||
+        recoveryRestLevel == null ||
+        detachmentLevel == null ||
+        accomplishmentLevel == null) {
+      return;
+    }
+
+    setState(() {
+      _isSavingWeeklyPulse = true;
+    });
+
+    try {
+      await LogApi.saveWeeklyPulse(
+        productivityFocusLevel: productivityFocusLevel,
+        recoveryRestLevel: recoveryRestLevel,
+        detachmentLevel: detachmentLevel,
+        accomplishmentLevel: accomplishmentLevel,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _hasWeeklyPulseResponse = true;
+        _isSavingWeeklyPulse = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Weekly pulse saved.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _isSavingWeeklyPulse = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Unable to save weekly pulse: ${error.toString().replaceFirst('Exception: ', '')}',
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _chooseExercise(
@@ -809,6 +903,36 @@ class _AssistantExerciseDialogState extends State<_AssistantExerciseDialog> {
                         isSaving: goalState.isSaving,
                         onChoose: _chooseExercise,
                       ),
+                    _WeeklyPulseCard(
+                      isLoading: _isLoadingWeeklyPulse,
+                      isSaving: _isSavingWeeklyPulse,
+                      hasResponse: _hasWeeklyPulseResponse,
+                      productivityFocusLevel: _productivityFocusLevel,
+                      recoveryRestLevel: _recoveryRestLevel,
+                      detachmentLevel: _detachmentLevel,
+                      accomplishmentLevel: _accomplishmentLevel,
+                      onProductivityChanged: (value) {
+                        setState(() {
+                          _productivityFocusLevel = value;
+                        });
+                      },
+                      onRecoveryChanged: (value) {
+                        setState(() {
+                          _recoveryRestLevel = value;
+                        });
+                      },
+                      onDetachmentChanged: (value) {
+                        setState(() {
+                          _detachmentLevel = value;
+                        });
+                      },
+                      onAccomplishmentChanged: (value) {
+                        setState(() {
+                          _accomplishmentLevel = value;
+                        });
+                      },
+                      onSave: _saveWeeklyPulse,
+                    ),
                   ];
 
                   return Column(
@@ -937,6 +1061,280 @@ class _SmartNudgeDialogCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _WeeklyPulseCard extends StatelessWidget {
+  final bool isLoading;
+  final bool isSaving;
+  final bool hasResponse;
+  final int? productivityFocusLevel;
+  final int? recoveryRestLevel;
+  final int? detachmentLevel;
+  final int? accomplishmentLevel;
+  final ValueChanged<int> onProductivityChanged;
+  final ValueChanged<int> onRecoveryChanged;
+  final ValueChanged<int> onDetachmentChanged;
+  final ValueChanged<int> onAccomplishmentChanged;
+  final VoidCallback onSave;
+
+  const _WeeklyPulseCard({
+    required this.isLoading,
+    required this.isSaving,
+    required this.hasResponse,
+    required this.productivityFocusLevel,
+    required this.recoveryRestLevel,
+    required this.detachmentLevel,
+    required this.accomplishmentLevel,
+    required this.onProductivityChanged,
+    required this.onRecoveryChanged,
+    required this.onDetachmentChanged,
+    required this.onAccomplishmentChanged,
+    required this.onSave,
+  });
+
+  bool get _canSave =>
+      productivityFocusLevel != null &&
+      recoveryRestLevel != null &&
+      detachmentLevel != null &&
+      accomplishmentLevel != null &&
+      !isSaving;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const _AssistantLoadingCard();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: pageSurfaceColor(context),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: pageBorderColor(context)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF1FB489), Color(0xFF56B4D3)],
+                  ),
+                ),
+                child: const Icon(
+                  Icons.auto_graph_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Weekly Pulse',
+                      style: TextStyle(
+                        color: pagePrimaryTextColor(context),
+                        fontSize: 19,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      hasResponse
+                          ? 'This week is saved. You can update it anytime.'
+                          : 'Four quick checks for focus, recovery, and weekly patterns.',
+                      style: TextStyle(
+                        color: pageSecondaryTextColor(context),
+                        fontSize: 13.5,
+                        height: 1.35,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _PulseLikertQuestion(
+            title: 'I was able to stay focused on important tasks this week.',
+            lowLabel: 'Scattered',
+            highLabel: 'Focused',
+            value: productivityFocusLevel,
+            onChanged: onProductivityChanged,
+          ),
+          const SizedBox(height: 16),
+          _PulseLikertQuestion(
+            title: 'I had enough breaks or recovery time this week.',
+            lowLabel: 'Limited',
+            highLabel: 'Rested',
+            value: recoveryRestLevel,
+            onChanged: onRecoveryChanged,
+          ),
+          const SizedBox(height: 16),
+          _PulseLikertQuestion(
+            title:
+                'I felt emotionally distant from my responsibilities this week.',
+            lowLabel: 'Connected',
+            highLabel: 'Detached',
+            value: detachmentLevel,
+            onChanged: onDetachmentChanged,
+          ),
+          const SizedBox(height: 16),
+          _PulseLikertQuestion(
+            title: 'I felt I made meaningful progress this week.',
+            lowLabel: 'Stuck',
+            highLabel: 'Progress',
+            value: accomplishmentLevel,
+            onChanged: onAccomplishmentChanged,
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _canSave ? onSave : null,
+              icon: isSaving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.check_circle_outline_rounded),
+              label: Text(
+                isSaving
+                    ? 'Saving...'
+                    : hasResponse
+                    ? 'Update Weekly Pulse'
+                    : 'Save Weekly Pulse',
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1FB489),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PulseLikertQuestion extends StatelessWidget {
+  final String title;
+  final String lowLabel;
+  final String highLabel;
+  final int? value;
+  final ValueChanged<int> onChanged;
+
+  const _PulseLikertQuestion({
+    required this.title,
+    required this.lowLabel,
+    required this.highLabel,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            color: pagePrimaryTextColor(context),
+            fontSize: 14.5,
+            height: 1.35,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: List.generate(5, (index) {
+            final optionValue = index + 1;
+            final selected = value == optionValue;
+
+            return Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(right: index == 4 ? 0 : 7),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () => onChanged(optionValue),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOut,
+                    height: 46,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? const Color(0xFF1FB489)
+                          : Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white.withValues(alpha: 0.06)
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: selected
+                            ? const Color(0xFF1FB489)
+                            : pageBorderColor(context),
+                      ),
+                    ),
+                    child: Text(
+                      '$optionValue',
+                      style: TextStyle(
+                        color: selected
+                            ? Colors.white
+                            : pagePrimaryTextColor(context),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                lowLabel,
+                style: TextStyle(
+                  color: pageSecondaryTextColor(context),
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Text(
+              highLabel,
+              style: TextStyle(
+                color: pageSecondaryTextColor(context),
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

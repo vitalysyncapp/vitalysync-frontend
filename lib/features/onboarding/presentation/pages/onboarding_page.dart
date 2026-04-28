@@ -366,9 +366,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
       final savedProfile = Map<String, dynamic>.from(
         response['profile'] as Map? ?? profile,
       );
+      final session = await UserSessionController.instance.load();
       await OnboardingService.saveDefaultsFromProfile(savedProfile);
       await UserSessionController.instance.updateOnboardingCompleted(true);
       await UserSessionController.instance.saveSupplementalProfile(
+        gender: session.gender,
         userType: _role,
       );
 

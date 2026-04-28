@@ -24,6 +24,9 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   int moodIndex = 3;
   double energyLevel = 1;
   double hydration = 1.5;
+  String workloadHoursBand = 'None';
+  int? perceivedStressLevel;
+  int? breakQualityLevel;
   double defaultSleepHours = 7;
   String exerciseGoalLabel = '3–4 days';
   int? workloadContext;
@@ -161,6 +164,13 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       moodIndex = LogApi.parseInt(log['mood_index'], fallback: 3);
       energyLevel = LogApi.parseDouble(log['energy_level'], fallback: 1);
       hydration = LogApi.parseDouble(log['hydration_liters'], fallback: 1.5);
+      workloadHoursBand =
+          LogApi.normalizeWorkloadHoursBand(log['workload_hours_band']) ??
+          'None';
+      perceivedStressLevel = LogApi.parseLikert(
+        log['perceived_stress_level'],
+      );
+      breakQualityLevel = LogApi.parseLikert(log['break_quality_level']);
       selectedExercises
         ..clear()
         ..addAll(
@@ -180,6 +190,8 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
 
   bool _validateLog() {
     if (hydration <= 0) return false;
+    if (workloadHoursBand.isEmpty) return false;
+    if (perceivedStressLevel == null) return false;
     if (selectedExercises.isEmpty) return false;
     if (selectedSymptoms.isEmpty) return false;
     return true;
@@ -190,7 +202,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Please complete hydration, exercise, and symptoms before saving.',
+            'Please complete hydration, workload, stress, exercise, and symptoms before saving.',
           ),
         ),
       );
@@ -208,6 +220,9 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
         moodIndex: moodIndex,
         energyLevel: energyLevel.round(),
         hydrationLiters: hydration,
+        workloadHoursBand: workloadHoursBand,
+        perceivedStressLevel: perceivedStressLevel!,
+        breakQualityLevel: breakQualityLevel,
         exerciseNames: selectedExercises.toList()..sort(),
         symptomNames: selectedSymptoms.toList()..sort(),
       );
@@ -267,6 +282,9 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     moodIndex = 3;
     energyLevel = 1;
     hydration = 1.5;
+    workloadHoursBand = 'None';
+    perceivedStressLevel = null;
+    breakQualityLevel = null;
     selectedExercises.clear();
     selectedSymptoms.clear();
   }
@@ -351,6 +369,10 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                                       moodIndex: moodIndex,
                                       energyLevel: energyLevel,
                                       hydration: hydration,
+                                      workloadHoursBand: workloadHoursBand,
+                                      perceivedStressLevel:
+                                          perceivedStressLevel,
+                                      breakQualityLevel: breakQualityLevel,
                                       selectedExercises: selectedExercises,
                                       selectedSymptoms: selectedSymptoms,
                                       sleepLabels: sleepLabels,
@@ -359,6 +381,8 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                                       exercises: exercises,
                                       symptoms: symptoms,
                                       exerciseGoalLabel: exerciseGoalLabel,
+                                      workloadOptions:
+                                          LogApi.workloadHoursBandOptions,
                                       onSleepChanged: (value) {
                                         setState(() {
                                           sleepHours = value;
@@ -398,6 +422,21 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                                       onHydrationReset: () {
                                         setState(() {
                                           hydration = 0;
+                                        });
+                                      },
+                                      onWorkloadChanged: (value) {
+                                        setState(() {
+                                          workloadHoursBand = value;
+                                        });
+                                      },
+                                      onPerceivedStressChanged: (value) {
+                                        setState(() {
+                                          perceivedStressLevel = value;
+                                        });
+                                      },
+                                      onBreakQualityChanged: (value) {
+                                        setState(() {
+                                          breakQualityLevel = value;
                                         });
                                       },
                                       onExerciseToggle: _toggleExercise,
