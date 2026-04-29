@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
+import '../../features/adaptive/data/adaptive_nudge_api.dart';
 import '../../features/activity/data/activity_service.dart';
 import '../../features/exercise/data/exercise_goal_service.dart';
 import '../../features/exercise/data/exercise_recommendation_model.dart';
@@ -12,6 +13,7 @@ import '../../features/exercise/data/exercise_recommendation_service.dart';
 import '../../features/exercise/presentation/widgets/assistant_exercise_card.dart';
 import '../../features/exercise/presentation/widgets/selected_exercise_goal_card.dart';
 import '../../features/log/data/log_api.dart';
+import '../notifications/local_notification_service.dart';
 import '../theme/app_page_style.dart';
 
 const _assistantAnimationPath = 'assets/animations/Assistant.json';
@@ -46,7 +48,9 @@ class _FloatingSmartNudgeAssistantState
   Offset _buttonOffset = Offset.zero;
   Timer? _bubbleSwitchTimer;
   List<ExerciseRecommendationModel> _recommendations = const [];
+  List<AdaptiveNudgeRecommendation> _adaptiveNudges = const [];
   int _lastCompletionEventId = 0;
+  bool? _hasPendingWeeklyPulse;
 
   final ExerciseRecommendationService _recommendationService =
       const ExerciseRecommendationService();
@@ -57,6 +61,8 @@ class _FloatingSmartNudgeAssistantState
     ExerciseGoalService.instance.start();
     ExerciseGoalService.instance.notifier.addListener(_handleGoalEvent);
     _loadRecommendations();
+    _loadAdaptiveNudges();
+    _loadWeeklyPulseIndicator();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _showBubble();
@@ -77,6 +83,47 @@ class _FloatingSmartNudgeAssistantState
     setState(() {
       _recommendations = recommendations;
     });
+  }
+
+  Future<List<AdaptiveNudgeRecommendation>> _loadAdaptiveNudges() async {
+    try {
+      final response = await AdaptiveNudgeApi.fetchRecommendations(limit: 3);
+      if (!mounted) {
+        return response.recommendations;
+      }
+
+      setState(() {
+        _adaptiveNudges = response.recommendations;
+      });
+
+      return response.recommendations;
+    } catch (_) {
+      if (!mounted) {
+        return _adaptiveNudges;
+      }
+
+      setState(() {
+        _adaptiveNudges = const [];
+      });
+      return const [];
+    }
+  }
+
+  Future<void> _loadWeeklyPulseIndicator() async {
+    try {
+      final data = await LogApi.fetchWeeklyPulseStatus();
+      if (!mounted) return;
+
+      setState(() {
+        _hasPendingWeeklyPulse = data['has_response'] != true;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _hasPendingWeeklyPulse = false;
+      });
+    }
   }
 
   void _handleGoalEvent() {
@@ -135,6 +182,7 @@ class _FloatingSmartNudgeAssistantState
     });
 
     await _loadRecommendations();
+    await _loadAdaptiveNudges();
     if (!mounted) return;
 
     await showModalBottomSheet<void>(
@@ -146,10 +194,14 @@ class _FloatingSmartNudgeAssistantState
           message: widget.message,
           emoji: widget.emoji,
           recommendations: _recommendations,
+          adaptiveNudges: _adaptiveNudges,
           onRefreshRecommendations: _loadRecommendations,
+          onRefreshAdaptiveNudges: _loadAdaptiveNudges,
         );
       },
     );
+
+    await _loadWeeklyPulseIndicator();
   }
 
   void _handleAssistantTap() {
@@ -336,7 +388,9 @@ class _FloatingSmartNudgeAssistantState
 
                           return _SmartNudgeBubble(
                             emoji: widget.emoji,
-                            message: widget.message,
+                            message: _adaptiveNudges.isEmpty
+                                ? widget.message
+                                : _adaptiveNudges.first.message,
                             onClose: _hideBubble,
                           );
                         },
@@ -362,6 +416,7 @@ class _FloatingSmartNudgeAssistantState
                     size: widget.buttonSize,
                     isActive: _isBubbleVisible,
                     isDragging: _isDragging,
+                    hasPendingWeeklyPulse: _hasPendingWeeklyPulse == true,
                     onTap: _handleAssistantTap,
                   ),
                 ),
@@ -661,13 +716,18 @@ class _AssistantExerciseDialog extends StatefulWidget {
   final String message;
   final String emoji;
   final List<ExerciseRecommendationModel> recommendations;
+  final List<AdaptiveNudgeRecommendation> adaptiveNudges;
   final Future<void> Function() onRefreshRecommendations;
+  final Future<List<AdaptiveNudgeRecommendation>> Function()
+  onRefreshAdaptiveNudges;
 
   const _AssistantExerciseDialog({
     required this.message,
     required this.emoji,
     required this.recommendations,
+    required this.adaptiveNudges,
     required this.onRefreshRecommendations,
+    required this.onRefreshAdaptiveNudges,
   });
 
   @override
@@ -681,11 +741,14 @@ class _AssistantExerciseDialogState extends State<_AssistantExerciseDialog> {
       const ExerciseRecommendationService();
 
   late List<ExerciseRecommendationModel> _recommendations;
+  late List<AdaptiveNudgeRecommendation> _adaptiveNudges;
   int _pageIndex = 0;
   bool _isLoadingRecommendations = false;
+  bool _isLoadingAdaptiveNudges = false;
   bool _isLoadingWeeklyPulse = true;
   bool _isSavingWeeklyPulse = false;
   bool _hasWeeklyPulseResponse = false;
+  bool _isEditingWeeklyPulse = false;
   int? _productivityFocusLevel;
   int? _recoveryRestLevel;
   int? _detachmentLevel;
@@ -695,8 +758,12 @@ class _AssistantExerciseDialogState extends State<_AssistantExerciseDialog> {
   void initState() {
     super.initState();
     _recommendations = widget.recommendations;
+    _adaptiveNudges = widget.adaptiveNudges;
     if (_recommendations.isEmpty) {
       _loadRecommendations();
+    }
+    if (_adaptiveNudges.isEmpty) {
+      _loadAdaptiveNudges();
     }
     _loadWeeklyPulseStatus();
   }
@@ -722,6 +789,66 @@ class _AssistantExerciseDialogState extends State<_AssistantExerciseDialog> {
     });
   }
 
+  Future<void> _loadAdaptiveNudges() async {
+    setState(() {
+      _isLoadingAdaptiveNudges = true;
+    });
+
+    final recommendations = await widget.onRefreshAdaptiveNudges();
+    if (!mounted) return;
+
+    setState(() {
+      _adaptiveNudges = recommendations;
+      _isLoadingAdaptiveNudges = false;
+    });
+  }
+
+  Future<void> _handleNudgeStatus(
+    AdaptiveNudgeRecommendation recommendation,
+    String status,
+  ) async {
+    final eventId = recommendation.nudgeEventId;
+    if (eventId != null) {
+      await AdaptiveNudgeApi.updateNudgeStatus(
+        eventId: eventId,
+        status: status,
+      );
+    }
+
+    if (!mounted) return;
+
+    final label = status == 'dismissed'
+        ? 'Nudge dismissed.'
+        : status == 'completed'
+        ? 'Nudge marked complete.'
+        : 'Nudge saved.';
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(label)));
+  }
+
+  Future<void> _remindForNudge(
+    AdaptiveNudgeRecommendation recommendation,
+  ) async {
+    final eventId = recommendation.nudgeEventId;
+    if (eventId != null) {
+      await AdaptiveNudgeApi.updateNudgeStatus(
+        eventId: eventId,
+        status: 'snoozed',
+      );
+    }
+
+    await LocalNotificationService.instance.scheduleAdaptiveReminder(
+      title: recommendation.title,
+      body: recommendation.message,
+      payload: 'adaptive_nudge:${recommendation.nudgeType}',
+    );
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Reminder scheduled for later.')),
+    );
+  }
+
   Future<void> _loadWeeklyPulseStatus() async {
     setState(() {
       _isLoadingWeeklyPulse = true;
@@ -734,6 +861,7 @@ class _AssistantExerciseDialogState extends State<_AssistantExerciseDialog> {
 
       setState(() {
         _hasWeeklyPulseResponse = data['has_response'] == true;
+        _isEditingWeeklyPulse = data['has_response'] != true;
         _productivityFocusLevel = LogApi.parseLikert(
           response?['productivity_focus_level'],
         );
@@ -784,12 +912,13 @@ class _AssistantExerciseDialogState extends State<_AssistantExerciseDialog> {
 
       setState(() {
         _hasWeeklyPulseResponse = true;
+        _isEditingWeeklyPulse = false;
         _isSavingWeeklyPulse = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Weekly pulse saved.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Weekly pulse saved.')));
     } catch (error) {
       if (!mounted) return;
 
@@ -834,6 +963,12 @@ class _AssistantExerciseDialogState extends State<_AssistantExerciseDialog> {
 
   Future<void> _completeGoal() async {
     await ExerciseGoalService.instance.completeGoal();
+  }
+
+  void _redoWeeklyPulse() {
+    setState(() {
+      _isEditingWeeklyPulse = true;
+    });
   }
 
   Future<void> _cancelGoal() async {
@@ -886,6 +1021,10 @@ class _AssistantExerciseDialogState extends State<_AssistantExerciseDialog> {
                     _SmartNudgeDialogCard(
                       emoji: widget.emoji,
                       message: widget.message,
+                      recommendations: _adaptiveNudges,
+                      isLoading: _isLoadingAdaptiveNudges,
+                      onStatusChanged: _handleNudgeStatus,
+                      onRemind: _remindForNudge,
                     ),
                     if (hasGoal)
                       SelectedExerciseGoalCard(
@@ -907,6 +1046,7 @@ class _AssistantExerciseDialogState extends State<_AssistantExerciseDialog> {
                       isLoading: _isLoadingWeeklyPulse,
                       isSaving: _isSavingWeeklyPulse,
                       hasResponse: _hasWeeklyPulseResponse,
+                      isEditing: _isEditingWeeklyPulse,
                       productivityFocusLevel: _productivityFocusLevel,
                       recoveryRestLevel: _recoveryRestLevel,
                       detachmentLevel: _detachmentLevel,
@@ -932,6 +1072,7 @@ class _AssistantExerciseDialogState extends State<_AssistantExerciseDialog> {
                         });
                       },
                       onSave: _saveWeeklyPulse,
+                      onRedo: _redoWeeklyPulse,
                     ),
                   ];
 
@@ -1008,11 +1149,34 @@ class _AssistantExerciseDialogState extends State<_AssistantExerciseDialog> {
 class _SmartNudgeDialogCard extends StatelessWidget {
   final String emoji;
   final String message;
+  final List<AdaptiveNudgeRecommendation> recommendations;
+  final bool isLoading;
+  final Future<void> Function(
+    AdaptiveNudgeRecommendation recommendation,
+    String status,
+  )
+  onStatusChanged;
+  final Future<void> Function(AdaptiveNudgeRecommendation recommendation)
+  onRemind;
 
-  const _SmartNudgeDialogCard({required this.emoji, required this.message});
+  const _SmartNudgeDialogCard({
+    required this.emoji,
+    required this.message,
+    required this.recommendations,
+    required this.isLoading,
+    required this.onStatusChanged,
+    required this.onRemind,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final primary = recommendations.isEmpty ? null : recommendations.first;
+    final title = primary?.title ?? 'Smart Nudge';
+    final body = primary?.message ?? message;
+    final actionLabel = primary?.actionLabel ?? 'Done';
+    final priority = primary?.priority ?? 'low';
+    final priorityColor = _priorityColor(priority);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1041,17 +1205,46 @@ class _SmartNudgeDialogCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          const Text(
-            'Smart Nudge',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: priorityColor.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.38),
+                  ),
+                ),
+                child: Text(
+                  priority.toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Text(
-            message,
+            body,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 14,
@@ -1059,9 +1252,140 @@ class _SmartNudgeDialogCard extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
+          if (isLoading) ...[
+            const SizedBox(height: 14),
+            LinearProgressIndicator(
+              minHeight: 4,
+              color: Colors.white,
+              backgroundColor: Colors.white.withValues(alpha: 0.2),
+            ),
+          ],
+          if (primary != null) ...[
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Icon(
+                  Icons.insights_rounded,
+                  size: 17,
+                  color: Colors.white.withValues(alpha: 0.86),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    primary.triggerReason.isEmpty
+                        ? 'Based on your recent pattern'
+                        : primary.triggerReason,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.84),
+                      fontSize: 12,
+                      height: 1.35,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (recommendations.length > 1) ...[
+              const SizedBox(height: 12),
+              ...recommendations
+                  .skip(1)
+                  .take(2)
+                  .map(
+                    (recommendation) => Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.78),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              recommendation.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.82),
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+            ],
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    await onStatusChanged(primary, 'dismissed');
+                  },
+                  icon: const Icon(Icons.close_rounded, size: 17),
+                  label: const Text('Dismiss'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.5),
+                    ),
+                  ),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    await onRemind(primary);
+                  },
+                  icon: const Icon(
+                    Icons.notifications_active_rounded,
+                    size: 17,
+                  ),
+                  label: const Text('Remind'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.5),
+                    ),
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    await onStatusChanged(primary, 'completed');
+                  },
+                  icon: const Icon(Icons.check_rounded, size: 18),
+                  label: Text(actionLabel),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF187A66),
+                    elevation: 0,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  Color _priorityColor(String priority) {
+    switch (priority) {
+      case 'urgent':
+        return const Color(0xFFFF6B6B);
+      case 'high':
+        return const Color(0xFFFFB454);
+      case 'medium':
+        return const Color(0xFFB9F6CA);
+      default:
+        return const Color(0xFFE0F2FE);
+    }
   }
 }
 
@@ -1069,6 +1393,7 @@ class _WeeklyPulseCard extends StatelessWidget {
   final bool isLoading;
   final bool isSaving;
   final bool hasResponse;
+  final bool isEditing;
   final int? productivityFocusLevel;
   final int? recoveryRestLevel;
   final int? detachmentLevel;
@@ -1078,11 +1403,13 @@ class _WeeklyPulseCard extends StatelessWidget {
   final ValueChanged<int> onDetachmentChanged;
   final ValueChanged<int> onAccomplishmentChanged;
   final VoidCallback onSave;
+  final VoidCallback onRedo;
 
   const _WeeklyPulseCard({
     required this.isLoading,
     required this.isSaving,
     required this.hasResponse,
+    required this.isEditing,
     required this.productivityFocusLevel,
     required this.recoveryRestLevel,
     required this.detachmentLevel,
@@ -1092,6 +1419,7 @@ class _WeeklyPulseCard extends StatelessWidget {
     required this.onDetachmentChanged,
     required this.onAccomplishmentChanged,
     required this.onSave,
+    required this.onRedo,
   });
 
   bool get _canSave =>
@@ -1107,126 +1435,254 @@ class _WeeklyPulseCard extends StatelessWidget {
       return const _AssistantLoadingCard();
     }
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark
+        ? const Color(0xFF0F1F2E).withValues(alpha: 0.96)
+        : const Color(0xFFF8FEFC);
+    final headerGradient = isDark
+        ? const [Color(0xFF123655), Color(0xFF1FB489)]
+        : const [Color(0xFFE8FFF5), Color(0xFFE8F7FF)];
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: pageSurfaceColor(context),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: pageBorderColor(context)),
+        color: cardColor,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : const Color(0xFFBCEBDD),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(
+              0xFF1FB489,
+            ).withValues(alpha: isDark ? 0.12 : 0.08),
+            blurRadius: 26,
+            offset: const Offset(0, 16),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF1FB489), Color(0xFF56B4D3)],
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: headerGradient,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.white.withValues(alpha: 0.82),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: isDark ? 0.12 : 0.7),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: isDark ? 0.1 : 0.9),
+                    ),
+                  ),
+                  child: const Text(
+                    '\u{1F33F}',
+                    style: TextStyle(fontSize: 24),
                   ),
                 ),
-                child: const Icon(
-                  Icons.auto_graph_rounded,
-                  color: Colors.white,
-                  size: 24,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Weekly Pulse',
+                        style: TextStyle(
+                          color: pagePrimaryTextColor(context),
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        hasResponse
+                            ? 'Your check-in is saved for this Monday-based week.'
+                            : 'A calm check-in for focus, rest, distance, and wins.',
+                        style: TextStyle(
+                          color: pageSecondaryTextColor(context),
+                          fontSize: 13.5,
+                          height: 1.35,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (hasResponse && !isEditing) ...[
+            const SizedBox(height: 16),
+            _WeeklyPulseSavedView(onRedo: onRedo),
+          ] else ...[
+            const SizedBox(height: 16),
+            _PulseLikertQuestion(
+              emoji: '\u{1F3AF}',
+              title: 'I was able to stay focused on important tasks this week.',
+              lowLabel: 'Scattered',
+              highLabel: 'Focused',
+              accentColor: const Color(0xFF38BDF8),
+              value: productivityFocusLevel,
+              onChanged: onProductivityChanged,
+            ),
+            const SizedBox(height: 12),
+            _PulseLikertQuestion(
+              emoji: '\u{1F319}',
+              title: 'I had enough breaks or recovery time this week.',
+              lowLabel: 'Limited',
+              highLabel: 'Rested',
+              accentColor: const Color(0xFF8B5CF6),
+              value: recoveryRestLevel,
+              onChanged: onRecoveryChanged,
+            ),
+            const SizedBox(height: 12),
+            _PulseLikertQuestion(
+              emoji: '\u{1FAE7}',
+              title:
+                  'I felt emotionally distant from my responsibilities this week.',
+              lowLabel: 'Connected',
+              highLabel: 'Detached',
+              accentColor: const Color(0xFF14B8A6),
+              value: detachmentLevel,
+              onChanged: onDetachmentChanged,
+            ),
+            const SizedBox(height: 12),
+            _PulseLikertQuestion(
+              emoji: '\u{2728}',
+              title: 'I felt I made meaningful progress this week.',
+              lowLabel: 'Stuck',
+              highLabel: 'Progress',
+              accentColor: const Color(0xFFF59E0B),
+              value: accomplishmentLevel,
+              onChanged: onAccomplishmentChanged,
+            ),
+            const SizedBox(height: 18),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _canSave ? onSave : null,
+                icon: isSaving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.check_circle_outline_rounded),
+                label: Text(
+                  isSaving
+                      ? 'Saving...'
+                      : hasResponse
+                      ? 'Update Weekly Pulse'
+                      : 'Save Weekly Pulse',
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1FB489),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Weekly Pulse',
-                      style: TextStyle(
-                        color: pagePrimaryTextColor(context),
-                        fontSize: 19,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      hasResponse
-                          ? 'This week is saved. You can update it anytime.'
-                          : 'Four quick checks for focus, recovery, and weekly patterns.',
-                      style: TextStyle(
-                        color: pageSecondaryTextColor(context),
-                        fontSize: 13.5,
-                        height: 1.35,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _WeeklyPulseSavedView extends StatelessWidget {
+  final VoidCallback onRedo;
+
+  const _WeeklyPulseSavedView({required this.onRedo});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.05)
+            : Colors.white.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : const Color(0xFFD7F5E7),
+        ),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 58,
+            height: 58,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFFDCFCE7),
+              border: Border.all(color: const Color(0xFF86EFAC)),
+            ),
+            child: const Text('\u{2705}', style: TextStyle(fontSize: 28)),
           ),
-          const SizedBox(height: 16),
-          _PulseLikertQuestion(
-            title: 'I was able to stay focused on important tasks this week.',
-            lowLabel: 'Scattered',
-            highLabel: 'Focused',
-            value: productivityFocusLevel,
-            onChanged: onProductivityChanged,
+          const SizedBox(height: 12),
+          Text(
+            'Weekly pulse saved',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: pagePrimaryTextColor(context),
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
           ),
-          const SizedBox(height: 16),
-          _PulseLikertQuestion(
-            title: 'I had enough breaks or recovery time this week.',
-            lowLabel: 'Limited',
-            highLabel: 'Rested',
-            value: recoveryRestLevel,
-            onChanged: onRecoveryChanged,
+          const SizedBox(height: 6),
+          Text(
+            'You are set for this week. A fresh pulse opens again next Monday.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: pageSecondaryTextColor(context),
+              fontSize: 13.5,
+              height: 1.38,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          const SizedBox(height: 16),
-          _PulseLikertQuestion(
-            title:
-                'I felt emotionally distant from my responsibilities this week.',
-            lowLabel: 'Connected',
-            highLabel: 'Detached',
-            value: detachmentLevel,
-            onChanged: onDetachmentChanged,
-          ),
-          const SizedBox(height: 16),
-          _PulseLikertQuestion(
-            title: 'I felt I made meaningful progress this week.',
-            lowLabel: 'Stuck',
-            highLabel: 'Progress',
-            value: accomplishmentLevel,
-            onChanged: onAccomplishmentChanged,
-          ),
-          const SizedBox(height: 18),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _canSave ? onSave : null,
-              icon: isSaving
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.check_circle_outline_rounded),
-              label: Text(
-                isSaving
-                    ? 'Saving...'
-                    : hasResponse
-                    ? 'Update Weekly Pulse'
-                    : 'Save Weekly Pulse',
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1FB489),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 13),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
+          const SizedBox(height: 14),
+          OutlinedButton.icon(
+            onPressed: onRedo,
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Redo Weekly Pulse'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF15803D),
+              side: const BorderSide(color: Color(0xFF86EFAC)),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
           ),
@@ -1237,104 +1693,151 @@ class _WeeklyPulseCard extends StatelessWidget {
 }
 
 class _PulseLikertQuestion extends StatelessWidget {
+  final String emoji;
   final String title;
   final String lowLabel;
   final String highLabel;
+  final Color accentColor;
   final int? value;
   final ValueChanged<int> onChanged;
 
   const _PulseLikertQuestion({
+    required this.emoji,
     required this.title,
     required this.lowLabel,
     required this.highLabel,
+    required this.accentColor,
     required this.value,
     required this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: TextStyle(
-            color: pagePrimaryTextColor(context),
-            fontSize: 14.5,
-            height: 1.35,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: List.generate(5, (index) {
-            final optionValue = index + 1;
-            final selected = value == optionValue;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-            return Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(right: index == 4 ? 0 : 7),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(14),
-                  onTap: () => onChanged(optionValue),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeOut,
-                    height: 46,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? const Color(0xFF1FB489)
-                          : Theme.of(context).brightness == Brightness.dark
-                          ? Colors.white.withValues(alpha: 0.06)
-                          : Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.045)
+            : Colors.white.withValues(alpha: 0.86),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : accentColor.withValues(alpha: 0.18),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: isDark ? 0.18 : 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(emoji, style: const TextStyle(fontSize: 17)),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: pagePrimaryTextColor(context),
+                    fontSize: 14.5,
+                    height: 1.35,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: List.generate(5, (index) {
+              final optionValue = index + 1;
+              final selected = value == optionValue;
+
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(right: index == 4 ? 0 : 7),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: () => onChanged(optionValue),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOut,
+                      height: 44,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
                         color: selected
-                            ? const Color(0xFF1FB489)
-                            : pageBorderColor(context),
+                            ? accentColor
+                            : isDark
+                            ? Colors.white.withValues(alpha: 0.06)
+                            : const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: selected
+                              ? accentColor
+                              : pageBorderColor(context),
+                        ),
+                        boxShadow: selected
+                            ? [
+                                BoxShadow(
+                                  color: accentColor.withValues(alpha: 0.24),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ]
+                            : null,
                       ),
-                    ),
-                    child: Text(
-                      '$optionValue',
-                      style: TextStyle(
-                        color: selected
-                            ? Colors.white
-                            : pagePrimaryTextColor(context),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
+                      child: Text(
+                        '$optionValue',
+                        style: TextStyle(
+                          color: selected
+                              ? Colors.white
+                              : pagePrimaryTextColor(context),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                     ),
                   ),
                 ),
+              );
+            }),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  lowLabel,
+                  style: TextStyle(
+                    color: pageSecondaryTextColor(context),
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
-            );
-          }),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                lowLabel,
+              Text(
+                highLabel,
                 style: TextStyle(
                   color: pageSecondaryTextColor(context),
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-            ),
-            Text(
-              highLabel,
-              style: TextStyle(
-                color: pageSecondaryTextColor(context),
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ],
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1421,6 +1924,7 @@ class _FloatingHeartButton extends StatelessWidget {
   final double size;
   final bool isActive;
   final bool isDragging;
+  final bool? hasPendingWeeklyPulse;
   final VoidCallback onTap;
 
   const _FloatingHeartButton({
@@ -1428,6 +1932,7 @@ class _FloatingHeartButton extends StatelessWidget {
     required this.size,
     required this.isActive,
     required this.isDragging,
+    required this.hasPendingWeeklyPulse,
     required this.onTap,
   });
 
@@ -1454,48 +1959,81 @@ class _FloatingHeartButton extends StatelessWidget {
                   : isActive
                   ? 1.04
                   : 1,
-              child: Container(
-                width: size,
-                height: size,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: isDark
-                        ? const [Color(0xFF123655), Color(0xFF1FB489)]
-                        : const [Color(0xFFFFFFFF), Color(0xFFE8FAFF)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  border: Border.all(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.12)
-                        : Colors.white.withValues(alpha: 0.92),
-                    width: 1.2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(
-                        alpha: isDark ? 0.32 : 0.14,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: size,
+                    height: size,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: isDark
+                            ? const [Color(0xFF123655), Color(0xFF1FB489)]
+                            : const [Color(0xFFFFFFFF), Color(0xFFE8FAFF)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                      blurRadius: 22,
-                      offset: const Offset(0, 12),
+                      border: Border.all(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.12)
+                            : Colors.white.withValues(alpha: 0.92),
+                        width: 1.2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(
+                            alpha: isDark ? 0.32 : 0.14,
+                          ),
+                          blurRadius: 22,
+                          offset: const Offset(0, 12),
+                        ),
+                        BoxShadow(
+                          color: const Color(
+                            0xFF40B8D6,
+                          ).withValues(alpha: isDark ? 0.2 : 0.26),
+                          blurRadius: 20,
+                          spreadRadius: -4,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
                     ),
-                    BoxShadow(
-                      color: const Color(
-                        0xFF40B8D6,
-                      ).withValues(alpha: isDark ? 0.2 : 0.26),
-                      blurRadius: 20,
-                      spreadRadius: -4,
-                      offset: const Offset(0, 6),
+                    child: _AssistantLottieIcon(
+                      emoji: emoji,
+                      size: 44,
+                      fallbackFontSize: 26,
                     ),
-                  ],
-                ),
-                child: _AssistantLottieIcon(
-                  emoji: emoji,
-                  size: 44,
-                  fallbackFontSize: 26,
-                ),
+                  ),
+                  if (hasPendingWeeklyPulse == true)
+                    Positioned(
+                      right: 1,
+                      top: 1,
+                      child: Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFACC15),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isDark
+                                ? const Color(0xFF123655)
+                                : Colors.white,
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(
+                                0xFFEAB308,
+                              ).withValues(alpha: 0.38),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           ),

@@ -5,6 +5,8 @@ import '../../../../features/onboarding/data/onboarding_api.dart';
 import '../../../../features/onboarding/services/onboarding_service.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
+import 'edit_profile_page.dart';
+import 'personal_information_page.dart';
 import '../widgets/wellness_profile_card.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -400,15 +402,6 @@ class _ProfilePageState extends State<ProfilePage> {
         _waterGoal = normalizedWater;
         _exerciseTarget = normalizedExercise;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _isDemoMode
-                ? 'Profile updated locally for demo mode.'
-                : 'Profile updated successfully.',
-          ),
-        ),
-      );
       return true;
     } catch (error) {
       if (mounted) {
@@ -422,62 +415,87 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Future<void> _showEditProfileSheet() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) => _EditProfileSheet(
-        initialUsername: _username,
-        initialEmail: _email,
-        initialAge: _age,
-        initialGender: _dropdownValueOrNull(_gender, _genderOptions),
-        initialUserType: _dropdownValueOrNull(
-          _userType,
-          _roleOptions,
-          aliases: const {
-            'freelance': 'Freelancer',
-            'self employed': 'Freelancer',
-            'working professional': 'Working Professional',
-            'young professional': 'Working Professional',
-            'others': 'Other',
-          },
-        ),
-        initialLifestyle:
-            _dropdownValueOrNull(_lifestyleType, _lifestyleOptions) ??
-            'Moderately Active',
-        initialWorkIntensity:
-            _dropdownValueOrNull(_workIntensity, _workIntensityOptions) ??
-            'Medium',
-        initialSleepSchedule: _sleepSchedule,
-        initialWaterGoal: _waterGoal,
-        initialExerciseTarget: _exerciseTarget,
-        onSave:
-            ({
-              required String username,
-              required String email,
-              required int? age,
-              required String? gender,
-              required String? userType,
-              required String lifestyleType,
-              required String workIntensity,
-              required String sleepSchedule,
-              required String waterGoal,
-              required String exerciseTarget,
-            }) {
-              return _saveProfileChanges(
-                username: username,
-                email: email,
-                age: age,
-                gender: gender,
-                userType: userType,
-                lifestyleType: lifestyleType,
-                workIntensity: workIntensity,
-                sleepSchedule: sleepSchedule,
-                waterGoal: waterGoal,
-                exerciseTarget: exerciseTarget,
-              );
+  Future<void> _openEditProfilePage() async {
+    await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditProfilePage(
+          initialUsername: _username,
+          initialEmail: _email,
+          initialAge: _age,
+          initialGender: _dropdownValueOrNull(_gender, _genderOptions),
+          initialUserType: _dropdownValueOrNull(
+            _userType,
+            _roleOptions,
+            aliases: const {
+              'freelance': 'Freelancer',
+              'self employed': 'Freelancer',
+              'working professional': 'Working Professional',
+              'young professional': 'Working Professional',
+              'others': 'Other',
             },
+          ),
+          initialLifestyle:
+              _dropdownValueOrNull(_lifestyleType, _lifestyleOptions) ??
+              'Moderately Active',
+          initialWorkIntensity:
+              _dropdownValueOrNull(_workIntensity, _workIntensityOptions) ??
+              'Medium',
+          initialSleepSchedule: _sleepSchedule,
+          initialWaterGoal: _waterGoal,
+          initialExerciseTarget: _exerciseTarget,
+          onSave:
+              ({
+                required String username,
+                required String email,
+                required int? age,
+                required String? gender,
+                required String? userType,
+                required String lifestyleType,
+                required String workIntensity,
+                required String sleepSchedule,
+                required String waterGoal,
+                required String exerciseTarget,
+              }) {
+                return _saveProfileChanges(
+                  username: username,
+                  email: email,
+                  age: age,
+                  gender: gender,
+                  userType: userType,
+                  lifestyleType: lifestyleType,
+                  workIntensity: workIntensity,
+                  sleepSchedule: sleepSchedule,
+                  waterGoal: waterGoal,
+                  exerciseTarget: exerciseTarget,
+                );
+              },
+        ),
+      ),
+    );
+  }
+
+  void _openPersonalInformationPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PersonalInformationPage(
+          username: _username,
+          email: _email,
+          age: _age,
+          gender: _gender,
+          role: _userType,
+          lifestyleType: _lifestyleType,
+          wellnessGoal: _wellnessGoal,
+          usualSleepTime: _usualSleepTime,
+          usualWakeTime: _usualWakeTime,
+          workIntensity: _workIntensity,
+          waterGoal: _waterGoal,
+          exerciseTarget: _exerciseTarget,
+          burnoutLevel: _initialBurnoutLevel,
+          burnoutScore: _initialBurnoutScore,
+          isDemoMode: _isDemoMode,
+        ),
       ),
     );
   }
@@ -489,9 +507,12 @@ class _ProfilePageState extends State<ProfilePage> {
     required Color iconColor,
     required String title,
     required String subtitle,
+    VoidCallback? onTap,
+    Widget? trailing,
   }) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+      onTap: onTap,
       leading: Container(
         width: 48,
         height: 48,
@@ -519,6 +540,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ),
       ),
+      trailing: trailing,
     );
   }
 
@@ -566,9 +588,9 @@ class _ProfilePageState extends State<ProfilePage> {
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           colors: [
-                            Color(0xFF2F6BFF),
-                            Color(0xFF3B82F6),
-                            Color(0xFF0891B2),
+                            Color(0xFF60A5FA),
+                            Color(0xFF38BDF8),
+                            Color(0xFF2DD4BF),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -576,7 +598,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         borderRadius: BorderRadius.circular(26),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF2563EB).withOpacity(0.20),
+                            color: const Color(0xFF38BDF8).withOpacity(0.18),
                             blurRadius: 18,
                             offset: const Offset(0, 10),
                           ),
@@ -635,6 +657,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                     ),
                                     const SizedBox(height: 12),
                                     Container(
+                                      constraints: const BoxConstraints(
+                                        maxWidth: 190,
+                                      ),
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 12,
                                         vertical: 7,
@@ -651,14 +676,16 @@ class _ProfilePageState extends State<ProfilePage> {
                                             backgroundColor: Color(0xFF4CFF8F),
                                           ),
                                           const SizedBox(width: 8),
-                                          Text(
-                                            _isDemoMode
-                                                ? 'Demo Mode'
-                                                : 'Profile Active',
-                                            style: const TextStyle(
-                                              fontSize: 13,
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w600,
+                                          Flexible(
+                                            child: Text(
+                                              _userType ?? 'Role not set',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                             ),
                                           ),
                                         ],
@@ -669,26 +696,37 @@ class _ProfilePageState extends State<ProfilePage> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 22),
+                          const SizedBox(height: 18),
                           Divider(
                             color: Colors.white.withOpacity(0.22),
                             thickness: 1,
                           ),
-                          const SizedBox(height: 18),
+                          const SizedBox(height: 14),
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
-                              _StatItem(
-                                value: '$_currentStreak',
-                                label: 'Current Streak',
+                              Expanded(
+                                child: _StatItem(
+                                  value: '$_currentStreak',
+                                  label: 'Current',
+                                ),
                               ),
-                              _StatItem(
-                                value: '$_longestStreak',
-                                label: 'Best Streak',
+                              Expanded(
+                                child: _StatItem(
+                                  value: '$_longestStreak',
+                                  label: 'Best',
+                                ),
                               ),
-                              _StatItem(
-                                value: _age?.toString() ?? '--',
-                                label: 'Age',
+                              Expanded(
+                                child: _StatItem(
+                                  value: _age?.toString() ?? '--',
+                                  label: 'Age',
+                                ),
+                              ),
+                              Expanded(
+                                child: _StatItem(
+                                  value: _gender ?? '--',
+                                  label: 'Gender',
+                                ),
                               ),
                             ],
                           ),
@@ -743,6 +781,11 @@ class _ProfilePageState extends State<ProfilePage> {
                             title: 'Profile Details',
                             subtitle:
                                 '${_gender ?? 'Gender not set'} - ${_userType ?? 'Role not set'}',
+                            onTap: _openPersonalInformationPage,
+                            trailing: Icon(
+                              Icons.chevron_right_rounded,
+                              color: pageSecondaryTextColor(context),
+                            ),
                           ),
                           Divider(
                             height: 1,
@@ -769,7 +812,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               child: OutlinedButton.icon(
                                 onPressed: _isSaving
                                     ? null
-                                    : _showEditProfileSheet,
+                                    : _openEditProfilePage,
                                 icon: const Icon(Icons.edit_outlined),
                                 label: const Text(
                                   'Edit Profile',
@@ -867,404 +910,46 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 }
 
-typedef _SaveProfileCallback =
-    Future<bool> Function({
-      required String username,
-      required String email,
-      required int? age,
-      required String? gender,
-      required String? userType,
-      required String lifestyleType,
-      required String workIntensity,
-      required String sleepSchedule,
-      required String waterGoal,
-      required String exerciseTarget,
-    });
-
-class _EditProfileSheet extends StatefulWidget {
-  const _EditProfileSheet({
-    required this.initialUsername,
-    required this.initialEmail,
-    required this.initialAge,
-    required this.initialGender,
-    required this.initialUserType,
-    required this.initialLifestyle,
-    required this.initialWorkIntensity,
-    required this.initialSleepSchedule,
-    required this.initialWaterGoal,
-    required this.initialExerciseTarget,
-    required this.onSave,
-  });
-
-  final String initialUsername;
-  final String initialEmail;
-  final int? initialAge;
-  final String? initialGender;
-  final String? initialUserType;
-  final String initialLifestyle;
-  final String initialWorkIntensity;
-  final String initialSleepSchedule;
-  final String initialWaterGoal;
-  final String initialExerciseTarget;
-  final _SaveProfileCallback onSave;
-
-  @override
-  State<_EditProfileSheet> createState() => _EditProfileSheetState();
-}
-
-class _EditProfileSheetState extends State<_EditProfileSheet> {
-  static const List<String> _genderOptions = ['Male', 'Female', 'Other'];
-  static const List<String> _roleOptions = [
-    'Student',
-    'Working Professional',
-    'Freelancer',
-    'Unemployed',
-    'Other',
-  ];
-  static const List<String> _lifestyleOptions = [
-    'Sedentary',
-    'Lightly Active',
-    'Moderately Active',
-    'Active',
-    'Very Active',
-  ];
-  static const List<String> _workIntensityOptions = ['Low', 'Medium', 'High'];
-
-  final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _usernameController;
-  late final TextEditingController _emailController;
-  late final TextEditingController _ageController;
-  late final TextEditingController _sleepController;
-  late final TextEditingController _waterGoalController;
-  late final TextEditingController _exerciseTargetController;
-
-  late String? _selectedGender;
-  late String? _selectedUserType;
-  late String _selectedLifestyle;
-  late String _selectedIntensity;
-  bool _isSubmitting = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _usernameController = TextEditingController(text: widget.initialUsername);
-    _emailController = TextEditingController(text: widget.initialEmail);
-    _ageController = TextEditingController(
-      text: widget.initialAge?.toString() ?? '',
-    );
-    _sleepController = TextEditingController(text: widget.initialSleepSchedule);
-    _waterGoalController = TextEditingController(text: widget.initialWaterGoal);
-    _exerciseTargetController = TextEditingController(
-      text: widget.initialExerciseTarget,
-    );
-    _selectedGender = widget.initialGender;
-    _selectedUserType = widget.initialUserType;
-    _selectedLifestyle = widget.initialLifestyle;
-    _selectedIntensity = widget.initialWorkIntensity;
-  }
-
-  @override
-  void dispose() {
-    _usernameController.dispose();
-    _emailController.dispose();
-    _ageController.dispose();
-    _sleepController.dispose();
-    _waterGoalController.dispose();
-    _exerciseTargetController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _handleSave() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isSubmitting = true);
-    try {
-      final didSave = await widget.onSave(
-        username: _usernameController.text.trim(),
-        email: _emailController.text.trim(),
-        age: int.tryParse(_ageController.text.trim()),
-        gender: _selectedGender,
-        userType: _selectedUserType,
-        lifestyleType: _selectedLifestyle,
-        workIntensity: _selectedIntensity,
-        sleepSchedule: _sleepController.text.trim(),
-        waterGoal: _waterGoalController.text.trim(),
-        exerciseTarget: _exerciseTargetController.text.trim(),
-      );
-
-      if (didSave && mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF162033) : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: SafeArea(
-          top: false,
-          child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(
-              20,
-              16,
-              20,
-              pageBottomContentPadding(context),
-            ),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 44,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.white24
-                            : const Color(0xFFD3DAE6),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  Text(
-                    'Edit Profile',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: pagePrimaryTextColor(context),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  _buildSheetTextField(
-                    context: context,
-                    controller: _usernameController,
-                    label: 'Username',
-                    validator: (value) => value == null || value.trim().isEmpty
-                        ? 'Enter a username'
-                        : null,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildSheetTextField(
-                    context: context,
-                    controller: _emailController,
-                    label: 'Email',
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      final text = value?.trim() ?? '';
-                      if (text.isEmpty) return 'Enter an email';
-                      if (!RegExp(r'\S+@\S+\.\S+').hasMatch(text))
-                        return 'Enter a valid email';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _buildSheetTextField(
-                    context: context,
-                    controller: _ageController,
-                    label: 'Age',
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildSheetDropdownField(
-                    context: context,
-                    label: 'Gender',
-                    value: _selectedGender,
-                    items: _genderOptions,
-                    onChanged: (value) =>
-                        setState(() => _selectedGender = value),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildSheetDropdownField(
-                    context: context,
-                    label: 'Current Role',
-                    value: _selectedUserType,
-                    items: _roleOptions,
-                    onChanged: (value) =>
-                        setState(() => _selectedUserType = value),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildSheetDropdownField(
-                    context: context,
-                    label: 'Lifestyle Type',
-                    value: _selectedLifestyle,
-                    items: _lifestyleOptions,
-                    onChanged: (value) {
-                      if (value != null)
-                        setState(() => _selectedLifestyle = value);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _buildSheetDropdownField(
-                    context: context,
-                    label: 'Work Intensity',
-                    value: _selectedIntensity,
-                    items: _workIntensityOptions,
-                    onChanged: (value) {
-                      if (value != null)
-                        setState(() => _selectedIntensity = value);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _buildSheetTextField(
-                    context: context,
-                    controller: _sleepController,
-                    label: 'Sleep Schedule',
-                  ),
-                  const SizedBox(height: 12),
-                  _buildSheetTextField(
-                    context: context,
-                    controller: _waterGoalController,
-                    label: 'Daily Water Goal',
-                  ),
-                  const SizedBox(height: 12),
-                  _buildSheetTextField(
-                    context: context,
-                    controller: _exerciseTargetController,
-                    label: 'Exercise Target',
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _isSubmitting ? null : _handleSave,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2563EB),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: _isSubmitting
-                          ? const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.4,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text(
-                              'Save Changes',
-                              style: TextStyle(fontWeight: FontWeight.w700),
-                            ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSheetTextField({
-    required BuildContext context,
-    required TextEditingController controller,
-    required String label,
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      validator: validator,
-      decoration: InputDecoration(
-        labelText: label,
-        filled: true,
-        fillColor: Theme.of(context).brightness == Brightness.dark
-            ? Colors.white.withOpacity(0.05)
-            : const Color(0xFFF8FAFF),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: pageBorderColor(context)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSheetDropdownField({
-    required BuildContext context,
-    required String label,
-    required String? value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-  }) {
-    return DropdownButtonFormField<String>(
-      value: value,
-      onChanged: onChanged,
-      decoration: InputDecoration(
-        labelText: label,
-        filled: true,
-        fillColor: Theme.of(context).brightness == Brightness.dark
-            ? Colors.white.withOpacity(0.05)
-            : const Color(0xFFF8FAFF),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: pageBorderColor(context)),
-        ),
-      ),
-      items: items
-          .map(
-            (item) => DropdownMenuItem<String>(value: item, child: Text(item)),
-          )
-          .toList(),
-    );
-  }
-}
-
 class _StatItem extends StatelessWidget {
   final String value, label;
   const _StatItem({required this.value, required this.label});
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 3),
+      child: Column(
+        children: [
+          SizedBox(
+            height: 22,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                maxLines: 1,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13.5,
-            color: Colors.white.withOpacity(0.88),
-            fontWeight: FontWeight.w500,
+          const SizedBox(height: 3),
+          Text(
+            label,
+            maxLines: 1,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 11.5,
+              color: Colors.white.withValues(alpha: 0.86),
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

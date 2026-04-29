@@ -3,7 +3,13 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart';
 
 import '../features/auth/presentation/pages/loading_screen.dart';
+import '../shared/notifications/local_notification_service.dart';
+import '../shared/notifications/notification_payload_router.dart';
 import '../shared/preferences/app_preferences.dart';
+import '../shared/preferences/user_session.dart';
+import 'main_navigation.dart';
+
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
 class MyApp extends StatefulWidget {
   const MyApp({Key? key}) : super(key: key);
@@ -30,6 +36,37 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     _preferences.load();
+    LocalNotificationService.instance.onNotificationPayload =
+        _handleNotificationPayload;
+  }
+
+  @override
+  void dispose() {
+    LocalNotificationService.instance.onNotificationPayload = null;
+    super.dispose();
+  }
+
+  Future<void> _handleNotificationPayload(String payload) async {
+    final session = await UserSessionController.instance.load();
+    if (!session.isDemoMode && session.userId == null) {
+      return;
+    }
+
+    final navigator = appNavigatorKey.currentState;
+    if (navigator == null) {
+      LocalNotificationService.instance.rememberPendingPayload(payload);
+      return;
+    }
+
+    navigator.pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => MainNavigation(
+          initialIndex: tabIndexForNotificationPayload(payload),
+          openNutritionLogOnStart: shouldOpenNutritionLog(payload),
+        ),
+      ),
+      (_) => false,
+    );
   }
 
   @override
@@ -40,6 +77,7 @@ class _MyAppState extends State<MyApp> {
         Intl.defaultLocale = prefs.locale.languageCode;
 
         return MaterialApp(
+          navigatorKey: appNavigatorKey,
           title: 'VitalySync',
           debugShowCheckedModeBanner: false,
           locale: prefs.locale,

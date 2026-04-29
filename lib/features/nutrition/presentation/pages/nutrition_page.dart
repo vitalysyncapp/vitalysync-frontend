@@ -113,17 +113,25 @@ class _NutritionPageState extends State<NutritionPage> {
   }
 
   Future<void> _onAddMeal() async {
-    final meals = await showDialog<List<ManualNutritionInput>>(
+    final result = await showDialog<_ManualLogResult>(
       context: context,
       barrierDismissible: true,
-      builder: (dialogContext) => const _ManualLogDialog(),
+      builder: (dialogContext) => _ManualLogDialog(
+        initialMealType: _selectedMealType,
+      ),
     );
 
-    if (!mounted || meals == null || meals.isEmpty) {
+    if (!mounted || result == null || result.meals.isEmpty) {
       return;
     }
 
-    await _analyzeManualMeals(meals);
+    setState(() {
+      _selectedMealType = result.mealType;
+      _attemptId = null;
+      _reviewItems = [];
+    });
+
+    await _analyzeManualMeals(result.meals);
   }
 
   Future<void> _scrollToLogNewMealCard() async {
@@ -495,7 +503,11 @@ class _NutritionPageState extends State<NutritionPage> {
 }
 
 class _ManualLogDialog extends StatefulWidget {
-  const _ManualLogDialog();
+  final String initialMealType;
+
+  const _ManualLogDialog({
+    required this.initialMealType,
+  });
 
   @override
   State<_ManualLogDialog> createState() => _ManualLogDialogState();
@@ -503,7 +515,14 @@ class _ManualLogDialog extends StatefulWidget {
 
 class _ManualLogDialogState extends State<_ManualLogDialog> {
   final List<_ManualMealDraft> _drafts = [_ManualMealDraft()];
+  late String _selectedMealType;
   String? _errorText;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedMealType = widget.initialMealType;
+  }
 
   @override
   void dispose() {
@@ -555,15 +574,18 @@ class _ManualLogDialogState extends State<_ManualLogDialog> {
     }
 
     Navigator.of(context).pop(
-      filledDrafts
-          .map(
-            (draft) => ManualNutritionInput(
-              mealName: draft.mealName,
-              quantity: draft.quantity,
-              notes: draft.notes,
-            ),
-          )
-          .toList(),
+      _ManualLogResult(
+        mealType: _selectedMealType,
+        meals: filledDrafts
+            .map(
+              (draft) => ManualNutritionInput(
+                mealName: draft.mealName,
+                quantity: draft.quantity,
+                notes: draft.notes,
+              ),
+            )
+            .toList(),
+      ),
     );
   }
 
@@ -645,7 +667,18 @@ class _ManualLogDialogState extends State<_ManualLogDialog> {
                       horizontal: isCompact ? 16 : 20,
                     ),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        MealTypeChoices(
+                          selectedMealType: _selectedMealType,
+                          onMealTypeChanged: (value) {
+                            setState(() {
+                              _selectedMealType = value;
+                              _errorText = null;
+                            });
+                          },
+                        ),
+                        SizedBox(height: isCompact ? 12 : 14),
                         ..._drafts.asMap().entries.map(
                               (entry) => _ManualMealForm(
                                 key: ValueKey(entry.value.id),
@@ -709,6 +742,16 @@ class _ManualLogDialogState extends State<_ManualLogDialog> {
       ),
     );
   }
+}
+
+class _ManualLogResult {
+  final String mealType;
+  final List<ManualNutritionInput> meals;
+
+  const _ManualLogResult({
+    required this.mealType,
+    required this.meals,
+  });
 }
 
 class _ManualMealDraft {

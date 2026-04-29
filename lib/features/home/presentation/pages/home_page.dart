@@ -5,6 +5,7 @@ import '../../data/device_location_service.dart';
 import '../../data/environment_api.dart';
 import '../../data/environment_model.dart';
 import '../../../../features/activity/data/activity_service.dart';
+import '../../../../features/dashboard/data/burnout_score_api.dart';
 import '../../../../features/activity/presentation/widgets/activity_summary_card.dart';
 import '../../../../features/log/data/log_api.dart';
 import '../../../../features/onboarding/services/onboarding_service.dart';
@@ -32,6 +33,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   String _sleepValue = '--';
   String _sleepSubtitle = 'No log yet';
+  String? _sleepQualityLabel;
+  Color _sleepQualityColor = Colors.blue;
   String _hydrationValue = '--';
   String _hydrationSubtitle = 'No log yet';
   String? _hydrationLevel;
@@ -74,12 +77,27 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Future<void> _loadBurnoutBaseline() async {
     final defaults = await OnboardingService.loadDefaults();
+    BurnoutScoreSnapshot? latestScore;
+
+    try {
+      latestScore = await BurnoutScoreApi.fetchLatestScore();
+    } catch (_) {
+      latestScore = null;
+    }
 
     if (!mounted) return;
 
     setState(() {
-      _burnoutScore = defaults.burnoutScoreForDisplay;
-      _burnoutStatus = _burnoutStatusForLevel(defaults.initialBurnoutLevel);
+      if (latestScore != null) {
+        _burnoutScore = latestScore.overallScore.round();
+        _burnoutStatus = _burnoutStatusForRisk(
+          latestScore.riskLevel,
+          latestScore.confidenceScore,
+        );
+      } else {
+        _burnoutScore = defaults.burnoutScoreForDisplay;
+        _burnoutStatus = _burnoutStatusForLevel(defaults.initialBurnoutLevel);
+      }
     });
   }
 
@@ -93,6 +111,22 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         return 'High - Make room for support and rest';
       default:
         return 'Complete onboarding to set your baseline';
+    }
+  }
+
+  String _burnoutStatusForRisk(String level, double confidenceScore) {
+    final confidence = confidenceScore.round();
+    switch (level) {
+      case 'low':
+        return 'Low - Current patterns look steady ($confidence% confidence)';
+      case 'moderate':
+        return 'Moderate - Watch recovery trends ($confidence% confidence)';
+      case 'high':
+        return 'High - Recovery support is recommended ($confidence% confidence)';
+      case 'critical':
+        return 'Critical - Prioritize support and rest ($confidence% confidence)';
+      default:
+        return 'Current score available ($confidence% confidence)';
     }
   }
 
@@ -127,6 +161,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           _hydrationSubtitle = _isDemoMode
               ? 'Start with a demo check-in'
               : 'No log yet';
+          _sleepQualityLabel = null;
+          _sleepQualityColor = Colors.blue;
           _hydrationLevel = null;
           _hydrationLevelColor = Colors.green;
           _isLoadingSummary = false;
@@ -139,10 +175,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       final hydrationStatus = LogApi.getHydrationStatus(
         log['hydration_liters'],
       );
+      final sleepQuality = LogApi.parseInt(log['sleep_quality'], fallback: -1);
 
       setState(() {
         _sleepValue = LogApi.formatSleepHours(log['sleep_hours']);
         _sleepSubtitle = dateLabel;
+        _sleepQualityLabel = _sleepQualityLabelFor(sleepQuality);
+        _sleepQualityColor = _sleepQualityColorFor(sleepQuality);
         _hydrationValue = LogApi.formatHydrationLiters(log['hydration_liters']);
         _hydrationSubtitle = dateLabel;
         _hydrationLevel = hydrationStatus.shortLabel;
@@ -158,6 +197,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ? 'Demo summary unavailable'
             : 'Offline - summary unavailable';
         _hydrationSubtitle = _sleepSubtitle;
+        _sleepQualityLabel = null;
+        _sleepQualityColor = Colors.blue;
         _hydrationLevel = null;
         _hydrationLevelColor = Colors.green;
         _isLoadingSummary = false;
@@ -255,6 +296,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             subtitle: _sleepSubtitle,
                             color: Colors.blue,
                             isLoading: _isLoadingSummary,
+                            statusHint: _sleepQualityLabel,
+                            statusColor: _sleepQualityColor,
                           ),
                         ),
                       ),
@@ -332,6 +375,40 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         ),
       ),
     );
+  }
+
+  String? _sleepQualityLabelFor(int value) {
+    switch (value) {
+      case 0:
+        return 'Poor Quality';
+      case 1:
+        return 'Fair Quality';
+      case 2:
+        return 'Good Quality';
+      case 3:
+        return 'Very Good';
+      case 4:
+        return 'Excellent';
+      default:
+        return null;
+    }
+  }
+
+  Color _sleepQualityColorFor(int value) {
+    switch (value) {
+      case 0:
+        return const Color(0xFFDC2626);
+      case 1:
+        return const Color(0xFFF97316);
+      case 2:
+        return const Color(0xFF2563EB);
+      case 3:
+        return const Color(0xFF7C3AED);
+      case 4:
+        return const Color(0xFF16A34A);
+      default:
+        return Colors.blue;
+    }
   }
 
   Widget _buildStatusBanner(BuildContext context) {

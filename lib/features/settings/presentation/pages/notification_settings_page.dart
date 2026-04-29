@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../../features/adaptive/data/adaptive_reminder_api.dart';
 import '../../../../features/onboarding/data/onboarding_api.dart';
+import '../../../../shared/notifications/local_notification_service.dart';
 import '../../../../shared/preferences/app_preferences.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
@@ -25,6 +27,13 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   String _defaultWorkStart = '09:00';
   String _defaultWorkEnd = '18:00';
   String _reminderTime = '20:00';
+  String _dailyLogReminderTime = '20:00';
+  String _hydrationStartTime = '07:00';
+  String _hydrationEndTime = '21:00';
+  int _hydrationIntervalMinutes = 120;
+  String _sleepWindDownTime = '21:30';
+  int _nudgeCooldownHours = 6;
+  int _maxDailyNudges = 3;
   String _preferredNudgeStyle = 'Gentle';
   String _primaryGoal = 'Reduce stress';
   List<int> _busyDays = const [1, 3, 5];
@@ -56,6 +65,11 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
         _prefersDailyReminder = localPrefs.notificationsEnabled;
         _prefersHydrationReminder = localPrefs.hydrationReminderEnabled;
         _prefersSleepReminder = localPrefs.bedtimeReminderEnabled;
+        _dailyLogReminderTime = localPrefs.dailyLogReminderTime;
+        _hydrationStartTime = localPrefs.hydrationStartTime;
+        _hydrationEndTime = localPrefs.hydrationEndTime;
+        _hydrationIntervalMinutes = localPrefs.hydrationIntervalMinutes;
+        _sleepWindDownTime = localPrefs.sleepWindDownTime;
         _isLoading = false;
       });
       return;
@@ -63,54 +77,83 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
 
     try {
       final summary = await OnboardingApi.fetchSummary(session.userId!);
-      final accountPreferences =
-          Map<String, dynamic>.from(summary['preferences'] as Map? ?? {});
-      final busyDays = (summary['busy_days'] as List?)
+      final accountPreferences = Map<String, dynamic>.from(
+        summary['preferences'] as Map? ?? {},
+      );
+      final busyDays =
+          (summary['busy_days'] as List?)
               ?.map((value) => int.tryParse('$value'))
               .whereType<int>()
               .toList() ??
           const <int>[];
+      final reminderPreferences = await AdaptiveReminderApi.fetchPreferences();
 
       await AppPreferencesController.instance.syncNotificationPreferences(
         notificationsEnabled:
             accountPreferences['prefers_daily_reminder'] == true,
-        bedtimeReminderEnabled:
-            accountPreferences['prefers_sleep_reminder'] == true,
-        hydrationReminderEnabled:
-            accountPreferences['prefers_hydration_reminder'] == true,
+        bedtimeReminderEnabled: reminderPreferences.sleepWindDownEnabled,
+        hydrationReminderEnabled: reminderPreferences.hydrationReminderEnabled,
+        dailyLogReminderTime: reminderPreferences.dailyLogReminderTime,
+        hydrationStartTime: reminderPreferences.hydrationStartTime,
+        hydrationEndTime: reminderPreferences.hydrationEndTime,
+        hydrationIntervalMinutes: reminderPreferences.hydrationIntervalMinutes,
+        sleepWindDownTime: reminderPreferences.sleepWindDownTime,
       );
+      await LocalNotificationService.instance
+          .refreshReminderScheduleFromPreferences();
 
       if (!mounted) {
         return;
       }
 
       setState(() {
-        _preferredLogTime =
-            _stringOrFallback(accountPreferences['preferred_log_time'], '20:30');
-        _defaultWakeTime =
-            _stringOrFallback(accountPreferences['default_wake_time'], '06:30');
-        _defaultSleepTime =
-            _stringOrFallback(accountPreferences['default_sleep_time'], '22:30');
-        _defaultWorkStart =
-            _stringOrFallback(accountPreferences['default_work_start'], '09:00');
-        _defaultWorkEnd =
-            _stringOrFallback(accountPreferences['default_work_end'], '18:00');
-        _reminderTime =
-            _stringOrFallback(accountPreferences['reminder_time'], '20:00');
+        _preferredLogTime = _stringOrFallback(
+          accountPreferences['preferred_log_time'],
+          '20:30',
+        );
+        _defaultWakeTime = _stringOrFallback(
+          accountPreferences['default_wake_time'],
+          '06:30',
+        );
+        _defaultSleepTime = _stringOrFallback(
+          accountPreferences['default_sleep_time'],
+          '22:30',
+        );
+        _defaultWorkStart = _stringOrFallback(
+          accountPreferences['default_work_start'],
+          '09:00',
+        );
+        _defaultWorkEnd = _stringOrFallback(
+          accountPreferences['default_work_end'],
+          '18:00',
+        );
+        _reminderTime = _stringOrFallback(
+          accountPreferences['reminder_time'],
+          '20:00',
+        );
+        _dailyLogReminderTime = reminderPreferences.dailyLogReminderTime;
+        _hydrationStartTime = reminderPreferences.hydrationStartTime;
+        _hydrationEndTime = reminderPreferences.hydrationEndTime;
+        _hydrationIntervalMinutes =
+            reminderPreferences.hydrationIntervalMinutes;
+        _sleepWindDownTime = reminderPreferences.sleepWindDownTime;
+        _nudgeCooldownHours = reminderPreferences.nudgeCooldownHours;
+        _maxDailyNudges = reminderPreferences.maxDailyNudges;
         _preferredNudgeStyle = _stringOrFallback(
           accountPreferences['preferred_nudge_style'],
           'Gentle',
         );
-        _primaryGoal =
-            _stringOrFallback(accountPreferences['primary_goal'], 'Reduce stress');
+        _primaryGoal = _stringOrFallback(
+          accountPreferences['primary_goal'],
+          'Reduce stress',
+        );
         _prefersDailyReminder =
             accountPreferences['prefers_daily_reminder'] == true;
         _prefersHydrationReminder =
-            accountPreferences['prefers_hydration_reminder'] == true;
+            reminderPreferences.hydrationReminderEnabled;
         _prefersExerciseReminder =
             accountPreferences['prefers_exercise_reminder'] == true;
-        _prefersSleepReminder =
-            accountPreferences['prefers_sleep_reminder'] == true;
+        _prefersSleepReminder = reminderPreferences.sleepWindDownEnabled;
         _busyDays = busyDays;
         _isLoading = false;
       });
@@ -123,6 +166,11 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
         _prefersDailyReminder = localPrefs.notificationsEnabled;
         _prefersHydrationReminder = localPrefs.hydrationReminderEnabled;
         _prefersSleepReminder = localPrefs.bedtimeReminderEnabled;
+        _dailyLogReminderTime = localPrefs.dailyLogReminderTime;
+        _hydrationStartTime = localPrefs.hydrationStartTime;
+        _hydrationEndTime = localPrefs.hydrationEndTime;
+        _hydrationIntervalMinutes = localPrefs.hydrationIntervalMinutes;
+        _sleepWindDownTime = localPrefs.sleepWindDownTime;
         _isLoading = false;
       });
     }
@@ -133,12 +181,62 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
     return normalized.isEmpty ? fallback : normalized;
   }
 
-  Future<void> _syncLocalNotificationState() {
-    return AppPreferencesController.instance.syncNotificationPreferences(
+  Future<void> _pickReminderTime({
+    required String currentValue,
+    required ValueChanged<String> onPicked,
+  }) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _timeOfDayFromString(currentValue),
+    );
+    if (picked == null || !mounted) {
+      return;
+    }
+
+    onPicked(_formatTimeOfDay(picked));
+    await _saveRemotePreferences();
+  }
+
+  TimeOfDay _timeOfDayFromString(String value) {
+    final parts = value.split(':');
+    final hour = parts.isNotEmpty ? int.tryParse(parts[0]) : null;
+    final minute = parts.length > 1 ? int.tryParse(parts[1]) : null;
+    return TimeOfDay(
+      hour: (hour ?? 0).clamp(0, 23).toInt(),
+      minute: (minute ?? 0).clamp(0, 59).toInt(),
+    );
+  }
+
+  String _formatTimeOfDay(TimeOfDay time) {
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  String _hydrationIntervalLabel(int minutes) {
+    if (minutes == 60) {
+      return 'Every hour';
+    }
+    if (minutes % 60 == 0) {
+      return 'Every ${minutes ~/ 60} hours';
+    }
+
+    return 'Every $minutes min';
+  }
+
+  Future<void> _syncLocalNotificationState() async {
+    await AppPreferencesController.instance.syncNotificationPreferences(
       notificationsEnabled: _prefersDailyReminder,
       bedtimeReminderEnabled: _prefersSleepReminder,
       hydrationReminderEnabled: _prefersHydrationReminder,
+      dailyLogReminderTime: _dailyLogReminderTime,
+      hydrationStartTime: _hydrationStartTime,
+      hydrationEndTime: _hydrationEndTime,
+      hydrationIntervalMinutes: _hydrationIntervalMinutes,
+      sleepWindDownTime: _sleepWindDownTime,
     );
+    await LocalNotificationService.instance
+        .refreshReminderScheduleFromPreferences();
   }
 
   Future<void> _saveRemotePreferences() async {
@@ -170,15 +268,16 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
           'busy_days': _busyDays,
         },
       );
+      await AdaptiveReminderApi.savePreferences(_adaptiveReminderPreferences());
       await _syncLocalNotificationState();
 
       if (!mounted) {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Reminder settings saved.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Reminder settings saved.')));
     } catch (error) {
       if (!mounted) {
         return;
@@ -194,6 +293,23 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
         });
       }
     }
+  }
+
+  AdaptiveReminderPreferences _adaptiveReminderPreferences() {
+    return AdaptiveReminderPreferences(
+      dailyLogReminderTime: _dailyLogReminderTime,
+      weeklyPulseReminderDay: 1,
+      weeklyPulseReminderTime: '18:00',
+      hydrationStartTime: _hydrationStartTime,
+      hydrationEndTime: _hydrationEndTime,
+      hydrationIntervalMinutes: _hydrationIntervalMinutes,
+      sleepWindDownTime: _sleepWindDownTime,
+      hydrationReminderEnabled: _prefersHydrationReminder,
+      recoveryReminderEnabled: _prefersExerciseReminder,
+      sleepWindDownEnabled: _prefersSleepReminder,
+      nudgeCooldownHours: _nudgeCooldownHours,
+      maxDailyNudges: _maxDailyNudges,
+    );
   }
 
   @override
@@ -263,7 +379,8 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                           _SwitchTile(
                             title: 'Hydration Reminder',
                             subtitle: 'Show a prompt when hydration is low',
-                            value: _prefersDailyReminder &&
+                            value:
+                                _prefersDailyReminder &&
                                 _prefersHydrationReminder,
                             enabled: _prefersDailyReminder,
                             onChanged: (value) async {
@@ -278,12 +395,139 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                             title: 'Exercise Reminder',
                             subtitle:
                                 'Keep movement prompts aligned with your account preferences',
-                            value: _prefersDailyReminder &&
+                            value:
+                                _prefersDailyReminder &&
                                 _prefersExerciseReminder,
                             enabled: _prefersDailyReminder,
                             onChanged: (value) async {
                               setState(() {
                                 _prefersExerciseReminder = value;
+                              });
+                              await _saveRemotePreferences();
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _SettingsBlock(
+                      title: 'Reminder Schedule',
+                      child: Column(
+                        children: [
+                          _TimeTile(
+                            title: 'Daily log time',
+                            subtitle: 'Main check-in reminder',
+                            value: _dailyLogReminderTime,
+                            enabled: _prefersDailyReminder,
+                            onTap: () => _pickReminderTime(
+                              currentValue: _dailyLogReminderTime,
+                              onPicked: (value) {
+                                setState(() {
+                                  _dailyLogReminderTime = value;
+                                  _reminderTime = value;
+                                });
+                              },
+                            ),
+                          ),
+                          _divider(context),
+                          _TimeTile(
+                            title: 'Hydration starts',
+                            subtitle: 'Default starts at 7:00 AM',
+                            value: _hydrationStartTime,
+                            enabled:
+                                _prefersDailyReminder &&
+                                _prefersHydrationReminder,
+                            onTap: () => _pickReminderTime(
+                              currentValue: _hydrationStartTime,
+                              onPicked: (value) {
+                                setState(() {
+                                  _hydrationStartTime = value;
+                                });
+                              },
+                            ),
+                          ),
+                          _divider(context),
+                          _TimeTile(
+                            title: 'Hydration ends',
+                            subtitle: 'Stops reminders for the day',
+                            value: _hydrationEndTime,
+                            enabled:
+                                _prefersDailyReminder &&
+                                _prefersHydrationReminder,
+                            onTap: () => _pickReminderTime(
+                              currentValue: _hydrationEndTime,
+                              onPicked: (value) {
+                                setState(() {
+                                  _hydrationEndTime = value;
+                                });
+                              },
+                            ),
+                          ),
+                          _divider(context),
+                          _SelectTile<int>(
+                            title: 'Hydration frequency',
+                            subtitle: 'Default is every 2 hours',
+                            value: _hydrationIntervalMinutes,
+                            enabled:
+                                _prefersDailyReminder &&
+                                _prefersHydrationReminder,
+                            options: const [60, 120, 180, 240],
+                            labelFor: _hydrationIntervalLabel,
+                            onChanged: (value) async {
+                              setState(() {
+                                _hydrationIntervalMinutes = value;
+                              });
+                              await _saveRemotePreferences();
+                            },
+                          ),
+                          _divider(context),
+                          _TimeTile(
+                            title: 'Sleep wind-down',
+                            subtitle: 'Nightly prompt before bed',
+                            value: _sleepWindDownTime,
+                            enabled:
+                                _prefersDailyReminder && _prefersSleepReminder,
+                            onTap: () => _pickReminderTime(
+                              currentValue: _sleepWindDownTime,
+                              onPicked: (value) {
+                                setState(() {
+                                  _sleepWindDownTime = value;
+                                });
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _SettingsBlock(
+                      title: 'Smart Nudge Limits',
+                      child: Column(
+                        children: [
+                          _SelectTile<int>(
+                            title: 'Minimum gap',
+                            subtitle:
+                                'Prevents repeated nudges of the same kind',
+                            value: _nudgeCooldownHours,
+                            options: const [4, 6, 8, 12],
+                            labelFor: (value) => '$value hours',
+                            onChanged: (value) async {
+                              setState(() {
+                                _nudgeCooldownHours = value;
+                              });
+                              await _saveRemotePreferences();
+                            },
+                          ),
+                          _divider(context),
+                          _SelectTile<int>(
+                            title: 'Daily nudge cap',
+                            subtitle: 'Urgent high-risk nudges can still pass',
+                            value: _maxDailyNudges,
+                            options: const [1, 2, 3, 4, 5],
+                            labelFor: (value) => '$value per day',
+                            onChanged: (value) async {
+                              setState(() {
+                                _maxDailyNudges = value;
                               });
                               await _saveRemotePreferences();
                             },
@@ -367,10 +611,7 @@ class _SettingsBlock extends StatelessWidget {
   final String title;
   final Widget child;
 
-  const _SettingsBlock({
-    required this.title,
-    required this.child,
-  });
+  const _SettingsBlock({required this.title, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -458,9 +699,164 @@ class _SwitchTile extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Switch(
+          Switch(value: value, onChanged: enabled ? onChanged : null),
+        ],
+      ),
+    );
+  }
+}
+
+class _TimeTile extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final String value;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const _TimeTile({
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onTap,
+    this.enabled = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final titleColor = enabled
+        ? pagePrimaryTextColor(context)
+        : pageSecondaryTextColor(context);
+
+    return InkWell(
+      onTap: enabled ? onTap : null,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: titleColor,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      height: 1.4,
+                      color: pageSecondaryTextColor(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              _displayTime(context, value),
+              style: TextStyle(fontWeight: FontWeight.w800, color: titleColor),
+            ),
+            const SizedBox(width: 6),
+            Icon(
+              Icons.schedule_rounded,
+              size: 18,
+              color: pageSecondaryTextColor(context),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _displayTime(BuildContext context, String value) {
+    final parts = value.split(':');
+    final hour = parts.isNotEmpty ? int.tryParse(parts[0]) : null;
+    final minute = parts.length > 1 ? int.tryParse(parts[1]) : null;
+    final time = TimeOfDay(
+      hour: (hour ?? 0).clamp(0, 23).toInt(),
+      minute: (minute ?? 0).clamp(0, 59).toInt(),
+    );
+    return MaterialLocalizations.of(context).formatTimeOfDay(time);
+  }
+}
+
+class _SelectTile<T> extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final T value;
+  final List<T> options;
+  final String Function(T value) labelFor;
+  final ValueChanged<T> onChanged;
+  final bool enabled;
+
+  const _SelectTile({
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.options,
+    required this.labelFor,
+    required this.onChanged,
+    this.enabled = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final titleColor = enabled
+        ? pagePrimaryTextColor(context)
+        : pageSecondaryTextColor(context);
+    final menuOptions = options.contains(value)
+        ? options
+        : <T>[value, ...options];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: titleColor,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    height: 1.4,
+                    color: pageSecondaryTextColor(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          DropdownButton<T>(
             value: value,
-            onChanged: enabled ? onChanged : null,
+            underline: const SizedBox.shrink(),
+            items: menuOptions
+                .map(
+                  (option) => DropdownMenuItem<T>(
+                    value: option,
+                    child: Text(labelFor(option)),
+                  ),
+                )
+                .toList(),
+            onChanged: enabled
+                ? (nextValue) {
+                    if (nextValue != null) {
+                      onChanged(nextValue);
+                    }
+                  }
+                : null,
           ),
         ],
       ),

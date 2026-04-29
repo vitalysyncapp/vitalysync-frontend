@@ -8,6 +8,8 @@ import '../../../../features/log/data/log_api.dart';
 import '../../../../features/onboarding/data/onboarding_api.dart';
 import '../../../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../../../features/onboarding/services/onboarding_service.dart';
+import '../../../../shared/notifications/local_notification_service.dart';
+import '../../../../shared/notifications/notification_payload_router.dart';
 import '../../../../shared/preferences/user_session.dart';
 import 'login_page.dart';
 
@@ -72,11 +74,19 @@ class _LoadingScreenState extends State<LoadingScreen>
 
       if (!mounted) return;
 
+      final launchPayload = LocalNotificationService.instance
+          .consumePendingLaunchPayload();
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (_) => (isDemoMode || onboardingCompleted)
-              ? const MainNavigation()
+              ? MainNavigation(
+                  initialIndex: tabIndexForNotificationPayload(launchPayload),
+                  openNutritionLogOnStart: shouldOpenNutritionLog(
+                    launchPayload,
+                  ),
+                )
               : OnboardingPage(userId: userId!),
         ),
       );

@@ -42,29 +42,9 @@ class LogNewMealCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: isCompact ? 14 : 18),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: const [
-              _MealChoice(label: 'Breakfast', value: 'breakfast'),
-              _MealChoice(label: 'Lunch', value: 'lunch'),
-              _MealChoice(label: 'Dinner', value: 'dinner'),
-              _MealChoice(label: 'Snack', value: 'snack'),
-            ].map((choice) {
-              final isSelected = selectedMealType == choice.value;
-              return ChoiceChip(
-                label: Text(choice.label),
-                selected: isSelected,
-                onSelected: (_) => onMealTypeChanged(choice.value),
-                selectedColor: const Color(0xFFDCFCE7),
-                labelStyle: TextStyle(
-                  color: isSelected
-                      ? const Color(0xFF15803D)
-                      : const Color(0xFF475569),
-                  fontWeight: FontWeight.w700,
-                ),
-              );
-            }).toList(),
+          MealTypeChoices(
+            selectedMealType: selectedMealType,
+            onMealTypeChanged: onMealTypeChanged,
           ),
           SizedBox(height: isCompact ? 14 : 18),
           InkWell(
@@ -204,11 +184,52 @@ class LogNewMealCard extends StatelessWidget {
   }
 }
 
-class _MealChoice {
+class MealTypeChoices extends StatelessWidget {
+  final String selectedMealType;
+  final ValueChanged<String> onMealTypeChanged;
+
+  const MealTypeChoices({
+    super.key,
+    required this.selectedMealType,
+    required this.onMealTypeChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: nutritionMealTypeChoices.map((choice) {
+        final isSelected = selectedMealType == choice.value;
+        return ChoiceChip(
+          label: Text(choice.label),
+          selected: isSelected,
+          onSelected: (_) => onMealTypeChanged(choice.value),
+          selectedColor: const Color(0xFFDCFCE7),
+          labelStyle: TextStyle(
+            color: isSelected
+                ? const Color(0xFF15803D)
+                : const Color(0xFF475569),
+            fontWeight: FontWeight.w700,
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+const nutritionMealTypeChoices = [
+  MealChoice(label: 'Breakfast', value: 'breakfast'),
+  MealChoice(label: 'Lunch', value: 'lunch'),
+  MealChoice(label: 'Dinner', value: 'dinner'),
+  MealChoice(label: 'Snack', value: 'snack'),
+];
+
+class MealChoice {
   final String label;
   final String value;
 
-  const _MealChoice({
+  const MealChoice({
     required this.label,
     required this.value,
   });

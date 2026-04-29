@@ -15,6 +15,11 @@ class AppPreferencesState {
   final bool notificationsEnabled;
   final bool bedtimeReminderEnabled;
   final bool hydrationReminderEnabled;
+  final String dailyLogReminderTime;
+  final String hydrationStartTime;
+  final String hydrationEndTime;
+  final int hydrationIntervalMinutes;
+  final String sleepWindDownTime;
   final bool hideSensitiveContent;
   final bool biometricLockEnabled;
   final AppLocationPermissionChoice locationPermissionChoice;
@@ -27,6 +32,11 @@ class AppPreferencesState {
     required this.notificationsEnabled,
     required this.bedtimeReminderEnabled,
     required this.hydrationReminderEnabled,
+    required this.dailyLogReminderTime,
+    required this.hydrationStartTime,
+    required this.hydrationEndTime,
+    required this.hydrationIntervalMinutes,
+    required this.sleepWindDownTime,
     required this.hideSensitiveContent,
     required this.biometricLockEnabled,
     required this.locationPermissionChoice,
@@ -34,16 +44,21 @@ class AppPreferencesState {
   });
 
   const AppPreferencesState.defaults()
-      : themeMode = ThemeMode.light,
-        language = AppLanguage.english,
-        fontSize = AppFontSize.medium,
-        notificationsEnabled = true,
-        bedtimeReminderEnabled = true,
-        hydrationReminderEnabled = true,
-        hideSensitiveContent = false,
-        biometricLockEnabled = false,
-        locationPermissionChoice = AppLocationPermissionChoice.undecided,
-        isLoaded = false;
+    : themeMode = ThemeMode.light,
+      language = AppLanguage.english,
+      fontSize = AppFontSize.medium,
+      notificationsEnabled = true,
+      bedtimeReminderEnabled = true,
+      hydrationReminderEnabled = true,
+      dailyLogReminderTime = '20:00',
+      hydrationStartTime = '07:00',
+      hydrationEndTime = '21:00',
+      hydrationIntervalMinutes = 120,
+      sleepWindDownTime = '21:30',
+      hideSensitiveContent = false,
+      biometricLockEnabled = false,
+      locationPermissionChoice = AppLocationPermissionChoice.undecided,
+      isLoaded = false;
 
   AppPreferencesState copyWith({
     ThemeMode? themeMode,
@@ -52,6 +67,11 @@ class AppPreferencesState {
     bool? notificationsEnabled,
     bool? bedtimeReminderEnabled,
     bool? hydrationReminderEnabled,
+    String? dailyLogReminderTime,
+    String? hydrationStartTime,
+    String? hydrationEndTime,
+    int? hydrationIntervalMinutes,
+    String? sleepWindDownTime,
     bool? hideSensitiveContent,
     bool? biometricLockEnabled,
     AppLocationPermissionChoice? locationPermissionChoice,
@@ -66,10 +86,14 @@ class AppPreferencesState {
           bedtimeReminderEnabled ?? this.bedtimeReminderEnabled,
       hydrationReminderEnabled:
           hydrationReminderEnabled ?? this.hydrationReminderEnabled,
-      hideSensitiveContent:
-          hideSensitiveContent ?? this.hideSensitiveContent,
-      biometricLockEnabled:
-          biometricLockEnabled ?? this.biometricLockEnabled,
+      dailyLogReminderTime: dailyLogReminderTime ?? this.dailyLogReminderTime,
+      hydrationStartTime: hydrationStartTime ?? this.hydrationStartTime,
+      hydrationEndTime: hydrationEndTime ?? this.hydrationEndTime,
+      hydrationIntervalMinutes:
+          hydrationIntervalMinutes ?? this.hydrationIntervalMinutes,
+      sleepWindDownTime: sleepWindDownTime ?? this.sleepWindDownTime,
+      hideSensitiveContent: hideSensitiveContent ?? this.hideSensitiveContent,
+      biometricLockEnabled: biometricLockEnabled ?? this.biometricLockEnabled,
       locationPermissionChoice:
           locationPermissionChoice ?? this.locationPermissionChoice,
       isLoaded: isLoaded ?? this.isLoaded,
@@ -134,8 +158,7 @@ class AppPreferencesState {
 class AppPreferencesController {
   AppPreferencesController._();
 
-  static final AppPreferencesController instance =
-      AppPreferencesController._();
+  static final AppPreferencesController instance = AppPreferencesController._();
 
   static const String _themeModeKey = 'app_theme_mode';
   static const String _languageKey = 'app_language';
@@ -143,15 +166,19 @@ class AppPreferencesController {
   static const String _notificationsEnabledKey = 'notifications_enabled';
   static const String _bedtimeReminderKey = 'bedtime_reminder_enabled';
   static const String _hydrationReminderKey = 'hydration_reminder_enabled';
+  static const String _dailyLogReminderTimeKey = 'daily_log_reminder_time';
+  static const String _hydrationStartTimeKey = 'hydration_start_time';
+  static const String _hydrationEndTimeKey = 'hydration_end_time';
+  static const String _hydrationIntervalMinutesKey =
+      'hydration_interval_minutes';
+  static const String _sleepWindDownTimeKey = 'sleep_wind_down_time';
   static const String _hideSensitiveContentKey = 'hide_sensitive_content';
   static const String _biometricLockKey = 'biometric_lock_enabled';
   static const String _locationPermissionChoiceKey =
       'location_permission_choice';
 
   final ValueNotifier<AppPreferencesState> notifier =
-      ValueNotifier<AppPreferencesState>(
-    const AppPreferencesState.defaults(),
-  );
+      ValueNotifier<AppPreferencesState>(const AppPreferencesState.defaults());
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -161,10 +188,16 @@ class AppPreferencesController {
     final notificationsEnabled = prefs.getBool(_notificationsEnabledKey);
     final bedtimeReminderEnabled = prefs.getBool(_bedtimeReminderKey);
     final hydrationReminderEnabled = prefs.getBool(_hydrationReminderKey);
+    final dailyLogReminderTime = prefs.getString(_dailyLogReminderTimeKey);
+    final hydrationStartTime = prefs.getString(_hydrationStartTimeKey);
+    final hydrationEndTime = prefs.getString(_hydrationEndTimeKey);
+    final hydrationIntervalMinutes = prefs.getInt(_hydrationIntervalMinutesKey);
+    final sleepWindDownTime = prefs.getString(_sleepWindDownTimeKey);
     final hideSensitiveContent = prefs.getBool(_hideSensitiveContentKey);
     final biometricLockEnabled = prefs.getBool(_biometricLockKey);
-    final locationPermissionChoice =
-        prefs.getString(_locationPermissionChoiceKey);
+    final locationPermissionChoice = prefs.getString(
+      _locationPermissionChoiceKey,
+    );
 
     notifier.value = AppPreferencesState(
       themeMode: _themeModeFromString(themeModeName),
@@ -173,10 +206,16 @@ class AppPreferencesController {
       notificationsEnabled: notificationsEnabled ?? true,
       bedtimeReminderEnabled: bedtimeReminderEnabled ?? true,
       hydrationReminderEnabled: hydrationReminderEnabled ?? true,
+      dailyLogReminderTime: dailyLogReminderTime ?? '20:00',
+      hydrationStartTime: hydrationStartTime ?? '07:00',
+      hydrationEndTime: hydrationEndTime ?? '21:00',
+      hydrationIntervalMinutes: hydrationIntervalMinutes ?? 120,
+      sleepWindDownTime: sleepWindDownTime ?? '21:30',
       hideSensitiveContent: hideSensitiveContent ?? false,
       biometricLockEnabled: biometricLockEnabled ?? false,
-      locationPermissionChoice:
-          _locationPermissionChoiceFromString(locationPermissionChoice),
+      locationPermissionChoice: _locationPermissionChoiceFromString(
+        locationPermissionChoice,
+      ),
       isLoaded: true,
     );
   }
@@ -214,8 +253,7 @@ class AppPreferencesController {
   Future<void> updateHydrationReminderEnabled(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_hydrationReminderKey, value);
-    notifier.value =
-        notifier.value.copyWith(hydrationReminderEnabled: value);
+    notifier.value = notifier.value.copyWith(hydrationReminderEnabled: value);
   }
 
   Future<void> updateHideSensitiveContent(bool value) async {
@@ -248,15 +286,43 @@ class AppPreferencesController {
     required bool notificationsEnabled,
     required bool bedtimeReminderEnabled,
     required bool hydrationReminderEnabled,
+    String? dailyLogReminderTime,
+    String? hydrationStartTime,
+    String? hydrationEndTime,
+    int? hydrationIntervalMinutes,
+    String? sleepWindDownTime,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_notificationsEnabledKey, notificationsEnabled);
     await prefs.setBool(_bedtimeReminderKey, bedtimeReminderEnabled);
     await prefs.setBool(_hydrationReminderKey, hydrationReminderEnabled);
+    if (dailyLogReminderTime != null) {
+      await prefs.setString(_dailyLogReminderTimeKey, dailyLogReminderTime);
+    }
+    if (hydrationStartTime != null) {
+      await prefs.setString(_hydrationStartTimeKey, hydrationStartTime);
+    }
+    if (hydrationEndTime != null) {
+      await prefs.setString(_hydrationEndTimeKey, hydrationEndTime);
+    }
+    if (hydrationIntervalMinutes != null) {
+      await prefs.setInt(
+        _hydrationIntervalMinutesKey,
+        hydrationIntervalMinutes,
+      );
+    }
+    if (sleepWindDownTime != null) {
+      await prefs.setString(_sleepWindDownTimeKey, sleepWindDownTime);
+    }
     notifier.value = notifier.value.copyWith(
       notificationsEnabled: notificationsEnabled,
       bedtimeReminderEnabled: bedtimeReminderEnabled,
       hydrationReminderEnabled: hydrationReminderEnabled,
+      dailyLogReminderTime: dailyLogReminderTime,
+      hydrationStartTime: hydrationStartTime,
+      hydrationEndTime: hydrationEndTime,
+      hydrationIntervalMinutes: hydrationIntervalMinutes,
+      sleepWindDownTime: sleepWindDownTime,
     );
   }
 
@@ -268,12 +334,15 @@ class AppPreferencesController {
     await prefs.remove(_notificationsEnabledKey);
     await prefs.remove(_bedtimeReminderKey);
     await prefs.remove(_hydrationReminderKey);
+    await prefs.remove(_dailyLogReminderTimeKey);
+    await prefs.remove(_hydrationStartTimeKey);
+    await prefs.remove(_hydrationEndTimeKey);
+    await prefs.remove(_hydrationIntervalMinutesKey);
+    await prefs.remove(_sleepWindDownTimeKey);
     await prefs.remove(_hideSensitiveContentKey);
     await prefs.remove(_biometricLockKey);
     await prefs.remove(_locationPermissionChoiceKey);
-    notifier.value = AppPreferencesState.defaults().copyWith(
-      isLoaded: true,
-    );
+    notifier.value = AppPreferencesState.defaults().copyWith(isLoaded: true);
   }
 
   ThemeMode _themeModeFromString(String? value) {

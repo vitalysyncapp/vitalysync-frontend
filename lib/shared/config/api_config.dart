@@ -18,6 +18,8 @@ class ApiConfig {
 
   static String adaptive(String path) => '$baseUrl/api/adaptive$path';
 
+  static String burnout(String path) => '$baseUrl/api/burnout$path';
+
   static String logs(String path) => '$baseUrl/api/logs$path';
 
   static String nutrition(String path) => '$baseUrl/api/nutrition$path';
