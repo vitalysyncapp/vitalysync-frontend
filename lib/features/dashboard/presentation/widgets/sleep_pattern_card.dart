@@ -1,174 +1,203 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
-class SleepPatternCard extends StatelessWidget {
-  const SleepPatternCard({Key? key}) : super(key: key);
+import '../../data/weekly_user_metrics.dart';
+
+class SleepPatternCard extends StatefulWidget {
+  const SleepPatternCard({super.key});
+
+  @override
+  State<SleepPatternCard> createState() => _SleepPatternCardState();
+}
+
+class _SleepPatternCardState extends State<SleepPatternCard> {
+  late Future<WeeklyUserMetrics> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = WeeklyUserMetricsService.loadCurrentWeek();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final sleepHours = [7.2, 6.5, 6.8, 6.1, 6.0, 8.0, 7.9];
+    return FutureBuilder<WeeklyUserMetrics>(
+      future: _future,
+      builder: (context, snapshot) {
+        final metrics = snapshot.data;
+        final days = metrics?.days ?? const <DailyUserMetric>[];
+        final average = metrics?.averageSleep ?? 0;
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: _cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Sleep Pattern",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF0B1F44),
-            ),
-          ),
-          const SizedBox(height: 20),
-          SizedBox(
-            height: 250,
-            child: BarChart(
-              BarChartData(
-                maxY: 8,
-                minY: 0,
-                groupsSpace: 8,
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: true,
-                  horizontalInterval: 2,
-                  getDrawingHorizontalLine: (value) => FlLine(
-                    color: Colors.grey.withOpacity(0.16),
-                    strokeWidth: 1,
-                    dashArray: [4, 4],
-                  ),
-                  getDrawingVerticalLine: (value) => FlLine(
-                    color: Colors.grey.withOpacity(0.12),
-                    strokeWidth: 1,
-                    dashArray: [4, 4],
-                  ),
-                ),
-                borderData: FlBorderData(
-                  show: true,
-                  border: Border.all(color: Colors.grey.withOpacity(0.12)),
-                ),
-                titlesData: FlTitlesData(
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      interval: 2,
-                      reservedSize: 28,
-                      getTitlesWidget: (value, meta) {
-                        return Text(
-                          value.toInt().toString(),
-                          style: const TextStyle(
-                            color: Color(0xFF8A94A6),
-                            fontSize: 12,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, meta) {
-                        const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-                        if (value.toInt() < 0 || value.toInt() > 6) {
-                          return const SizedBox();
-                        }
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            days[value.toInt()],
-                            style: const TextStyle(
-                              color: Color(0xFF8A94A6),
-                              fontSize: 13,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                barTouchData: BarTouchData(
-                  enabled: true,
-                  touchTooltipData: BarTouchTooltipData(
-                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                      const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-                      return BarTooltipItem(
-                        "${days[group.x.toInt()]}\nhours : ${rod.toY.toStringAsFixed(0)}",
-                        const TextStyle(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          height: 1.5,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                barGroups: List.generate(
-                  sleepHours.length,
-                  (index) => BarChartGroupData(
-                    x: index,
-                    barRods: [
-                      BarChartRodData(
-                        toY: sleepHours[index],
-                        width: 28,
-                        borderRadius: BorderRadius.circular(8),
-                        color: const Color(0xFF4A86F7),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
-          Divider(color: Colors.grey.withOpacity(0.25)),
-          const SizedBox(height: 14),
-          const Row(
+        return Container(
+          padding: const EdgeInsets.all(18),
+          decoration: _cardDecoration(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(
-                  "Recommended: 7-9 hours",
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Color(0xFF4F5D75),
-                  ),
+              const Text(
+                'Sleep Pattern',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0B1F44),
                 ),
               ),
-              Text(
-                "Average: 7.1h",
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2F66F3),
-                ),
+              const SizedBox(height: 20),
+              if (snapshot.connectionState == ConnectionState.waiting)
+                const SizedBox(
+                  height: 250,
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else
+                SizedBox(height: 250, child: BarChart(_chartData(days))),
+              const SizedBox(height: 18),
+              Divider(color: Colors.grey.withValues(alpha: 0.25)),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Recommended: 7-9 hours',
+                      style: TextStyle(fontSize: 15, color: Color(0xFF4F5D75)),
+                    ),
+                  ),
+                  Text(
+                    average > 0
+                        ? 'Average: ${average.toStringAsFixed(1)}h'
+                        : 'No logs yet',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2F66F3),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        );
+      },
+    );
+  }
+
+  BarChartData _chartData(List<DailyUserMetric> days) {
+    final chartDays = days.isEmpty
+        ? List<DailyUserMetric>.generate(
+            7,
+            (index) => DailyUserMetric(
+              date: DateTime.now(),
+              dateKey: '',
+              dayLabel: '',
+              log: null,
+              activity: null,
+            ),
+          )
+        : days;
+
+    return BarChartData(
+      maxY: 10,
+      minY: 0,
+      groupsSpace: 8,
+      gridData: FlGridData(
+        show: true,
+        drawVerticalLine: false,
+        horizontalInterval: 2,
+        getDrawingHorizontalLine: (value) => FlLine(
+          color: Colors.grey.withValues(alpha: 0.16),
+          strokeWidth: 1,
+          dashArray: [4, 4],
+        ),
+      ),
+      borderData: FlBorderData(
+        show: true,
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.12)),
+      ),
+      titlesData: FlTitlesData(
+        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles: const AxisTitles(
+          sideTitles: SideTitles(showTitles: false),
+        ),
+        leftTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            interval: 2,
+            reservedSize: 28,
+            getTitlesWidget: (value, meta) => Text(
+              value.toInt().toString(),
+              style: const TextStyle(color: Color(0xFF8A94A6), fontSize: 12),
+            ),
+          ),
+        ),
+        bottomTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            getTitlesWidget: (value, meta) {
+              final index = value.toInt();
+              if (index < 0 || index >= chartDays.length) {
+                return const SizedBox();
+              }
+              return Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  chartDays[index].dayLabel,
+                  style: const TextStyle(
+                    color: Color(0xFF8A94A6),
+                    fontSize: 13,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+      barTouchData: BarTouchData(
+        enabled: true,
+        touchTooltipData: BarTouchTooltipData(
+          getTooltipItem: (group, groupIndex, rod, rodIndex) {
+            final day = chartDays[group.x.toInt()];
+            return BarTooltipItem(
+              '${day.dayLabel}\n${rod.toY.toStringAsFixed(1)} hours',
+              const TextStyle(
+                color: Colors.black87,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                height: 1.4,
+              ),
+            );
+          },
+        ),
+      ),
+      barGroups: List.generate(
+        chartDays.length,
+        (index) => BarChartGroupData(
+          x: index,
+          barRods: [
+            BarChartRodData(
+              toY: chartDays[index].sleepHours,
+              width: 24,
+              borderRadius: BorderRadius.circular(8),
+              color: chartDays[index].sleepHours >= 7
+                  ? const Color(0xFF1FB489)
+                  : const Color(0xFF4A86F7),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   BoxDecoration _cardDecoration() {
     return BoxDecoration(
-      color: Colors.white.withOpacity(0.94),
+      color: Colors.white.withValues(alpha: 0.94),
       borderRadius: BorderRadius.circular(22),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.06),
+          color: Colors.black.withValues(alpha: 0.06),
           blurRadius: 10,
           offset: const Offset(0, 4),
         ),
       ],
-      border: Border.all(color: Colors.grey.withOpacity(0.10)),
+      border: Border.all(color: Colors.grey.withValues(alpha: 0.10)),
     );
   }
 }

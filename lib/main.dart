@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'app/app.dart';
+import 'shared/assistant/overlay_assistant_entry.dart';
 import 'shared/notifications/local_notification_service.dart';
 import 'shared/preferences/app_preferences.dart';
 
@@ -12,4 +13,9 @@ Future<void> main() async {
 
   runApp(const MyApp());
 }
+
+@pragma('vm:entry-point')
+Future<void> overlayAssistantMain() async {
+  await runOverlayAssistantApp();
+}  
  

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/notifications/notification_feed_service.dart';
 import '../../../../shared/theme/app_page_style.dart';
 
 class NotificationPage extends StatefulWidget {
@@ -10,107 +11,48 @@ class NotificationPage extends StatefulWidget {
 }
 
 class _NotificationPageState extends State<NotificationPage> {
-  late final List<_NotificationItem> _notifications;
+  late Future<NotificationFeedResult> _feedFuture;
 
   @override
   void initState() {
     super.initState();
-    _notifications = [
-      _NotificationItem(
-        icon: Icons.nightlight_round,
-        iconBg: const Color(0xFFE7E9FF),
-        iconColor: const Color(0xFF5A4CFF),
-        title: 'Sleep Reminder',
-        message:
-            'Your bedtime is in 30 minutes. Start winding down for better sleep quality.',
-        time: '2 hours ago',
-        showAction: true,
-        isUnread: true,
-      ),
-      _NotificationItem(
-        icon: Icons.warning_amber_rounded,
-        iconBg: const Color(0xFFFFE5E5),
-        iconColor: const Color(0xFFFF3B30),
-        title: 'Burnout Risk Increasing',
-        message:
-            'Your burnout score increased by 7 points this week. Consider taking rest breaks.',
-        time: '5 hours ago',
-        isUnread: true,
-      ),
-      _NotificationItem(
-        icon: Icons.water_drop_outlined,
-        iconBg: const Color(0xFFDDF7FA),
-        iconColor: const Color(0xFF00A7C4),
-        title: 'Hydration Checkpoint',
-        message: 'You have had 0.8L today. Remember to drink water regularly.',
-        time: '6 hours ago',
-        isUnread: true,
-      ),
-      _NotificationItem(
-        icon: Icons.show_chart,
-        iconBg: const Color(0xFFDDF5E6),
-        iconColor: const Color(0xFF22A55D),
-        title: 'Great Progress',
-        message:
-            'You have been staying consistent. Keep following your healthy routine.',
-        time: '1 day ago',
-      ),
-    ];
+    _feedFuture = NotificationFeedService.instance.loadFeed();
   }
 
   @override
   Widget build(BuildContext context) {
-    final unreadCount = _notifications.where((item) => item.isUnread).length;
-
     return Container(
       decoration: buildPageDecoration(context),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(context, unreadCount),
-              Divider(height: 1, color: pageBorderColor(context)),
-              Expanded(
-                child: ListView(
-                  padding: EdgeInsets.fromLTRB(
-                    20,
-                    20,
-                    20,
-                    pageBottomContentPadding(context),
-                  ),
-                  children: [
-                    _buildSmartNudgeCard(context),
-                    const SizedBox(height: 22),
-                    ..._notifications.map(
-                      (item) => Padding(
-                        padding: const EdgeInsets.only(bottom: 14),
-                        child: NotificationCard(
-                          item: item,
-                          onTap: () {
-                            setState(() {
-                              item.isUnread = false;
-                            });
-                          },
-                          onActionTap: () {
-                            setState(() {
-                              item.isUnread = false;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          child: FutureBuilder<NotificationFeedResult>(
+            future: _feedFuture,
+            builder: (context, snapshot) {
+              final feed = snapshot.data;
+              final notifications =
+                  feed?.items ?? const <AppNotificationItem>[];
+              final unreadCount = feed?.unreadCount ?? 0;
+
+              return Column(
+                children: [
+                  _buildHeader(context, unreadCount, notifications),
+                  Divider(height: 1, color: pageBorderColor(context)),
+                  Expanded(child: _buildBody(context, snapshot)),
+                ],
+              );
+            },
           ),
         ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, int unreadCount) {
+  Widget _buildHeader(
+    BuildContext context,
+    int unreadCount,
+    List<AppNotificationItem> notifications,
+  ) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 12, 14, 14),
       child: Row(
@@ -154,19 +96,26 @@ class _NotificationPageState extends State<NotificationPage> {
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  for (final item in _notifications) {
-                    item.isUnread = false;
-                  }
-                });
-              },
-              child: const Text(
+              onTap: unreadCount == 0
+                  ? null
+                  : () async {
+                      await NotificationFeedService.instance.markAllRead(
+                        notifications.map((item) => item.id),
+                      );
+                      if (!mounted) return;
+                      setState(() {
+                        _feedFuture = NotificationFeedService.instance
+                            .loadFeed();
+                      });
+                    },
+              child: Text(
                 'Mark all read',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF246BFF),
+                  color: unreadCount == 0
+                      ? pageSecondaryTextColor(context).withValues(alpha: 0.55)
+                      : const Color(0xFF246BFF),
                 ),
               ),
             ),
@@ -176,31 +125,95 @@ class _NotificationPageState extends State<NotificationPage> {
     );
   }
 
-  Widget _buildSmartNudgeCard(BuildContext context) {
+  Widget _buildBody(
+    BuildContext context,
+    AsyncSnapshot<NotificationFeedResult> snapshot,
+  ) {
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (snapshot.hasError) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            'Unable to load notifications right now.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: pageSecondaryTextColor(context),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final feed = snapshot.data;
+    final notifications = feed?.items ?? const <AppNotificationItem>[];
+    final sources = feed?.functionalSources ?? const <String>[];
+
+    return ListView(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        20,
+        20,
+        pageBottomContentPadding(context),
+      ),
+      children: [
+        _buildStatusCard(context, sources),
+        const SizedBox(height: 22),
+        if (notifications.isEmpty)
+          _buildEmptyState(context)
+        else
+          ...notifications.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: NotificationCard(
+                item: item,
+                onTap: () => _markRead(item.id),
+                onActionTap: () => _markRead(item.id),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _markRead(String id) async {
+    await NotificationFeedService.instance.markRead(id);
+    if (!mounted) return;
+    setState(() {
+      _feedFuture = NotificationFeedService.instance.loadFeed();
+    });
+  }
+
+  Widget _buildStatusCard(BuildContext context, List<String> sources) {
+    final sourceText = sources.isEmpty
+        ? 'No live notification sources are ready yet; reminders and reports appear here when their data exists.'
+        : 'Showing functional sources now: ${sources.join(', ')}.';
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 22),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFF2563FF),
-            Color(0xFF0891B2),
-          ],
+          colors: [Color(0xFF2563FF), Color(0xFF0891B2)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF2563FF).withOpacity(0.25),
+            color: const Color(0xFF2563FF).withValues(alpha: 0.25),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
               Icon(
                 Icons.notifications_none_rounded,
@@ -209,7 +222,7 @@ class _NotificationPageState extends State<NotificationPage> {
               ),
               SizedBox(width: 10),
               Text(
-                'Smart Reminders',
+                'Smart Notifications',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 17,
@@ -218,10 +231,10 @@ class _NotificationPageState extends State<NotificationPage> {
               ),
             ],
           ),
-          SizedBox(height: 14),
+          const SizedBox(height: 14),
           Text(
-            'These reminders currently use local app preferences and preview content while deeper personalization is still being connected.',
-            style: TextStyle(
+            sourceText,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 15,
               height: 1.45,
@@ -232,10 +245,49 @@ class _NotificationPageState extends State<NotificationPage> {
       ),
     );
   }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: pageSurfaceColor(context),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: pageBorderColor(context)),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.notifications_off_outlined,
+            color: pageSecondaryTextColor(context),
+            size: 34,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'No functional notifications yet',
+            style: TextStyle(
+              color: pagePrimaryTextColor(context),
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Enable reminders or add logs to generate sleep, hydration, activity, goal, burnout, and progress updates.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: pageSecondaryTextColor(context),
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class NotificationCard extends StatelessWidget {
-  final _NotificationItem item;
+  final AppNotificationItem item;
   final VoidCallback onTap;
   final VoidCallback? onActionTap;
 
@@ -259,8 +311,10 @@ class NotificationCard extends StatelessWidget {
           border: Border.all(color: pageBorderColor(context)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(
-                Theme.of(context).brightness == Brightness.dark ? 0.16 : 0.08,
+              color: Colors.black.withValues(
+                alpha: Theme.of(context).brightness == Brightness.dark
+                    ? 0.16
+                    : 0.08,
               ),
               blurRadius: 10,
               offset: const Offset(0, 3),
@@ -304,12 +358,16 @@ class NotificationCard extends StatelessWidget {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Text(
-                        item.time,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF98A2B3),
-                          fontWeight: FontWeight.w500,
+                      Flexible(
+                        child: Text(
+                          item.time,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF98A2B3),
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                       const Spacer(),
@@ -317,7 +375,7 @@ class NotificationCard extends StatelessWidget {
                         GestureDetector(
                           onTap: onActionTap,
                           child: const Text(
-                            'Take Action',
+                            'Mark read',
                             style: TextStyle(
                               fontSize: 14,
                               color: Color(0xFF246BFF),
@@ -326,6 +384,15 @@ class NotificationCard extends StatelessWidget {
                           ),
                         ),
                     ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    item.sourceLabel,
+                    style: TextStyle(
+                      color: item.iconColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ],
               ),
@@ -346,26 +413,4 @@ class NotificationCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class _NotificationItem {
-  final IconData icon;
-  final Color iconBg;
-  final Color iconColor;
-  final String title;
-  final String message;
-  final String time;
-  final bool showAction;
-  bool isUnread;
-
-  _NotificationItem({
-    required this.icon,
-    required this.iconBg,
-    required this.iconColor,
-    required this.title,
-    required this.message,
-    required this.time,
-    this.showAction = false,
-    this.isUnread = false,
-  });
 }

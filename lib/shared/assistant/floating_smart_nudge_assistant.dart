@@ -37,6 +37,63 @@ class FloatingSmartNudgeAssistant extends StatefulWidget {
       _FloatingSmartNudgeAssistantState();
 }
 
+class AssistantFloatingBubbleVisual extends StatefulWidget {
+  final String emoji;
+  final double size;
+
+  const AssistantFloatingBubbleVisual({
+    super.key,
+    this.emoji = '\u{1F499}',
+    this.size = 58,
+  });
+
+  @override
+  State<AssistantFloatingBubbleVisual> createState() =>
+      _AssistantFloatingBubbleVisualState();
+}
+
+class _AssistantFloatingBubbleVisualState
+    extends State<AssistantFloatingBubbleVisual> {
+  bool? _hasPendingWeeklyPulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWeeklyPulseIndicator();
+  }
+
+  Future<void> _loadWeeklyPulseIndicator() async {
+    try {
+      final data = await LogApi.fetchWeeklyPulseStatus();
+      if (!mounted) return;
+
+      setState(() {
+        _hasPendingWeeklyPulse = data['has_response'] != true;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _hasPendingWeeklyPulse = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: _FloatingHeartButton(
+        emoji: widget.emoji,
+        size: widget.size,
+        isActive: false,
+        isDragging: false,
+        hasPendingWeeklyPulse: _hasPendingWeeklyPulse == true,
+        onTap: () {},
+      ),
+    );
+  }
+}
+
 class _FloatingSmartNudgeAssistantState
     extends State<FloatingSmartNudgeAssistant> {
   static const _moveAnimationDuration = Duration(milliseconds: 220);
@@ -44,6 +101,7 @@ class _FloatingSmartNudgeAssistantState
   bool _isBubbleVisible = false;
   bool _isExercisePreviewVisible = false;
   bool _isDragging = false;
+  bool _isDialogOpen = false;
   bool _hasCustomPosition = false;
   Offset _buttonOffset = Offset.zero;
   Timer? _bubbleSwitchTimer;
@@ -175,41 +233,50 @@ class _FloatingSmartNudgeAssistantState
   }
 
   Future<void> _openAssistantDialog() async {
+    if (_isDialogOpen) {
+      return;
+    }
+
     _bubbleSwitchTimer?.cancel();
     setState(() {
+      _isDialogOpen = true;
       _isBubbleVisible = false;
       _isExercisePreviewVisible = false;
     });
 
-    await _loadRecommendations();
-    await _loadAdaptiveNudges();
     if (!mounted) return;
 
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return _AssistantExerciseDialog(
-          message: widget.message,
-          emoji: widget.emoji,
-          recommendations: _recommendations,
-          adaptiveNudges: _adaptiveNudges,
-          onRefreshRecommendations: _loadRecommendations,
-          onRefreshAdaptiveNudges: _loadAdaptiveNudges,
-        );
-      },
-    );
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) {
+          return AssistantExperiencePanel(
+            message: widget.message,
+            emoji: widget.emoji,
+            recommendations: _recommendations,
+            adaptiveNudges: _adaptiveNudges,
+            onRefreshRecommendations: _loadRecommendations,
+            onRefreshAdaptiveNudges: _loadAdaptiveNudges,
+            onClose: () => Navigator.of(context).pop(),
+          );
+        },
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDialogOpen = false;
+        });
+      }
+    }
+
+    if (!mounted) return;
 
     await _loadWeeklyPulseIndicator();
   }
 
   void _handleAssistantTap() {
-    if (_isBubbleVisible) {
-      _hideBubble();
-      return;
-    }
-
     _openAssistantDialog();
   }
 
@@ -388,6 +455,9 @@ class _FloatingSmartNudgeAssistantState
 
                           return _SmartNudgeBubble(
                             emoji: widget.emoji,
+                            title: _adaptiveNudges.isEmpty
+                                ? 'Smart Nudge'
+                                : _adaptiveNudges.first.title,
                             message: _adaptiveNudges.isEmpty
                                 ? widget.message
                                 : _adaptiveNudges.first.message,
@@ -431,11 +501,13 @@ class _FloatingSmartNudgeAssistantState
 
 class _SmartNudgeBubble extends StatelessWidget {
   final String emoji;
+  final String title;
   final String message;
   final VoidCallback onClose;
 
   const _SmartNudgeBubble({
     required this.emoji,
+    required this.title,
     required this.message,
     required this.onClose,
   });
@@ -489,7 +561,7 @@ class _SmartNudgeBubble extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF1FB489), Color(0xFF59B7EF)],
+                        colors: [Color.fromARGB(255, 156, 96, 234), Color(0xFF59B7EF)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -510,7 +582,7 @@ class _SmartNudgeBubble extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Smart Nudge',
+                      title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -540,7 +612,7 @@ class _SmartNudgeBubble extends StatelessWidget {
               const SizedBox(height: 10),
               Text(
                 message,
-                maxLines: 4,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: pageSecondaryTextColor(context),
@@ -627,7 +699,7 @@ class _ExercisePreviewBubble extends StatelessWidget {
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: LinearGradient(
-                        colors: [Color(0xFF1FB489), Color(0xFF59B7EF)],
+                        colors: [Color.fromARGB(255, 120, 85, 226), Color(0xFF59B7EF)],
                       ),
                     ),
                     child: const Icon(
@@ -694,7 +766,7 @@ class _ExercisePreviewBubble extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: onOpen,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1FB489),
+                    backgroundColor: const Color.fromARGB(255, 134, 76, 226),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -712,7 +784,7 @@ class _ExercisePreviewBubble extends StatelessWidget {
   }
 }
 
-class _AssistantExerciseDialog extends StatefulWidget {
+class AssistantExperiencePanel extends StatefulWidget {
   final String message;
   final String emoji;
   final List<ExerciseRecommendationModel> recommendations;
@@ -720,22 +792,27 @@ class _AssistantExerciseDialog extends StatefulWidget {
   final Future<void> Function() onRefreshRecommendations;
   final Future<List<AdaptiveNudgeRecommendation>> Function()
   onRefreshAdaptiveNudges;
+  final VoidCallback? onClose;
+  final bool useSafeAreaPadding;
 
-  const _AssistantExerciseDialog({
+  const AssistantExperiencePanel({
+    super.key,
     required this.message,
     required this.emoji,
     required this.recommendations,
     required this.adaptiveNudges,
     required this.onRefreshRecommendations,
     required this.onRefreshAdaptiveNudges,
+    this.onClose,
+    this.useSafeAreaPadding = true,
   });
 
   @override
-  State<_AssistantExerciseDialog> createState() =>
-      _AssistantExerciseDialogState();
+  State<AssistantExperiencePanel> createState() =>
+      _AssistantExperiencePanelState();
 }
 
-class _AssistantExerciseDialogState extends State<_AssistantExerciseDialog> {
+class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
   final PageController _pageController = PageController();
   final ExerciseRecommendationService _recommendationService =
       const ExerciseRecommendationService();
@@ -762,9 +839,7 @@ class _AssistantExerciseDialogState extends State<_AssistantExerciseDialog> {
     if (_recommendations.isEmpty) {
       _loadRecommendations();
     }
-    if (_adaptiveNudges.isEmpty) {
-      _loadAdaptiveNudges();
-    }
+    _loadAdaptiveNudges(showLoading: _adaptiveNudges.isEmpty);
     _loadWeeklyPulseStatus();
   }
 
@@ -789,10 +864,12 @@ class _AssistantExerciseDialogState extends State<_AssistantExerciseDialog> {
     });
   }
 
-  Future<void> _loadAdaptiveNudges() async {
-    setState(() {
-      _isLoadingAdaptiveNudges = true;
-    });
+  Future<void> _loadAdaptiveNudges({bool showLoading = true}) async {
+    if (showLoading) {
+      setState(() {
+        _isLoadingAdaptiveNudges = true;
+      });
+    }
 
     final recommendations = await widget.onRefreshAdaptiveNudges();
     if (!mounted) return;
@@ -818,10 +895,10 @@ class _AssistantExerciseDialogState extends State<_AssistantExerciseDialog> {
     if (!mounted) return;
 
     final label = status == 'dismissed'
-        ? 'Nudge dismissed.'
+        ? 'Dismissed.'
         : status == 'completed'
-        ? 'Nudge marked complete.'
-        : 'Nudge saved.';
+        ? 'Accepted.'
+        : 'Saved.';
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(label)));
   }
 
@@ -984,169 +1061,175 @@ class _AssistantExerciseDialogState extends State<_AssistantExerciseDialog> {
   @override
   Widget build(BuildContext context) {
     final maxHeight = MediaQuery.sizeOf(context).height * 0.78;
-
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 12,
-          right: 12,
-          bottom: MediaQuery.viewInsetsOf(context).bottom + 12,
+    final panel = Padding(
+      padding: EdgeInsets.only(
+        left: 12,
+        right: 12,
+        bottom: widget.useSafeAreaPadding
+            ? MediaQuery.viewInsetsOf(context).bottom + 12
+            : 0,
+      ),
+      child: Container(
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF0F1B2D)
+              : const Color(0xFFF6FBF9),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: pageBorderColor(context)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.18),
+              blurRadius: 28,
+              offset: const Offset(0, 16),
+            ),
+          ],
         ),
-        child: Container(
-          constraints: BoxConstraints(maxHeight: maxHeight),
-          padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? const Color(0xFF0F1B2D)
-                : const Color(0xFFF6FBF9),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: pageBorderColor(context)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.18),
-                blurRadius: 28,
-                offset: const Offset(0, 16),
-              ),
-            ],
-          ),
-          child: ValueListenableBuilder<ExerciseGoalState>(
-            valueListenable: ExerciseGoalService.instance.notifier,
-            builder: (context, goalState, _) {
-              return ValueListenableBuilder<ActivityTrackingState>(
-                valueListenable: ActivityService.instance.notifier,
-                builder: (context, activityState, _) {
-                  final goal = goalState.goal;
-                  final hasGoal = goal != null && goal.hasSelectedGoal;
-                  final pages = <Widget>[
-                    _SmartNudgeDialogCard(
-                      emoji: widget.emoji,
-                      message: widget.message,
-                      recommendations: _adaptiveNudges,
-                      isLoading: _isLoadingAdaptiveNudges,
-                      onStatusChanged: _handleNudgeStatus,
-                      onRemind: _remindForNudge,
+        child: ValueListenableBuilder<ExerciseGoalState>(
+          valueListenable: ExerciseGoalService.instance.notifier,
+          builder: (context, goalState, _) {
+            return ValueListenableBuilder<ActivityTrackingState>(
+              valueListenable: ActivityService.instance.notifier,
+              builder: (context, activityState, _) {
+                final goal = goalState.goal;
+                final hasGoal = goal != null && goal.hasSelectedGoal;
+                final pages = <Widget>[
+                  _SmartNudgeDialogCard(
+                    emoji: widget.emoji,
+                    message: widget.message,
+                    recommendations: _adaptiveNudges,
+                    isLoading: _isLoadingAdaptiveNudges,
+                    onStatusChanged: _handleNudgeStatus,
+                    onRemind: _remindForNudge,
+                  ),
+                  if (hasGoal)
+                    SelectedExerciseGoalCard(
+                      goal: goal,
+                      distanceMeters: activityState.log.distanceMeters,
+                      isSaving: goalState.isSaving,
+                      onDone: _completeGoal,
+                      onCancel: _cancelGoal,
+                    )
+                  else if (_isLoadingRecommendations)
+                    const _AssistantLoadingCard()
+                  else
+                    AssistantExerciseCard(
+                      recommendations: _recommendations,
+                      isSaving: goalState.isSaving,
+                      onChoose: _chooseExercise,
                     ),
-                    if (hasGoal)
-                      SelectedExerciseGoalCard(
-                        goal: goal,
-                        distanceMeters: activityState.log.distanceMeters,
-                        isSaving: goalState.isSaving,
-                        onDone: _completeGoal,
-                        onCancel: _cancelGoal,
-                      )
-                    else if (_isLoadingRecommendations)
-                      const _AssistantLoadingCard()
-                    else
-                      AssistantExerciseCard(
-                        recommendations: _recommendations,
-                        isSaving: goalState.isSaving,
-                        onChoose: _chooseExercise,
-                      ),
-                    _WeeklyPulseCard(
-                      isLoading: _isLoadingWeeklyPulse,
-                      isSaving: _isSavingWeeklyPulse,
-                      hasResponse: _hasWeeklyPulseResponse,
-                      isEditing: _isEditingWeeklyPulse,
-                      productivityFocusLevel: _productivityFocusLevel,
-                      recoveryRestLevel: _recoveryRestLevel,
-                      detachmentLevel: _detachmentLevel,
-                      accomplishmentLevel: _accomplishmentLevel,
-                      onProductivityChanged: (value) {
-                        setState(() {
-                          _productivityFocusLevel = value;
-                        });
-                      },
-                      onRecoveryChanged: (value) {
-                        setState(() {
-                          _recoveryRestLevel = value;
-                        });
-                      },
-                      onDetachmentChanged: (value) {
-                        setState(() {
-                          _detachmentLevel = value;
-                        });
-                      },
-                      onAccomplishmentChanged: (value) {
-                        setState(() {
-                          _accomplishmentLevel = value;
-                        });
-                      },
-                      onSave: _saveWeeklyPulse,
-                      onRedo: _redoWeeklyPulse,
-                    ),
-                  ];
+                  _WeeklyPulseCard(
+                    isLoading: _isLoadingWeeklyPulse,
+                    isSaving: _isSavingWeeklyPulse,
+                    hasResponse: _hasWeeklyPulseResponse,
+                    isEditing: _isEditingWeeklyPulse,
+                    productivityFocusLevel: _productivityFocusLevel,
+                    recoveryRestLevel: _recoveryRestLevel,
+                    detachmentLevel: _detachmentLevel,
+                    accomplishmentLevel: _accomplishmentLevel,
+                    onProductivityChanged: (value) {
+                      setState(() {
+                        _productivityFocusLevel = value;
+                      });
+                    },
+                    onRecoveryChanged: (value) {
+                      setState(() {
+                        _recoveryRestLevel = value;
+                      });
+                    },
+                    onDetachmentChanged: (value) {
+                      setState(() {
+                        _detachmentLevel = value;
+                      });
+                    },
+                    onAccomplishmentChanged: (value) {
+                      setState(() {
+                        _accomplishmentLevel = value;
+                      });
+                    },
+                    onSave: _saveWeeklyPulse,
+                    onRedo: _redoWeeklyPulse,
+                  ),
+                ];
 
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 42,
-                            height: 42,
-                            alignment: Alignment.center,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: LinearGradient(
-                                colors: [Color(0xFF1FB489), Color(0xFF59B7EF)],
-                              ),
-                            ),
-                            child: _AssistantLottieIcon(
-                              emoji: widget.emoji,
-                              size: 36,
-                              fallbackFontSize: 22,
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 42,
+                          height: 42,
+                          alignment: Alignment.center,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [Color.fromARGB(255, 121, 73, 223), Color(0xFF59B7EF)],
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'VitalySync Assistant',
-                              style: TextStyle(
-                                color: pagePrimaryTextColor(context),
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
+                          child: _AssistantLottieIcon(
+                            emoji: widget.emoji,
+                            size: 36,
+                            fallbackFontSize: 22,
                           ),
-                          IconButton(
-                            tooltip: 'Close',
-                            onPressed: () => Navigator.pop(context),
-                            icon: const Icon(Icons.close_rounded),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Flexible(
-                        child: PageView(
-                          controller: _pageController,
-                          onPageChanged: (index) {
-                            setState(() {
-                              _pageIndex = index;
-                            });
-                          },
-                          children: pages
-                              .map((page) => SingleChildScrollView(child: page))
-                              .toList(),
                         ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'VitalySync Assistant',
+                            style: TextStyle(
+                              color: pagePrimaryTextColor(context),
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'Close',
+                          onPressed:
+                              widget.onClose ?? () => Navigator.pop(context),
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Flexible(
+                      child: PageView(
+                        controller: _pageController,
+                        onPageChanged: (index) {
+                          setState(() {
+                            _pageIndex = index;
+                          });
+                        },
+                        children: pages
+                            .map((page) => SingleChildScrollView(child: page))
+                            .toList(),
                       ),
-                      const SizedBox(height: 12),
-                      _AssistantPageDots(
-                        count: pages.length,
-                        currentIndex: min(_pageIndex, pages.length - 1),
-                      ),
-                    ],
-                  );
-                },
-              );
-            },
-          ),
+                    ),
+                    const SizedBox(height: 12),
+                    _AssistantPageDots(
+                      count: pages.length,
+                      currentIndex: min(_pageIndex, pages.length - 1),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
         ),
       ),
     );
+
+    if (!widget.useSafeAreaPadding) {
+      return panel;
+    }
+
+    return SafeArea(child: panel);
   }
 }
 
-class _SmartNudgeDialogCard extends StatelessWidget {
+class _SmartNudgeDialogCard extends StatefulWidget {
   final String emoji;
   final String message;
   final List<AdaptiveNudgeRecommendation> recommendations;
@@ -1169,19 +1252,67 @@ class _SmartNudgeDialogCard extends StatelessWidget {
   });
 
   @override
+  State<_SmartNudgeDialogCard> createState() => _SmartNudgeDialogCardState();
+}
+
+class _SmartNudgeDialogCardState extends State<_SmartNudgeDialogCard> {
+  String? _localStatus;
+  bool _isUpdatingStatus = false;
+
+  @override
+  void didUpdateWidget(covariant _SmartNudgeDialogCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final oldPrimary = oldWidget.recommendations.isEmpty
+        ? null
+        : oldWidget.recommendations.first;
+    final newPrimary = widget.recommendations.isEmpty
+        ? null
+        : widget.recommendations.first;
+
+    if (oldPrimary?.nudgeEventId != newPrimary?.nudgeEventId ||
+        oldPrimary?.nudgeType != newPrimary?.nudgeType) {
+      _localStatus = null;
+      _isUpdatingStatus = false;
+    }
+  }
+
+  Future<void> _updateStatus(
+    AdaptiveNudgeRecommendation recommendation,
+    String status,
+  ) async {
+    setState(() {
+      _localStatus = status;
+      _isUpdatingStatus = true;
+    });
+
+    try {
+      await widget.onStatusChanged(recommendation, status);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUpdatingStatus = false;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final primary = recommendations.isEmpty ? null : recommendations.first;
+    final primary = widget.recommendations.isEmpty
+        ? null
+        : widget.recommendations.first;
     final title = primary?.title ?? 'Smart Nudge';
-    final body = primary?.message ?? message;
-    final actionLabel = primary?.actionLabel ?? 'Done';
+    final body = primary?.message ?? widget.message;
     final priority = primary?.priority ?? 'low';
     final priorityColor = _priorityColor(priority);
+    final isDismissed = _localStatus == 'dismissed';
+    final isAccepted = _localStatus == 'completed';
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF1FB489), Color(0xFF5DB8F0)],
+          colors: [Color.fromARGB(255, 105, 93, 240),Color.fromARGB(255, 4, 177, 128)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -1199,7 +1330,7 @@ class _SmartNudgeDialogCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(17),
             ),
             child: _AssistantLottieIcon(
-              emoji: emoji,
+              emoji: widget.emoji,
               size: 38,
               fallbackFontSize: 22,
             ),
@@ -1252,7 +1383,7 @@ class _SmartNudgeDialogCard extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          if (isLoading) ...[
+          if (widget.isLoading) ...[
             const SizedBox(height: 14),
             LinearProgressIndicator(
               minHeight: 4,
@@ -1275,6 +1406,8 @@ class _SmartNudgeDialogCard extends StatelessWidget {
                     primary.triggerReason.isEmpty
                         ? 'Based on your recent pattern'
                         : primary.triggerReason,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.84),
                       fontSize: 12,
@@ -1285,9 +1418,60 @@ class _SmartNudgeDialogCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (recommendations.length > 1) ...[
+            if ((primary.metadata['ai_why_this_matters'] ?? '')
+                .toString()
+                .isNotEmpty) ...[
               const SizedBox(height: 12),
-              ...recommendations
+              Text(
+                primary.metadata['ai_why_this_matters'].toString(),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  fontSize: 12.5,
+                  height: 1.35,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+            if (primary.metadata['ai_action_steps'] is List &&
+                (primary.metadata['ai_action_steps'] as List).isNotEmpty) ...[
+              const SizedBox(height: 10),
+              ...(primary.metadata['ai_action_steps'] as List)
+                  .map((item) => item.toString())
+                  .where((item) => item.trim().isNotEmpty)
+                  .take(2)
+                  .map(
+                    (step) => Padding(
+                      padding: const EdgeInsets.only(top: 5),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.check_circle_rounded,
+                            size: 15,
+                            color: Colors.white.withValues(alpha: 0.9),
+                          ),
+                          const SizedBox(width: 7),
+                          Expanded(
+                            child: Text(
+                              step,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.86),
+                                fontSize: 12.5,
+                                height: 1.3,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+            ],
+            if (widget.recommendations.length > 1) ...[
+              const SizedBox(height: 12),
+              ...widget.recommendations
                   .skip(1)
                   .take(2)
                   .map(
@@ -1322,27 +1506,46 @@ class _SmartNudgeDialogCard extends StatelessWidget {
                   ),
             ],
             const SizedBox(height: 16),
+            if (_localStatus != null) ...[
+              _NudgeStatusHint(
+                status: _localStatus!,
+                isUpdating: _isUpdatingStatus,
+              ),
+              const SizedBox(height: 10),
+            ],
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
                 OutlinedButton.icon(
-                  onPressed: () async {
-                    await onStatusChanged(primary, 'dismissed');
-                  },
-                  icon: const Icon(Icons.close_rounded, size: 17),
-                  label: const Text('Dismiss'),
+                  onPressed: _isUpdatingStatus || isDismissed || isAccepted
+                      ? null
+                      : () => _updateStatus(primary, 'dismissed'),
+                  icon: Icon(
+                    isDismissed
+                        ? Icons.remove_circle_rounded
+                        : Icons.close_rounded,
+                    size: 17,
+                  ),
+                  label: Text(isDismissed ? 'Dismissed' : 'Dismiss'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
+                    foregroundColor: isDismissed
+                        ? Colors.white.withValues(alpha: 0.72)
+                        : Colors.white,
+                    disabledForegroundColor: Colors.white.withValues(
+                      alpha: 0.72,
+                    ),
                     side: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.5),
+                      color: Colors.white.withValues(
+                        alpha: isDismissed ? 0.28 : 0.5,
+                      ),
                     ),
                   ),
                 ),
                 OutlinedButton.icon(
-                  onPressed: () async {
-                    await onRemind(primary);
-                  },
+                  onPressed: _isUpdatingStatus || isDismissed || isAccepted
+                      ? null
+                      : () => widget.onRemind(primary),
                   icon: const Icon(
                     Icons.notifications_active_rounded,
                     size: 17,
@@ -1356,14 +1559,25 @@ class _SmartNudgeDialogCard extends StatelessWidget {
                   ),
                 ),
                 ElevatedButton.icon(
-                  onPressed: () async {
-                    await onStatusChanged(primary, 'completed');
-                  },
-                  icon: const Icon(Icons.check_rounded, size: 18),
-                  label: Text(actionLabel),
+                  onPressed: _isUpdatingStatus || isDismissed || isAccepted
+                      ? null
+                      : () => _updateStatus(primary, 'completed'),
+                  icon: Icon(
+                    isAccepted
+                        ? Icons.check_circle_rounded
+                        : Icons.check_rounded,
+                    size: 18,
+                  ),
+                  label: Text(isAccepted ? 'Accepted' : 'Accept'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
+                    backgroundColor: isAccepted
+                        ? const Color(0xFFBBF7D0)
+                        : Colors.white,
                     foregroundColor: const Color(0xFF187A66),
+                    disabledBackgroundColor: isAccepted
+                        ? const Color(0xFFBBF7D0)
+                        : Colors.white.withValues(alpha: 0.34),
+                    disabledForegroundColor: const Color(0xFF187A66),
                     elevation: 0,
                   ),
                 ),
@@ -1386,6 +1600,53 @@ class _SmartNudgeDialogCard extends StatelessWidget {
       default:
         return const Color(0xFFE0F2FE);
     }
+  }
+}
+
+class _NudgeStatusHint extends StatelessWidget {
+  final String status;
+  final bool isUpdating;
+
+  const _NudgeStatusHint({required this.status, required this.isUpdating});
+
+  @override
+  Widget build(BuildContext context) {
+    final isAccepted = status == 'completed';
+    final color = isAccepted
+        ? const Color(0xFFBBF7D0)
+        : Colors.white.withValues(alpha: 0.72);
+    final icon = isAccepted
+        ? Icons.check_circle_rounded
+        : Icons.remove_circle_rounded;
+    final label = isAccepted
+        ? 'Accepted. I will use this as a helpful signal.'
+        : 'Dismissed. I will ease off this type of nudge.';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: isAccepted ? 0.12 : 0.16),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 17, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              isUpdating ? 'Saving...' : label,
+              style: TextStyle(
+                color: color,
+                fontSize: 12.5,
+                height: 1.25,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

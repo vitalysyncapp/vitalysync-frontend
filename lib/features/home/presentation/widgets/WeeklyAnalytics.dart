@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/main_navigation.dart';
+import '../../../../features/dashboard/data/weekly_user_metrics.dart';
 import '../../../../shared/theme/app_page_style.dart';
 
 class WeeklyAnalyticsCard extends StatelessWidget {
@@ -141,6 +142,61 @@ class WeeklyAnalyticsCard extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class HomeWeeklyAnalyticsCard extends StatefulWidget {
+  const HomeWeeklyAnalyticsCard({super.key});
+
+  @override
+  State<HomeWeeklyAnalyticsCard> createState() =>
+      _HomeWeeklyAnalyticsCardState();
+}
+
+class _HomeWeeklyAnalyticsCardState extends State<HomeWeeklyAnalyticsCard> {
+  late Future<WeeklyUserMetrics> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = WeeklyUserMetricsService.loadCurrentWeek();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<WeeklyUserMetrics>(
+      future: _future,
+      builder: (context, snapshot) {
+        final metrics = snapshot.data;
+        final items = metrics == null
+            ? const [
+                WeeklyStatItem(label: 'Average Sleep', value: 'Loading'),
+                WeeklyStatItem(label: 'Mood Trend', value: 'Loading'),
+                WeeklyStatItem(label: 'Exercise Days', value: 'Loading'),
+              ]
+            : [
+                WeeklyStatItem(
+                  label: 'Average Sleep',
+                  value: metrics.averageSleep > 0
+                      ? '${metrics.averageSleep.toStringAsFixed(1)} hours'
+                      : 'No logs',
+                ),
+                WeeklyStatItem(
+                  label: 'Mood Trend',
+                  value: metrics.moodTrendLabel,
+                  valueColor: metrics.moodTrendLabel == 'Improving'
+                      ? const Color(0xFF12A150)
+                      : null,
+                ),
+                WeeklyStatItem(
+                  label: 'Exercise Days',
+                  value: '${metrics.exerciseDays} of 7',
+                ),
+              ];
+
+        return WeeklyAnalyticsCard(items: items);
+      },
     );
   }
 }

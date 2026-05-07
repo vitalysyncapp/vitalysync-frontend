@@ -8,6 +8,7 @@ import '../../features/notifications/presentation/pages/notification_page.dart';
 import '../../features/onboarding/services/onboarding_service.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
+import '../notifications/notification_feed_service.dart';
 import '../preferences/user_session.dart';
 
 final ValueNotifier<int> streakRefreshNotifier = ValueNotifier<int>(0);
@@ -131,7 +132,10 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
                     end: Alignment.bottomRight,
                   )
                 : const LinearGradient(
-                    colors: [Color(0xFF1FB489), Color(0xFF5DB8F0)],
+                    colors: [
+                      Color.fromARGB(255, 29, 140, 168),
+                      Color(0xFF5DB8F0),
+                    ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -188,7 +192,7 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
     actions: [
       ValueListenableBuilder<int>(
         valueListenable: streakRefreshNotifier,
-        builder: (context, _, __) {
+        builder: (context, refreshValue, child) {
           return FutureBuilder<SharedPreferences>(
             future: SharedPreferences.getInstance(),
             builder: (context, snapshot) {
@@ -242,49 +246,73 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
                       ),
                     ),
                   ),
-                  Container(
-                    margin: const EdgeInsets.only(right: 6),
-                    decoration: actionChipDecoration(),
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        IconButton(
-                          icon: const Icon(
-                            Icons.notifications_none_rounded,
-                            color: Colors.white,
-                          ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const NotificationPage(),
-                              ),
-                            );
-                          },
-                        ),
-                        Positioned(
-                          right: 8,
-                          top: 8,
-                          child: Container(
-                            height: 16,
-                            width: 16,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFFF6B6B),
-                              shape: BoxShape.circle,
+                  ValueListenableBuilder<int>(
+                    valueListenable: notificationFeedRefreshNotifier,
+                    builder: (context, feedRefreshValue, child) {
+                      return FutureBuilder<int>(
+                        future: NotificationFeedService.instance.unreadCount(),
+                        builder: (context, snapshot) {
+                          final unreadCount = snapshot.data ?? 0;
+
+                          return Container(
+                            margin: const EdgeInsets.only(right: 6),
+                            decoration: actionChipDecoration(),
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.notifications_none_rounded,
+                                    color: Colors.white,
+                                  ),
+                                  onPressed: () async {
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const NotificationPage(),
+                                      ),
+                                    );
+                                    if (context.mounted) {
+                                      await refreshNotificationFeed();
+                                    }
+                                  },
+                                ),
+                                if (unreadCount > 0)
+                                  Positioned(
+                                    right: 8,
+                                    top: 8,
+                                    child: Container(
+                                      constraints: const BoxConstraints(
+                                        minHeight: 16,
+                                        minWidth: 16,
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                      ),
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFFFF6B6B),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        unreadCount > 9
+                                            ? '9+'
+                                            : unreadCount.toString(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
-                            alignment: Alignment.center,
-                            child: const Text(
-                              '3',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                          );
+                        },
+                      );
+                    },
                   ),
                   Padding(
                     padding: const EdgeInsets.only(right: 16),

@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/main_navigation.dart';
 import '../../../../features/log/data/log_api.dart';
@@ -11,10 +12,11 @@ import '../../../../features/onboarding/services/onboarding_service.dart';
 import '../../../../shared/notifications/local_notification_service.dart';
 import '../../../../shared/notifications/notification_payload_router.dart';
 import '../../../../shared/preferences/user_session.dart';
+import '../../../../shared/theme/animated_gradient_background.dart';
 import 'login_page.dart';
 
 class LoadingScreen extends StatefulWidget {
-  const LoadingScreen({Key? key}) : super(key: key);
+  const LoadingScreen({super.key});
 
   @override
   State<LoadingScreen> createState() => _LoadingScreenState();
@@ -122,56 +124,41 @@ class _LoadingScreenState extends State<LoadingScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      body: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isDark
-                    ? [Colors.black, Colors.grey.shade900]
-                    : [Colors.blue.shade200, Colors.white],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+      body: AnimatedGradientBackground(
+        child: Center(
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: glassContainer(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: 110,
+                      maxHeight: 110,
+                    ),
+                    child: Image.asset(
+                      'assets/images/logo.png',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  const SizedBox(height: 25),
+                  Text(
+                    'VitalySync',
+                    style: GoogleFonts.poppins(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : const Color.fromARGB(221, 43, 0, 88),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+                  const CircularProgressIndicator(),
+                ],
               ),
             ),
           ),
-          Center(
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: glassContainer(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Hero(
-                      tag: 'appLogo',
-                      child: SizedBox(
-                        width: 110,
-                        height: 110,
-                        child: ClipOval(
-                          child: Image.asset(
-                            'assets/images/logo.png',
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 25),
-                    Text(
-                      'VitalySync',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    const CircularProgressIndicator(),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

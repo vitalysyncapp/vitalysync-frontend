@@ -10,7 +10,7 @@ import '../features/log/data/log_api.dart';
 import '../features/log/presentation/pages/log_page.dart';
 import '../features/nutrition/presentation/pages/nutrition_page.dart';
 import '../shared/widgets/bottom_nav.dart';
-import '../shared/widgets/floating_smart_nudge_assistant.dart';
+import '../shared/assistant/floating_smart_nudge_assistant.dart';
 import '../shared/widgets/app_bar.dart';
 
 class MainNavigationController extends InheritedWidget {

@@ -5,6 +5,7 @@ import '../../../../shared/preferences/app_preferences.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import 'app_preferences_page.dart';
+import 'assistant_settings.dart';
 import 'about_page.dart';
 import 'clear_account_data_page.dart';
 import 'delete_account_page.dart';
@@ -16,7 +17,7 @@ import 'terms_privacy_page.dart';
 import 'version_page.dart';
 
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({Key? key}) : super(key: key);
+  const SettingsPage({super.key});
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -243,6 +244,30 @@ class _SettingsPageState extends State<SettingsPage> {
                   children: [
                     _buildSectionCard(
                       context: context,
+                      title: "Floating Assistant",
+                      children: [
+                        _buildSettingsTile(
+                          context: context,
+                          icon: Icons.bubble_chart_rounded,
+                          iconBg: const Color(0xFFE5F7F0),
+                          iconColor: const Color(0xFF1F9D63),
+                          title: "Assistant",
+                          subtitle:
+                              "Manage outside-app access, auto appear, and schedule",
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AssistantSettings(),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _buildSectionCard(
+                      context: context,
                       title: "App Settings",
                       children: [
                         _buildSettingsTile(
@@ -465,8 +490,10 @@ class _SettingsPageState extends State<SettingsPage> {
         border: Border.all(color: pageBorderColor(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(
-              Theme.of(context).brightness == Brightness.dark ? 0.18 : 0.04,
+            color: Colors.black.withValues(
+              alpha: Theme.of(context).brightness == Brightness.dark
+                  ? 0.18
+                  : 0.04,
             ),
             blurRadius: 10,
             offset: const Offset(0, 4),
@@ -501,11 +528,12 @@ class _SettingsPageState extends State<SettingsPage> {
     required Color iconColor,
     required String title,
     String? subtitle,
+    bool enabled = true,
     required VoidCallback onTap,
   }) {
     return InkWell(
       borderRadius: BorderRadius.circular(20),
-      onTap: onTap,
+      onTap: enabled ? onTap : null,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         child: Row(
@@ -529,7 +557,9 @@ class _SettingsPageState extends State<SettingsPage> {
                     style: TextStyle(
                       fontSize: 15.5,
                       fontWeight: FontWeight.w700,
-                      color: pagePrimaryTextColor(context),
+                      color: enabled
+                          ? pagePrimaryTextColor(context)
+                          : pageSecondaryTextColor(context),
                     ),
                   ),
                   if (subtitle != null) ...[
@@ -546,9 +576,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 ],
               ),
             ),
-            const Icon(
+            Icon(
               Icons.chevron_right_rounded,
-              color: Color(0xFF9CA3AF),
+              color: enabled ? Color(0xFF9CA3AF) : Color(0xFFCBD5E1),
               size: 28,
             ),
           ],

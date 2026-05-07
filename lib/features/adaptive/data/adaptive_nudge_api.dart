@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../shared/config/api_config.dart';
+import '../../../shared/offline/offline_cache_store.dart';
 import '../../../shared/preferences/user_session.dart';
 
 class AdaptiveNudgeRecommendation {
@@ -87,10 +88,13 @@ class AdaptiveNudgeResponse {
 
 class AdaptiveNudgeApi {
   static const Duration _requestTimeout = Duration(seconds: 8);
+  static const Duration _aiRequestTimeout = Duration(seconds: 25);
+  static const String _recommendationsCache = 'adaptive_nudge_recommendations';
 
   static Future<AdaptiveNudgeResponse> fetchRecommendations({
     int limit = 3,
     bool record = true,
+    bool ai = true,
   }) async {
     if (await _isDemoMode()) {
       return _demoResponse();
@@ -101,24 +105,36 @@ class AdaptiveNudgeApi {
       return _fallbackResponse();
     }
 
-    final uri = Uri.parse(ApiConfig.adaptive('/nudges/recommendations'))
-        .replace(
-          queryParameters: {
-            'user_id': userId.toString(),
-            'limit': limit.toString(),
-            'record': record.toString(),
-          },
-        );
-    final response = await http
-        .get(uri, headers: {'Content-Type': 'application/json'})
-        .timeout(_requestTimeout);
-    final data = _decodeResponseMap(response);
+    try {
+      final uri = Uri.parse(ApiConfig.adaptive('/nudges/recommendations'))
+          .replace(
+            queryParameters: {
+              'user_id': userId.toString(),
+              'limit': limit.toString(),
+              'record': record.toString(),
+              'ai': ai.toString(),
+            },
+          );
+      final response = await http
+          .get(uri, headers: {'Content-Type': 'application/json'})
+          .timeout(ai ? _aiRequestTimeout : _requestTimeout);
+      final data = _decodeResponseMap(response);
 
-    if (response.statusCode != 200) {
-      return _fallbackResponse();
+      if (response.statusCode != 200) {
+        return await _readCachedRecommendations(userId, ai: ai) ??
+            _fallbackResponse();
+      }
+
+      await OfflineCacheStore.saveJson(
+        namespace: _recommendationsCache,
+        scope: _cacheScope(userId, ai: ai),
+        data: data,
+      );
+      return AdaptiveNudgeResponse.fromJson(data);
+    } catch (_) {
+      return await _readCachedRecommendations(userId, ai: ai) ??
+          _fallbackResponse();
     }
-
-    return AdaptiveNudgeResponse.fromJson(data);
   }
 
   static Future<void> updateNudgeStatus({
@@ -169,6 +185,25 @@ class AdaptiveNudgeApi {
     }
 
     return const {};
+  }
+
+  static Future<AdaptiveNudgeResponse?> _readCachedRecommendations(
+    int userId, {
+    bool ai = true,
+  }) async {
+    final data = await OfflineCacheStore.readLatestJson(
+      namespace: _recommendationsCache,
+      scope: _cacheScope(userId, ai: ai),
+    );
+    if (data == null) {
+      return null;
+    }
+
+    return AdaptiveNudgeResponse.fromJson(data);
+  }
+
+  static String _cacheScope(int userId, {required bool ai}) {
+    return '${userId}_${ai ? 'ai' : 'rules'}';
   }
 
   static AdaptiveNudgeResponse _fallbackResponse() {

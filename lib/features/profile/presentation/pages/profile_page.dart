@@ -590,7 +590,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           colors: [
                             Color(0xFF60A5FA),
                             Color(0xFF38BDF8),
-                            Color(0xFF2DD4BF),
+                            Color.fromARGB(255, 91, 110, 174),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,

@@ -92,8 +92,8 @@ Widget buildBottomNav({
                 ),
                 BoxShadow(
                   color: isDark
-                      ? const Color(0xFF1FC8A4).withOpacity(0.08)
-                      : const Color(0xFF6CCCB6).withOpacity(0.22),
+                      ? const Color(0xFF5DB8F0).withOpacity(0.08)
+                      : const Color.fromARGB(255, 29, 140, 168).withOpacity(0.22),
                   blurRadius: 26,
                   spreadRadius: -8,
                   offset: const Offset(0, 8),
@@ -172,7 +172,7 @@ class _FloatingNavItem extends StatelessWidget {
               borderRadius: BorderRadius.circular(22),
               gradient: isSelected
                   ? const LinearGradient(
-                      colors: [Color(0xFF1FB489), Color(0xFF59B7EF)],
+                      colors: [Color.fromARGB(255, 29, 140, 168), Color(0xFF59B7EF)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     )

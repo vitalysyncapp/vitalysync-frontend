@@ -14,7 +14,7 @@ class NutritionHeaderCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(isCompact ? 14 : 18),
         gradient: const LinearGradient(
-          colors: [Color(0xFF1FB489), Color(0xFF5DB8F0)],
+          colors: [Color.fromARGB(255, 29, 150, 150), Color(0xFF5DB8F0)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),

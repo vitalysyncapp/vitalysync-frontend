@@ -25,106 +25,107 @@ class QuickActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isCompact = constraints.maxWidth < 160;
-          final cardPadding = isCompact ? 12.0 : 16.0;
-          final iconBoxSize = isCompact ? 40.0 : 44.0;
-          final actionSize = isCompact ? 28.0 : 32.0;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textScale =
+            MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.35);
+        final isCompact = constraints.maxWidth < 170;
+        final cardPadding = isCompact ? 14.0 : 16.0;
+        final iconBoxSize = isCompact ? 40.0 : 44.0;
+        final actionSize = isCompact ? 30.0 : 34.0;
+        final cardHeight =
+            (isCompact ? 136.0 : 144.0) + ((textScale - 1.0) * 28.0);
 
-          return InkWell(
-            borderRadius: BorderRadius.circular(20),
-            onTap: onTap,
-            child: Container(
-              height: isCompact ? 122 : 128,
-              margin: const EdgeInsets.symmetric(horizontal: 5),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                gradient: LinearGradient(
-                  colors: gradientColors,
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+        return InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTap,
+          child: Container(
+            height: cardHeight,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                colors: gradientColors,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
                 boxShadow: [
                   BoxShadow(
-                    color: gradientColors.last.withOpacity(0.18),
+                    color: gradientColors.last.withValues(alpha: 0.18),
                     blurRadius: 16,
                     offset: const Offset(0, 10),
                   ),
+              ],
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(cardPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    width: iconBoxSize,
+                    height: iconBoxSize,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.72),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(icon, color: iconColor, size: 24),
+                  ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: titleColor,
+                                fontSize: isCompact ? 14.5 : 16,
+                                fontWeight: FontWeight.w700,
+                                height: 1.1,
+                              ),
+                            ),
+                            SizedBox(height: isCompact ? 3 : 4),
+                            Text(
+                              'Open now',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: subtitleColor,
+                                fontSize: isCompact ? 12 : 12.5,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: isCompact ? 8 : 10),
+                      Container(
+                        width: actionSize,
+                        height: actionSize,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.82),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.arrow_forward_rounded,
+                          color: titleColor,
+                          size: isCompact ? 16 : 18,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
-              child: Padding(
-                padding: EdgeInsets.all(cardPadding),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      width: iconBoxSize,
-                      height: iconBoxSize,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.72),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Icon(icon, color: iconColor, size: 24),
-                    ),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                title,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: titleColor,
-                                  fontSize: isCompact ? 14.5 : 16,
-                                  fontWeight: FontWeight.w700,
-                                  height: 1.08,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Open now',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: subtitleColor,
-                                  fontSize: isCompact ? 12 : 12.5,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(width: isCompact ? 6 : 8),
-                        Container(
-                          width: actionSize,
-                          height: actionSize,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.82),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.arrow_forward_rounded,
-                            color: titleColor,
-                            size: isCompact ? 16 : 18,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -165,6 +166,33 @@ class QuickActionsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final actions = [
+      _QuickActionItem(
+        icon: Icons.monitor_heart_rounded,
+        title: 'Daily Check-in',
+        gradientColors: const [
+          Color(0xFFE6F6FF),
+          Color(0xFFDDEEFF),
+        ],
+        iconColor: const Color(0xFF2067C9),
+        titleColor: const Color(0xFF15447C),
+        subtitleColor: const Color(0xFF55789C),
+        onTap: () => _goToTab(context, 1),
+      ),
+      _QuickActionItem(
+        icon: Icons.restaurant_menu_rounded,
+        title: 'Log Meal',
+        gradientColors: const [
+          Color(0xFFE6FBF1),
+          Color(0xFFD7F6E8),
+        ],
+        iconColor: const Color(0xFF178A58),
+        titleColor: const Color(0xFF17583B),
+        subtitleColor: const Color(0xFF4C7C64),
+        onTap: () => _goToNutritionLog(context),
+      ),
+    ];
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
@@ -174,8 +202,9 @@ class QuickActionsSection extends StatelessWidget {
         border: Border.all(color: pageBorderColor(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(
-              Theme.of(context).brightness == Brightness.dark ? 0.25 : 0.05,
+            color: Colors.black.withValues(
+              alpha:
+                  Theme.of(context).brightness == Brightness.dark ? 0.25 : 0.05,
             ),
             blurRadius: 16,
             offset: const Offset(0, 6),
@@ -184,7 +213,14 @@ class QuickActionsSection extends StatelessWidget {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final stackCards = constraints.maxWidth < 330;
+          final textScale =
+              MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.35);
+          final spacing = 12.0;
+          final useSingleColumn =
+              constraints.maxWidth < 360 || textScale > 1.1;
+          final cardWidth = useSingleColumn
+              ? constraints.maxWidth
+              : (constraints.maxWidth - spacing) / 2;
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,69 +242,26 @@ class QuickActionsSection extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              if (stackCards)
-                Column(
-                  children: [
-                    _QuickActionRow(
-                      child: QuickActionCard(
-                        icon: Icons.monitor_heart_rounded,
-                        title: 'Daily Check-in',
-                        gradientColors: const [
-                          Color(0xFFE6F6FF),
-                          Color(0xFFDDEEFF),
-                        ],
-                        iconColor: const Color(0xFF2067C9),
-                        titleColor: const Color(0xFF15447C),
-                        subtitleColor: const Color(0xFF55789C),
-                        onTap: () => _goToTab(context, 1),
+              Wrap(
+                spacing: spacing,
+                runSpacing: spacing,
+                children: actions
+                    .map(
+                      (action) => SizedBox(
+                        width: cardWidth,
+                        child: QuickActionCard(
+                          icon: action.icon,
+                          title: action.title,
+                          onTap: action.onTap,
+                          gradientColors: action.gradientColors,
+                          iconColor: action.iconColor,
+                          titleColor: action.titleColor,
+                          subtitleColor: action.subtitleColor,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    _QuickActionRow(
-                      child: QuickActionCard(
-                        icon: Icons.restaurant_menu_rounded,
-                        title: 'Log Meal',
-                        gradientColors: const [
-                          Color(0xFFE6FBF1),
-                          Color(0xFFD7F6E8),
-                        ],
-                        iconColor: const Color(0xFF178A58),
-                        titleColor: const Color(0xFF17583B),
-                        subtitleColor: const Color(0xFF4C7C64),
-                        onTap: () => _goToNutritionLog(context),
-                      ),
-                    ),
-                  ],
-                )
-              else
-                Row(
-                  children: [
-                    QuickActionCard(
-                      icon: Icons.monitor_heart_rounded,
-                      title: 'Daily Check-in',
-                      gradientColors: const [
-                        Color(0xFFE6F6FF),
-                        Color(0xFFDDEEFF),
-                      ],
-                      iconColor: const Color(0xFF2067C9),
-                      titleColor: const Color(0xFF15447C),
-                      subtitleColor: const Color(0xFF55789C),
-                      onTap: () => _goToTab(context, 1),
-                    ),
-                    QuickActionCard(
-                      icon: Icons.restaurant_menu_rounded,
-                      title: 'Log Meal',
-                      gradientColors: const [
-                        Color(0xFFE6FBF1),
-                        Color(0xFFD7F6E8),
-                      ],
-                      iconColor: const Color(0xFF178A58),
-                      titleColor: const Color(0xFF17583B),
-                      subtitleColor: const Color(0xFF4C7C64),
-                      onTap: () => _goToNutritionLog(context),
-                    ),
-                  ],
-                ),
+                    )
+                    .toList(),
+              ),
             ],
           );
         },
@@ -277,13 +270,22 @@ class QuickActionsSection extends StatelessWidget {
   }
 }
 
-class _QuickActionRow extends StatelessWidget {
-  final Widget child;
+class _QuickActionItem {
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+  final List<Color> gradientColors;
+  final Color iconColor;
+  final Color titleColor;
+  final Color subtitleColor;
 
-  const _QuickActionRow({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(children: [child]);
-  }
+  const _QuickActionItem({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+    required this.gradientColors,
+    required this.iconColor,
+    required this.titleColor,
+    required this.subtitleColor,
+  });
 }

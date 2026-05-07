@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
 import '../../../shared/config/api_config.dart';
+import '../../../shared/offline/offline_cache_store.dart';
 import '../../../shared/preferences/user_session.dart';
 
 class NutritionReviewItem {
@@ -92,9 +93,10 @@ class NutritionMealLog {
       totalFatG: _parseDouble(json['total_fat_g']),
       items: rawItems
           .whereType<Map>()
-          .map((item) => NutritionReviewItem.fromJson(
-                Map<String, dynamic>.from(item),
-              ))
+          .map(
+            (item) =>
+                NutritionReviewItem.fromJson(Map<String, dynamic>.from(item)),
+          )
           .toList(),
     );
   }
@@ -155,9 +157,10 @@ class DailyNutritionSummary {
       },
       meals: rawMeals
           .whereType<Map>()
-          .map((meal) => NutritionMealLog.fromJson(
-                Map<String, dynamic>.from(meal),
-              ))
+          .map(
+            (meal) =>
+                NutritionMealLog.fromJson(Map<String, dynamic>.from(meal)),
+          )
           .toList(),
     );
   }
@@ -167,10 +170,7 @@ class NutritionAnalysisResult {
   final int attemptId;
   final List<NutritionReviewItem> items;
 
-  const NutritionAnalysisResult({
-    required this.attemptId,
-    required this.items,
-  });
+  const NutritionAnalysisResult({required this.attemptId, required this.items});
 }
 
 class ManualNutritionInput {
@@ -225,6 +225,10 @@ class NutritionHistoryDay {
 }
 
 class NutritionApi {
+  static const Duration _requestTimeout = Duration(seconds: 8);
+  static const String _dailyNutritionCache = 'nutrition_daily_summary';
+  static const String _nutritionHistoryCache = 'nutrition_history';
+
   static String todayKey() {
     return DateFormat('yyyy-MM-dd').format(DateTime.now());
   }
@@ -281,9 +285,10 @@ class NutritionApi {
       attemptId: _parseInt(rawAttempt['attempt_id']),
       items: rawItems
           .whereType<Map>()
-          .map((item) => NutritionReviewItem.fromJson(
-                Map<String, dynamic>.from(item),
-              ))
+          .map(
+            (item) =>
+                NutritionReviewItem.fromJson(Map<String, dynamic>.from(item)),
+          )
           .toList(),
     );
   }
@@ -329,9 +334,10 @@ class NutritionApi {
       attemptId: _parseInt(rawAttempt['attempt_id']),
       items: rawItems
           .whereType<Map>()
-          .map((item) => NutritionReviewItem.fromJson(
-                Map<String, dynamic>.from(item),
-              ))
+          .map(
+            (item) =>
+                NutritionReviewItem.fromJson(Map<String, dynamic>.from(item)),
+          )
           .toList(),
     );
   }
@@ -377,10 +383,7 @@ class NutritionApi {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode({
-        'user_id': userId,
-        'attempt_id': attemptId,
-      }),
+      body: jsonEncode({'user_id': userId, 'attempt_id': attemptId}),
     );
     final data = _decodeBody(
       response,
@@ -395,22 +398,40 @@ class NutritionApi {
   static Future<DailyNutritionSummary> fetchDaily({String? date}) async {
     final userId = await _currentUserId();
     final logDate = date ?? todayKey();
-    final response = await http.get(
-      Uri.parse(
-        '${ApiConfig.nutrition('/daily')}?user_id=$userId&date=$logDate',
-      ),
-      headers: {'Accept': 'application/json'},
-    );
-    final data = _decodeBody(
-      response,
-      fallbackMessage: 'Failed to load daily nutrition.',
-    );
+    try {
+      final response = await http
+          .get(
+            Uri.parse(
+              '${ApiConfig.nutrition('/daily')}?user_id=$userId&date=$logDate',
+            ),
+            headers: {'Accept': 'application/json'},
+          )
+          .timeout(_requestTimeout);
+      final data = _decodeBody(
+        response,
+        fallbackMessage: 'Failed to load daily nutrition.',
+      );
 
-    if (response.statusCode != 200) {
-      throw Exception(data['message'] ?? 'Failed to load daily nutrition.');
+      if (response.statusCode != 200) {
+        return await _readCachedDaily(userId, logDate) ??
+            (throw Exception(
+              data['message'] ?? 'Failed to load daily nutrition.',
+            ));
+      }
+
+      await OfflineCacheStore.saveJson(
+        namespace: _dailyNutritionCache,
+        scope: _dailyScope(userId, logDate),
+        data: data,
+      );
+      return DailyNutritionSummary.fromJson(data);
+    } catch (_) {
+      final cached = await _readCachedDaily(userId, logDate);
+      if (cached != null) {
+        return cached;
+      }
+      rethrow;
     }
-
-    return DailyNutritionSummary.fromJson(data);
   }
 
   static Future<List<NutritionHistoryDay>> fetchHistory({
@@ -418,28 +439,84 @@ class NutritionApi {
     required String end,
   }) async {
     final userId = await _currentUserId();
-    final response = await http.get(
-      Uri.parse(
-        '${ApiConfig.nutrition('/history')}?user_id=$userId&start=$start&end=$end',
-      ),
-      headers: {'Accept': 'application/json'},
-    );
-    final data = _decodeBody(
-      response,
-      fallbackMessage: 'Failed to load nutrition history.',
-    );
+    try {
+      final response = await http
+          .get(
+            Uri.parse(
+              '${ApiConfig.nutrition('/history')}?user_id=$userId&start=$start&end=$end',
+            ),
+            headers: {'Accept': 'application/json'},
+          )
+          .timeout(_requestTimeout);
+      final data = _decodeBody(
+        response,
+        fallbackMessage: 'Failed to load nutrition history.',
+      );
 
-    if (response.statusCode != 200) {
-      throw Exception(data['message'] ?? 'Failed to load nutrition history.');
+      if (response.statusCode != 200) {
+        return await _readCachedHistory(userId, start, end);
+      }
+
+      await OfflineCacheStore.saveJson(
+        namespace: _nutritionHistoryCache,
+        scope: _historyScope(userId, start, end),
+        data: data,
+      );
+      return _parseHistoryDays(data);
+    } catch (_) {
+      return _readCachedHistory(userId, start, end);
+    }
+  }
+
+  static Future<DailyNutritionSummary?> _readCachedDaily(
+    int userId,
+    String logDate,
+  ) async {
+    final data = await OfflineCacheStore.readLatestJson(
+      namespace: _dailyNutritionCache,
+      scope: _dailyScope(userId, logDate),
+    );
+    if (data == null) {
+      return null;
     }
 
+    return DailyNutritionSummary.fromJson(data);
+  }
+
+  static Future<List<NutritionHistoryDay>> _readCachedHistory(
+    int userId,
+    String start,
+    String end,
+  ) async {
+    final data = await OfflineCacheStore.readLatestJson(
+      namespace: _nutritionHistoryCache,
+      scope: _historyScope(userId, start, end),
+    );
+    if (data == null) {
+      return const [];
+    }
+
+    return _parseHistoryDays(data);
+  }
+
+  static List<NutritionHistoryDay> _parseHistoryDays(
+    Map<String, dynamic> data,
+  ) {
     final rawDays = data['days'] is List ? data['days'] as List : const [];
     return rawDays
         .whereType<Map>()
-        .map((day) => NutritionHistoryDay.fromJson(
-              Map<String, dynamic>.from(day),
-            ))
+        .map(
+          (day) => NutritionHistoryDay.fromJson(Map<String, dynamic>.from(day)),
+        )
         .toList();
+  }
+
+  static String _dailyScope(int userId, String logDate) {
+    return '${userId}_$logDate';
+  }
+
+  static String _historyScope(int userId, String start, String end) {
+    return '${userId}_${start}_$end';
   }
 
   static Map<String, dynamic> _decodeBody(
@@ -461,7 +538,10 @@ class NutritionApi {
     }
   }
 
-  static String _nonJsonMessage(http.Response response, String fallbackMessage) {
+  static String _nonJsonMessage(
+    http.Response response,
+    String fallbackMessage,
+  ) {
     final url = response.request?.url.toString() ?? ApiConfig.baseUrl;
     final body = response.body.trimLeft();
 

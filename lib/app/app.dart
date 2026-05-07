@@ -3,10 +3,12 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart';
 
 import '../features/auth/presentation/pages/loading_screen.dart';
+import '../shared/assistant/overlay_assistant_controller.dart';
 import '../shared/notifications/local_notification_service.dart';
 import '../shared/notifications/notification_payload_router.dart';
 import '../shared/preferences/app_preferences.dart';
 import '../shared/preferences/user_session.dart';
+import 'app_theme.dart';
 import 'main_navigation.dart';
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
@@ -18,32 +20,54 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   final AppPreferencesController _preferences =
       AppPreferencesController.instance;
-  static const _pageTransitionsTheme = PageTransitionsTheme(
-    builders: {
-      TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
-      TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-      TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
-      TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
-      TargetPlatform.linux: FadeUpwardsPageTransitionsBuilder(),
-      TargetPlatform.fuchsia: FadeUpwardsPageTransitionsBuilder(),
-    },
-  );
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _preferences.load();
+    _preferences.notifier.addListener(_handlePreferencesChanged);
     LocalNotificationService.instance.onNotificationPayload =
         _handleNotificationPayload;
+    _handlePreferencesChanged();
+    OverlayAssistantController.instance.syncAppLifecycle(
+      isForeground: true,
+      prefs: _preferences.notifier.value,
+    );
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _preferences.notifier.removeListener(_handlePreferencesChanged);
     LocalNotificationService.instance.onNotificationPayload = null;
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final prefs = _preferences.notifier.value;
+    final isForeground = switch (state) {
+      AppLifecycleState.resumed => true,
+      AppLifecycleState.inactive => false,
+      AppLifecycleState.hidden => false,
+      AppLifecycleState.paused => false,
+      AppLifecycleState.detached => false,
+    };
+
+    OverlayAssistantController.instance.syncAppLifecycle(
+      isForeground: isForeground,
+      prefs: prefs,
+    );
+  }
+
+  void _handlePreferencesChanged() {
+    OverlayAssistantController.instance.syncSettings(
+      _preferences.notifier.value,
+    );
   }
 
   Future<void> _handleNotificationPayload(String payload) async {
@@ -88,8 +112,8 @@ class _MyAppState extends State<MyApp> {
             GlobalCupertinoLocalizations.delegate,
           ],
           themeMode: prefs.themeMode,
-          theme: _buildLightTheme(),
-          darkTheme: _buildDarkTheme(),
+          theme: buildVitalySyncLightTheme(),
+          darkTheme: buildVitalySyncDarkTheme(),
           builder: (context, child) {
             final mediaQuery = MediaQuery.of(context);
 
@@ -103,104 +127,6 @@ class _MyAppState extends State<MyApp> {
           home: const LoadingScreen(),
         );
       },
-    );
-  }
-
-  ThemeData _buildLightTheme() {
-    final base = ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.light,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF1EAD83),
-        brightness: Brightness.light,
-      ),
-    );
-
-    return base.copyWith(
-      scaffoldBackgroundColor: const Color(0xFFF3FBF8),
-      pageTransitionsTheme: _pageTransitionsTheme,
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-      ),
-      snackBarTheme: SnackBarThemeData(
-        backgroundColor: const Color(0xFF14324A),
-        contentTextStyle: const TextStyle(color: Colors.white),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF1EAD83),
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-        ),
-      ),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-        ),
-      ),
-      cardTheme: CardThemeData(
-        color: Colors.white.withOpacity(0.92),
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      ),
-    );
-  }
-
-  ThemeData _buildDarkTheme() {
-    final base = ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF5BDEC1),
-        brightness: Brightness.dark,
-      ),
-    );
-
-    return base.copyWith(
-      scaffoldBackgroundColor: const Color(0xFF091320),
-      pageTransitionsTheme: _pageTransitionsTheme,
-      dialogTheme: DialogThemeData(
-        backgroundColor: const Color(0xFF162338),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-      ),
-      snackBarTheme: SnackBarThemeData(
-        backgroundColor: const Color(0xFF142030),
-        contentTextStyle: const TextStyle(color: Colors.white),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF26B590),
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-        ),
-      ),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-        ),
-      ),
-      cardTheme: CardThemeData(
-        color: const Color(0xFF162338),
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      ),
     );
   }
 }

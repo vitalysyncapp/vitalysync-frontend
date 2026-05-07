@@ -19,6 +19,22 @@ class ExerciseRecommendationModel {
     this.recommendedBy = 'vitalysync_assistant',
   });
 
+  factory ExerciseRecommendationModel.fromJson(Map<String, dynamic> json) {
+    return ExerciseRecommendationModel(
+      exerciseName: json['exercise_name']?.toString() ?? 'None today',
+      exerciseCategory: json['exercise_category']?.toString() ?? 'none',
+      targetDistanceMeters: _parseNullableDouble(
+        json['target_distance_meters'],
+      ),
+      targetMinutes: _parseNullableInt(json['target_minutes']),
+      targetReps: _parseNullableInt(json['target_reps']),
+      completionMethod: json['completion_method']?.toString() ?? 'none',
+      reason: json['reason']?.toString() ?? '',
+      recommendedBy:
+          json['recommended_by']?.toString() ?? 'vitalysync_assistant',
+    );
+  }
+
   bool get isNoneToday => exerciseName.toLowerCase() == 'none today';
 
   bool get isDistanceBased {
@@ -62,4 +78,43 @@ class ExerciseRecommendationModel {
       'status': isNoneToday ? 'none' : 'active',
     };
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'recommended_by': recommendedBy,
+      'exercise_name': exerciseName,
+      'exercise_category': exerciseCategory,
+      'target_distance_meters': targetDistanceMeters,
+      'target_minutes': targetMinutes,
+      'target_reps': targetReps,
+      'completion_method': completionMethod,
+      'reason': reason,
+    };
+  }
+}
+
+int? _parseNullableInt(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  return int.tryParse(value.toString());
+}
+
+double? _parseNullableDouble(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is double) {
+    return value;
+  }
+  if (value is num) {
+    return value.toDouble();
+  }
+  return double.tryParse(value.toString());
 }

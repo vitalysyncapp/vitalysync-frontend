@@ -86,6 +86,18 @@ class ExerciseGoalModel {
     return completionMethod == 'distance' || completionMethod == 'steps';
   }
 
+  bool get isStepTrackedMovement {
+    final category = exerciseCategory.toLowerCase();
+    final name = exerciseName.toLowerCase();
+    return isDistanceBased &&
+        (category.contains('walking') ||
+            category.contains('jogging') ||
+            category.contains('running') ||
+            name.contains('walk') ||
+            name.contains('jog') ||
+            name.contains('run'));
+  }
+
   bool get canManualComplete => !isCompleted && !isCanceled && !isNoneToday;
 
   double progressForDistance(double distanceMeters) {

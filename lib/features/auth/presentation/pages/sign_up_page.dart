@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:another_flushbar/flushbar.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../features/log/data/log_api.dart';
 import '../../../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../../../shared/config/api_config.dart';
 import '../../../../shared/preferences/user_session.dart';
+import '../../../../shared/theme/animated_gradient_background.dart';
 import '../../../../shared/widgets/terms_privacy_widget.dart';
 import 'login_page.dart';
 
@@ -235,54 +237,22 @@ class _SignUpPageState extends State<SignUpPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      body: Container(
-        width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color.fromARGB(255, 214, 208, 251),
-              Color.fromARGB(255, 162, 173, 246),
-              Color.fromARGB(255, 101, 173, 250),
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
+      body: AnimatedGradientBackground(
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
             child: Column(
               children: [
-                Center(
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    height: 95,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-                const SizedBox(height: 10),
-
-                const Text(
-                  'VitalySync',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: Color.fromARGB(255, 6, 2, 255),
-                    letterSpacing: 0.3,
-                  ),
-                ),
-                const SizedBox(height: 24),
-
+                const SizedBox(height: 42),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(22),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.96),
+                    color: Colors.white.withValues(alpha: 0.96),
                     borderRadius: BorderRadius.circular(28),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.10),
+                        color: Colors.black.withValues(alpha: 0.10),
                         blurRadius: 30,
                         offset: const Offset(0, 12),
                       ),
@@ -293,20 +263,33 @@ class _SignUpPageState extends State<SignUpPage> {
                     key: _formKey,
                     child: Column(
                       children: [
-                        const Text(
+                        Image.asset('assets/images/logo.png', height: 80),
+                        const SizedBox(height: 5),
+                        Text(
+                          'VitalySync',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? Colors.white
+                                : const Color.fromARGB(221, 43, 0, 88),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
                           'Create your Account',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
+                          style: GoogleFonts.poppins(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
                             color: Color(0xFF0F172A),
                           ),
                         ),
                         const SizedBox(height: 8),
-                        const Text(
+                        Text(
                           'Start your wellness journey with VitalySync',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
+                          style: GoogleFonts.inter(
                             fontSize: 14,
                             color: Color(0xFF64748B),
                           ),
@@ -539,7 +522,7 @@ class _SignUpPageState extends State<SignUpPage> {
                                   }
                                 : null,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2563EB),
+                              backgroundColor: const Color.fromARGB(255, 5, 157, 61),
                               foregroundColor: Colors.white,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
@@ -555,9 +538,9 @@ class _SignUpPageState extends State<SignUpPage> {
                                       color: Colors.white,
                                     ),
                                   )
-                                : const Text(
+                                : Text(
                                     'Create Account',
-                                    style: TextStyle(
+                                    style: GoogleFonts.inter(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -576,9 +559,9 @@ class _SignUpPageState extends State<SignUpPage> {
                               ),
                             );
                           },
-                          child: const Text(
+                          child: Text(
                             'Back to Login',
-                            style: TextStyle(
+                            style: GoogleFonts.inter(
                               fontWeight: FontWeight.w600,
                               color: Color(0xFF2563EB),
                             ),

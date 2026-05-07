@@ -9,6 +9,7 @@ import '../../../../features/dashboard/data/burnout_score_api.dart';
 import '../../../../features/activity/presentation/widgets/activity_summary_card.dart';
 import '../../../../features/log/data/log_api.dart';
 import '../../../../features/onboarding/services/onboarding_service.dart';
+import '../../../../shared/notifications/notification_feed_service.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
@@ -48,6 +49,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   bool _isUsingCachedEnvironment = false;
   String? _environmentError;
   EnvironmentSnapshot? _environmentSnapshot;
+  int _refreshVersion = 0;
 
   @override
   void initState() {
@@ -73,6 +75,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       _loadLatestSummary(showLoader: false);
       _loadEnvironment(showLoader: false);
     }
+  }
+
+  Future<void> _refreshHome() async {
+    setState(() {
+      _refreshVersion++;
+    });
+
+    await Future.wait([
+      ActivityService.instance.refresh(),
+      _loadBurnoutBaseline(),
+      _loadLatestSummary(showLoader: false),
+      _loadEnvironment(showLoader: false),
+      refreshAppBarStreak(),
+      refreshNotificationFeed(),
+    ]);
   }
 
   Future<void> _loadBurnoutBaseline() async {
@@ -260,116 +277,104 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         backgroundColor: Colors.transparent,
         appBar: buildAppBar(context),
         body: SafeArea(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              16,
-              16,
-              pageBottomContentPadding(context, extra: 26),
-            ),
-            child: Column(
-              children: [
-                if (_isOfflineSummary) ...[
-                  RevealOnBuild(child: _buildStatusBanner(context)),
+          child: RefreshIndicator(
+            onRefresh: _refreshHome,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 16),
+              child: Column(
+                children: [
+                  if (_isOfflineSummary) ...[
+                    RevealOnBuild(child: _buildStatusBanner(context)),
+                    const SizedBox(height: 12),
+                  ],
+                  RevealOnBuild(
+                    delay: const Duration(milliseconds: 100),
+                    child: GlassCard(
+                      child: BurnoutCard(
+                        score: _burnoutScore,
+                        status: _burnoutStatus,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  RevealOnBuild(
+                    delay: const Duration(milliseconds: 160),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: GlassCard(
+                            child: InfoCard(
+                              icon: Icons.bedtime,
+                              title: 'Sleep',
+                              value: _sleepValue,
+                              subtitle: _sleepSubtitle,
+                              color: Colors.blue,
+                              isLoading: _isLoadingSummary,
+                              statusHint: _sleepQualityLabel,
+                              statusColor: _sleepQualityColor,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: GlassCard(
+                            child: InfoCard(
+                              icon: Icons.opacity,
+                              title: 'Hydration',
+                              value: _hydrationValue,
+                              subtitle: _hydrationSubtitle,
+                              color: Colors.green,
+                              isLoading: _isLoadingSummary,
+                              statusHint: _hydrationLevel,
+                              statusColor: _hydrationLevelColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  RevealOnBuild(
+                    delay: const Duration(milliseconds: 220),
+                    child: ValueListenableBuilder<ActivityTrackingState>(
+                      valueListenable: ActivityService.instance.notifier,
+                      builder: (context, activityState, _) {
+                        return ActivitySummaryCard(
+                          state: activityState,
+                          onRefresh: () => ActivityService.instance.refresh(),
+                          onEditGoal: ActivityService.instance.updateGoalSteps,
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  RevealOnBuild(
+                    delay: const Duration(milliseconds: 280),
+                    child: GlassCard(
+                      child: EnvironmentalCard(
+                        snapshot: _environmentSnapshot,
+                        isLoading: _isLoadingEnvironment,
+                        isCached: _isUsingCachedEnvironment,
+                        errorMessage: _environmentError,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const RevealOnBuild(
+                    delay: Duration(milliseconds: 340),
+                    child: QuickActionsSection(),
+                  ),
                   const SizedBox(height: 12),
+                  RevealOnBuild(
+                    delay: const Duration(milliseconds: 400),
+                    child: HomeWeeklyAnalyticsCard(
+                      key: ValueKey('home-weekly-$_refreshVersion'),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                 ],
-                RevealOnBuild(
-                  delay: const Duration(milliseconds: 100),
-                  child: GlassCard(
-                    child: BurnoutCard(
-                      score: _burnoutScore,
-                      status: _burnoutStatus,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                RevealOnBuild(
-                  delay: const Duration(milliseconds: 160),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: GlassCard(
-                          child: InfoCard(
-                            icon: Icons.bedtime,
-                            title: 'Sleep',
-                            value: _sleepValue,
-                            subtitle: _sleepSubtitle,
-                            color: Colors.blue,
-                            isLoading: _isLoadingSummary,
-                            statusHint: _sleepQualityLabel,
-                            statusColor: _sleepQualityColor,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: GlassCard(
-                          child: InfoCard(
-                            icon: Icons.opacity,
-                            title: 'Hydration',
-                            value: _hydrationValue,
-                            subtitle: _hydrationSubtitle,
-                            color: Colors.green,
-                            isLoading: _isLoadingSummary,
-                            statusHint: _hydrationLevel,
-                            statusColor: _hydrationLevelColor,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                RevealOnBuild(
-                  delay: const Duration(milliseconds: 220),
-                  child: ValueListenableBuilder<ActivityTrackingState>(
-                    valueListenable: ActivityService.instance.notifier,
-                    builder: (context, activityState, _) {
-                      return ActivitySummaryCard(
-                        state: activityState,
-                        onRefresh: () => ActivityService.instance.refresh(),
-                        onEditGoal: ActivityService.instance.updateGoalSteps,
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 16),
-                RevealOnBuild(
-                  delay: const Duration(milliseconds: 280),
-                  child: GlassCard(
-                    child: EnvironmentalCard(
-                      snapshot: _environmentSnapshot,
-                      isLoading: _isLoadingEnvironment,
-                      isCached: _isUsingCachedEnvironment,
-                      errorMessage: _environmentError,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const RevealOnBuild(
-                  delay: Duration(milliseconds: 340),
-                  child: QuickActionsSection(),
-                ),
-                const SizedBox(height: 12),
-                RevealOnBuild(
-                  delay: const Duration(milliseconds: 400),
-                  child: WeeklyAnalyticsCard(
-                    items: const [
-                      WeeklyStatItem(
-                        label: 'Average Sleep',
-                        value: '6.8 hours',
-                      ),
-                      WeeklyStatItem(
-                        label: 'Mood Trend',
-                        value: 'Improving',
-                        valueColor: Color(0xFF12A150),
-                      ),
-                      WeeklyStatItem(label: 'Exercise Days', value: '4 of 7'),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
+              ),
             ),
           ),
         ),

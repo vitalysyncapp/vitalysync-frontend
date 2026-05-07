@@ -312,7 +312,7 @@ class ExerciseGoalService {
     final goal = notifier.value.goal;
     if (goal == null ||
         !goal.isActive ||
-        !goal.isDistanceBased ||
+        !goal.isStepTrackedMovement ||
         (goal.targetDistanceMeters ?? 0) <= 0) {
       return;
     }

@@ -13,7 +13,7 @@ class BurnoutCard extends StatelessWidget {
   // Base gradient colors
   List<Color> _baseGradientColors() {
     if (score <= 20) return [Color(0xFF096EB1), Color(0xFF5DADE2)];
-    if (score <= 40) return [Color(0xFF099074), Color(0xFF48C9B0)];
+    if (score <= 40) return [Color.fromARGB(255, 9, 119, 144), Color(0xFF48C9B0)]; 
     if (score <= 50) return [Color(0xFF15B658), Color(0xFF58D68D)];
     if (score <= 60) return [Color(0xFFCAA307), Color(0xFFF7DC6F)];
     if (score <= 80) return [Color(0xFFD46E14), Color(0xFFF5B041)];

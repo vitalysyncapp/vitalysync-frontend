@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../shared/config/api_config.dart';
+import '../../../shared/offline/offline_cache_store.dart';
 import '../../../shared/preferences/user_session.dart';
 
 class BurnoutScoreSnapshot {
@@ -104,9 +105,10 @@ class BurnoutWindowSummary {
           : null,
       points: (json['points'] as List<dynamic>? ?? const [])
           .whereType<Map>()
-          .map((item) => BurnoutPatternPoint.fromJson(
-                Map<String, dynamic>.from(item),
-              ))
+          .map(
+            (item) =>
+                BurnoutPatternPoint.fromJson(Map<String, dynamic>.from(item)),
+          )
           .toList(),
     );
   }
@@ -201,7 +203,9 @@ class BurnoutPatternSummary {
 
     return BurnoutPatternSummary(
       latestScore: latestScore is Map
-          ? BurnoutScoreSnapshot.fromJson(Map<String, dynamic>.from(latestScore))
+          ? BurnoutScoreSnapshot.fromJson(
+              Map<String, dynamic>.from(latestScore),
+            )
           : null,
       adaptiveState: adaptiveState is Map
           ? BurnoutAdaptiveState.fromJson(
@@ -218,15 +222,17 @@ class BurnoutPatternSummary {
       windows: windows,
       patterns: (json['patterns'] as List<dynamic>? ?? const [])
           .whereType<Map>()
-          .map((item) => BurnoutPatternInsight.fromJson(
-                Map<String, dynamic>.from(item),
-              ))
+          .map(
+            (item) =>
+                BurnoutPatternInsight.fromJson(Map<String, dynamic>.from(item)),
+          )
           .toList(),
       timeline: (json['timeline'] as List<dynamic>? ?? const [])
           .whereType<Map>()
-          .map((item) => BurnoutPatternPoint.fromJson(
-                Map<String, dynamic>.from(item),
-              ))
+          .map(
+            (item) =>
+                BurnoutPatternPoint.fromJson(Map<String, dynamic>.from(item)),
+          )
           .toList(),
     );
   }
@@ -238,6 +244,9 @@ class BurnoutPatternSummary {
 
 class BurnoutScoreApi {
   static const Duration _requestTimeout = Duration(seconds: 8);
+  static const String _latestScoreCache = 'burnout_latest_score';
+  static const String _scoreHistoryCache = 'burnout_score_history';
+  static const String _patternSummaryCache = 'burnout_pattern_summary';
 
   static Future<BurnoutScoreSnapshot?> fetchLatestScore() async {
     if (await _isDemoMode()) {
@@ -249,26 +258,30 @@ class BurnoutScoreApi {
       return null;
     }
 
-    final response = await http
-        .get(
-          Uri.parse(
-            '${ApiConfig.burnout('/scores/latest')}?user_id=$userId',
-          ),
-          headers: {'Content-Type': 'application/json'},
-        )
-        .timeout(_requestTimeout);
+    try {
+      final response = await http
+          .get(
+            Uri.parse('${ApiConfig.burnout('/scores/latest')}?user_id=$userId'),
+            headers: {'Content-Type': 'application/json'},
+          )
+          .timeout(_requestTimeout);
 
-    final data = _decodeResponseMap(response);
-    if (response.statusCode != 200 || data['has_score'] != true) {
-      return null;
+      final data = _decodeResponseMap(response);
+      if (response.statusCode != 200 || data['has_score'] != true) {
+        return await _readCachedLatestScore(userId);
+      }
+
+      final score = data['score'];
+      if (score is! Map) {
+        return await _readCachedLatestScore(userId);
+      }
+
+      final scoreMap = Map<String, dynamic>.from(score);
+      await _cacheJson(_latestScoreCache, userId, {'score': scoreMap});
+      return BurnoutScoreSnapshot.fromJson(scoreMap);
+    } catch (_) {
+      return _readCachedLatestScore(userId);
     }
-
-    final score = data['score'];
-    if (score is! Map) {
-      return null;
-    }
-
-    return BurnoutScoreSnapshot.fromJson(Map<String, dynamic>.from(score));
   }
 
   static Future<BurnoutScoreSnapshot?> recalculateToday() async {
@@ -281,25 +294,31 @@ class BurnoutScoreApi {
       return null;
     }
 
-    final response = await http
-        .post(
-          Uri.parse(ApiConfig.burnout('/scores/recalculate')),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'user_id': userId}),
-        )
-        .timeout(_requestTimeout);
+    try {
+      final response = await http
+          .post(
+            Uri.parse(ApiConfig.burnout('/scores/recalculate')),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'user_id': userId}),
+          )
+          .timeout(_requestTimeout);
 
-    final data = _decodeResponseMap(response);
-    if (response.statusCode != 200) {
-      return null;
+      final data = _decodeResponseMap(response);
+      if (response.statusCode != 200) {
+        return await _readCachedLatestScore(userId);
+      }
+
+      final score = data['score'];
+      if (score is! Map) {
+        return await _readCachedLatestScore(userId);
+      }
+
+      final scoreMap = Map<String, dynamic>.from(score);
+      await _cacheJson(_latestScoreCache, userId, {'score': scoreMap});
+      return BurnoutScoreSnapshot.fromJson(scoreMap);
+    } catch (_) {
+      return _readCachedLatestScore(userId);
     }
-
-    final score = data['score'];
-    if (score is! Map) {
-      return null;
-    }
-
-    return BurnoutScoreSnapshot.fromJson(Map<String, dynamic>.from(score));
   }
 
   static Future<List<BurnoutScoreSnapshot>> fetchHistory({
@@ -329,21 +348,28 @@ class BurnoutScoreApi {
     final uri = Uri.parse(
       ApiConfig.burnout('/scores/history'),
     ).replace(queryParameters: query);
-    final response = await http
-        .get(uri, headers: {'Content-Type': 'application/json'})
-        .timeout(_requestTimeout);
+    try {
+      final response = await http
+          .get(uri, headers: {'Content-Type': 'application/json'})
+          .timeout(_requestTimeout);
 
-    final data = _decodeResponseMap(response);
-    if (response.statusCode != 200) {
-      return const [];
+      final data = _decodeResponseMap(response);
+      if (response.statusCode != 200) {
+        return await _readCachedHistory(userId);
+      }
+
+      final rawScores = data['scores'] as List<dynamic>? ?? const [];
+      await _cacheJson(_scoreHistoryCache, userId, {'scores': rawScores});
+      return rawScores
+          .whereType<Map>()
+          .map(
+            (item) =>
+                BurnoutScoreSnapshot.fromJson(Map<String, dynamic>.from(item)),
+          )
+          .toList();
+    } catch (_) {
+      return _readCachedHistory(userId);
     }
-
-    return (data['scores'] as List<dynamic>? ?? const [])
-        .whereType<Map>()
-        .map((item) => BurnoutScoreSnapshot.fromJson(
-              Map<String, dynamic>.from(item),
-            ))
-        .toList();
   }
 
   static Future<BurnoutPatternSummary?> fetchPatternSummary() async {
@@ -356,17 +382,98 @@ class BurnoutScoreApi {
       return null;
     }
 
-    final response = await http
-        .get(
-          Uri.parse(
-            '${ApiConfig.burnout('/patterns/summary')}?user_id=$userId',
-          ),
-          headers: {'Content-Type': 'application/json'},
-        )
-        .timeout(_requestTimeout);
+    try {
+      final response = await http
+          .get(
+            Uri.parse(
+              '${ApiConfig.burnout('/patterns/summary')}?user_id=$userId',
+            ),
+            headers: {'Content-Type': 'application/json'},
+          )
+          .timeout(_requestTimeout);
 
-    final data = _decodeResponseMap(response);
-    if (response.statusCode != 200) {
+      final data = _decodeResponseMap(response);
+      if (response.statusCode != 200) {
+        return await _readCachedPatternSummary(userId);
+      }
+
+      await _cacheJson(_patternSummaryCache, userId, data);
+      final latestScore = data['latest_score'];
+      if (latestScore is Map) {
+        await _cacheJson(_latestScoreCache, userId, {
+          'score': Map<String, dynamic>.from(latestScore),
+        });
+      }
+      return BurnoutPatternSummary.fromJson(data);
+    } catch (_) {
+      return _readCachedPatternSummary(userId);
+    }
+  }
+
+  static Future<void> _cacheJson(
+    String namespace,
+    int userId,
+    Map<String, dynamic> data,
+  ) {
+    return OfflineCacheStore.saveJson(
+      namespace: namespace,
+      scope: userId.toString(),
+      data: data,
+    );
+  }
+
+  static Future<BurnoutScoreSnapshot?> _readCachedLatestScore(
+    int userId,
+  ) async {
+    final data = await OfflineCacheStore.readLatestJson(
+      namespace: _latestScoreCache,
+      scope: userId.toString(),
+    );
+    var score = data?['score'];
+    if (score is! Map) {
+      final patternData = await OfflineCacheStore.readLatestJson(
+        namespace: _patternSummaryCache,
+        scope: userId.toString(),
+      );
+      score = patternData?['latest_score'];
+    }
+
+    if (score is! Map) {
+      return null;
+    }
+
+    return BurnoutScoreSnapshot.fromJson(Map<String, dynamic>.from(score));
+  }
+
+  static Future<List<BurnoutScoreSnapshot>> _readCachedHistory(
+    int userId,
+  ) async {
+    final data = await OfflineCacheStore.readLatestJson(
+      namespace: _scoreHistoryCache,
+      scope: userId.toString(),
+    );
+    final scores = data?['scores'];
+    if (scores is! List) {
+      return const [];
+    }
+
+    return scores
+        .whereType<Map>()
+        .map(
+          (item) =>
+              BurnoutScoreSnapshot.fromJson(Map<String, dynamic>.from(item)),
+        )
+        .toList();
+  }
+
+  static Future<BurnoutPatternSummary?> _readCachedPatternSummary(
+    int userId,
+  ) async {
+    final data = await OfflineCacheStore.readLatestJson(
+      namespace: _patternSummaryCache,
+      scope: userId.toString(),
+    );
+    if (data == null) {
       return null;
     }
 

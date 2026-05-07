@@ -28,7 +28,8 @@ class SelectedExerciseGoalCard extends StatelessWidget {
         : 0.0;
     final progressPercent = (progress * 100).round();
     final canMarkDone =
-        goal.canManualComplete && (!goal.isDistanceBased || progress >= 1.0);
+        goal.canManualComplete &&
+        (!goal.isStepTrackedMovement || progress >= 1.0);
     final accent = goal.isCompleted
         ? const Color(0xFF16A34A)
         : goal.isNoneToday
@@ -69,8 +70,10 @@ class SelectedExerciseGoalCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      goal.exerciseName,
-                      maxLines: 1,
+                      goal.isCompleted
+                          ? 'Exercise completed\nGood job'
+                          : goal.exerciseName,
+                      maxLines: goal.isCompleted ? 2 : 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 18,
@@ -93,6 +96,10 @@ class SelectedExerciseGoalCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
+          if (goal.isCompleted) ...[
+            _GoalDetailRow(label: 'Exercise', value: goal.exerciseName),
+            const SizedBox(height: 10),
+          ],
           _GoalDetailRow(label: 'Target', value: goal.targetLabel()),
           const SizedBox(height: 10),
           _GoalDetailRow(
@@ -130,7 +137,9 @@ class SelectedExerciseGoalCard extends StatelessWidget {
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: isSaving || !canMarkDone ? null : onDone,
+                  onPressed: isSaving || goal.isCompleted || !canMarkDone
+                      ? null
+                      : onDone,
                   icon: const Icon(Icons.check_rounded, size: 18),
                   label: const Text('Done'),
                   style: ElevatedButton.styleFrom(
@@ -164,8 +173,12 @@ class SelectedExerciseGoalCard extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               progress >= 1.0
-                  ? 'Distance reached. You can mark it done now.'
-                  : 'Walking and jogging complete automatically when the target distance is reached.',
+                  ? goal.isStepTrackedMovement
+                        ? 'Distance reached. This will save as complete automatically.'
+                        : 'Distance reached. Tap Done when finished.'
+                  : goal.isStepTrackedMovement
+                  ? 'Walks, jogs, and runs complete automatically when your live steps reach the target.'
+                  : 'Tap Done when this exercise is complete.',
               style: TextStyle(
                 fontSize: 12,
                 height: 1.35,
@@ -187,7 +200,7 @@ class SelectedExerciseGoalCard extends StatelessWidget {
       return 'Completed';
     }
 
-    if (goal.isDistanceBased) {
+    if (goal.isStepTrackedMovement) {
       return 'Auto-tracked by step distance';
     }
 

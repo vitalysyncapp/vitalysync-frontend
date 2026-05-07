@@ -702,7 +702,7 @@ class LogWidgets extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF1FB489), Color(0xFF56B4D3)],
+          colors: [Color.fromARGB(255, 157, 94, 230), Color(0xFF56B4D3)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),

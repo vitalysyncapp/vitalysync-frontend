@@ -25,7 +25,7 @@ class TodayNutritionCard extends StatelessWidget {
       width: double.infinity,
       padding: EdgeInsets.all(isCompact ? 14 : 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF08B85B),
+        color: const Color.fromARGB(255, 8, 137, 184),
         borderRadius: BorderRadius.circular(isCompact ? 18 : 24),
         boxShadow: [
           BoxShadow(

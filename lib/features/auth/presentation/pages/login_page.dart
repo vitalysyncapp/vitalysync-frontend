@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/main_navigation.dart';
 import '../../../../features/log/data/log_api.dart';
@@ -11,6 +12,7 @@ import '../../../../features/onboarding/services/onboarding_service.dart';
 import '../../../../features/onboarding/data/onboarding_api.dart';
 import '../../../../shared/config/api_config.dart';
 import '../../../../shared/preferences/user_session.dart';
+import '../../../../shared/theme/animated_gradient_background.dart';
 import 'sign_up_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -75,11 +77,13 @@ class _LoginPageState extends State<LoginPage> {
         );
       } else {
         final errorData = jsonDecode(response.body) as Map<String, dynamic>;
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorData['message'] ?? 'Login failed')),
         );
       }
     } catch (_) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -111,15 +115,22 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget glassContainer({required Widget child}) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withOpacity(0.2)),
+            color: Colors.white.withValues(alpha: 0.50),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.55)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.12),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
+              ),
+            ],
           ),
           child: child,
         ),
@@ -131,7 +142,7 @@ class _LoginPageState extends State<LoginPage> {
     return InputDecoration(
       hintText: hint,
       filled: true,
-      fillColor: Colors.white.withOpacity(0.1),
+      fillColor: Colors.white.withValues(alpha: 0.1),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(15),
         borderSide: BorderSide.none,
@@ -148,100 +159,151 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
-      body: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isDark
-                    ? [Colors.black, Colors.grey.shade900]
-                    : [const Color(0xFF2196F3), Colors.white],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-          ),
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: glassContainer(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Image.asset('assets/images/logo.png', height: 80),
-                    const SizedBox(height: 20),
-                    TextField(
-                      controller: emailController,
-                      decoration: inputDecoration('Email'),
+      body: AnimatedGradientBackground(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: glassContainer(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset('assets/images/logo.png', height: 80),
+                  const SizedBox(height: 5),
+                  Text(
+                    'VitalySync',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : const Color.fromARGB(221, 43, 0, 88),
                     ),
-                    const SizedBox(height: 15),
-                    TextField(
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Welcome back',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                 ),
+                  const SizedBox(height: 18),
+                  // Email field
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.04),
+                      borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.black.withOpacity(0.12),
+                          width: 1,
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: TextFormField(
+                      controller: emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: InputDecoration(
+                        hintText: 'you@gmail.com',
+                        border: InputBorder.none,
+                        prefixIcon: const Icon(Icons.email_outlined, size: 20),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Password field
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.04),
+                      borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.black.withOpacity(0.12),
+                          width: 1,
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: TextFormField(
                       controller: passwordController,
                       obscureText: true,
-                      decoration: inputDecoration('Password'),
-                    ),
-                    const SizedBox(height: 10),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {},
-                        child: const Text('Forgot Password?'),
+                      decoration: InputDecoration(
+                        hintText: '••••••••',
+                        border: InputBorder.none,
+                        prefixIcon: const Icon(Icons.lock_outline, size: 20),
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: isLoading ? null : login,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () {},
+                      child: Text(
+                        'Forgot Password?',
+                        style: TextStyle(
+                          color: Colors.blue,
                         ),
-                        child: isLoading
-                            ? const CircularProgressIndicator(
-                                color: Colors.white,
-                              )
-                            : const Text('Login'),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        onPressed: isLoading ? null : _continueInDemoMode,
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(
-                            color: Colors.white.withOpacity(0.35),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
+                  ),
+                  const SizedBox(height: 6),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: isLoading ? null : login,
+                      style: ButtonStyle(
+                        backgroundColor: MaterialStateProperty.resolveWith<Color?>((states) {
+                          if (states.contains(MaterialState.disabled)) return Colors.blue.withOpacity(0.5);
+                          return Colors.blue;
+                        }),
+                        padding: MaterialStateProperty.all(const EdgeInsets.symmetric(vertical: 14)),
+                        shape: MaterialStateProperty.all(RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        )),
+                        elevation: MaterialStateProperty.all(4),
+                      ),
+                      child: isLoading
+                          ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : Text('Sign in', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: isLoading ? null : _continueInDemoMode,
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.08),
                         ),
-                        child: const Text('Continue in Demo Mode'),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
+                      child: Text('Continue in Demo Mode', style: GoogleFonts.inter(fontWeight: FontWeight.normal, color: const Color.fromARGB(255, 47, 1, 103).withValues(alpha: 0.85))),
                     ),
-                    const SizedBox(height: 10),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const SignUpPage()),
-                        );
-                      },
-                      child: const Text('Create Account'),
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('New to VitalySync? '),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const SignUpPage()),
+                          );
+                        },
+                        child: Text('Create account', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: const Color.fromARGB(255, 1, 103, 79).withValues(alpha: 0.85))),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }

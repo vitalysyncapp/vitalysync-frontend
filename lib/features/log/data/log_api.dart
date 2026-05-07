@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
 import '../../../shared/config/api_config.dart';
+import '../../../shared/offline/offline_cache_store.dart';
 import '../../../shared/preferences/user_session.dart';
 import '../../exercise/data/exercise_goal_service.dart';
 
@@ -37,6 +38,8 @@ class LogApi {
   static const String _pendingLogsKeyPrefix = 'offline_pending_logs';
   static const String _cachedLogsKeyPrefix = 'cached_daily_logs';
   static const String _syncedStreakKeyPrefix = 'synced_log_streak';
+  static const String _weeklyPulseStatusCache = 'weekly_pulse_status';
+  static const String _weeklyPulsePendingCache = 'weekly_pulse_pending';
   static const Duration _requestTimeout = Duration(seconds: 8);
 
   static String todayKey() {
@@ -309,6 +312,81 @@ class LogApi {
     }
   }
 
+  static Future<List<Map<String, dynamic>>> fetchHistory({
+    required String startDate,
+    required String endDate,
+    int limit = 30,
+  }) async {
+    if (await isDemoMode()) {
+      final logs = await _readLocalLogs();
+      return _filterLogsByDate(
+        logs,
+        startDate: startDate,
+        endDate: endDate,
+      ).take(limit).toList();
+    }
+
+    final userId = await getStoredUserId();
+    if (userId == null) {
+      return const [];
+    }
+
+    try {
+      await syncPendingLogs();
+
+      final uri = Uri.parse(ApiConfig.logs('/history')).replace(
+        queryParameters: {
+          'user_id': userId.toString(),
+          'start': startDate,
+          'end': endDate,
+          'limit': limit.toString(),
+        },
+      );
+      final response = await http
+          .get(uri, headers: {'Content-Type': 'application/json'})
+          .timeout(_requestTimeout);
+      final data = _decodeResponseMap(response);
+
+      if (response.statusCode != 200) {
+        throw _LogApiException(
+          data['message']?.toString() ?? 'Failed to fetch log history',
+          response.statusCode,
+        );
+      }
+
+      final logs =
+          (data['logs'] as List<dynamic>? ?? const [])
+              .whereType<Map>()
+              .map((item) => _normalizeLog(Map<String, dynamic>.from(item)))
+              .toList()
+            ..sort(_compareLogsByDate);
+
+      for (final log in logs) {
+        await _upsertCachedLog(userId, log);
+      }
+
+      return logs;
+    } on _LogApiException catch (error) {
+      if (!error.canUseOfflineFallback) {
+        rethrow;
+      }
+
+      final logs = await _readMergedUserLogs(userId);
+      return _filterLogsByDate(
+        logs,
+        startDate: startDate,
+        endDate: endDate,
+      ).take(limit).toList();
+    } catch (_) {
+      final logs = await _readMergedUserLogs(userId);
+      return _filterLogsByDate(
+        logs,
+        startDate: startDate,
+        endDate: endDate,
+      ).take(limit).toList();
+    }
+  }
+
   static String formatSleepHours(dynamic value) {
     final hours = parseDouble(value);
 
@@ -497,20 +575,79 @@ class LogApi {
       throw Exception('Missing logged-in user');
     }
 
+    try {
+      await _syncCachedWeeklyPulse(userId, weekStart);
+    } catch (_) {
+      // A pending weekly pulse should not block reading the cached status.
+    }
+
+    try {
+      final response = await http
+          .get(
+            Uri.parse(
+              '${ApiConfig.logs('/weekly-pulse/status')}?user_id=$userId&date=${todayKey()}',
+            ),
+            headers: {'Content-Type': 'application/json'},
+          )
+          .timeout(_requestTimeout);
+
+      final data = _decodeResponseMap(response);
+
+      if (response.statusCode != 200) {
+        final error = _LogApiException(
+          data['message']?.toString() ?? 'Failed to fetch weekly pulse',
+          response.statusCode,
+        );
+
+        if (!error.canUseOfflineFallback) {
+          throw error;
+        }
+
+        return await _readCachedWeeklyPulseStatus(userId, weekStart) ??
+            (throw error);
+      }
+
+      await _cacheWeeklyPulseStatus(userId, weekStart, data);
+      return data;
+    } on _LogApiException catch (error) {
+      if (!error.canUseOfflineFallback) {
+        throw Exception(error.message);
+      }
+
+      final cached = await _readCachedWeeklyPulseStatus(userId, weekStart);
+      if (cached != null) {
+        return cached;
+      }
+
+      throw Exception(error.message);
+    } catch (_) {
+      final cached = await _readCachedWeeklyPulseStatus(userId, weekStart);
+      if (cached != null) {
+        return cached;
+      }
+
+      rethrow;
+    }
+  }
+
+  static Future<Map<String, dynamic>> _postWeeklyPulse(
+    int userId,
+    Map<String, dynamic> body,
+  ) async {
     final response = await http
-        .get(
-          Uri.parse(
-            '${ApiConfig.logs('/weekly-pulse/status')}?user_id=$userId&date=${todayKey()}',
-          ),
+        .post(
+          Uri.parse(ApiConfig.logs('/weekly-pulse')),
           headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'user_id': userId, ...body}),
         )
         .timeout(_requestTimeout);
 
     final data = _decodeResponseMap(response);
 
-    if (response.statusCode != 200) {
-      throw Exception(
-        data['message']?.toString() ?? 'Failed to fetch weekly pulse',
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw _LogApiException(
+        data['message']?.toString() ?? 'Failed to save weekly pulse',
+        response.statusCode,
       );
     }
 
@@ -547,30 +684,45 @@ class LogApi {
       throw Exception('Missing logged-in user');
     }
 
-    final response = await http
-        .post(
-          Uri.parse(ApiConfig.logs('/weekly-pulse')),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'user_id': userId,
-            'response_date': todayKey(),
-            'productivity_focus_level': productivityFocusLevel,
-            'recovery_rest_level': recoveryRestLevel,
-            'detachment_level': detachmentLevel,
-            'accomplishment_level': accomplishmentLevel,
-          }),
-        )
-        .timeout(_requestTimeout);
+    final body = {
+      'response_date': todayKey(),
+      'productivity_focus_level': productivityFocusLevel,
+      'recovery_rest_level': recoveryRestLevel,
+      'detachment_level': detachmentLevel,
+      'accomplishment_level': accomplishmentLevel,
+    };
 
-    final data = _decodeResponseMap(response);
+    try {
+      final data = await _postWeeklyPulse(userId, body);
+      await _cacheWeeklyPulseStatus(
+        userId,
+        weekStart,
+        _weeklyPulseStatusFromSave(
+          data,
+          userId: userId,
+          weekStart: weekStart,
+          body: body,
+          isOffline: false,
+        ),
+      );
+      return data;
+    } on _LogApiException catch (error) {
+      if (!error.canQueueForLater) {
+        throw Exception(error.message);
+      }
 
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception(
-        data['message']?.toString() ?? 'Failed to save weekly pulse',
+      return _saveOfflineWeeklyPulse(
+        userId: userId,
+        weekStart: weekStart,
+        body: body,
+      );
+    } catch (_) {
+      return _saveOfflineWeeklyPulse(
+        userId: userId,
+        weekStart: weekStart,
+        body: body,
       );
     }
-
-    return data;
   }
 
   static Future<void> clearLocalDemoData() async {
@@ -1101,6 +1253,21 @@ class LogApi {
     return [];
   }
 
+  static List<Map<String, dynamic>> _filterLogsByDate(
+    List<Map<String, dynamic>> logs, {
+    required String startDate,
+    required String endDate,
+  }) {
+    return logs.where((log) {
+      final logDate = normalizeDateString(log['log_date']);
+      if (logDate == null) {
+        return false;
+      }
+      return logDate.compareTo(startDate) >= 0 &&
+          logDate.compareTo(endDate) <= 0;
+    }).toList()..sort(_compareLogsByDate);
+  }
+
   static String? _nullableString(dynamic value) {
     final normalized = value?.toString().trim() ?? '';
     return normalized.isEmpty ? null : normalized;
@@ -1234,13 +1401,155 @@ class LogApi {
       'updated_at': now,
     };
 
-    await prefs.setString(_localWeeklyPulseKey(weekStart), jsonEncode(response));
+    await prefs.setString(
+      _localWeeklyPulseKey(weekStart),
+      jsonEncode(response),
+    );
 
     return {
       'message': 'Weekly pulse saved locally',
       'week_start_date': weekStart,
       'response': response,
     };
+  }
+
+  static Future<Map<String, dynamic>> _saveOfflineWeeklyPulse({
+    required int userId,
+    required String weekStart,
+    required Map<String, dynamic> body,
+  }) async {
+    final status = _weeklyPulseStatusFromSave(
+      const <String, dynamic>{},
+      userId: userId,
+      weekStart: weekStart,
+      body: body,
+      isOffline: true,
+    );
+
+    await _cacheWeeklyPulseStatus(userId, weekStart, status);
+    await OfflineCacheStore.saveJson(
+      namespace: _weeklyPulsePendingCache,
+      scope: _weeklyPulseScope(userId, weekStart),
+      data: {'week_start_date': weekStart, 'body': body},
+    );
+
+    return {
+      'message': 'Weekly pulse saved locally and will sync when online',
+      'week_start_date': weekStart,
+      'response': status['response'],
+      'is_offline': true,
+      'pending_sync': true,
+    };
+  }
+
+  static Map<String, dynamic> _weeklyPulseStatusFromSave(
+    Map<String, dynamic> data, {
+    required int userId,
+    required String weekStart,
+    required Map<String, dynamic> body,
+    required bool isOffline,
+  }) {
+    final rawResponse = data['response'];
+    final response = rawResponse is Map
+        ? Map<String, dynamic>.from(rawResponse)
+        : _weeklyPulseResponseFromBody(
+            userId: userId,
+            weekStart: weekStart,
+            body: body,
+          );
+
+    return {
+      'week_start_date': data['week_start_date']?.toString() ?? weekStart,
+      'has_response': true,
+      'response': response,
+      'is_offline': isOffline,
+      'pending_sync': isOffline,
+    };
+  }
+
+  static Map<String, dynamic> _weeklyPulseResponseFromBody({
+    required int userId,
+    required String weekStart,
+    required Map<String, dynamic> body,
+  }) {
+    final now = DateTime.now().toIso8601String();
+    return {
+      'pulse_id': 0,
+      'user_id': userId,
+      'week_start_date': weekStart,
+      'productivity_focus_level': parseInt(body['productivity_focus_level']),
+      'recovery_rest_level': parseInt(body['recovery_rest_level']),
+      'detachment_level': parseInt(body['detachment_level']),
+      'accomplishment_level': parseInt(body['accomplishment_level']),
+      'created_at': now,
+      'updated_at': now,
+    };
+  }
+
+  static Future<void> _cacheWeeklyPulseStatus(
+    int userId,
+    String weekStart,
+    Map<String, dynamic> data,
+  ) {
+    return OfflineCacheStore.saveJson(
+      namespace: _weeklyPulseStatusCache,
+      scope: _weeklyPulseScope(userId, weekStart),
+      data: {
+        'week_start_date': data['week_start_date']?.toString() ?? weekStart,
+        'has_response': data['has_response'] == true || data['response'] is Map,
+        'response': data['response'],
+        'is_offline': data['is_offline'] == true,
+        'pending_sync': data['pending_sync'] == true,
+      },
+    );
+  }
+
+  static Future<Map<String, dynamic>?> _readCachedWeeklyPulseStatus(
+    int userId,
+    String weekStart,
+  ) {
+    return OfflineCacheStore.readLatestJson(
+      namespace: _weeklyPulseStatusCache,
+      scope: _weeklyPulseScope(userId, weekStart),
+    );
+  }
+
+  static Future<void> _syncCachedWeeklyPulse(
+    int userId,
+    String weekStart,
+  ) async {
+    final pending = await OfflineCacheStore.readLatestJson(
+      namespace: _weeklyPulsePendingCache,
+      scope: _weeklyPulseScope(userId, weekStart),
+    );
+    final body = pending?['body'];
+    if (body is! Map) {
+      return;
+    }
+
+    final data = await _postWeeklyPulse(
+      userId,
+      Map<String, dynamic>.from(body),
+    );
+    await _cacheWeeklyPulseStatus(
+      userId,
+      weekStart,
+      _weeklyPulseStatusFromSave(
+        data,
+        userId: userId,
+        weekStart: weekStart,
+        body: Map<String, dynamic>.from(body),
+        isOffline: false,
+      ),
+    );
+    await OfflineCacheStore.remove(
+      namespace: _weeklyPulsePendingCache,
+      scope: _weeklyPulseScope(userId, weekStart),
+    );
+  }
+
+  static String _weeklyPulseScope(int userId, String weekStart) {
+    return '${userId}_$weekStart';
   }
 
   static Future<List<Map<String, dynamic>>> _readLocalLogs() async {
