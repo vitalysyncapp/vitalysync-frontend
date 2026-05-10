@@ -113,14 +113,14 @@ class _OverlayAssistantShellState extends State<_OverlayAssistantShell> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: SafeArea(
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 220),
-          switchInCurve: Curves.easeOutCubic,
-          switchOutCurve: Curves.easeInCubic,
-          child: _mode == _OverlayAssistantMode.panel
-              ? Align(
-                  key: const ValueKey('overlay-panel'),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 220),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        child: _mode == _OverlayAssistantMode.panel
+            ? SafeArea(
+                key: const ValueKey('overlay-panel'),
+                child: Align(
                   alignment: Alignment.bottomCenter,
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 420),
@@ -146,16 +146,16 @@ class _OverlayAssistantShellState extends State<_OverlayAssistantShell> {
                       onClose: _collapsePanel,
                     ),
                   ),
-                )
-              : const Center(
-                  key: ValueKey('overlay-bubble'),
-                  child: SizedBox(
-                    width: 88,
-                    height: 88,
-                    child: AssistantFloatingBubbleVisual(),
-                  ),
                 ),
-        ),
+              )
+            : const Center(
+                key: ValueKey('overlay-bubble'),
+                child: SizedBox(
+                  width: 88,
+                  height: 88,
+                  child: AssistantFloatingBubbleVisual(),
+                ),
+              ),
       ),
     );
   }

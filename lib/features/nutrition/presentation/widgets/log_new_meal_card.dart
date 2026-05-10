@@ -9,20 +9,24 @@ class LogNewMealCard extends StatelessWidget {
   final VoidCallback onChooseFromGallery;
   final VoidCallback onAnalyze;
   final ValueChanged<String> onMealTypeChanged;
+  final bool Function(String mealType)? canSelectMealType;
+  final ValueChanged<String>? onLockedMealTypeTap;
   final File? selectedImage;
   final String selectedMealType;
   final bool isAnalyzing;
 
   const LogNewMealCard({
-    Key? key,
+    super.key,
     required this.onTakePhoto,
     required this.onChooseFromGallery,
     required this.onAnalyze,
     required this.onMealTypeChanged,
     required this.selectedMealType,
     required this.isAnalyzing,
+    this.canSelectMealType,
+    this.onLockedMealTypeTap,
     this.selectedImage,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +49,8 @@ class LogNewMealCard extends StatelessWidget {
           MealTypeChoices(
             selectedMealType: selectedMealType,
             onMealTypeChanged: onMealTypeChanged,
+            canSelectMealType: canSelectMealType,
+            onLockedMealTypeTap: onLockedMealTypeTap,
           ),
           SizedBox(height: isCompact ? 14 : 18),
           InkWell(
@@ -59,10 +65,7 @@ class LogNewMealCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFF3F7FF),
                 borderRadius: BorderRadius.circular(isCompact ? 18 : 22),
-                border: Border.all(
-                  color: const Color(0xFF82B5FF),
-                  width: 1.4,
-                ),
+                border: Border.all(color: const Color(0xFF82B5FF), width: 1.4),
               ),
               child: Column(
                 children: [
@@ -187,11 +190,15 @@ class LogNewMealCard extends StatelessWidget {
 class MealTypeChoices extends StatelessWidget {
   final String selectedMealType;
   final ValueChanged<String> onMealTypeChanged;
+  final bool Function(String mealType)? canSelectMealType;
+  final ValueChanged<String>? onLockedMealTypeTap;
 
   const MealTypeChoices({
     super.key,
     required this.selectedMealType,
     required this.onMealTypeChanged,
+    this.canSelectMealType,
+    this.onLockedMealTypeTap,
   });
 
   @override
@@ -204,7 +211,15 @@ class MealTypeChoices extends StatelessWidget {
         return ChoiceChip(
           label: Text(choice.label),
           selected: isSelected,
-          onSelected: (_) => onMealTypeChanged(choice.value),
+          onSelected: (_) {
+            final canSelect = canSelectMealType?.call(choice.value) ?? true;
+            if (canSelect) {
+              onMealTypeChanged(choice.value);
+              return;
+            }
+
+            onLockedMealTypeTap?.call(choice.value);
+          },
           selectedColor: const Color(0xFFDCFCE7),
           labelStyle: TextStyle(
             color: isSelected
@@ -229,8 +244,5 @@ class MealChoice {
   final String label;
   final String value;
 
-  const MealChoice({
-    required this.label,
-    required this.value,
-  });
+  const MealChoice({required this.label, required this.value});
 }

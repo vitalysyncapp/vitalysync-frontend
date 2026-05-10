@@ -19,6 +19,7 @@ class LocalNotificationService {
   static const int _sleepReminderId = 1003;
   static const int _adaptiveReminderId = 1100;
   static const int _adaptiveNowId = 1101;
+  static const int _nutritionNowId = 1200;
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
@@ -302,6 +303,38 @@ class LocalNotificationService {
     );
   }
 
+  Future<void> showNutritionReminderNow({
+    required String title,
+    required String body,
+    String payload = 'nutrition_log',
+    String notificationType = 'nutrition_reminder',
+    Map<String, dynamic> metadata = const <String, dynamic>{},
+  }) async {
+    await initialize();
+    if (kIsWeb) {
+      return;
+    }
+
+    await requestPermissions();
+    await _plugin.show(
+      id: _nutritionNowId,
+      title: title,
+      body: body,
+      notificationDetails: _notificationDetails(),
+      payload: payload,
+    );
+    unawaited(
+      _safeLogNotificationEvent(
+        notificationType: notificationType,
+        title: title,
+        body: body,
+        sentAt: DateTime.now(),
+        status: 'sent',
+        metadata: {'payload': payload, ...metadata},
+      ),
+    );
+  }
+
   Future<void> cancelAdaptiveReminder() async {
     await initialize();
     await _plugin.cancel(id: _adaptiveReminderId);
@@ -415,7 +448,7 @@ class LocalNotificationService {
       'vitalysync_reminders',
       'VitalySync Reminders',
       channelDescription:
-          'Daily check-ins, hydration prompts, sleep wind-downs, and adaptive nudges.',
+          'Daily check-ins, hydration prompts, meal reminders, sleep wind-downs, and adaptive nudges.',
       importance: Importance.defaultImportance,
       priority: Priority.defaultPriority,
     );

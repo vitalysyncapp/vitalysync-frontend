@@ -8,10 +8,10 @@ import '../../../../shared/widgets/app_bar.dart';
 import '../../../../shared/widgets/reveal_on_build.dart';
 import '../../../onboarding/services/onboarding_service.dart';
 import '../../data/log_api.dart';
-import '../widgets/LogWidgets.dart';
+import '../widgets/log_widgets.dart';
 
 class LogPage extends StatefulWidget {
-  const LogPage({Key? key}) : super(key: key);
+  const LogPage({super.key});
 
   @override
   State<LogPage> createState() => _LogPageState();
@@ -23,7 +23,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   int sleepQuality = 2;
   int moodIndex = 3;
   double energyLevel = 1;
-  double hydration = 1.5;
+  double hydration = 0.5;
   String workloadHoursBand = 'None';
   int? perceivedStressLevel;
   int? breakQualityLevel;
@@ -163,13 +163,11 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       sleepQuality = LogApi.parseInt(log['sleep_quality'], fallback: 2);
       moodIndex = LogApi.parseInt(log['mood_index'], fallback: 3);
       energyLevel = LogApi.parseDouble(log['energy_level'], fallback: 1);
-      hydration = LogApi.parseDouble(log['hydration_liters'], fallback: 1.5);
+      hydration = LogApi.parseDouble(log['hydration_liters'], fallback: 0.5);
       workloadHoursBand =
           LogApi.normalizeWorkloadHoursBand(log['workload_hours_band']) ??
           'None';
-      perceivedStressLevel = LogApi.parseLikert(
-        log['perceived_stress_level'],
-      );
+      perceivedStressLevel = LogApi.parseLikert(log['perceived_stress_level']);
       breakQualityLevel = LogApi.parseLikert(log['break_quality_level']);
       selectedExercises
         ..clear()
@@ -281,7 +279,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     sleepQuality = 2;
     moodIndex = 3;
     energyLevel = 1;
-    hydration = 1.5;
+    hydration = 0.5;
     workloadHoursBand = 'None';
     perceivedStressLevel = null;
     breakQualityLevel = null;
@@ -531,7 +529,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF38BDF8).withOpacity(0.22),
+                      color: const Color(0xFF38BDF8).withValues(alpha: 0.22),
                       blurRadius: 18,
                       spreadRadius: 2,
                     ),
@@ -636,7 +634,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
         border: Border.all(color: pageBorderColor(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -726,7 +724,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
         color: Theme.of(context).brightness == Brightness.dark
-            ? Colors.white.withOpacity(0.06)
+            ? Colors.white.withValues(alpha: 0.06)
             : const Color(0xFFEFFAF6),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: pageBorderColor(context)),

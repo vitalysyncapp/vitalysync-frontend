@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -76,7 +77,13 @@ class UserSessionController {
   static const String _onboardingCompletedKey = 'onboarding_completed';
   static const String _demoModeKey = 'demo_mode_enabled';
 
+  UserSessionSnapshot _debugWebSession = UserSessionSnapshot.empty;
+
   Future<UserSessionSnapshot> load() async {
+    if (kIsWeb && kDebugMode) {
+      return _debugWebSession;
+    }
+
     final prefs = await SharedPreferences.getInstance();
     return UserSessionSnapshot(
       userId: prefs.getInt(_userIdKey),
@@ -90,7 +97,28 @@ class UserSessionController {
     );
   }
 
-  Future<void> saveUser(Map<String, dynamic> user, {bool isDemoMode = false}) async {
+  Future<void> saveUser(
+    Map<String, dynamic> user, {
+    bool isDemoMode = false,
+  }) async {
+    if (kIsWeb && kDebugMode) {
+      final dynamic rawUserId = user['user_id'];
+      final dynamic rawAge = user['age'];
+      _debugWebSession = UserSessionSnapshot(
+        userId: rawUserId is int
+            ? rawUserId
+            : int.tryParse('${rawUserId ?? ''}'),
+        username: (user['username'] ?? '').toString(),
+        email: (user['email'] ?? '').toString(),
+        age: rawAge is int ? rawAge : int.tryParse('${rawAge ?? ''}'),
+        gender: _normalizedNullable((user['gender'] ?? '').toString()),
+        userType: _normalizedNullable((user['user_type'] ?? '').toString()),
+        onboardingCompleted: user['onboarding_completed'] == true,
+        isDemoMode: isDemoMode,
+      );
+      return;
+    }
+
     final prefs = await SharedPreferences.getInstance();
 
     final dynamic rawUserId = user['user_id'];
@@ -131,21 +159,23 @@ class UserSessionController {
   }
 
   Future<void> enableDemoMode() async {
-    await saveUser(
-      const {
-        'user_id': 0,
-        'username': 'Demo User',
-        'email': 'demo@vitalysync.app',
-        'age': 24,
-        'gender': 'Other',
-        'user_type': 'Student',
-        'onboarding_completed': true,
-      },
-      isDemoMode: true,
-    );
+    await saveUser(const {
+      'user_id': 0,
+      'username': 'Demo User',
+      'email': 'demo@vitalysync.app',
+      'age': 24,
+      'gender': 'Other',
+      'user_type': 'Student',
+      'onboarding_completed': true,
+    }, isDemoMode: true);
   }
 
   Future<void> clearSession() async {
+    if (kIsWeb && kDebugMode) {
+      _debugWebSession = UserSessionSnapshot.empty;
+      return;
+    }
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_emailKey);
     await prefs.remove(_usernameKey);
@@ -157,15 +187,15 @@ class UserSessionController {
     await prefs.remove(_demoModeKey);
   }
 
-  Future<void> reauthenticateWithPassword({
-    required String password,
-  }) async {
+  Future<void> reauthenticateWithPassword({required String password}) async {
     final session = await load();
     final email = session.email?.trim() ?? '';
     final normalizedPassword = password.trim();
 
     if (session.isDemoMode || !session.isLoggedIn || email.isEmpty) {
-      throw Exception('Account re-authentication is only available for signed-in accounts.');
+      throw Exception(
+        'Account re-authentication is only available for signed-in accounts.',
+      );
     }
 
     if (normalizedPassword.isEmpty) {
@@ -175,10 +205,7 @@ class UserSessionController {
     final response = await http.post(
       Uri.parse(ApiConfig.auth('/login')),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': email,
-        'password': normalizedPassword,
-      }),
+      body: jsonEncode({'email': email, 'password': normalizedPassword}),
     );
 
     final data = _decodeResponseBody(response.body);
@@ -188,15 +215,15 @@ class UserSessionController {
     }
   }
 
-  Future<void> deleteAccount({
-    required String password,
-  }) async {
+  Future<void> deleteAccount({required String password}) async {
     final session = await load();
     final email = session.email?.trim() ?? '';
     final normalizedPassword = password.trim();
 
     if (session.isDemoMode || !session.isLoggedIn || session.userId == null) {
-      throw Exception('Delete account is only available for signed-in accounts.');
+      throw Exception(
+        'Delete account is only available for signed-in accounts.',
+      );
     }
 
     if (email.isEmpty || normalizedPassword.isEmpty) {
@@ -263,17 +290,20 @@ class UserSessionController {
       throw Exception(data['message'] ?? 'Failed to update profile');
     }
 
-    final user = Map<String, dynamic>.from(data['user'] as Map<String, dynamic>);
-    await saveUser(user, isDemoMode: false);
-    await saveSupplementalProfile(
-      age: age,
-      gender: gender,
-      userType: userType,
+    final user = Map<String, dynamic>.from(
+      data['user'] as Map<String, dynamic>,
     );
+    await saveUser(user, isDemoMode: false);
+    await saveSupplementalProfile(age: age, gender: gender, userType: userType);
     return user;
   }
 
   Future<void> updateOnboardingCompleted(bool value) async {
+    if (kIsWeb && kDebugMode) {
+      _debugWebSession = _debugWebSession.copyWith(onboardingCompleted: value);
+      return;
+    }
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_onboardingCompletedKey, value);
   }
@@ -283,6 +313,15 @@ class UserSessionController {
     String? gender,
     String? userType,
   }) async {
+    if (kIsWeb && kDebugMode) {
+      _debugWebSession = _debugWebSession.copyWith(
+        age: age,
+        gender: _normalizedNullable(gender),
+        userType: _normalizedNullable(userType),
+      );
+      return;
+    }
+
     final prefs = await SharedPreferences.getInstance();
 
     if (age != null) {

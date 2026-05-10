@@ -8,6 +8,7 @@ import '../features/exercise/data/exercise_goal_service.dart';
 import '../features/home/presentation/pages/home_page.dart';
 import '../features/log/data/log_api.dart';
 import '../features/log/presentation/pages/log_page.dart';
+import '../features/nutrition/data/nutrition_reminder_engine.dart';
 import '../features/nutrition/presentation/pages/nutrition_page.dart';
 import '../shared/widgets/bottom_nav.dart';
 import '../shared/assistant/floating_smart_nudge_assistant.dart';
@@ -74,6 +75,7 @@ class _MainNavigationState extends State<MainNavigation>
     ActivityService.instance.startTracking();
     ExerciseGoalService.instance.start();
     _syncPendingLogs();
+    _evaluateNutritionReminder();
     _offlineSyncTimer = Timer.periodic(
       _offlineSyncInterval,
       (_) => _syncPendingLogs(),
@@ -91,6 +93,7 @@ class _MainNavigationState extends State<MainNavigation>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _syncPendingLogs();
+      _evaluateNutritionReminder();
     }
   }
 
@@ -130,6 +133,10 @@ class _MainNavigationState extends State<MainNavigation>
     } finally {
       _isSyncingOfflineLogs = false;
     }
+  }
+
+  void _evaluateNutritionReminder() {
+    unawaited(NutritionReminderEngine.instance.evaluate());
   }
 
   @override

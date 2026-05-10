@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
+import '../../../nutrition/data/nutrition_coach.dart';
 import '../../../../shared/notifications/notification_feed_service.dart';
 import '../../../../shared/theme/app_page_style.dart';
 
@@ -163,6 +165,8 @@ class _NotificationPageState extends State<NotificationPage> {
       children: [
         _buildStatusCard(context, sources),
         const SizedBox(height: 22),
+        _buildNutritionInsightSection(context, feed?.nutritionInsight),
+        const SizedBox(height: 22),
         if (notifications.isEmpty)
           _buildEmptyState(context)
         else
@@ -243,6 +247,108 @@ class _NotificationPageState extends State<NotificationPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildNutritionInsightSection(
+    BuildContext context,
+    NutritionInsight? insight,
+  ) {
+    final hasInsight = insight != null && insight.message.trim().isNotEmpty;
+    final title = hasInsight ? insight.title : 'Nutrition Insights';
+    final message = hasInsight
+        ? insight.message
+        : 'No nutrition insight yet. Add a meal log to generate one gentle suggestion.';
+    final timeLabel = hasInsight
+        ? 'Latest insight - ${DateFormat('MMM d, h:mm a').format(insight.generatedAt)}'
+        : 'Last generated suggestion only';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Nutrition Insights',
+          style: TextStyle(
+            color: pagePrimaryTextColor(context),
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: pageSurfaceColor(context),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: pageBorderColor(context)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(
+                  alpha: Theme.of(context).brightness == Brightness.dark
+                      ? 0.16
+                      : 0.06,
+                ),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE5F7F0),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.restaurant_menu_rounded,
+                  color: Color(0xFF1F9D63),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: pagePrimaryTextColor(context),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      message,
+                      style: TextStyle(
+                        color: pageSecondaryTextColor(context),
+                        fontSize: 14,
+                        height: 1.45,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      timeLabel,
+                      style: const TextStyle(
+                        color: Color(0xFF98A2B3),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

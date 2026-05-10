@@ -61,6 +61,8 @@ class _SettingsPageState extends State<SettingsPage> {
       final hydrationReminder =
           preferences['prefers_hydration_reminder'] == true;
       final sleepReminder = preferences['prefers_sleep_reminder'] == true;
+      final mealReminder =
+          AppPreferencesController.instance.notifier.value.mealReminderEnabled;
       final reminderTime = (preferences['reminder_time'] ?? '')
           .toString()
           .trim();
@@ -80,6 +82,7 @@ class _SettingsPageState extends State<SettingsPage> {
         _notificationSubtitle = _buildAccountNotificationSummary(
           dailyReminder: dailyReminder,
           hydrationReminder: hydrationReminder,
+          mealReminder: mealReminder,
           sleepReminder: sleepReminder,
           reminderTime: reminderTime,
         );
@@ -107,6 +110,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final enabled = <String>[
       if (prefs.bedtimeReminderEnabled) 'sleep',
       if (prefs.hydrationReminderEnabled) 'hydration',
+      if (prefs.mealReminderEnabled) 'meal',
     ];
 
     if (enabled.isEmpty) {
@@ -119,12 +123,14 @@ class _SettingsPageState extends State<SettingsPage> {
   String _buildAccountNotificationSummary({
     required bool dailyReminder,
     required bool hydrationReminder,
+    required bool mealReminder,
     required bool sleepReminder,
     required String reminderTime,
   }) {
     final enabled = <String>[
       if (dailyReminder) 'daily',
       if (hydrationReminder) 'hydration',
+      if (mealReminder) 'meal',
       if (sleepReminder) 'sleep',
     ];
 

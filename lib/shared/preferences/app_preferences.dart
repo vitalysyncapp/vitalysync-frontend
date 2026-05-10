@@ -15,6 +15,7 @@ class AppPreferencesState {
   final bool notificationsEnabled;
   final bool bedtimeReminderEnabled;
   final bool hydrationReminderEnabled;
+  final bool mealReminderEnabled;
   final String dailyLogReminderTime;
   final String hydrationStartTime;
   final String hydrationEndTime;
@@ -35,6 +36,7 @@ class AppPreferencesState {
     required this.notificationsEnabled,
     required this.bedtimeReminderEnabled,
     required this.hydrationReminderEnabled,
+    required this.mealReminderEnabled,
     required this.dailyLogReminderTime,
     required this.hydrationStartTime,
     required this.hydrationEndTime,
@@ -56,6 +58,7 @@ class AppPreferencesState {
       notificationsEnabled = true,
       bedtimeReminderEnabled = true,
       hydrationReminderEnabled = true,
+      mealReminderEnabled = true,
       dailyLogReminderTime = '20:00',
       hydrationStartTime = '07:00',
       hydrationEndTime = '21:00',
@@ -76,6 +79,7 @@ class AppPreferencesState {
     bool? notificationsEnabled,
     bool? bedtimeReminderEnabled,
     bool? hydrationReminderEnabled,
+    bool? mealReminderEnabled,
     String? dailyLogReminderTime,
     String? hydrationStartTime,
     String? hydrationEndTime,
@@ -98,6 +102,7 @@ class AppPreferencesState {
           bedtimeReminderEnabled ?? this.bedtimeReminderEnabled,
       hydrationReminderEnabled:
           hydrationReminderEnabled ?? this.hydrationReminderEnabled,
+      mealReminderEnabled: mealReminderEnabled ?? this.mealReminderEnabled,
       dailyLogReminderTime: dailyLogReminderTime ?? this.dailyLogReminderTime,
       hydrationStartTime: hydrationStartTime ?? this.hydrationStartTime,
       hydrationEndTime: hydrationEndTime ?? this.hydrationEndTime,
@@ -185,6 +190,7 @@ class AppPreferencesController {
   static const String _notificationsEnabledKey = 'notifications_enabled';
   static const String _bedtimeReminderKey = 'bedtime_reminder_enabled';
   static const String _hydrationReminderKey = 'hydration_reminder_enabled';
+  static const String _mealReminderKey = 'meal_reminder_enabled';
   static const String _dailyLogReminderTimeKey = 'daily_log_reminder_time';
   static const String _hydrationStartTimeKey = 'hydration_start_time';
   static const String _hydrationEndTimeKey = 'hydration_end_time';
@@ -195,8 +201,7 @@ class AppPreferencesController {
   static const String _biometricLockKey = 'biometric_lock_enabled';
   static const String _locationPermissionChoiceKey =
       'location_permission_choice';
-  static const String _assistantOverlayEnabledKey =
-      'assistant_overlay_enabled';
+  static const String _assistantOverlayEnabledKey = 'assistant_overlay_enabled';
   static const String _assistantOverlayAutoShowEnabledKey =
       'assistant_overlay_auto_show_enabled';
   static const String _assistantOverlayAutoShowTimeKey =
@@ -206,54 +211,68 @@ class AppPreferencesController {
       ValueNotifier<AppPreferencesState>(const AppPreferencesState.defaults());
 
   Future<void> load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final themeModeName = prefs.getString(_themeModeKey);
-    final languageName = prefs.getString(_languageKey);
-    final fontSizeName = prefs.getString(_fontSizeKey);
-    final notificationsEnabled = prefs.getBool(_notificationsEnabledKey);
-    final bedtimeReminderEnabled = prefs.getBool(_bedtimeReminderKey);
-    final hydrationReminderEnabled = prefs.getBool(_hydrationReminderKey);
-    final dailyLogReminderTime = prefs.getString(_dailyLogReminderTimeKey);
-    final hydrationStartTime = prefs.getString(_hydrationStartTimeKey);
-    final hydrationEndTime = prefs.getString(_hydrationEndTimeKey);
-    final hydrationIntervalMinutes = prefs.getInt(_hydrationIntervalMinutesKey);
-    final sleepWindDownTime = prefs.getString(_sleepWindDownTimeKey);
-    final hideSensitiveContent = prefs.getBool(_hideSensitiveContentKey);
-    final biometricLockEnabled = prefs.getBool(_biometricLockKey);
-    final locationPermissionChoice = prefs.getString(
-      _locationPermissionChoiceKey,
-    );
-    final assistantOverlayEnabled = prefs.getBool(_assistantOverlayEnabledKey);
-    final assistantOverlayAutoShowEnabled = prefs.getBool(
-      _assistantOverlayAutoShowEnabledKey,
-    );
-    final assistantOverlayAutoShowTime = prefs.getString(
-      _assistantOverlayAutoShowTimeKey,
-    );
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final themeModeName = prefs.getString(_themeModeKey);
+      final languageName = prefs.getString(_languageKey);
+      final fontSizeName = prefs.getString(_fontSizeKey);
+      final notificationsEnabled = prefs.getBool(_notificationsEnabledKey);
+      final bedtimeReminderEnabled = prefs.getBool(_bedtimeReminderKey);
+      final hydrationReminderEnabled = prefs.getBool(_hydrationReminderKey);
+      final mealReminderEnabled = prefs.getBool(_mealReminderKey);
+      final dailyLogReminderTime = prefs.getString(_dailyLogReminderTimeKey);
+      final hydrationStartTime = prefs.getString(_hydrationStartTimeKey);
+      final hydrationEndTime = prefs.getString(_hydrationEndTimeKey);
+      final hydrationIntervalMinutes = prefs.getInt(
+        _hydrationIntervalMinutesKey,
+      );
+      final sleepWindDownTime = prefs.getString(_sleepWindDownTimeKey);
+      final hideSensitiveContent = prefs.getBool(_hideSensitiveContentKey);
+      final biometricLockEnabled = prefs.getBool(_biometricLockKey);
+      final locationPermissionChoice = prefs.getString(
+        _locationPermissionChoiceKey,
+      );
+      final assistantOverlayEnabled = prefs.getBool(
+        _assistantOverlayEnabledKey,
+      );
+      final assistantOverlayAutoShowEnabled = prefs.getBool(
+        _assistantOverlayAutoShowEnabledKey,
+      );
+      final assistantOverlayAutoShowTime = prefs.getString(
+        _assistantOverlayAutoShowTimeKey,
+      );
 
-    notifier.value = AppPreferencesState(
-      themeMode: _themeModeFromString(themeModeName),
-      language: _languageFromString(languageName),
-      fontSize: _fontSizeFromString(fontSizeName),
-      notificationsEnabled: notificationsEnabled ?? true,
-      bedtimeReminderEnabled: bedtimeReminderEnabled ?? true,
-      hydrationReminderEnabled: hydrationReminderEnabled ?? true,
-      dailyLogReminderTime: dailyLogReminderTime ?? '20:00',
-      hydrationStartTime: hydrationStartTime ?? '07:00',
-      hydrationEndTime: hydrationEndTime ?? '21:00',
-      hydrationIntervalMinutes: hydrationIntervalMinutes ?? 120,
-      sleepWindDownTime: sleepWindDownTime ?? '21:30',
-      hideSensitiveContent: hideSensitiveContent ?? false,
-      biometricLockEnabled: biometricLockEnabled ?? false,
-      locationPermissionChoice: _locationPermissionChoiceFromString(
-        locationPermissionChoice,
-      ),
-      assistantOverlayEnabled: assistantOverlayEnabled ?? false,
-      assistantOverlayAutoShowEnabled:
-          assistantOverlayAutoShowEnabled ?? false,
-      assistantOverlayAutoShowTime: assistantOverlayAutoShowTime ?? '06:50',
-      isLoaded: true,
-    );
+      notifier.value = AppPreferencesState(
+        themeMode: _themeModeFromString(themeModeName),
+        language: _languageFromString(languageName),
+        fontSize: _fontSizeFromString(fontSizeName),
+        notificationsEnabled: notificationsEnabled ?? true,
+        bedtimeReminderEnabled: bedtimeReminderEnabled ?? true,
+        hydrationReminderEnabled: hydrationReminderEnabled ?? true,
+        mealReminderEnabled: mealReminderEnabled ?? true,
+        dailyLogReminderTime: dailyLogReminderTime ?? '20:00',
+        hydrationStartTime: hydrationStartTime ?? '07:00',
+        hydrationEndTime: hydrationEndTime ?? '21:00',
+        hydrationIntervalMinutes: hydrationIntervalMinutes ?? 120,
+        sleepWindDownTime: sleepWindDownTime ?? '21:30',
+        hideSensitiveContent: hideSensitiveContent ?? false,
+        biometricLockEnabled: biometricLockEnabled ?? false,
+        locationPermissionChoice: _locationPermissionChoiceFromString(
+          locationPermissionChoice,
+        ),
+        assistantOverlayEnabled: assistantOverlayEnabled ?? false,
+        assistantOverlayAutoShowEnabled:
+            assistantOverlayAutoShowEnabled ?? false,
+        assistantOverlayAutoShowTime: assistantOverlayAutoShowTime ?? '06:50',
+        isLoaded: true,
+      );
+    } catch (error, stackTrace) {
+      debugPrint('Unable to load app preferences: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      notifier.value = const AppPreferencesState.defaults().copyWith(
+        isLoaded: true,
+      );
+    }
   }
 
   Future<void> updateThemeMode(ThemeMode themeMode) async {
@@ -290,6 +309,12 @@ class AppPreferencesController {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_hydrationReminderKey, value);
     notifier.value = notifier.value.copyWith(hydrationReminderEnabled: value);
+  }
+
+  Future<void> updateMealReminderEnabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_mealReminderKey, value);
+    notifier.value = notifier.value.copyWith(mealReminderEnabled: value);
   }
 
   Future<void> updateHideSensitiveContent(bool value) async {
@@ -344,6 +369,7 @@ class AppPreferencesController {
     required bool notificationsEnabled,
     required bool bedtimeReminderEnabled,
     required bool hydrationReminderEnabled,
+    bool? mealReminderEnabled,
     String? dailyLogReminderTime,
     String? hydrationStartTime,
     String? hydrationEndTime,
@@ -354,6 +380,9 @@ class AppPreferencesController {
     await prefs.setBool(_notificationsEnabledKey, notificationsEnabled);
     await prefs.setBool(_bedtimeReminderKey, bedtimeReminderEnabled);
     await prefs.setBool(_hydrationReminderKey, hydrationReminderEnabled);
+    if (mealReminderEnabled != null) {
+      await prefs.setBool(_mealReminderKey, mealReminderEnabled);
+    }
     if (dailyLogReminderTime != null) {
       await prefs.setString(_dailyLogReminderTimeKey, dailyLogReminderTime);
     }
@@ -376,6 +405,7 @@ class AppPreferencesController {
       notificationsEnabled: notificationsEnabled,
       bedtimeReminderEnabled: bedtimeReminderEnabled,
       hydrationReminderEnabled: hydrationReminderEnabled,
+      mealReminderEnabled: mealReminderEnabled,
       dailyLogReminderTime: dailyLogReminderTime,
       hydrationStartTime: hydrationStartTime,
       hydrationEndTime: hydrationEndTime,
@@ -392,6 +422,7 @@ class AppPreferencesController {
     await prefs.remove(_notificationsEnabledKey);
     await prefs.remove(_bedtimeReminderKey);
     await prefs.remove(_hydrationReminderKey);
+    await prefs.remove(_mealReminderKey);
     await prefs.remove(_dailyLogReminderTimeKey);
     await prefs.remove(_hydrationStartTimeKey);
     await prefs.remove(_hydrationEndTimeKey);

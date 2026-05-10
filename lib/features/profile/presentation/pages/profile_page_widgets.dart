@@ -1,0 +1,427 @@
+part of 'profile_page.dart';
+
+class _ProfileHeaderCard extends StatelessWidget {
+  final String avatarPath;
+  final String username;
+  final String email;
+  final String? role;
+  final int currentStreak;
+  final int longestStreak;
+  final int? age;
+  final String? gender;
+
+  const _ProfileHeaderCard({
+    required this.avatarPath,
+    required this.username,
+    required this.email,
+    required this.role,
+    required this.currentStreak,
+    required this.longestStreak,
+    required this.age,
+    required this.gender,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFF60A5FA),
+            Color(0xFF38BDF8),
+            Color.fromARGB(255, 91, 110, 174),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(26),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF38BDF8).withValues(alpha: 0.18),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 92,
+                height: 92,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.14),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.35),
+                    width: 2,
+                  ),
+                ),
+                child: ClipOval(
+                  child: Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Image.asset(
+                      avatarPath,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, _, _) => const Icon(
+                        Icons.person,
+                        size: 42,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 18),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      username,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      email,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white.withValues(alpha: 0.92),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      constraints: const BoxConstraints(maxWidth: 190),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const CircleAvatar(
+                            radius: 4,
+                            backgroundColor: Color(0xFF4CFF8F),
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              role ?? 'Role not set',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Divider(color: Colors.white.withValues(alpha: 0.22), thickness: 1),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _StatItem(value: '$currentStreak', label: 'Current'),
+              ),
+              Expanded(
+                child: _StatItem(value: '$longestStreak', label: 'Best'),
+              ),
+              Expanded(
+                child: _StatItem(value: age?.toString() ?? '--', label: 'Age'),
+              ),
+              Expanded(
+                child: _StatItem(value: gender ?? '--', label: 'Gender'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PersonalInformationCard extends StatelessWidget {
+  final String? gender;
+  final String? role;
+  final String sleepSchedule;
+  final bool isSaving;
+  final VoidCallback onOpenDetails;
+  final VoidCallback onEditProfile;
+
+  const _PersonalInformationCard({
+    required this.gender,
+    required this.role,
+    required this.sleepSchedule,
+    required this.isSaving,
+    required this.onOpenDetails,
+    required this.onEditProfile,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: pageSurfaceColor(context),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: pageBorderColor(context)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: Theme.of(context).brightness == Brightness.dark
+                  ? 0.18
+                  : 0.06,
+            ),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Personal Information',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: pagePrimaryTextColor(context),
+                ),
+              ),
+            ),
+          ),
+          Divider(height: 1, thickness: 1, color: pageBorderColor(context)),
+          _ProfileInfoTile(
+            icon: Icons.person_outline,
+            iconBg: const Color(0xFFE8F0FF),
+            iconColor: const Color(0xFF2F6BFF),
+            title: 'Profile Details',
+            subtitle:
+                '${gender ?? 'Gender not set'} - ${role ?? 'Role not set'}',
+            onTap: onOpenDetails,
+            trailing: Icon(
+              Icons.chevron_right_rounded,
+              color: pageSecondaryTextColor(context),
+            ),
+          ),
+          Divider(height: 1, thickness: 1, color: pageBorderColor(context)),
+          _ProfileInfoTile(
+            icon: Icons.nightlight_round,
+            iconBg: const Color(0xFFE0F2FE),
+            iconColor: const Color(0xFF0891B2),
+            title: 'Sleep Schedule',
+            subtitle: sleepSchedule,
+          ),
+          Divider(height: 1, thickness: 1, color: pageBorderColor(context)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: isSaving ? null : onEditProfile,
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text(
+                  'Edit Profile',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.primary,
+                  side: BorderSide(color: pageBorderColor(context)),
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SavedRoutineCard extends StatelessWidget {
+  final String sleepSchedule;
+  final String wellnessGoal;
+  final String waterGoal;
+  final String exerciseTarget;
+
+  const _SavedRoutineCard({
+    required this.sleepSchedule,
+    required this.wellnessGoal,
+    required this.waterGoal,
+    required this.exerciseTarget,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: pageSurfaceColor(context),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: pageBorderColor(context)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Saved Routine',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: pagePrimaryTextColor(context),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _RoutineLine('Sleep: $sleepSchedule'),
+          const SizedBox(height: 8),
+          _RoutineLine('Wellness goal: $wellnessGoal'),
+          const SizedBox(height: 8),
+          _RoutineLine('Water goal: $waterGoal'),
+          const SizedBox(height: 8),
+          _RoutineLine('Exercise target: $exerciseTarget'),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoutineLine extends StatelessWidget {
+  final String text;
+
+  const _RoutineLine(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(text, style: TextStyle(color: pageSecondaryTextColor(context)));
+  }
+}
+
+class _ProfileInfoTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconBg;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+  final Widget? trailing;
+
+  const _ProfileInfoTile({
+    required this.icon,
+    required this.iconBg,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    this.onTap,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+      onTap: onTap,
+      leading: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: iconBg,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Icon(icon, color: iconColor, size: 24),
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontSize: 15.5,
+          fontWeight: FontWeight.w700,
+          color: pagePrimaryTextColor(context),
+        ),
+      ),
+      subtitle: Padding(
+        padding: const EdgeInsets.only(top: 2),
+        child: Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: 13.5,
+            color: pageSecondaryTextColor(context),
+          ),
+        ),
+      ),
+      trailing: trailing,
+    );
+  }
+}
+
+class _StatItem extends StatelessWidget {
+  final String value;
+  final String label;
+
+  const _StatItem({required this.value, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 3),
+      child: Column(
+        children: [
+          SizedBox(
+            height: 22,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                maxLines: 1,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            maxLines: 1,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 11.5,
+              color: Colors.white.withValues(alpha: 0.86),
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

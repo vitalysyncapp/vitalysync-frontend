@@ -10,6 +10,9 @@ import '../../features/dashboard/data/burnout_score_api.dart';
 import '../../features/dashboard/data/weekly_user_metrics.dart';
 import '../../features/exercise/data/exercise_goal_service.dart';
 import '../../features/log/data/log_api.dart';
+import '../../features/nutrition/data/nutrition_coach.dart';
+import '../../features/nutrition/data/nutrition_insight_store.dart';
+import '../../features/nutrition/data/nutrition_reminder_engine.dart';
 import '../preferences/app_preferences.dart';
 
 final ValueNotifier<int> notificationFeedRefreshNotifier = ValueNotifier<int>(
@@ -64,10 +67,12 @@ class AppNotificationItem {
 class NotificationFeedResult {
   final List<AppNotificationItem> items;
   final List<String> functionalSources;
+  final NutritionInsight? nutritionInsight;
 
   const NotificationFeedResult({
     required this.items,
     required this.functionalSources,
+    required this.nutritionInsight,
   });
 
   int get unreadCount => items.where((item) => item.isUnread).length;
@@ -93,6 +98,7 @@ class NotificationFeedService {
 
     await AppPreferencesController.instance.load();
     final prefs = AppPreferencesController.instance.notifier.value;
+    NutritionInsight? nutritionInsight;
     if (prefs.notificationsEnabled) {
       if (prefs.hydrationReminderEnabled) {
         sources.add('Hydration reminders');
@@ -133,6 +139,9 @@ class NotificationFeedService {
       }
     }
 
+    if (prefs.mealReminderEnabled) {
+      nutritionInsight = await _loadNutritionInsight(sources);
+    }
     await _addSmartRecommendations(items, readIds, createdAtById, sources);
     await _addBurnoutReports(items, readIds, createdAtById, sources);
     await _addWeeklyProgress(items, readIds, createdAtById, sources);
@@ -143,6 +152,7 @@ class NotificationFeedService {
     return NotificationFeedResult(
       items: items,
       functionalSources: sources.toList()..sort(),
+      nutritionInsight: nutritionInsight,
     );
   }
 
@@ -194,6 +204,31 @@ class NotificationFeedService {
       );
     } catch (_) {
       // Recommendations are optional; the rest of the feed can still load.
+    }
+  }
+
+  Future<NutritionInsight?> _loadNutritionInsight(Set<String> sources) async {
+    try {
+      final evaluation = await NutritionReminderEngine.instance.evaluate(
+        allowNotification: false,
+      );
+      final insight =
+          evaluation?.insight ??
+          await NutritionInsightStore.instance.readLastInsight();
+      if (insight == null || insight.message.trim().isEmpty) {
+        return null;
+      }
+
+      sources.add('Nutrition insights');
+      return insight;
+    } catch (_) {
+      final insight = await NutritionInsightStore.instance.readLastInsight();
+      if (insight == null || insight.message.trim().isEmpty) {
+        return null;
+      }
+
+      sources.add('Nutrition insights');
+      return insight;
     }
   }
 

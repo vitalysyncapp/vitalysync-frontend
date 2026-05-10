@@ -5,7 +5,7 @@ This is a full-stack project:
 - OpenAI API integration
 
 ## VitalySync
-An AI-Driven Application for Predictive Burnout Detection and Intelligent Lifestyle Optimization
+An Intelligent Wellness Application for Burnout Risk Detection and Adaptive Lifestyle Optimization
 
 Goal:
 Maintain a clean, scalable, and consistent codebase focused on UI quality, performance, and maintainability.

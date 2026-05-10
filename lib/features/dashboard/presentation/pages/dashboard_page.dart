@@ -13,6 +13,7 @@ import '../widgets/burnout_risk_trend_card.dart';
 import '../widgets/dashboard_header_card.dart';
 import '../widgets/dashboard_stat_card.dart';
 import '../widgets/mood_volatility_card.dart';
+import '../widgets/nutrition_analytics_card.dart';
 import '../widgets/sleep_pattern_card.dart';
 import '../widgets/symptom_frequency_card.dart';
 import '../widgets/weekly_performance_card.dart';
@@ -196,6 +197,13 @@ class _DashboardState extends State<Dashboard> {
                   const SizedBox(height: 16),
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 190),
+                    child: NutritionAnalyticsCard(
+                      key: ValueKey('nutrition-analytics-$_refreshVersion'),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  RevealOnBuild(
+                    delay: const Duration(milliseconds: 220),
                     child: BurnoutRiskTrendCard(
                       summary: _burnoutPatternSummary,
                       isLoading: _isLoadingBurnoutPatterns,
@@ -204,7 +212,7 @@ class _DashboardState extends State<Dashboard> {
                   ),
                   const SizedBox(height: 16),
                   RevealOnBuild(
-                    delay: const Duration(milliseconds: 220),
+                    delay: const Duration(milliseconds: 250),
                     child: _AiBurnoutInsightCard(
                       recommendation: _aiInsightNudge,
                       isLoading: _isLoadingAiInsight,
@@ -212,35 +220,35 @@ class _DashboardState extends State<Dashboard> {
                   ),
                   const SizedBox(height: 16),
                   RevealOnBuild(
-                    delay: const Duration(milliseconds: 250),
+                    delay: const Duration(milliseconds: 310),
                     child: SleepPatternCard(
                       key: ValueKey('sleep-pattern-$_refreshVersion'),
                     ),
                   ),
                   const SizedBox(height: 16),
                   RevealOnBuild(
-                    delay: const Duration(milliseconds: 310),
+                    delay: const Duration(milliseconds: 370),
                     child: WellnessIndexCard(
                       key: ValueKey('wellness-index-$_refreshVersion'),
                     ),
                   ),
                   const SizedBox(height: 16),
                   RevealOnBuild(
-                    delay: const Duration(milliseconds: 370),
+                    delay: const Duration(milliseconds: 430),
                     child: MoodVolatilityCard(
                       key: ValueKey('mood-volatility-$_refreshVersion'),
                     ),
                   ),
                   const SizedBox(height: 16),
                   RevealOnBuild(
-                    delay: const Duration(milliseconds: 430),
+                    delay: const Duration(milliseconds: 490),
                     child: SymptomFrequencyCard(
                       key: ValueKey('symptom-frequency-$_refreshVersion'),
                     ),
                   ),
                   const SizedBox(height: 16),
                   RevealOnBuild(
-                    delay: const Duration(milliseconds: 490),
+                    delay: const Duration(milliseconds: 550),
                     child: WeeklyPerformanceCard(
                       key: ValueKey('weekly-performance-$_refreshVersion'),
                     ),
@@ -280,7 +288,10 @@ class _AvgSleepStatCardState extends State<_AvgSleepStatCard> {
 
     final results = await Future.wait([
       WeeklyUserMetricsService.loadCurrentWeek(),
-      WeeklyUserMetricsService.loadRange(start: previousStart, end: previousEnd),
+      WeeklyUserMetricsService.loadRange(
+        start: previousStart,
+        end: previousEnd,
+      ),
     ]);
 
     return _SleepStatSnapshot(

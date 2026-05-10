@@ -1,7 +1,6 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/main_navigation.dart';
@@ -46,9 +45,8 @@ class _LoadingScreenState extends State<LoadingScreen>
     await Future.delayed(const Duration(seconds: 2));
 
     final session = await UserSessionController.instance.load();
-    final prefs = await SharedPreferences.getInstance();
-    final email = session.email ?? prefs.getString('email');
-    final userId = session.userId ?? prefs.getInt('user_id');
+    final email = session.email;
+    final userId = session.userId;
     final isDemoMode = session.isDemoMode;
     var onboardingCompleted = session.onboardingCompleted;
 
@@ -148,7 +146,9 @@ class _LoadingScreenState extends State<LoadingScreen>
                     style: GoogleFonts.poppins(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : const Color.fromARGB(221, 43, 0, 88),
+                      color: isDark
+                          ? Colors.white
+                          : const Color.fromARGB(221, 43, 0, 88),
                     ),
                   ),
 

@@ -21,6 +21,7 @@ import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.core.app.NotificationCompat
 import io.flutter.FlutterInjector
+import io.flutter.embedding.android.FlutterTextureView
 import io.flutter.embedding.android.FlutterView
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.dart.DartExecutor
@@ -68,7 +69,11 @@ class OverlayAssistantService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             OverlayAssistantManager.actionStop -> stopSelf()
-            OverlayAssistantManager.actionPrepare -> destroyOverlayEngine()
+            OverlayAssistantManager.actionPrepare -> {
+                ensureOverlayView()
+                detachOverlayWindow()
+                flutterEngine?.lifecycleChannel?.appIsPaused()
+            }
             OverlayAssistantManager.actionCollapse -> {
                 ensureOverlayView()
                 collapseToBubble()
@@ -142,9 +147,13 @@ class OverlayAssistantService : Service() {
             OverlayAssistantManager.overlayWindowChannelName,
         )
 
-        val view = FlutterView(this)
+        val textureView = FlutterTextureView(this).apply {
+            setOpaque(false)
+        }
+        val view = FlutterView(this, textureView)
         view.setBackgroundColor(Color.TRANSPARENT)
         view.attachToFlutterEngine(engine)
+        view.setOnTouchListener { _, event -> handleBubbleTouch(event) }
 
         val container = FrameLayout(this).apply {
             setBackgroundColor(Color.TRANSPARENT)
@@ -182,6 +191,19 @@ class OverlayAssistantService : Service() {
         overlayChannel = null
         overlayWindowChannel = null
         rootView = null
+        windowLayoutParams = null
+        isBubbleMode = true
+    }
+
+    private fun detachOverlayWindow() {
+        removeDismissTarget()
+        rootView?.let { view ->
+            runCatching {
+                if (view.isAttachedToWindow) {
+                    windowManager.removeView(view)
+                }
+            }
+        }
         windowLayoutParams = null
         isBubbleMode = true
     }
@@ -247,6 +269,7 @@ class OverlayAssistantService : Service() {
     private fun collapseToBubble() {
         isBubbleMode = true
         val root = rootView ?: return
+        flutterEngine?.lifecycleChannel?.appIsResumed()
         val metrics = resources.displayMetrics
         val bubbleSize = dpToPx(88)
         val params = windowLayoutParams ?: WindowManager.LayoutParams(
@@ -278,6 +301,7 @@ class OverlayAssistantService : Service() {
     private fun expandPanel() {
         isBubbleMode = false
         val root = rootView ?: return
+        flutterEngine?.lifecycleChannel?.appIsResumed()
         val metrics = resources.displayMetrics
         val horizontalMargin = dpToPx(16)
         val bottomMargin = dpToPx(20)

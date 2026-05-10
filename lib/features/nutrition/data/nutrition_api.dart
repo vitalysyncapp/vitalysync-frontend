@@ -69,6 +69,8 @@ class NutritionMealLog {
   final double totalProteinG;
   final double totalCarbsG;
   final double totalFatG;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
   final List<NutritionReviewItem> items;
 
   const NutritionMealLog({
@@ -78,6 +80,8 @@ class NutritionMealLog {
     required this.totalProteinG,
     required this.totalCarbsG,
     required this.totalFatG,
+    required this.createdAt,
+    required this.updatedAt,
     required this.items,
   });
 
@@ -91,6 +95,8 @@ class NutritionMealLog {
       totalProteinG: _parseDouble(json['total_protein_g']),
       totalCarbsG: _parseDouble(json['total_carbs_g']),
       totalFatG: _parseDouble(json['total_fat_g']),
+      createdAt: _parseDateTime(json['created_at']),
+      updatedAt: _parseDateTime(json['updated_at']),
       items: rawItems
           .whereType<Map>()
           .map(
@@ -585,4 +591,13 @@ double _parseDouble(dynamic value) {
     return value.toDouble();
   }
   return double.tryParse('${value ?? ''}') ?? 0;
+}
+
+DateTime? _parseDateTime(dynamic value) {
+  final raw = value?.toString().trim();
+  if (raw == null || raw.isEmpty) {
+    return null;
+  }
+
+  return DateTime.tryParse(raw);
 }
