@@ -19,12 +19,14 @@ class LogWidgets extends StatelessWidget {
 
   final Set<String> selectedExercises;
   final Set<String> selectedSymptoms;
+  final Set<String> selectedHabits;
 
   final List<String> sleepLabels;
   final List<int> sleepStars;
   final List<String> moods;
   final List<String> exercises;
   final List<String> symptoms;
+  final List<String> habits;
   final String exerciseGoalLabel;
   final List<String> workloadOptions;
 
@@ -40,6 +42,7 @@ class LogWidgets extends StatelessWidget {
   final ValueChanged<int> onBreakQualityChanged;
   final ValueChanged<String> onExerciseToggle;
   final ValueChanged<String> onSymptomToggle;
+  final ValueChanged<String> onHabitToggle;
 
   const LogWidgets({
     super.key,
@@ -53,11 +56,13 @@ class LogWidgets extends StatelessWidget {
     required this.breakQualityLevel,
     required this.selectedExercises,
     required this.selectedSymptoms,
+    required this.selectedHabits,
     required this.sleepLabels,
     required this.sleepStars,
     required this.moods,
     required this.exercises,
     required this.symptoms,
+    required this.habits,
     required this.exerciseGoalLabel,
     required this.workloadOptions,
     required this.onSleepChanged,
@@ -72,6 +77,7 @@ class LogWidgets extends StatelessWidget {
     required this.onBreakQualityChanged,
     required this.onExerciseToggle,
     required this.onSymptomToggle,
+    required this.onHabitToggle,
   });
 
   @override
@@ -91,6 +97,8 @@ class LogWidgets extends StatelessWidget {
         _buildExerciseCard(),
         const SizedBox(height: 18),
         _buildSymptomsCard(),
+        const SizedBox(height: 18),
+        _buildHabitsCard(),
         const SizedBox(height: 18),
         _buildWorkloadCard(),
         const SizedBox(height: 18),

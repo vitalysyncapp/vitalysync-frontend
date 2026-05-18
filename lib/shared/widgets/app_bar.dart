@@ -109,9 +109,9 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
 
   BoxDecoration actionChipDecoration() {
     return BoxDecoration(
-      color: Colors.white.withOpacity(isDark ? 0.12 : 0.16),
+      color: Colors.white.withValues(alpha: isDark ? 0.12 : 0.16),
       borderRadius: BorderRadius.circular(22),
-      border: Border.all(color: Colors.white.withOpacity(0.16)),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
     );
   }
 
@@ -141,7 +141,7 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
                   ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.18 : 0.1),
+                color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.1),
                 blurRadius: 22,
                 offset: const Offset(0, 10),
               ),
@@ -327,7 +327,7 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.24),
+                            color: Colors.white.withValues(alpha: 0.24),
                             width: 1.2,
                           ),
                         ),

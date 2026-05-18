@@ -6,9 +6,9 @@ class TermsPrivacyWidget extends StatelessWidget {
   final EdgeInsetsGeometry padding;
 
   const TermsPrivacyWidget({
-    Key? key,
+    super.key,
     this.padding = const EdgeInsets.all(16),
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -97,7 +97,7 @@ class TermsPrivacyWidget extends StatelessWidget {
   }) {
     return _card(
       context: context,
-      borderColor: color.withOpacity(0.15),
+      borderColor: color.withValues(alpha: 0.15),
       child: Theme(
         data: ThemeData().copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
@@ -239,11 +239,7 @@ class TermsPrivacyWidget extends StatelessWidget {
         '8. Data Retention',
         'Data is kept only as long as necessary.',
       ),
-      _section(
-        context,
-        '9. Cookies',
-        'Used to improve experience.',
-      ),
+      _section(context, '9. Cookies', 'Used to improve experience.'),
       _section(
         context,
         '10. Policy Updates',
@@ -282,7 +278,7 @@ class TermsPrivacyWidget extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Theme.of(context).brightness == Brightness.dark
-            ? Colors.white.withOpacity(0.04)
+            ? Colors.white.withValues(alpha: 0.04)
             : const Color(0xFFF8FBFF),
         borderRadius: BorderRadius.circular(16),
       ),
@@ -300,11 +296,7 @@ class TermsPrivacyWidget extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             content,
-            style: TextStyle(
-              fontSize: 14,
-              height: 1.5,
-              color: bodyColor,
-            ),
+            style: TextStyle(fontSize: 14, height: 1.5, color: bodyColor),
           ),
           if (bullets != null)
             ...bullets.map(
@@ -313,17 +305,11 @@ class TermsPrivacyWidget extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '\u2022 ',
-                      style: TextStyle(color: bodyColor),
-                    ),
+                    Text('\u2022 ', style: TextStyle(color: bodyColor)),
                     Expanded(
                       child: Text(
                         item,
-                        style: TextStyle(
-                          color: bodyColor,
-                          height: 1.4,
-                        ),
+                        style: TextStyle(color: bodyColor, height: 1.4),
                       ),
                     ),
                   ],
@@ -332,13 +318,7 @@ class TermsPrivacyWidget extends StatelessWidget {
             ),
           if (footer != null) ...[
             const SizedBox(height: 8),
-            Text(
-              footer,
-              style: TextStyle(
-                color: bodyColor,
-                height: 1.4,
-              ),
-            ),
+            Text(footer, style: TextStyle(color: bodyColor, height: 1.4)),
           ],
         ],
       ),
@@ -356,13 +336,13 @@ class TermsPrivacyWidget extends StatelessWidget {
       decoration: BoxDecoration(
         color: pageSurfaceColor(context),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: borderColor ?? pageBorderColor(context),
-        ),
+        border: Border.all(color: borderColor ?? pageBorderColor(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(
-              Theme.of(context).brightness == Brightness.dark ? 0.16 : 0.04,
+            color: Colors.black.withValues(
+              alpha: Theme.of(context).brightness == Brightness.dark
+                  ? 0.16
+                  : 0.04,
             ),
             blurRadius: 16,
             offset: const Offset(0, 6),

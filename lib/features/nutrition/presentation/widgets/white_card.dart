@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 class WhiteCard extends StatelessWidget {
   final Widget child;
 
-  const WhiteCard({
-    Key? key,
-    required this.child,
-  }) : super(key: key);
+  const WhiteCard({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -17,12 +14,12 @@ class WhiteCard extends StatelessWidget {
       width: double.infinity,
       padding: EdgeInsets.all(isCompact ? 14 : 18),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.92),
+        color: Colors.white.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(isCompact ? 18 : 24),
         border: Border.all(color: const Color(0xFFE5E7EB)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: isCompact ? 10 : 14,
             offset: Offset(0, isCompact ? 4 : 6),
           ),

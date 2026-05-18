@@ -7,12 +7,12 @@ class TodayNutritionCard extends StatelessWidget {
   final double fatG;
 
   const TodayNutritionCard({
-    Key? key,
+    super.key,
     required this.calories,
     required this.proteinG,
     required this.carbsG,
     required this.fatG,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +29,7 @@ class TodayNutritionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(isCompact ? 18 : 24),
         boxShadow: [
           BoxShadow(
-            color: Colors.green.withOpacity(0.18),
+            color: Colors.green.withValues(alpha: 0.18),
             blurRadius: isCompact ? 10 : 14,
             offset: Offset(0, isCompact ? 4 : 6),
           ),
@@ -104,10 +104,7 @@ class TodayNutritionCard extends StatelessWidget {
             ],
           ),
           SizedBox(height: isCompact ? 14 : 18),
-          Container(
-            height: 1,
-            color: Colors.white24,
-          ),
+          Container(height: 1, color: Colors.white24),
           SizedBox(height: isCompact ? 12 : 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

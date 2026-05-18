@@ -8,11 +8,11 @@ class MacroBalanceCard extends StatelessWidget {
   final double fatG;
 
   const MacroBalanceCard({
-    Key? key,
+    super.key,
     required this.proteinG,
     required this.carbsG,
     required this.fatG,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -73,14 +73,14 @@ class MacroProgressRow extends StatelessWidget {
   final bool isCompact;
 
   const MacroProgressRow({
-    Key? key,
+    super.key,
     required this.label,
     required this.current,
     required this.goal,
     required this.progress,
     required this.color,
     required this.isCompact,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

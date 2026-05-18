@@ -75,10 +75,7 @@ class _SectionCard extends StatelessWidget {
   final String title;
   final List<Widget> children;
 
-  const _SectionCard({
-    required this.title,
-    required this.children,
-  });
+  const _SectionCard({required this.title, required this.children});
 
   @override
   Widget build(BuildContext context) {
@@ -89,8 +86,10 @@ class _SectionCard extends StatelessWidget {
         border: Border.all(color: pageBorderColor(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(
-              Theme.of(context).brightness == Brightness.dark ? 0.18 : 0.05,
+            color: Colors.black.withValues(
+              alpha: Theme.of(context).brightness == Brightness.dark
+                  ? 0.18
+                  : 0.05,
             ),
             blurRadius: 12,
             offset: const Offset(0, 6),
@@ -121,9 +120,7 @@ class _SectionCard extends StatelessWidget {
 class _InfoBlock extends StatelessWidget {
   final String text;
 
-  const _InfoBlock({
-    required this.text,
-  });
+  const _InfoBlock({required this.text});
 
   @override
   Widget build(BuildContext context) {
@@ -131,10 +128,7 @@ class _InfoBlock extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
       child: Text(
         text,
-        style: TextStyle(
-          height: 1.45,
-          color: pageSecondaryTextColor(context),
-        ),
+        style: TextStyle(height: 1.45, color: pageSecondaryTextColor(context)),
       ),
     );
   }

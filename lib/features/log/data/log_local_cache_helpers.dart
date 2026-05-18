@@ -100,6 +100,7 @@ Map<String, dynamic> _buildLogRequestBody(
     'break_quality_level': LogApi.parseLikert(log['break_quality_level']),
     'exercise_names': _stringList(log['exercise_names']),
     'symptom_names': _stringList(log['symptom_names']),
+    'habit_names': _stringList(log['habit_names']),
     'exercise_goal_name': _nullableString(log['exercise_goal_name']),
     'exercise_goal_completed': _nullableBool(log['exercise_goal_completed']),
     'exercise_goal_source': _nullableString(log['exercise_goal_source']),
@@ -337,6 +338,7 @@ Map<String, dynamic> _normalizeLog(Map<String, dynamic> log) {
   );
   normalized['exercise_names'] = _stringList(log['exercise_names']);
   normalized['symptom_names'] = _stringList(log['symptom_names']);
+  normalized['habit_names'] = _stringList(log['habit_names']);
   normalized['exercise_goal_name'] = _nullableString(log['exercise_goal_name']);
   normalized['exercise_goal_completed'] = _nullableBool(
     log['exercise_goal_completed'],

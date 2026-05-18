@@ -465,6 +465,7 @@ class LogApi {
     int? breakQualityLevel,
     required List<String> exerciseNames,
     required List<String> symptomNames,
+    required List<String> habitNames,
   }) async {
     final exerciseGoalMetadata = await ExerciseGoalService.instance
         .goalMetadataForDailyLog();
@@ -486,6 +487,7 @@ class LogApi {
       'break_quality_level': breakQualityLevel,
       'exercise_names': exerciseNames,
       'symptom_names': symptomNames,
+      'habit_names': habitNames,
       ...exerciseGoalMetadata,
     });
 

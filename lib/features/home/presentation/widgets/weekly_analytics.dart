@@ -10,11 +10,11 @@ class WeeklyAnalyticsCard extends StatelessWidget {
   final VoidCallback? onViewAll;
 
   const WeeklyAnalyticsCard({
-    Key? key,
+    super.key,
     this.title = 'This Week',
     required this.items,
     this.onViewAll,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -38,8 +38,8 @@ class WeeklyAnalyticsCard extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: isDark
-                ? Colors.black.withOpacity(0.25)
-                : Colors.black.withOpacity(0.05),
+                ? Colors.black.withValues(alpha: 0.25)
+                : Colors.black.withValues(alpha: 0.05),
             blurRadius: 18,
             offset: const Offset(0, 6),
           ),

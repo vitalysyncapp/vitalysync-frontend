@@ -102,10 +102,7 @@ class _SectionCard extends StatelessWidget {
   final String title;
   final List<Widget> children;
 
-  const _SectionCard({
-    required this.title,
-    required this.children,
-  });
+  const _SectionCard({required this.title, required this.children});
 
   @override
   Widget build(BuildContext context) {
@@ -116,8 +113,10 @@ class _SectionCard extends StatelessWidget {
         border: Border.all(color: pageBorderColor(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(
-              Theme.of(context).brightness == Brightness.dark ? 0.18 : 0.05,
+            color: Colors.black.withValues(
+              alpha: Theme.of(context).brightness == Brightness.dark
+                  ? 0.18
+                  : 0.05,
             ),
             blurRadius: 12,
             offset: const Offset(0, 6),
@@ -187,10 +186,7 @@ class _PrivacySwitchTile extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-          ),
+          Switch(value: value, onChanged: onChanged),
         ],
       ),
     );

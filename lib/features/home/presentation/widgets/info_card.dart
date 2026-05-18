@@ -11,7 +11,7 @@ class InfoCard extends StatelessWidget {
   final Color? statusColor;
 
   const InfoCard({
-    Key? key,
+    super.key,
     required this.icon,
     required this.title,
     required this.value,
@@ -20,7 +20,7 @@ class InfoCard extends StatelessWidget {
     this.isLoading = false,
     this.statusHint,
     this.statusColor,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -33,8 +33,8 @@ class InfoCard extends StatelessWidget {
     final boxShadow = [
       BoxShadow(
         color: isDark
-            ? Colors.black.withOpacity(0.5)
-            : Colors.grey.withOpacity(0.2),
+            ? Colors.black.withValues(alpha: 0.5)
+            : Colors.grey.withValues(alpha: 0.2),
         blurRadius: 8,
         offset: const Offset(0, 4),
       ),
@@ -93,10 +93,10 @@ class InfoCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: (statusColor ?? color).withOpacity(0.12),
+                color: (statusColor ?? color).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(
-                  color: (statusColor ?? color).withOpacity(0.22),
+                  color: (statusColor ?? color).withValues(alpha: 0.22),
                 ),
               ),
               child: Text(

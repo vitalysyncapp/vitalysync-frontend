@@ -70,10 +70,7 @@ class _VersionPageState extends State<VersionPage>
         ),
         title: Text(
           'Version',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: primary,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: primary),
         ),
       ),
       body: AnimatedBuilder(
@@ -82,10 +79,7 @@ class _VersionPageState extends State<VersionPage>
           return Stack(
             fit: StackFit.expand,
             children: [
-              _AnimatedBackdrop(
-                progress: _controller.value,
-                isDark: isDark,
-              ),
+              _AnimatedBackdrop(progress: _controller.value, isDark: isDark),
               SafeArea(
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(
@@ -104,18 +98,18 @@ class _VersionPageState extends State<VersionPage>
                       ),
                       decoration: BoxDecoration(
                         color: isDark
-                            ? Colors.white.withOpacity(0.08)
-                            : Colors.white.withOpacity(0.72),
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : Colors.white.withValues(alpha: 0.72),
                         borderRadius: BorderRadius.circular(30),
                         border: Border.all(
                           color: isDark
-                              ? Colors.white.withOpacity(0.12)
+                              ? Colors.white.withValues(alpha: 0.12)
                               : const Color(0xFFDBEAFE),
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(
-                              isDark ? 0.22 : 0.08,
+                            color: Colors.black.withValues(
+                              alpha: isDark ? 0.22 : 0.08,
                             ),
                             blurRadius: 24,
                             offset: const Offset(0, 14),
@@ -151,17 +145,14 @@ class _VersionPageState extends State<VersionPage>
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
-                              color: primary.withOpacity(0.88),
+                              color: primary.withValues(alpha: 0.88),
                             ),
                           ),
                           const SizedBox(height: 14),
                           Text(
                             'Release Notes: \n- App is still in early stage of development, but you can explore the home screen and settings. More features coming soon!',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
-                              height: 1.45,
-                              color: secondary,
-                            ),
+                            style: TextStyle(height: 1.45, color: secondary),
                           ),
                         ],
                       ),
@@ -181,24 +172,13 @@ class _AnimatedBackdrop extends StatelessWidget {
   final double progress;
   final bool isDark;
 
-  const _AnimatedBackdrop({
-    required this.progress,
-    required this.isDark,
-  });
+  const _AnimatedBackdrop({required this.progress, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
     final background = isDark
-        ? const [
-            Color(0xFF07101D),
-            Color(0xFF0F1C2F),
-            Color(0xFF0A1626),
-          ]
-        : const [
-            Color(0xFFE6F4FF),
-            Color(0xFFFDFEFF),
-            Color(0xFFDFF1FF),
-          ];
+        ? const [Color(0xFF07101D), Color(0xFF0F1C2F), Color(0xFF0A1626)]
+        : const [Color(0xFFE6F4FF), Color(0xFFFDFEFF), Color(0xFFDFF1FF)];
 
     return Stack(
       fit: StackFit.expand,
@@ -219,8 +199,8 @@ class _AnimatedBackdrop extends StatelessWidget {
           ),
           size: 240,
           color: isDark
-              ? const Color(0xFF3B82F6).withOpacity(0.22)
-              : const Color(0xFF60A5FA).withOpacity(0.26),
+              ? const Color(0xFF3B82F6).withValues(alpha: 0.22)
+              : const Color(0xFF60A5FA).withValues(alpha: 0.26),
         ),
         _MovingOrb(
           alignment: Alignment(
@@ -229,8 +209,8 @@ class _AnimatedBackdrop extends StatelessWidget {
           ),
           size: 300,
           color: isDark
-              ? const Color(0xFF22D3EE).withOpacity(0.16)
-              : const Color(0xFF22C55E).withOpacity(0.16),
+              ? const Color(0xFF22D3EE).withValues(alpha: 0.16)
+              : const Color(0xFF22C55E).withValues(alpha: 0.16),
         ),
         _MovingOrb(
           alignment: Alignment(
@@ -239,8 +219,8 @@ class _AnimatedBackdrop extends StatelessWidget {
           ),
           size: 220,
           color: isDark
-              ? const Color(0xFFF59E0B).withOpacity(0.12)
-              : const Color(0xFF38BDF8).withOpacity(0.18),
+              ? const Color(0xFFF59E0B).withValues(alpha: 0.12)
+              : const Color(0xFF38BDF8).withValues(alpha: 0.18),
         ),
       ],
     );
@@ -269,10 +249,7 @@ class _MovingOrb extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: RadialGradient(
-              colors: [
-                color,
-                color.withOpacity(0.0),
-              ],
+              colors: [color, color.withValues(alpha: 0.0)],
             ),
           ),
         ),

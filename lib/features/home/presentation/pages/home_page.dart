@@ -14,11 +14,11 @@ import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
 import '../../../../shared/widgets/glass_card.dart';
 import '../../../../shared/widgets/reveal_on_build.dart';
-import '../widgets/BurnoutCard.dart';
-import '../widgets/EnvironmentalCard.dart';
-import '../widgets/InfoCard.dart';
-import '../widgets/QuickActions.dart';
-import '../widgets/WeeklyAnalytics.dart';
+import '../widgets/burnout_card.dart';
+import '../widgets/environmental_card.dart';
+import '../widgets/info_card.dart';
+import '../widgets/quick_actions.dart';
+import '../widgets/weekly_analytics.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

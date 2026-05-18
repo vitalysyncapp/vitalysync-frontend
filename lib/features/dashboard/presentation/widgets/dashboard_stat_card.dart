@@ -11,14 +11,14 @@ class DashboardStatCard extends StatelessWidget {
   final Color iconColor;
 
   const DashboardStatCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.value,
     required this.subtitle,
     required this.subtitleColor,
     required this.icon,
     required this.iconColor,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +32,7 @@ class DashboardStatCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
               blurRadius: 14,
               offset: const Offset(0, 6),
             ),

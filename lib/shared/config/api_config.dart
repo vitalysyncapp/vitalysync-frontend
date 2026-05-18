@@ -44,17 +44,11 @@ class ApiConfig {
   }
 
   static Future<Map<String, String>> jsonHeaders() async {
-    return {
-      'Content-Type': 'application/json',
-      ...await authHeaders(),
-    };
+    return {'Content-Type': 'application/json', ...await authHeaders()};
   }
 
   static Future<Map<String, String>> acceptJsonHeaders() async {
-    return {
-      'Accept': 'application/json',
-      ...await authHeaders(),
-    };
+    return {'Accept': 'application/json', ...await authHeaders()};
   }
 
   static Future<Map<String, String>> authHeaders() async {

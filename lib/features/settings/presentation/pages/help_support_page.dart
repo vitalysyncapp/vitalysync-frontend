@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../shared/theme/app_page_style.dart';
 
 class HelpSupportPage extends StatelessWidget {
-  const HelpSupportPage({Key? key}) : super(key: key);
+  const HelpSupportPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -93,8 +93,10 @@ class HelpSupportPage extends StatelessWidget {
         border: Border.all(color: pageBorderColor(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(
-              Theme.of(context).brightness == Brightness.dark ? 0.18 : 0.05,
+            color: Colors.black.withValues(
+              alpha: Theme.of(context).brightness == Brightness.dark
+                  ? 0.18
+                  : 0.05,
             ),
             blurRadius: 12,
             offset: const Offset(0, 5),
@@ -142,8 +144,10 @@ class HelpSupportPage extends StatelessWidget {
         border: Border.all(color: pageBorderColor(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(
-              Theme.of(context).brightness == Brightness.dark ? 0.16 : 0.04,
+            color: Colors.black.withValues(
+              alpha: Theme.of(context).brightness == Brightness.dark
+                  ? 0.16
+                  : 0.04,
             ),
             blurRadius: 10,
             offset: const Offset(0, 4),
@@ -157,7 +161,7 @@ class HelpSupportPage extends StatelessWidget {
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.12),
+              color: iconColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(icon, color: iconColor, size: 24),

@@ -161,6 +161,18 @@ class _LoadingScreenState extends State<LoadingScreen>
 
                   const SizedBox(height: 20),
                   const CircularProgressIndicator(),
+                  const SizedBox(height: 18),
+                  Text(
+                    'VitalySync provides wellness insights only and does not replace medical advice.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 12.5,
+                      height: 1.35,
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.78)
+                          : const Color(0xFF475569),
+                    ),
+                  ),
                 ],
               ),
             ),

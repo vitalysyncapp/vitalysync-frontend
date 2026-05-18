@@ -28,14 +28,14 @@ Color pageSecondaryTextColor(BuildContext context) {
 
 Color pageSurfaceColor(BuildContext context) {
   return Theme.of(context).brightness == Brightness.dark
-      ? const Color(0xFF162338).withOpacity(0.9)
-      : Colors.white.withOpacity(0.84);
+      ? const Color(0xFF162338).withValues(alpha: 0.9)
+      : Colors.white.withValues(alpha: 0.84);
 }
 
 Color pageBorderColor(BuildContext context) {
   return Theme.of(context).brightness == Brightness.dark
-      ? Colors.white.withOpacity(0.1)
-      : const Color(0xFFD4E9E2).withOpacity(0.8);
+      ? Colors.white.withValues(alpha: 0.1)
+      : const Color(0xFFD4E9E2).withValues(alpha: 0.8);
 }
 
 double pageBottomContentPadding(BuildContext context, {double extra = 36}) {

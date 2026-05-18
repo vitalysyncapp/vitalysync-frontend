@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class DashboardHeaderCard extends StatelessWidget {
-  const DashboardHeaderCard({Key? key}) : super(key: key);
+  const DashboardHeaderCard({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +17,7 @@ class DashboardHeaderCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF3CB7C8).withOpacity(0.18),
+            color: const Color(0xFF3CB7C8).withValues(alpha: 0.18),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -67,7 +67,7 @@ class _HeaderIcon extends StatelessWidget {
       width: 52,
       height: 52,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: Colors.white.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(18),
       ),
       child: const Icon(Icons.insights_rounded, color: Colors.white, size: 28),

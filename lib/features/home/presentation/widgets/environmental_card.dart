@@ -28,8 +28,10 @@ class EnvironmentalCard extends StatelessWidget {
         border: Border.all(color: pageBorderColor(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(
-              Theme.of(context).brightness == Brightness.dark ? 0.18 : 0.08,
+            color: Colors.black.withValues(
+              alpha: Theme.of(context).brightness == Brightness.dark
+                  ? 0.18
+                  : 0.08,
             ),
             blurRadius: 10,
             offset: const Offset(0, 4),

@@ -27,8 +27,9 @@ class QuickActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final textScale =
-            MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.35);
+        final textScale = MediaQuery.textScalerOf(
+          context,
+        ).scale(1).clamp(1.0, 1.35);
         final isCompact = constraints.maxWidth < 170;
         final cardPadding = isCompact ? 14.0 : 16.0;
         final iconBoxSize = isCompact ? 40.0 : 44.0;
@@ -48,12 +49,12 @@ class QuickActionCard extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-                boxShadow: [
-                  BoxShadow(
-                    color: gradientColors.last.withValues(alpha: 0.18),
-                    blurRadius: 16,
-                    offset: const Offset(0, 10),
-                  ),
+              boxShadow: [
+                BoxShadow(
+                  color: gradientColors.last.withValues(alpha: 0.18),
+                  blurRadius: 16,
+                  offset: const Offset(0, 10),
+                ),
               ],
             ),
             child: Padding(
@@ -153,10 +154,8 @@ void _goToNutritionLog(BuildContext context) {
   Navigator.pushReplacement(
     context,
     MaterialPageRoute(
-      builder: (_) => const MainNavigation(
-        initialIndex: 2,
-        openNutritionLogOnStart: true,
-      ),
+      builder: (_) =>
+          const MainNavigation(initialIndex: 2, openNutritionLogOnStart: true),
     ),
   );
 }
@@ -170,10 +169,7 @@ class QuickActionsSection extends StatelessWidget {
       _QuickActionItem(
         icon: Icons.monitor_heart_rounded,
         title: 'Daily Check-in',
-        gradientColors: const [
-          Color(0xFFE6F6FF),
-          Color(0xFFDDEEFF),
-        ],
+        gradientColors: const [Color(0xFFE6F6FF), Color(0xFFDDEEFF)],
         iconColor: const Color(0xFF2067C9),
         titleColor: const Color(0xFF15447C),
         subtitleColor: const Color(0xFF55789C),
@@ -182,10 +178,7 @@ class QuickActionsSection extends StatelessWidget {
       _QuickActionItem(
         icon: Icons.restaurant_menu_rounded,
         title: 'Log Meal',
-        gradientColors: const [
-          Color(0xFFE6FBF1),
-          Color(0xFFD7F6E8),
-        ],
+        gradientColors: const [Color(0xFFE6FBF1), Color(0xFFD7F6E8)],
         iconColor: const Color(0xFF178A58),
         titleColor: const Color(0xFF17583B),
         subtitleColor: const Color(0xFF4C7C64),
@@ -203,8 +196,9 @@ class QuickActionsSection extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(
-              alpha:
-                  Theme.of(context).brightness == Brightness.dark ? 0.25 : 0.05,
+              alpha: Theme.of(context).brightness == Brightness.dark
+                  ? 0.25
+                  : 0.05,
             ),
             blurRadius: 16,
             offset: const Offset(0, 6),
@@ -213,11 +207,11 @@ class QuickActionsSection extends StatelessWidget {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final textScale =
-              MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.35);
+          final textScale = MediaQuery.textScalerOf(
+            context,
+          ).scale(1).clamp(1.0, 1.35);
           final spacing = 12.0;
-          final useSingleColumn =
-              constraints.maxWidth < 360 || textScale > 1.1;
+          final useSingleColumn = constraints.maxWidth < 360 || textScale > 1.1;
           final cardWidth = useSingleColumn
               ? constraints.maxWidth
               : (constraints.maxWidth - spacing) / 2;

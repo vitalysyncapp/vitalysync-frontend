@@ -3,10 +3,7 @@ import 'package:geolocator/geolocator.dart';
 import '../../../shared/preferences/app_preferences.dart';
 
 class DeviceCoordinates {
-  const DeviceCoordinates({
-    required this.latitude,
-    required this.longitude,
-  });
+  const DeviceCoordinates({required this.latitude, required this.longitude});
 
   final double latitude;
   final double longitude;
@@ -23,7 +20,8 @@ class DeviceLocationService {
     }
 
     var permission = await Geolocator.checkPermission();
-    final hasPermission = permission == LocationPermission.always ||
+    final hasPermission =
+        permission == LocationPermission.always ||
         permission == LocationPermission.whileInUse;
 
     if (hasPermission) {
@@ -93,7 +91,8 @@ class DeviceLocationService {
       permission = await Geolocator.requestPermission();
     }
 
-    final granted = permission == LocationPermission.always ||
+    final granted =
+        permission == LocationPermission.always ||
         permission == LocationPermission.whileInUse;
 
     await preferences.updateLocationPermissionChoice(

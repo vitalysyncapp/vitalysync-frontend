@@ -4,7 +4,7 @@ import '../../../../shared/preferences/app_preferences.dart';
 import '../../../../shared/theme/app_page_style.dart';
 
 class AppPreferencesPage extends StatelessWidget {
-  const AppPreferencesPage({Key? key}) : super(key: key);
+  const AppPreferencesPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -30,10 +30,7 @@ class AppPreferencesPage extends StatelessWidget {
               ),
               title: Text(
                 'App Preferences',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: textColor,
-                ),
+                style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
               ),
             ),
             body: SafeArea(
@@ -116,9 +113,10 @@ class AppPreferencesPage extends StatelessWidget {
                             width: double.infinity,
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).brightness ==
+                              color:
+                                  Theme.of(context).brightness ==
                                       Brightness.dark
-                                  ? Colors.white.withOpacity(0.04)
+                                  ? Colors.white.withValues(alpha: 0.04)
                                   : const Color(0xFFF6F9FF),
                               borderRadius: BorderRadius.circular(18),
                               border: Border.all(
@@ -172,8 +170,10 @@ class AppPreferencesPage extends StatelessWidget {
         border: Border.all(color: pageBorderColor(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(
-              Theme.of(context).brightness == Brightness.dark ? 0.18 : 0.05,
+            color: Colors.black.withValues(
+              alpha: Theme.of(context).brightness == Brightness.dark
+                  ? 0.18
+                  : 0.05,
             ),
             blurRadius: 14,
             offset: const Offset(0, 6),
@@ -247,10 +247,7 @@ class AppPreferencesPage extends StatelessWidget {
                 ],
               ),
             ),
-            Switch(
-              value: selected,
-              onChanged: (_) => onSelected(value),
-            ),
+            Switch(value: selected, onChanged: (_) => onSelected(value)),
           ],
         ),
       ),

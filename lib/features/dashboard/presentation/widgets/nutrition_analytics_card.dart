@@ -5,6 +5,14 @@ import 'package:intl/intl.dart';
 import '../../../../features/nutrition/data/nutrition_api.dart';
 import '../../../../shared/theme/app_page_style.dart';
 
+const double _dailyCalorieGoal = 2000;
+const double _proteinCaloriesPerGram = 4;
+const double _carbCaloriesPerGram = 4;
+const double _fatCaloriesPerGram = 9;
+const Color _proteinColor = Color(0xFF2F80ED);
+const Color _carbColor = Color(0xFF1FB489);
+const Color _fatColor = Color(0xFFF59E0B);
+
 class NutritionAnalyticsCard extends StatefulWidget {
   const NutritionAnalyticsCard({super.key});
 
@@ -50,218 +58,17 @@ class _NutritionAnalyticsCardState extends State<NutritionAnalyticsCard> {
             _NutritionAnalyticsSnapshot.empty(
               start: DateTime.now().subtract(const Duration(days: 6)),
             );
+        final isLoading = snapshot.connectionState == ConnectionState.waiting;
 
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: pageSurfaceColor(context),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: pageBorderColor(context)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(
-                  alpha: Theme.of(context).brightness == Brightness.dark
-                      ? 0.2
-                      : 0.06,
-                ),
-                blurRadius: 18,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [Color(0xFF1FB489), Color(0xFF2F80ED)],
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.restaurant_menu_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Nutrition Analytics',
-                          style: TextStyle(
-                            color: pagePrimaryTextColor(context),
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          data.unavailable
-                              ? 'Saved nutrition data unavailable'
-                              : '7-day meal logging overview',
-                          style: TextStyle(
-                            color: pageSecondaryTextColor(context),
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              if (snapshot.connectionState == ConnectionState.waiting)
-                const SizedBox(
-                  height: 210,
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              else
-                SizedBox(
-                  height: 210,
-                  child: BarChart(_chartData(context, data)),
-                ),
-              const SizedBox(height: 16),
-              Divider(color: pageBorderColor(context)),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _NutritionMetric(
-                      value: '${data.loggedDays}/7',
-                      label: 'Logged days',
-                    ),
-                  ),
-                  Expanded(
-                    child: _NutritionMetric(
-                      value: data.averageMeals > 0
-                          ? data.averageMeals.toStringAsFixed(1)
-                          : '--',
-                      label: 'Avg meals',
-                    ),
-                  ),
-                  Expanded(
-                    child: _NutritionMetric(
-                      value: data.averageCalories > 0
-                          ? data.averageCalories.round().toString()
-                          : '--',
-                      label: 'Avg cal',
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  BarChartData _chartData(
-    BuildContext context,
-    _NutritionAnalyticsSnapshot data,
-  ) {
-    final textColor = pageSecondaryTextColor(context);
-
-    return BarChartData(
-      minY: 0,
-      maxY: 4,
-      groupsSpace: 8,
-      gridData: FlGridData(
-        show: true,
-        drawVerticalLine: false,
-        horizontalInterval: 1,
-        getDrawingHorizontalLine: (value) => FlLine(
-          color: pageBorderColor(context).withValues(alpha: 0.72),
-          strokeWidth: 1,
-          dashArray: [4, 4],
-        ),
-      ),
-      borderData: FlBorderData(
-        show: true,
-        border: Border.all(color: pageBorderColor(context)),
-      ),
-      titlesData: FlTitlesData(
-        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        rightTitles: const AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
-        ),
-        leftTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            interval: 1,
-            reservedSize: 28,
-            getTitlesWidget: (value, meta) => Text(
-              value.toInt().toString(),
-              style: TextStyle(color: textColor, fontSize: 12),
-            ),
-          ),
-        ),
-        bottomTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            getTitlesWidget: (value, meta) {
-              final index = value.toInt();
-              if (index < 0 || index >= data.days.length) {
-                return const SizedBox();
-              }
-
-              return Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  data.days[index].dayLabel,
-                  style: TextStyle(color: textColor, fontSize: 12),
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-      barTouchData: BarTouchData(
-        enabled: true,
-        touchTooltipData: BarTouchTooltipData(
-          getTooltipItem: (group, groupIndex, rod, rodIndex) {
-            final day = data.days[group.x.toInt()];
-            final mealText = day.mealCount == 1 ? 'meal' : 'meals';
-            return BarTooltipItem(
-              '${day.dayLabel}\n${day.mealCount} $mealText\n${day.calories.round()} cal',
-              TextStyle(
-                color: pagePrimaryTextColor(context),
-                fontWeight: FontWeight.w700,
-                fontSize: 12,
-                height: 1.35,
-              ),
-            );
-          },
-        ),
-      ),
-      barGroups: List.generate(data.days.length, (index) {
-        final day = data.days[index];
-        return BarChartGroupData(
-          x: index,
-          barRods: [
-            BarChartRodData(
-              toY: day.mealCount.clamp(0, 4).toDouble(),
-              width: 22,
-              borderRadius: BorderRadius.circular(7),
-              color: day.mealCount >= 3
-                  ? const Color(0xFF1FB489)
-                  : day.mealCount > 0
-                  ? const Color(0xFF2F80ED)
-                  : const Color(0xFFCBD5E1),
-            ),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _WeeklyCalorieLevelsCard(data: data, isLoading: isLoading),
+            const SizedBox(height: 16),
+            _NutritionBalanceCard(data: data, isLoading: isLoading),
           ],
         );
-      }),
+      },
     );
   }
 
@@ -271,6 +78,566 @@ class _NutritionAnalyticsCardState extends State<NutritionAnalyticsCard> {
       date.month,
       date.day,
     ).toIso8601String().substring(0, 10);
+  }
+}
+
+class _WeeklyCalorieLevelsCard extends StatelessWidget {
+  final _NutritionAnalyticsSnapshot data;
+  final bool isLoading;
+
+  const _WeeklyCalorieLevelsCard({required this.data, required this.isLoading});
+
+  @override
+  Widget build(BuildContext context) {
+    final averageLevel = data.loggedDays > 0
+        ? _calorieLevelFor(data.averageCalories)
+        : null;
+
+    return _NutritionSurface(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _NutritionSectionHeader(
+            icon: Icons.local_fire_department_rounded,
+            title: 'Weekly Calorie Levels',
+            subtitle: data.unavailable
+                ? 'Saved nutrition data unavailable'
+                : 'Daily energy intake made easier to read',
+            gradientColors: const [Color(0xFF1FB489), Color(0xFFF59E0B)],
+          ),
+          const SizedBox(height: 18),
+          if (isLoading)
+            const SizedBox(
+              height: 220,
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = _calorieTileColumnCount(constraints.maxWidth);
+                final spacing = 8.0;
+                final tileWidth =
+                    (constraints.maxWidth - (spacing * (columns - 1))) /
+                    columns;
+
+                return Wrap(
+                  spacing: spacing,
+                  runSpacing: spacing,
+                  children: data.days
+                      .map(
+                        (day) => SizedBox(
+                          width: tileWidth,
+                          child: _CalorieLevelTile(day: day),
+                        ),
+                      )
+                      .toList(),
+                );
+              },
+            ),
+          const SizedBox(height: 16),
+          Divider(color: pageBorderColor(context)),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _NutritionMetric(
+                  value: averageLevel?.label ?? '--',
+                  label: 'Avg level',
+                ),
+              ),
+              Expanded(
+                child: _NutritionMetric(
+                  value: data.averageCalories > 0
+                      ? _formatCalories(data.averageCalories)
+                      : '--',
+                  label: 'Avg cal/day',
+                ),
+              ),
+              Expanded(
+                child: _NutritionMetric(
+                  value: '${data.loggedDays}/7',
+                  label: 'Logged days',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NutritionBalanceCard extends StatelessWidget {
+  final _NutritionAnalyticsSnapshot data;
+  final bool isLoading;
+
+  const _NutritionBalanceCard({required this.data, required this.isLoading});
+
+  @override
+  Widget build(BuildContext context) {
+    return _NutritionSurface(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _NutritionSectionHeader(
+            icon: Icons.donut_small_rounded,
+            title: 'Nutrition Balance',
+            subtitle: data.hasMacroData
+                ? 'Protein, carbs, and fat from logged meals'
+                : 'Log meals with macros to build this view',
+            gradientColors: const [Color(0xFF2F80ED), Color(0xFF1FB489)],
+          ),
+          const SizedBox(height: 18),
+          if (isLoading)
+            const SizedBox(
+              height: 170,
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else
+            _NutritionBalanceDiagram(data: data),
+        ],
+      ),
+    );
+  }
+}
+
+class _NutritionSurface extends StatelessWidget {
+  final Widget child;
+
+  const _NutritionSurface({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: pageSurfaceColor(context),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: pageBorderColor(context)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: Theme.of(context).brightness == Brightness.dark
+                  ? 0.2
+                  : 0.06,
+            ),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+}
+
+class _NutritionSectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final List<Color> gradientColors;
+
+  const _NutritionSectionHeader({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.gradientColors,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(colors: gradientColors),
+          ),
+          child: Icon(icon, color: Colors.white, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  color: pagePrimaryTextColor(context),
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: pageSecondaryTextColor(context),
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CalorieLevelTile extends StatelessWidget {
+  final _NutritionAnalyticsDay day;
+
+  const _CalorieLevelTile({required this.day});
+
+  @override
+  Widget build(BuildContext context) {
+    final level = _calorieLevelFor(day.calories);
+    final hasLog = day.mealCount > 0 || day.calories > 0;
+    final mealText = day.mealCount == 1 ? 'meal' : 'meals';
+    final progress = (day.calories / _dailyCalorieGoal).clamp(0.0, 1.0);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      constraints: const BoxConstraints(minHeight: 124),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: level.color.withValues(alpha: isDark ? 0.14 : 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: level.color.withValues(alpha: 0.28)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  day.dayLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: pagePrimaryTextColor(context),
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: level.color,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            day.dateLabel,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: pageSecondaryTextColor(context),
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            hasLog ? '${_formatCalories(day.calories)} cal' : '--',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: pagePrimaryTextColor(context),
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            level.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: level.color,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 7,
+              backgroundColor: pageBorderColor(context).withValues(alpha: 0.55),
+              valueColor: AlwaysStoppedAnimation<Color>(level.color),
+            ),
+          ),
+          const SizedBox(height: 7),
+          Text(
+            hasLog ? '${day.mealCount} $mealText logged' : 'No meal logged',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: pageSecondaryTextColor(context),
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NutritionBalanceDiagram extends StatelessWidget {
+  final _NutritionAnalyticsSnapshot data;
+
+  const _NutritionBalanceDiagram({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final chart = _MacroPieChart(data: data);
+        final legend = _MacroBalanceLegend(data: data);
+
+        if (constraints.maxWidth >= 430) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              chart,
+              const SizedBox(width: 18),
+              Expanded(child: legend),
+            ],
+          );
+        }
+
+        return Column(
+          children: [
+            Center(child: chart),
+            const SizedBox(height: 16),
+            legend,
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _MacroPieChart extends StatelessWidget {
+  final _NutritionAnalyticsSnapshot data;
+
+  const _MacroPieChart({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasMacroData = data.hasMacroData;
+    final primaryTextColor = pagePrimaryTextColor(context);
+    final sections = hasMacroData
+        ? [
+            _macroSection(
+              value: data.proteinCalories,
+              percent: data.proteinPercent,
+              color: _proteinColor,
+              context: context,
+            ),
+            _macroSection(
+              value: data.carbCalories,
+              percent: data.carbPercent,
+              color: _carbColor,
+              context: context,
+            ),
+            _macroSection(
+              value: data.fatCalories,
+              percent: data.fatPercent,
+              color: _fatColor,
+              context: context,
+            ),
+          ]
+        : [
+            PieChartSectionData(
+              value: 1,
+              title: '',
+              radius: 22,
+              color: pageBorderColor(context),
+            ),
+          ];
+
+    return SizedBox(
+      width: 150,
+      height: 150,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          PieChart(
+            PieChartData(
+              startDegreeOffset: -90,
+              sectionsSpace: 3,
+              centerSpaceRadius: 42,
+              borderData: FlBorderData(show: false),
+              sections: sections,
+            ),
+          ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                hasMacroData ? 'Balance' : 'No data',
+                style: TextStyle(
+                  color: primaryTextColor,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                hasMacroData ? '${data.loggedDays} days' : 'yet',
+                style: TextStyle(
+                  color: pageSecondaryTextColor(context),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  PieChartSectionData _macroSection({
+    required double value,
+    required double percent,
+    required Color color,
+    required BuildContext context,
+  }) {
+    return PieChartSectionData(
+      value: value,
+      title: percent >= 12 ? '${percent.round()}%' : '',
+      color: color,
+      radius: 24,
+      titleStyle: const TextStyle(
+        color: Colors.white,
+        fontSize: 11,
+        fontWeight: FontWeight.w900,
+      ),
+    );
+  }
+}
+
+class _MacroBalanceLegend extends StatelessWidget {
+  final _NutritionAnalyticsSnapshot data;
+
+  const _MacroBalanceLegend({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _MacroLegendRow(
+          color: _proteinColor,
+          label: 'Protein',
+          percent: data.proteinPercent,
+          gramsPerDay: data.averageProteinG,
+          hasData: data.hasMacroData,
+        ),
+        const SizedBox(height: 10),
+        _MacroLegendRow(
+          color: _carbColor,
+          label: 'Carbs',
+          percent: data.carbPercent,
+          gramsPerDay: data.averageCarbsG,
+          hasData: data.hasMacroData,
+        ),
+        const SizedBox(height: 10),
+        _MacroLegendRow(
+          color: _fatColor,
+          label: 'Fat',
+          percent: data.fatPercent,
+          gramsPerDay: data.averageFatG,
+          hasData: data.hasMacroData,
+        ),
+        const SizedBox(height: 14),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: pageBorderColor(context).withValues(alpha: 0.28),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Text(
+            data.balanceMessage,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: pagePrimaryTextColor(context),
+              fontSize: 12.5,
+              height: 1.35,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MacroLegendRow extends StatelessWidget {
+  final Color color;
+  final String label;
+  final double percent;
+  final double gramsPerDay;
+  final bool hasData;
+
+  const _MacroLegendRow({
+    required this.color,
+    required this.label,
+    required this.percent,
+    required this.gramsPerDay,
+    required this.hasData,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 9),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: pagePrimaryTextColor(context),
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        Text(
+          hasData ? '${percent.round()}% - ${gramsPerDay.round()}g/day' : '--',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: pageSecondaryTextColor(context),
+            fontSize: 12.5,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -287,9 +654,11 @@ class _NutritionMetric extends StatelessWidget {
       children: [
         Text(
           value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: pagePrimaryTextColor(context),
-            fontSize: 20,
+            fontSize: 19,
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -333,10 +702,13 @@ class _NutritionAnalyticsSnapshot {
         final historyDay = byDate[key];
 
         return _NutritionAnalyticsDay(
-          date: date,
-          dayLabel: DateFormat('E').format(date).substring(0, 1),
+          dayLabel: DateFormat('EEE').format(date),
+          dateLabel: DateFormat('MMM d').format(date),
           mealCount: historyDay?.mealCount ?? 0,
           calories: historyDay?.totalCalories ?? 0,
+          proteinG: historyDay?.totalProteinG ?? 0,
+          carbsG: historyDay?.totalCarbsG ?? 0,
+          fatG: historyDay?.totalFatG ?? 0,
         );
       }),
     );
@@ -351,25 +723,20 @@ class _NutritionAnalyticsSnapshot {
       days: List.generate(7, (index) {
         final date = start.add(Duration(days: index));
         return _NutritionAnalyticsDay(
-          date: date,
-          dayLabel: DateFormat('E').format(date).substring(0, 1),
+          dayLabel: DateFormat('EEE').format(date),
+          dateLabel: DateFormat('MMM d').format(date),
           mealCount: 0,
           calories: 0,
+          proteinG: 0,
+          carbsG: 0,
+          fatG: 0,
         );
       }),
     );
   }
 
-  int get loggedDays => days.where((day) => day.mealCount > 0).length;
-
-  double get averageMeals {
-    if (loggedDays == 0) {
-      return 0;
-    }
-
-    final totalMeals = days.fold<int>(0, (sum, day) => sum + day.mealCount);
-    return totalMeals / days.length;
-  }
+  int get loggedDays =>
+      days.where((day) => day.mealCount > 0 || day.calories > 0).length;
 
   double get averageCalories {
     if (loggedDays == 0) {
@@ -382,18 +749,121 @@ class _NutritionAnalyticsSnapshot {
     );
     return totalCalories / loggedDays;
   }
+
+  double get totalProteinG =>
+      days.fold<double>(0, (sum, day) => sum + day.proteinG);
+
+  double get totalCarbsG =>
+      days.fold<double>(0, (sum, day) => sum + day.carbsG);
+
+  double get totalFatG => days.fold<double>(0, (sum, day) => sum + day.fatG);
+
+  double get averageProteinG =>
+      loggedDays == 0 ? 0 : totalProteinG / loggedDays;
+
+  double get averageCarbsG => loggedDays == 0 ? 0 : totalCarbsG / loggedDays;
+
+  double get averageFatG => loggedDays == 0 ? 0 : totalFatG / loggedDays;
+
+  double get proteinCalories => totalProteinG * _proteinCaloriesPerGram;
+
+  double get carbCalories => totalCarbsG * _carbCaloriesPerGram;
+
+  double get fatCalories => totalFatG * _fatCaloriesPerGram;
+
+  double get totalMacroCalories => proteinCalories + carbCalories + fatCalories;
+
+  bool get hasMacroData => totalMacroCalories > 0;
+
+  double get proteinPercent => _macroPercent(proteinCalories);
+
+  double get carbPercent => _macroPercent(carbCalories);
+
+  double get fatPercent => _macroPercent(fatCalories);
+
+  String get balanceMessage {
+    if (!hasMacroData) {
+      return 'No macro balance yet. Log meals with calories, protein, carbs, and fat to fill this diagram.';
+    }
+    if (proteinPercent < 15) {
+      return 'Protein is light this week compared with carbs and fat.';
+    }
+    if (fatPercent > 40) {
+      return 'Fat is taking the largest share of logged meal energy this week.';
+    }
+    if (carbPercent > 65) {
+      return 'Carbs are carrying most of the logged meal energy this week.';
+    }
+
+    return 'Your logged meals show a fairly even weekly macro balance.';
+  }
+
+  double _macroPercent(double value) {
+    if (totalMacroCalories <= 0) {
+      return 0;
+    }
+
+    return value / totalMacroCalories * 100;
+  }
 }
 
 class _NutritionAnalyticsDay {
-  final DateTime date;
   final String dayLabel;
+  final String dateLabel;
   final int mealCount;
   final double calories;
+  final double proteinG;
+  final double carbsG;
+  final double fatG;
 
   const _NutritionAnalyticsDay({
-    required this.date,
     required this.dayLabel,
+    required this.dateLabel,
     required this.mealCount,
     required this.calories,
+    required this.proteinG,
+    required this.carbsG,
+    required this.fatG,
   });
+}
+
+class _CalorieLevel {
+  final String label;
+  final Color color;
+
+  const _CalorieLevel({required this.label, required this.color});
+}
+
+int _calorieTileColumnCount(double width) {
+  if (width >= 620) {
+    return 4;
+  }
+  if (width >= 460) {
+    return 3;
+  }
+
+  return 2;
+}
+
+String _formatCalories(double calories) {
+  return NumberFormat.decimalPattern().format(calories.round());
+}
+
+_CalorieLevel _calorieLevelFor(double calories) {
+  if (calories <= 0) {
+    return const _CalorieLevel(label: 'No log', color: Color(0xFF94A3B8));
+  }
+
+  final ratio = calories / _dailyCalorieGoal;
+  if (ratio < 0.6) {
+    return const _CalorieLevel(label: 'Low', color: Color(0xFF2F80ED));
+  }
+  if (ratio < 0.9) {
+    return const _CalorieLevel(label: 'Light', color: Color(0xFF14B8A6));
+  }
+  if (ratio <= 1.15) {
+    return const _CalorieLevel(label: 'Balanced', color: Color(0xFF1FB489));
+  }
+
+  return const _CalorieLevel(label: 'High', color: Color(0xFFF59E0B));
 }

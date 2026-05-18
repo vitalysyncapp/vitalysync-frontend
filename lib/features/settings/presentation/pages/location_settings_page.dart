@@ -98,13 +98,11 @@ class LocationSettingsPage extends StatelessWidget {
                                   value: prefs.isLocationAccessEnabled,
                                   onChanged: (value) async {
                                     if (value) {
-                                      await DeviceLocationService
-                                          .enableLocationAccess();
+                                      await DeviceLocationService.enableLocationAccess();
                                       return;
                                     }
 
-                                    await DeviceLocationService
-                                        .disableLocationAccess();
+                                    await DeviceLocationService.disableLocationAccess();
                                   },
                                 ),
                               ],
@@ -121,8 +119,7 @@ class LocationSettingsPage extends StatelessWidget {
                               const SizedBox(height: 12),
                               OutlinedButton(
                                 onPressed: () {
-                                  DeviceLocationService
-                                      .openSystemLocationSettings();
+                                  DeviceLocationService.openSystemLocationSettings();
                                 },
                                 child: const Text('Open System Settings'),
                               ),
@@ -156,10 +153,7 @@ class _SectionCard extends StatelessWidget {
   final String title;
   final List<Widget> children;
 
-  const _SectionCard({
-    required this.title,
-    required this.children,
-  });
+  const _SectionCard({required this.title, required this.children});
 
   @override
   Widget build(BuildContext context) {
@@ -170,8 +164,10 @@ class _SectionCard extends StatelessWidget {
         border: Border.all(color: pageBorderColor(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(
-              Theme.of(context).brightness == Brightness.dark ? 0.18 : 0.05,
+            color: Colors.black.withValues(
+              alpha: Theme.of(context).brightness == Brightness.dark
+                  ? 0.18
+                  : 0.05,
             ),
             blurRadius: 12,
             offset: const Offset(0, 6),

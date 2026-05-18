@@ -4,7 +4,7 @@ import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/terms_privacy_widget.dart';
 
 class TermsPrivacyPage extends StatelessWidget {
-  const TermsPrivacyPage({Key? key}) : super(key: key);
+  const TermsPrivacyPage({super.key});
 
   @override
   Widget build(BuildContext context) {

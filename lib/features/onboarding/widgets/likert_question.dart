@@ -56,7 +56,7 @@ class LikertQuestion extends StatelessWidget {
                         color: selected
                             ? Theme.of(context).colorScheme.primary
                             : isDark
-                            ? Colors.white.withOpacity(0.06)
+                            ? Colors.white.withValues(alpha: 0.06)
                             : const Color(0xFFF5FBF9),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(

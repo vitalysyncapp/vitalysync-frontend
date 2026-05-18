@@ -33,6 +33,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
 
   final Set<String> selectedExercises = {};
   final Set<String> selectedSymptoms = {};
+  final Set<String> selectedHabits = {};
 
   final List<String> sleepLabels = [
     'Poor',
@@ -69,6 +70,15 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     'Anxiety',
     'Body Pain',
     'Back Pain',
+    'None',
+  ];
+
+  final List<String> habits = [
+    'Mindful break',
+    'Outdoor light',
+    'Screen boundary',
+    'Healthy meal',
+    'Social connection',
     'None',
   ];
 
@@ -183,6 +193,13 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
             (item) => item.toString(),
           )),
         );
+      selectedHabits
+        ..clear()
+        ..addAll(
+          ((log['habit_names'] as List<dynamic>? ?? const []).map(
+            (item) => item.toString(),
+          )),
+        );
     });
   }
 
@@ -192,6 +209,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     if (perceivedStressLevel == null) return false;
     if (selectedExercises.isEmpty) return false;
     if (selectedSymptoms.isEmpty) return false;
+    if (selectedHabits.isEmpty) return false;
     return true;
   }
 
@@ -200,7 +218,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Please complete hydration, workload, stress, exercise, and symptoms before saving.',
+            'Please complete hydration, workload, stress, exercise, symptoms, and recovery habits before saving.',
           ),
         ),
       );
@@ -223,6 +241,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
         breakQualityLevel: breakQualityLevel,
         exerciseNames: selectedExercises.toList()..sort(),
         symptomNames: selectedSymptoms.toList()..sort(),
+        habitNames: selectedHabits.toList()..sort(),
       );
 
       final streak = data['streak'] as Map<String, dynamic>?;
@@ -285,6 +304,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     breakQualityLevel = null;
     selectedExercises.clear();
     selectedSymptoms.clear();
+    selectedHabits.clear();
   }
 
   void _toggleExercise(String exercise) {
@@ -324,6 +344,27 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
           selectedSymptoms.remove(symptom);
         } else {
           selectedSymptoms.add(symptom);
+        }
+      }
+    });
+  }
+
+  void _toggleHabit(String habit) {
+    setState(() {
+      if (habit == 'None') {
+        if (selectedHabits.contains('None')) {
+          selectedHabits.remove('None');
+        } else {
+          selectedHabits
+            ..clear()
+            ..add('None');
+        }
+      } else {
+        selectedHabits.remove('None');
+        if (selectedHabits.contains(habit)) {
+          selectedHabits.remove(habit);
+        } else {
+          selectedHabits.add(habit);
         }
       }
     });
@@ -373,11 +414,13 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                                       breakQualityLevel: breakQualityLevel,
                                       selectedExercises: selectedExercises,
                                       selectedSymptoms: selectedSymptoms,
+                                      selectedHabits: selectedHabits,
                                       sleepLabels: sleepLabels,
                                       sleepStars: sleepStars,
                                       moods: moods,
                                       exercises: exercises,
                                       symptoms: symptoms,
+                                      habits: habits,
                                       exerciseGoalLabel: exerciseGoalLabel,
                                       workloadOptions:
                                           LogApi.workloadHoursBandOptions,
@@ -439,6 +482,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                                       },
                                       onExerciseToggle: _toggleExercise,
                                       onSymptomToggle: _toggleSymptom,
+                                      onHabitToggle: _toggleHabit,
                                     ),
                                   ),
                                   const SizedBox(height: 22),

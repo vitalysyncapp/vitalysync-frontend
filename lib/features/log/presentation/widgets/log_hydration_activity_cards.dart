@@ -213,6 +213,71 @@ extension _LogHydrationActivityCards on LogWidgets {
     );
   }
 
+  Widget _buildHabitsCard() {
+    return _buildCard(
+      child: Column(
+        children: [
+          _sectionHeader(
+            icon: Icons.spa_outlined,
+            iconBg: const Color(0xFFE7F8EF),
+            iconColor: const Color(0xFF16A34A),
+            title: "Recovery Habits",
+            subtitle: "Which small routines supported your recovery today?",
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: habits.map((habit) {
+              final selected = selectedHabits.contains(habit);
+              return GestureDetector(
+                onTap: () => onHabitToggle(habit),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: selected ? const Color(0xFFECFDF5) : Colors.white,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: selected
+                          ? const Color(0xFF16A34A)
+                          : const Color(0xFFD1D5DB),
+                      width: selected ? 1.6 : 1.3,
+                    ),
+                    boxShadow: selected
+                        ? [
+                            BoxShadow(
+                              color: const Color(
+                                0xFF16A34A,
+                              ).withValues(alpha: 0.15),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : [],
+                  ),
+                  child: Text(
+                    habit,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                      color: selected
+                          ? const Color(0xFF166534)
+                          : const Color(0xFF334155),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildWorkloadCard() {
     return _buildCard(
       child: Column(

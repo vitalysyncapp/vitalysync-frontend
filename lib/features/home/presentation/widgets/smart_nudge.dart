@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 class SmartNudgeCard extends StatelessWidget {
   final String message;
 
-  const SmartNudgeCard({
-    super.key,
-    required this.message,
-  });
+  const SmartNudgeCard({super.key, required this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -35,8 +32,8 @@ class SmartNudgeCard extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: isDark
-                ? Colors.black.withOpacity(0.4)
-                : Colors.amber.withOpacity(0.18),
+                ? Colors.black.withValues(alpha: 0.4)
+                : Colors.amber.withValues(alpha: 0.18),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -49,7 +46,7 @@ class SmartNudgeCard extends StatelessWidget {
             "Today's Smart Nudge",
             style: TextStyle(
               fontSize: 14,
-              color: textColor.withOpacity(0.85),
+              color: textColor.withValues(alpha: 0.85),
             ),
           ),
           const SizedBox(height: 12),

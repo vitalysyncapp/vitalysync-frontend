@@ -185,7 +185,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                           filled: true,
                           fillColor:
                               Theme.of(context).brightness == Brightness.dark
-                              ? Colors.white.withOpacity(0.04)
+                              ? Colors.white.withValues(alpha: 0.04)
                               : const Color(0xFFF8FAFC),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -261,8 +261,10 @@ class _SectionCard extends StatelessWidget {
         border: Border.all(color: pageBorderColor(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(
-              Theme.of(context).brightness == Brightness.dark ? 0.18 : 0.05,
+            color: Colors.black.withValues(
+              alpha: Theme.of(context).brightness == Brightness.dark
+                  ? 0.18
+                  : 0.05,
             ),
             blurRadius: 12,
             offset: const Offset(0, 6),

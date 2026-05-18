@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class NutritionHeaderCard extends StatelessWidget {
-  const NutritionHeaderCard({Key? key}) : super(key: key);
+  const NutritionHeaderCard({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +20,7 @@ class NutritionHeaderCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF39B7C3).withOpacity(0.18),
+            color: const Color(0xFF39B7C3).withValues(alpha: 0.18),
             blurRadius: isCompact ? 14 : 18,
             offset: Offset(0, isCompact ? 6 : 8),
           ),
@@ -31,7 +31,7 @@ class NutritionHeaderCard extends StatelessWidget {
           Container(
             padding: EdgeInsets.all(isCompact ? 8 : 10),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.18),
+              color: Colors.white.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(isCompact ? 12 : 16),
             ),
             child: Icon(

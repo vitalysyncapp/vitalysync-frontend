@@ -4,16 +4,14 @@ class BurnoutCard extends StatelessWidget {
   final int score;
   final String status;
 
-  const BurnoutCard({
-    Key? key,
-    required this.score,
-    required this.status,
-  }) : super(key: key);
+  const BurnoutCard({super.key, required this.score, required this.status});
 
   // Base gradient colors
   List<Color> _baseGradientColors() {
     if (score <= 20) return [Color(0xFF096EB1), Color(0xFF5DADE2)];
-    if (score <= 40) return [Color.fromARGB(255, 9, 119, 144), Color(0xFF48C9B0)]; 
+    if (score <= 40) {
+      return [Color.fromARGB(255, 9, 119, 144), Color(0xFF48C9B0)];
+    }
     if (score <= 50) return [Color(0xFF15B658), Color(0xFF58D68D)];
     if (score <= 60) return [Color(0xFFCAA307), Color(0xFFF7DC6F)];
     if (score <= 80) return [Color(0xFFD46E14), Color(0xFFF5B041)];
@@ -24,7 +22,7 @@ class BurnoutCard extends StatelessWidget {
   // Adjust gradient and glow for dark mode
   List<Color> getGradientColors(bool isDark) {
     final colors = _baseGradientColors();
-    if (isDark) return colors.map((c) => c.withOpacity(0.85)).toList();
+    if (isDark) return colors.map((c) => c.withValues(alpha: 0.85)).toList();
     return colors;
   }
 
@@ -38,8 +36,8 @@ class BurnoutCard extends StatelessWidget {
 
   // Glow color for high-risk scores
   Color getGlowColor() {
-    if (score > 80) return Colors.redAccent.withOpacity(0.6);
-    if (score > 60) return Colors.orangeAccent.withOpacity(0.5);
+    if (score > 80) return Colors.redAccent.withValues(alpha: 0.6);
+    if (score > 60) return Colors.orangeAccent.withValues(alpha: 0.5);
     return Colors.transparent;
   }
 
@@ -74,8 +72,8 @@ class BurnoutCard extends StatelessWidget {
             : [
                 BoxShadow(
                   color: isDark
-                      ? Colors.black.withOpacity(0.4)
-                      : Colors.grey.withOpacity(0.3),
+                      ? Colors.black.withValues(alpha: 0.4)
+                      : Colors.grey.withValues(alpha: 0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
@@ -87,7 +85,7 @@ class BurnoutCard extends StatelessWidget {
           Text(
             'Burnout Risk Score',
             style: TextStyle(
-              color: textColor.withOpacity(0.7),
+              color: textColor.withValues(alpha: 0.7),
               fontSize: 16,
             ),
           ),
@@ -109,10 +107,7 @@ class BurnoutCard extends StatelessWidget {
                   color: Colors.white24,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  getIcon(),
-                  color: textColor,
-                ),
+                child: Icon(getIcon(), color: textColor),
               ),
             ],
           ),
@@ -123,10 +118,7 @@ class BurnoutCard extends StatelessWidget {
               color: Colors.white24,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Text(
-              status,
-              style: TextStyle(color: textColor),
-            ),
+            child: Text(status, style: TextStyle(color: textColor)),
           ),
         ],
       ),

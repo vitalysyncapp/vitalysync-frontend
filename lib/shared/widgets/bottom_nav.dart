@@ -69,31 +69,36 @@ Widget buildBottomNav({
               gradient: LinearGradient(
                 colors: isDark
                     ? [
-                        const Color(0xFF132134).withOpacity(0.94),
-                        const Color(0xFF0C1726).withOpacity(0.92),
+                        const Color(0xFF132134).withValues(alpha: 0.94),
+                        const Color(0xFF0C1726).withValues(alpha: 0.92),
                       ]
                     : [
-                        Colors.white.withOpacity(0.95),
-                        const Color(0xFFF0FBF7).withOpacity(0.92),
+                        Colors.white.withValues(alpha: 0.95),
+                        const Color(0xFFF0FBF7).withValues(alpha: 0.92),
                       ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               border: Border.all(
                 color: isDark
-                    ? Colors.white.withOpacity(0.08)
-                    : Colors.white.withOpacity(0.85),
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.white.withValues(alpha: 0.85),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(isDark ? 0.3 : 0.12),
+                  color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.12),
                   blurRadius: 32,
                   offset: const Offset(0, 18),
                 ),
                 BoxShadow(
                   color: isDark
-                      ? const Color(0xFF5DB8F0).withOpacity(0.08)
-                      : const Color.fromARGB(255, 29, 140, 168).withOpacity(0.22),
+                      ? const Color(0xFF5DB8F0).withValues(alpha: 0.08)
+                      : const Color.fromARGB(
+                          255,
+                          29,
+                          140,
+                          168,
+                        ).withValues(alpha: 0.22),
                   blurRadius: 26,
                   spreadRadius: -8,
                   offset: const Offset(0, 8),
@@ -145,10 +150,10 @@ class _FloatingNavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final inactiveIconColor = isDark
-        ? Colors.white.withOpacity(0.68)
+        ? Colors.white.withValues(alpha: 0.68)
         : const Color(0xFF5F7288);
     final inactiveLabelColor = isDark
-        ? Colors.white.withOpacity(0.72)
+        ? Colors.white.withValues(alpha: 0.72)
         : const Color(0xFF587081);
 
     return Padding(
@@ -172,14 +177,17 @@ class _FloatingNavItem extends StatelessWidget {
               borderRadius: BorderRadius.circular(22),
               gradient: isSelected
                   ? const LinearGradient(
-                      colors: [Color.fromARGB(255, 29, 140, 168), Color(0xFF59B7EF)],
+                      colors: [
+                        Color.fromARGB(255, 29, 140, 168),
+                        Color(0xFF59B7EF),
+                      ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     )
                   : null,
               border: Border.all(
                 color: isSelected
-                    ? Colors.white.withOpacity(isDark ? 0.12 : 0.56)
+                    ? Colors.white.withValues(alpha: isDark ? 0.12 : 0.56)
                     : Colors.transparent,
               ),
               boxShadow: isSelected
@@ -187,7 +195,7 @@ class _FloatingNavItem extends StatelessWidget {
                       BoxShadow(
                         color: const Color(
                           0xFF3BB8C7,
-                        ).withOpacity(isDark ? 0.26 : 0.22),
+                        ).withValues(alpha: isDark ? 0.26 : 0.22),
                         blurRadius: 18,
                         offset: const Offset(0, 10),
                       ),
