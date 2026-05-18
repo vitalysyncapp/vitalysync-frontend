@@ -438,7 +438,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'You appear to be offline. The app can still show saved screens, but live summary data is unavailable right now.',
+              'Live summary data is unavailable right now. The app is showing your saved check-in data and will refresh automatically.',
               style: TextStyle(
                 height: 1.4,
                 color: pagePrimaryTextColor(context),

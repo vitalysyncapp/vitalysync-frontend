@@ -67,6 +67,14 @@ class LogApi {
     return prefs.getInt('user_id');
   }
 
+  static Future<void> _trySyncPendingLogs() async {
+    try {
+      await syncPendingLogs();
+    } catch (_) {
+      // A stuck pending offline log should not block live read requests.
+    }
+  }
+
   static int parseInt(dynamic value, {int fallback = 0}) {
     if (value is int) {
       return value;
@@ -158,7 +166,7 @@ class LogApi {
     }
 
     try {
-      await syncPendingLogs();
+      await _trySyncPendingLogs();
 
       final response = await http
           .get(
@@ -199,7 +207,7 @@ class LogApi {
     }
 
     try {
-      await syncPendingLogs();
+      await _trySyncPendingLogs();
 
       final response = await http
           .get(
@@ -252,7 +260,7 @@ class LogApi {
     }
 
     try {
-      await syncPendingLogs();
+      await _trySyncPendingLogs();
 
       final response = await http
           .get(
@@ -307,7 +315,7 @@ class LogApi {
     }
 
     try {
-      await syncPendingLogs();
+      await _trySyncPendingLogs();
 
       final uri = Uri.parse(ApiConfig.logs('/history')).replace(
         queryParameters: {

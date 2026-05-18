@@ -29,6 +29,26 @@ class _LoginPageState extends State<LoginPage> {
   bool isLoading = false;
   final String loginUrl = ApiConfig.auth('/login');
 
+  String _loginFailureMessage(http.Response response) {
+    const fallback = 'Login failed';
+
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        final serverMessage = decoded['message'] ?? decoded['error'];
+        final normalizedMessage = serverMessage?.toString().trim();
+
+        if (normalizedMessage != null && normalizedMessage.isNotEmpty) {
+          return normalizedMessage;
+        }
+      }
+    } catch (_) {
+      // Keep the user-facing fallback when the server does not return JSON.
+    }
+
+    return fallback;
+  }
+
   Future<void> login() async {
     setState(() => isLoading = true);
 
@@ -87,11 +107,10 @@ class _LoginPageState extends State<LoginPage> {
           ),
         );
       } else {
-        final errorData = jsonDecode(response.body) as Map<String, dynamic>;
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorData['message'] ?? 'Login failed')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(_loginFailureMessage(response))));
       }
     } catch (_) {
       if (!mounted) return;
