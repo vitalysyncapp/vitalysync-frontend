@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 
 import '../../../shared/config/api_config.dart';
 import '../../../shared/offline/offline_cache_store.dart';
+import '../../dashboard/data/burnout_score_api.dart';
 import '../../exercise/data/exercise_goal_service.dart';
 
 part 'log_local_cache_helpers.dart';
@@ -501,6 +502,7 @@ class LogApi {
       final data = await _postDailyLog(userId, log);
       final savedLog = data['log'] as Map<String, dynamic>?;
       await _upsertCachedLog(userId, savedLog ?? log);
+      await _refreshBurnoutCacheAfterInputChange(data);
 
       final streak = data['streak'] as Map<String, dynamic>?;
       await _persistSyncedStreakSnapshot(userId, streak);
@@ -640,6 +642,7 @@ class LogApi {
 
     try {
       final data = await _postWeeklyPulse(userId, body);
+      await BurnoutScoreApi.markInputsChanged(clearLatestScore: true);
       await _cacheWeeklyPulseStatus(
         userId,
         weekStart,
@@ -722,6 +725,7 @@ class LogApi {
       final savedLog = data['log'] as Map<String, dynamic>?;
 
       await _upsertCachedLog(userId, savedLog ?? log);
+      await _refreshBurnoutCacheAfterInputChange(data);
       await _persistSyncedStreakSnapshot(
         userId,
         data['streak'] as Map<String, dynamic>?,

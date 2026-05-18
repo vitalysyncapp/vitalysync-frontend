@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../../../shared/config/api_config.dart';
 import '../../../shared/offline/offline_cache_store.dart';
+import '../../dashboard/data/burnout_score_api.dart';
 import 'activity_log.dart';
 
 class ActivityApi {
@@ -131,6 +132,13 @@ class ActivityApi {
     }
 
     final savedLog = data['log'];
+    final burnoutScore = data['burnout_score'];
+    if (burnoutScore is Map) {
+      await BurnoutScoreApi.markInputsChanged(
+        latestScore: Map<String, dynamic>.from(burnoutScore),
+      );
+    }
+
     if (savedLog is Map) {
       final logMap = Map<String, dynamic>.from(savedLog);
       await OfflineCacheStore.saveJson(

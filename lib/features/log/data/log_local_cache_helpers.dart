@@ -81,6 +81,17 @@ Future<Map<String, dynamic>> _postDailyLog(
   return data;
 }
 
+Future<void> _refreshBurnoutCacheAfterInputChange(
+  Map<String, dynamic> data,
+) async {
+  final burnoutScore = data['burnout_score'];
+  await BurnoutScoreApi.markInputsChanged(
+    latestScore: burnoutScore is Map
+        ? Map<String, dynamic>.from(burnoutScore)
+        : null,
+  );
+}
+
 Map<String, dynamic> _buildLogRequestBody(
   int userId,
   Map<String, dynamic> log,

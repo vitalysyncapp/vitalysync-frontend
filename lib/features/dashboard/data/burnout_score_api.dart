@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -246,6 +247,7 @@ class BurnoutScoreApi {
   static const String _latestScoreCache = 'burnout_latest_score';
   static const String _scoreHistoryCache = 'burnout_score_history';
   static const String _patternSummaryCache = 'burnout_pattern_summary';
+  static final ValueNotifier<int> refreshSignal = ValueNotifier<int>(0);
 
   static Future<BurnoutScoreSnapshot?> fetchLatestScore() async {
     final userId = await _storedUserId();
@@ -391,6 +393,38 @@ class BurnoutScoreApi {
     } catch (_) {
       return _readCachedPatternSummary(userId);
     }
+  }
+
+  static Future<void> markInputsChanged({
+    Map<String, dynamic>? latestScore,
+    bool clearLatestScore = false,
+  }) async {
+    final userId = await _storedUserId();
+    if (userId == null) {
+      return;
+    }
+
+    await Future.wait([
+      OfflineCacheStore.remove(
+        namespace: _scoreHistoryCache,
+        scope: userId.toString(),
+      ),
+      OfflineCacheStore.remove(
+        namespace: _patternSummaryCache,
+        scope: userId.toString(),
+      ),
+      if (clearLatestScore && latestScore == null)
+        OfflineCacheStore.remove(
+          namespace: _latestScoreCache,
+          scope: userId.toString(),
+        ),
+    ]);
+
+    if (latestScore != null) {
+      await _cacheJson(_latestScoreCache, userId, {'score': latestScore});
+    }
+
+    refreshSignal.value++;
   }
 
   static Future<void> _cacheJson(

@@ -48,11 +48,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   String? _environmentError;
   EnvironmentSnapshot? _environmentSnapshot;
   int _refreshVersion = 0;
+  int _burnoutLoadToken = 0;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    BurnoutScoreApi.refreshSignal.addListener(_handleBurnoutInputsChanged);
     ActivityService.instance.startTracking();
     _loadBurnoutBaseline();
     _loadLatestSummary();
@@ -62,7 +64,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    BurnoutScoreApi.refreshSignal.removeListener(_handleBurnoutInputsChanged);
     super.dispose();
+  }
+
+  void _handleBurnoutInputsChanged() {
+    _loadBurnoutBaseline();
   }
 
   @override
@@ -91,6 +98,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Future<void> _loadBurnoutBaseline() async {
+    final loadToken = ++_burnoutLoadToken;
     final defaults = await OnboardingService.loadDefaults();
     BurnoutScoreSnapshot? latestScore;
 
@@ -100,7 +108,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       latestScore = null;
     }
 
-    if (!mounted) return;
+    if (!mounted || loadToken != _burnoutLoadToken) return;
 
     setState(() {
       if (latestScore != null) {

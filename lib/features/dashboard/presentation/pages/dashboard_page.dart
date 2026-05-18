@@ -32,14 +32,27 @@ class _DashboardState extends State<Dashboard> {
   bool _isLoadingBurnoutPatterns = true;
   bool _isLoadingAiInsight = true;
   int _refreshVersion = 0;
+  int _burnoutLoadToken = 0;
 
   @override
   void initState() {
     super.initState();
+    BurnoutScoreApi.refreshSignal.addListener(_handleBurnoutInputsChanged);
+    _loadBurnoutPatterns();
+  }
+
+  @override
+  void dispose() {
+    BurnoutScoreApi.refreshSignal.removeListener(_handleBurnoutInputsChanged);
+    super.dispose();
+  }
+
+  void _handleBurnoutInputsChanged() {
     _loadBurnoutPatterns();
   }
 
   Future<void> _loadBurnoutPatterns() async {
+    final loadToken = ++_burnoutLoadToken;
     setState(() {
       _isLoadingBurnoutPatterns = true;
       _isLoadingAiInsight = true;
@@ -60,7 +73,7 @@ class _DashboardState extends State<Dashboard> {
       } catch (_) {
         aiInsight = null;
       }
-      if (!mounted) return;
+      if (!mounted || loadToken != _burnoutLoadToken) return;
 
       setState(() {
         _burnoutPatternSummary = summary;
@@ -69,7 +82,7 @@ class _DashboardState extends State<Dashboard> {
         _isLoadingAiInsight = false;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || loadToken != _burnoutLoadToken) return;
 
       setState(() {
         _burnoutPatternSummary = null;
