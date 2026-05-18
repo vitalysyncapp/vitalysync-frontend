@@ -239,7 +239,7 @@ class WeeklyUserMetricsService {
 
     final activityByDate = <String, ActivityLog>{};
     final userId = await LogApi.getStoredUserId();
-    if (userId != null && !(await LogApi.isDemoMode())) {
+    if (userId != null) {
       try {
         final activityLogs = await ActivityApi.fetchHistory(
           userId: userId,

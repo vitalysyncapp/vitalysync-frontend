@@ -127,10 +127,6 @@ class ExerciseRecommendationService {
   }
 
   Future<String> _cacheScope() async {
-    if (await LogApi.isDemoMode()) {
-      return 'demo';
-    }
-
     return (await LogApi.getStoredUserId())?.toString() ?? 'guest';
   }
 

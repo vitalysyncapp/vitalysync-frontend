@@ -38,7 +38,7 @@ class _ProfilePageState extends State<ProfilePage> {
   ];
   static const List<String> _workIntensityOptions = ['Low', 'Medium', 'High'];
 
-  bool _isLoading = true, _isSaving = false, _isDemoMode = false;
+  bool _isLoading = true, _isSaving = false;
   int? _userId, _age;
   String _username = 'User Name', _email = 'user@email.com';
   String? _gender, _userType;
@@ -76,7 +76,7 @@ class _ProfilePageState extends State<ProfilePage> {
     var initialBurnoutScore = 0;
     var userType = _emptyToNull(session.userType);
 
-    if (!session.isDemoMode && session.userId != null) {
+    if (session.userId != null) {
       try {
         final summary = await OnboardingApi.fetchSummary(session.userId!);
         await OnboardingService.saveDefaultsFromSummary(summary);
@@ -154,7 +154,6 @@ class _ProfilePageState extends State<ProfilePage> {
       _age = session.age;
       _gender = _emptyToNull(session.gender);
       _userType = userType;
-      _isDemoMode = session.isDemoMode;
       _sleepSchedule = sleepSchedule;
       _lifestyleType = lifestyleType;
       _workIntensity = workIntensity;
@@ -227,59 +226,55 @@ class _ProfilePageState extends State<ProfilePage> {
         age: age,
         gender: gender,
         userType: userType,
-        isDemoMode: _isDemoMode,
       );
-      if (!_isDemoMode) {
-        final summary = await OnboardingApi.fetchSummary(_userId!);
-        final existingOnboarding = Map<String, dynamic>.from(
-          summary['onboarding'] as Map? ?? {},
-        );
-        final existingPreferences = Map<String, dynamic>.from(
-          summary['preferences'] as Map? ?? {},
-        );
-        await OnboardingApi.upsertOnboarding(
-          userId: _userId!,
-          onboarding: {
-            'role_type': userType,
-            'activity_level': lifestyleType,
-            'work_hours_per_day': _workHoursFromIntensity(workIntensity),
-            'exercise_days_per_week': _parseExerciseDays(exerciseTarget),
-            'sleep_hours': existingOnboarding['sleep_hours'],
-            'meal_regularness': existingOnboarding['meal_regularness'],
-            'stress_level': existingOnboarding['stress_level'],
-            'mental_drain_level': existingOnboarding['mental_drain_level'],
-            'focus_difficulty_level':
-                existingOnboarding['focus_difficulty_level'],
-            'overwhelm_level': existingOnboarding['overwhelm_level'],
-            'recovery_level': existingOnboarding['recovery_level'],
-            'motivation_level': existingOnboarding['motivation_level'],
-            'skipped': existingOnboarding['skipped'] == true,
-          },
-        );
-        await OnboardingApi.upsertPreferences(
-          userId: _userId!,
-          preferences: {
-            'preferred_log_time': existingPreferences['preferred_log_time'],
-            'default_sleep_time': scheduleParts['sleep'],
-            'default_wake_time': scheduleParts['wake'],
-            'default_work_start': existingPreferences['default_work_start'],
-            'default_work_end': existingPreferences['default_work_end'],
-            'prefers_daily_reminder':
-                existingPreferences['prefers_daily_reminder'] == true,
-            'reminder_time': existingPreferences['reminder_time'],
-            'prefers_hydration_reminder':
-                existingPreferences['prefers_hydration_reminder'] == true,
-            'prefers_exercise_reminder':
-                existingPreferences['prefers_exercise_reminder'] == true,
-            'prefers_sleep_reminder':
-                existingPreferences['prefers_sleep_reminder'] == true,
-            'preferred_nudge_style':
-                existingPreferences['preferred_nudge_style'],
-            'primary_goal': existingPreferences['primary_goal'],
-            'busy_days': (summary['busy_days'] as List? ?? const []),
-          },
-        );
-      }
+      final summary = await OnboardingApi.fetchSummary(_userId!);
+      final existingOnboarding = Map<String, dynamic>.from(
+        summary['onboarding'] as Map? ?? {},
+      );
+      final existingPreferences = Map<String, dynamic>.from(
+        summary['preferences'] as Map? ?? {},
+      );
+      await OnboardingApi.upsertOnboarding(
+        userId: _userId!,
+        onboarding: {
+          'role_type': userType,
+          'activity_level': lifestyleType,
+          'work_hours_per_day': _workHoursFromIntensity(workIntensity),
+          'exercise_days_per_week': _parseExerciseDays(exerciseTarget),
+          'sleep_hours': existingOnboarding['sleep_hours'],
+          'meal_regularness': existingOnboarding['meal_regularness'],
+          'stress_level': existingOnboarding['stress_level'],
+          'mental_drain_level': existingOnboarding['mental_drain_level'],
+          'focus_difficulty_level':
+              existingOnboarding['focus_difficulty_level'],
+          'overwhelm_level': existingOnboarding['overwhelm_level'],
+          'recovery_level': existingOnboarding['recovery_level'],
+          'motivation_level': existingOnboarding['motivation_level'],
+          'skipped': existingOnboarding['skipped'] == true,
+        },
+      );
+      await OnboardingApi.upsertPreferences(
+        userId: _userId!,
+        preferences: {
+          'preferred_log_time': existingPreferences['preferred_log_time'],
+          'default_sleep_time': scheduleParts['sleep'],
+          'default_wake_time': scheduleParts['wake'],
+          'default_work_start': existingPreferences['default_work_start'],
+          'default_work_end': existingPreferences['default_work_end'],
+          'prefers_daily_reminder':
+              existingPreferences['prefers_daily_reminder'] == true,
+          'reminder_time': existingPreferences['reminder_time'],
+          'prefers_hydration_reminder':
+              existingPreferences['prefers_hydration_reminder'] == true,
+          'prefers_exercise_reminder':
+              existingPreferences['prefers_exercise_reminder'] == true,
+          'prefers_sleep_reminder':
+              existingPreferences['prefers_sleep_reminder'] == true,
+          'preferred_nudge_style': existingPreferences['preferred_nudge_style'],
+          'primary_goal': existingPreferences['primary_goal'],
+          'busy_days': (summary['busy_days'] as List? ?? const []),
+        },
+      );
       await prefs.setString(_sleepScheduleKey, normalizedSleep);
       await prefs.setString(_waterGoalKey, normalizedWater);
       if (!mounted) return false;
@@ -387,7 +382,6 @@ class _ProfilePageState extends State<ProfilePage> {
           exerciseTarget: _exerciseTarget,
           burnoutLevel: _initialBurnoutLevel,
           burnoutScore: _initialBurnoutScore,
-          isDemoMode: _isDemoMode,
         ),
       ),
     );

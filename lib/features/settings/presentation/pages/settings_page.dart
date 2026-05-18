@@ -41,7 +41,7 @@ class _SettingsPageState extends State<SettingsPage> {
       return;
     }
 
-    if (session.isDemoMode || session.userId == null) {
+    if (session.userId == null) {
       final prefs = AppPreferencesController.instance.notifier.value;
       setState(() {
         _session = session;
@@ -144,10 +144,6 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   String get _accountActionSubtitle {
-    if (_session.isDemoMode) {
-      return 'Unavailable in demo mode';
-    }
-
     if (!_session.isLoggedIn) {
       return 'Sign in to manage account actions';
     }
@@ -162,15 +158,6 @@ class _SettingsPageState extends State<SettingsPage> {
     final session = await UserSessionController.instance.load();
 
     if (!mounted) {
-      return;
-    }
-
-    if (session.isDemoMode) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Account actions are not available in demo mode.'),
-        ),
-      );
       return;
     }
 

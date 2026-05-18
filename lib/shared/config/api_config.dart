@@ -1,3 +1,5 @@
+import 'package:shared_preferences/shared_preferences.dart';
+
 class ApiConfig {
   static const String _configuredBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
@@ -39,5 +41,30 @@ class ApiConfig {
 
   static String exerciseGoals(String path) {
     return '$baseUrl/api/exercise-goals$path';
+  }
+
+  static Future<Map<String, String>> jsonHeaders() async {
+    return {
+      'Content-Type': 'application/json',
+      ...await authHeaders(),
+    };
+  }
+
+  static Future<Map<String, String>> acceptJsonHeaders() async {
+    return {
+      'Accept': 'application/json',
+      ...await authHeaders(),
+    };
+  }
+
+  static Future<Map<String, String>> authHeaders() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_access_token')?.trim();
+
+    if (token == null || token.isEmpty) {
+      return const <String, String>{};
+    }
+
+    return {'Authorization': 'Bearer $token'};
   }
 }

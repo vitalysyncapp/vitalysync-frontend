@@ -47,29 +47,32 @@ class _LoadingScreenState extends State<LoadingScreen>
     final session = await UserSessionController.instance.load();
     final email = session.email;
     final userId = session.userId;
-    final isDemoMode = session.isDemoMode;
+    final signedInUserId = userId ?? 0;
     var onboardingCompleted = session.onboardingCompleted;
+    final hasSignedInAccount =
+        session.isLoggedIn &&
+        session.hasAuthToken &&
+        email?.trim().isNotEmpty == true &&
+        signedInUserId > 0;
 
-    if ((email != null && userId != null) || isDemoMode) {
+    if (hasSignedInAccount) {
       try {
         await LogApi.syncStreakFromBackend();
       } catch (_) {
         // Keep the cached streak if the refresh fails during boot.
       }
 
-      if (!isDemoMode && userId != null && userId > 0) {
-        try {
-          final summary = await OnboardingApi.fetchSummary(userId);
-          onboardingCompleted = summary['onboarding_completed'] == true;
-          if (onboardingCompleted) {
-            await OnboardingService.saveDefaultsFromSummary(summary);
-          }
-          await UserSessionController.instance.updateOnboardingCompleted(
-            onboardingCompleted,
-          );
-        } catch (_) {
-          // Fall back to the locally cached onboarding state.
+      try {
+        final summary = await OnboardingApi.fetchSummary(signedInUserId);
+        onboardingCompleted = summary['onboarding_completed'] == true;
+        if (onboardingCompleted) {
+          await OnboardingService.saveDefaultsFromSummary(summary);
         }
+        await UserSessionController.instance.updateOnboardingCompleted(
+          onboardingCompleted,
+        );
+      } catch (_) {
+        // Fall back to the locally cached onboarding state.
       }
 
       if (!mounted) return;
@@ -80,17 +83,21 @@ class _LoadingScreenState extends State<LoadingScreen>
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => (isDemoMode || onboardingCompleted)
+          builder: (_) => onboardingCompleted
               ? MainNavigation(
                   initialIndex: tabIndexForNotificationPayload(launchPayload),
                   openNutritionLogOnStart: shouldOpenNutritionLog(
                     launchPayload,
                   ),
                 )
-              : OnboardingPage(userId: userId!),
+              : OnboardingPage(userId: signedInUserId),
         ),
       );
       return;
+    }
+
+    if (session.isLoggedIn || session.hasAuthToken || userId != null) {
+      await UserSessionController.instance.clearSession();
     }
 
     if (!mounted) return;

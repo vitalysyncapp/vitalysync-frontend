@@ -51,7 +51,7 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
 
     try {
       await AppPreferencesController.instance.resetToDefaults();
-      await LogApi.clearLocalDemoData();
+      await LogApi.clearLocalAccountData();
       await OnboardingService.clearDefaults();
       await UserSessionController.instance.clearSession();
 

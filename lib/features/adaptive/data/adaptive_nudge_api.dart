@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../shared/config/api_config.dart';
 import '../../../shared/offline/offline_cache_store.dart';
-import '../../../shared/preferences/user_session.dart';
 
 class AdaptiveNudgeRecommendation {
   final int? nudgeEventId;
@@ -96,10 +95,6 @@ class AdaptiveNudgeApi {
     bool record = true,
     bool ai = true,
   }) async {
-    if (await _isDemoMode()) {
-      return _demoResponse();
-    }
-
     final userId = await _storedUserId();
     if (userId == null) {
       return _fallbackResponse();
@@ -116,7 +111,7 @@ class AdaptiveNudgeApi {
             },
           );
       final response = await http
-          .get(uri, headers: {'Content-Type': 'application/json'})
+          .get(uri, headers: await ApiConfig.jsonHeaders())
           .timeout(ai ? _aiRequestTimeout : _requestTimeout);
       final data = _decodeResponseMap(response);
 
@@ -141,10 +136,6 @@ class AdaptiveNudgeApi {
     required int eventId,
     required String status,
   }) async {
-    if (await _isDemoMode()) {
-      return;
-    }
-
     final userId = await _storedUserId();
     if (userId == null) {
       return;
@@ -153,7 +144,7 @@ class AdaptiveNudgeApi {
     final response = await http
         .put(
           Uri.parse(ApiConfig.adaptive('/nudge-events/$eventId/status')),
-          headers: {'Content-Type': 'application/json'},
+          headers: await ApiConfig.jsonHeaders(),
           body: jsonEncode({'user_id': userId, 'status': status}),
         )
         .timeout(_requestTimeout);
@@ -167,11 +158,6 @@ class AdaptiveNudgeApi {
   static Future<int?> _storedUserId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt('user_id');
-  }
-
-  static Future<bool> _isDemoMode() async {
-    final session = await UserSessionController.instance.load();
-    return session.isDemoMode;
   }
 
   static Map<String, dynamic> _decodeResponseMap(http.Response response) {
@@ -222,30 +208,6 @@ class AdaptiveNudgeApi {
           patternType: null,
           severity: 'low',
           confidenceScore: 0,
-          metadata: <String, dynamic>{},
-        ),
-      ],
-      adaptiveState: <String, dynamic>{},
-      patterns: <Map<String, dynamic>>[],
-    );
-  }
-
-  static AdaptiveNudgeResponse _demoResponse() {
-    return const AdaptiveNudgeResponse(
-      recommendations: [
-        AdaptiveNudgeRecommendation(
-          nudgeEventId: null,
-          nudgeType: 'recovery_break',
-          priority: 'medium',
-          title: 'Balance load with recovery',
-          message:
-              'Demo patterns suggest a short recovery break before the next demanding task.',
-          actionLabel: 'Schedule break',
-          triggerReason: 'Demo adaptive pattern',
-          recommendedFocus: 'recovery',
-          patternType: 'workload_recovery_mismatch',
-          severity: 'moderate',
-          confidenceScore: 76,
           metadata: <String, dynamic>{},
         ),
       ],

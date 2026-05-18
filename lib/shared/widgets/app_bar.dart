@@ -38,7 +38,7 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
     final prefs = await SharedPreferences.getInstance();
     await UserSessionController.instance.clearSession();
     await OnboardingService.clearDefaults();
-    await LogApi.clearLocalDemoData();
+    await LogApi.clearLocalAccountData();
     await prefs.remove('log_streak');
     await prefs.remove('longest_log_streak');
     await prefs.remove('last_log_date');

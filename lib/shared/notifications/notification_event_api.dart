@@ -19,14 +19,14 @@ class NotificationEventApi {
   }) async {
     final session = await UserSessionController.instance.load();
     final userId = session.userId;
-    if (session.isDemoMode || userId == null || userId <= 0) {
+    if (userId == null || userId <= 0) {
       return;
     }
 
     final response = await http
         .post(
           Uri.parse(ApiConfig.adaptive('/notification-events')),
-          headers: {'Content-Type': 'application/json'},
+          headers: await ApiConfig.jsonHeaders(),
           body: jsonEncode({
             'user_id': userId,
             'notification_type': notificationType,

@@ -1,83 +1,5 @@
 part of 'log_api.dart';
 
-Future<Map<String, dynamic>> _saveLocalDemoLog({
-  required double sleepHours,
-  required int sleepQuality,
-  required int moodIndex,
-  required int energyLevel,
-  required double hydrationLiters,
-  required String workloadHoursBand,
-  required int perceivedStressLevel,
-  int? breakQualityLevel,
-  required List<String> exerciseNames,
-  required List<String> symptomNames,
-  required Map<String, dynamic> exerciseGoalMetadata,
-}) async {
-  final prefs = await SharedPreferences.getInstance();
-  final logs = await _readLocalLogs();
-  final logDate = LogApi.todayKey();
-
-  final newLog = <String, dynamic>{
-    'log_date': logDate,
-    'sleep_hours': sleepHours,
-    'sleep_quality': sleepQuality,
-    'mood_index': moodIndex,
-    'energy_level': energyLevel,
-    'hydration_liters': hydrationLiters,
-    'workload_hours_band': workloadHoursBand,
-    'perceived_stress_level': perceivedStressLevel,
-    'break_quality_level': breakQualityLevel,
-    'exercise_names': exerciseNames,
-    'symptom_names': symptomNames,
-    ...exerciseGoalMetadata,
-  };
-
-  final existingIndex = logs.indexWhere((item) => item['log_date'] == logDate);
-  if (existingIndex >= 0) {
-    logs[existingIndex] = newLog;
-  } else {
-    logs.add(newLog);
-  }
-
-  logs.sort(
-    (a, b) => (a['log_date'] as String).compareTo(b['log_date'] as String),
-  );
-
-  await prefs.setString(LogApi._localLogsKey, jsonEncode(logs));
-
-  final streak = _computeLocalStreak(logs);
-  await LogApi.persistStreakSnapshot(streak);
-
-  return {
-    'message': 'Daily log saved locally',
-    'has_log': true,
-    'log': newLog,
-    'streak': streak,
-  };
-}
-
-Future<Map<String, dynamic>> _buildLocalLogResponse({
-  bool forToday = false,
-}) async {
-  final logs = await _readLocalLogs();
-  final streak = _computeLocalStreak(logs);
-  await LogApi.persistStreakSnapshot(streak);
-
-  Map<String, dynamic>? log;
-  if (forToday) {
-    final today = LogApi.todayKey();
-    for (final item in logs) {
-      if (item['log_date'] == today) {
-        log = item;
-      }
-    }
-  } else if (logs.isNotEmpty) {
-    log = logs.last;
-  }
-
-  return {'has_log': log != null, 'log': log, 'streak': streak};
-}
-
 Future<Map<String, dynamic>> _buildOfflineUserLogResponse(
   int userId, {
   bool forToday = false,
@@ -142,7 +64,7 @@ Future<Map<String, dynamic>> _postDailyLog(
   final response = await http
       .post(
         Uri.parse(ApiConfig.logs('')),
-        headers: {'Content-Type': 'application/json'},
+        headers: await ApiConfig.jsonHeaders(),
         body: jsonEncode(_buildLogRequestBody(userId, log)),
       )
       .timeout(LogApi._requestTimeout);
@@ -533,65 +455,6 @@ String _syncedStreakKey(int userId) {
   return '${LogApi._syncedStreakKeyPrefix}_$userId';
 }
 
-String _localWeeklyPulseKey(String weekStart) {
-  return '${LogApi._localWeeklyPulseKeyPrefix}_$weekStart';
-}
-
-Future<Map<String, dynamic>> _buildLocalWeeklyPulseStatus(
-  String weekStart,
-) async {
-  final prefs = await SharedPreferences.getInstance();
-  final raw = prefs.getString(_localWeeklyPulseKey(weekStart));
-  Map<String, dynamic>? response;
-
-  if (raw != null && raw.isNotEmpty) {
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is Map) {
-        response = Map<String, dynamic>.from(decoded);
-      }
-    } catch (_) {
-      response = null;
-    }
-  }
-
-  return {
-    'week_start_date': weekStart,
-    'has_response': response != null,
-    'response': response,
-  };
-}
-
-Future<Map<String, dynamic>> _saveLocalWeeklyPulse({
-  required String weekStart,
-  required int productivityFocusLevel,
-  required int recoveryRestLevel,
-  required int detachmentLevel,
-  required int accomplishmentLevel,
-}) async {
-  final prefs = await SharedPreferences.getInstance();
-  final now = DateTime.now().toIso8601String();
-  final response = <String, dynamic>{
-    'pulse_id': 0,
-    'user_id': 0,
-    'week_start_date': weekStart,
-    'productivity_focus_level': productivityFocusLevel,
-    'recovery_rest_level': recoveryRestLevel,
-    'detachment_level': detachmentLevel,
-    'accomplishment_level': accomplishmentLevel,
-    'created_at': now,
-    'updated_at': now,
-  };
-
-  await prefs.setString(_localWeeklyPulseKey(weekStart), jsonEncode(response));
-
-  return {
-    'message': 'Weekly pulse saved locally',
-    'week_start_date': weekStart,
-    'response': response,
-  };
-}
-
 Future<Map<String, dynamic>> _saveOfflineWeeklyPulse({
   required int userId,
   required String weekStart,
@@ -728,65 +591,4 @@ Future<void> _syncCachedWeeklyPulse(int userId, String weekStart) async {
 
 String _weeklyPulseScope(int userId, String weekStart) {
   return '${userId}_$weekStart';
-}
-
-Future<List<Map<String, dynamic>>> _readLocalLogs() async {
-  return _readLogList(LogApi._localLogsKey);
-}
-
-Map<String, dynamic> _computeLocalStreak(List<Map<String, dynamic>> logs) {
-  if (logs.isEmpty) {
-    return {'current_streak': 0, 'longest_streak': 0, 'last_logged_date': null};
-  }
-
-  final dates =
-      logs
-          .map((log) => DateTime.parse(log['log_date'] as String))
-          .map((date) => DateTime(date.year, date.month, date.day))
-          .toList()
-        ..sort((a, b) => a.compareTo(b));
-
-  int longest = 1;
-  int currentRun = 1;
-
-  for (var i = 1; i < dates.length; i++) {
-    final gap = dates[i].difference(dates[i - 1]).inDays;
-    if (gap == 1) {
-      currentRun++;
-    } else if (gap > 1) {
-      currentRun = 1;
-    }
-    if (currentRun > longest) {
-      longest = currentRun;
-    }
-  }
-
-  int currentStreak = 1;
-  for (var i = dates.length - 1; i > 0; i--) {
-    final gap = dates[i].difference(dates[i - 1]).inDays;
-    if (gap == 1) {
-      currentStreak++;
-    } else {
-      break;
-    }
-  }
-
-  final lastLoggedDate = dates.last;
-  final normalizedToday = DateTime.now();
-  final today = DateTime(
-    normalizedToday.year,
-    normalizedToday.month,
-    normalizedToday.day,
-  );
-  final daysFromToday = today.difference(lastLoggedDate).inDays;
-
-  if (daysFromToday > 1) {
-    currentStreak = 0;
-  }
-
-  return {
-    'current_streak': currentStreak,
-    'longest_streak': longest,
-    'last_logged_date': DateFormat('yyyy-MM-dd').format(lastLoggedDate),
-  };
 }

@@ -17,7 +17,7 @@ class ExerciseGoalApi {
           Uri.parse(
             '${ApiConfig.exerciseGoals('/today/$userId')}?date=$logDate',
           ),
-          headers: {'Accept': 'application/json'},
+          headers: await ApiConfig.acceptJsonHeaders(),
         )
         .timeout(_requestTimeout);
     final data = _decodeResponseMap(response);
@@ -94,10 +94,7 @@ class ExerciseGoalApi {
   }) async {
     final request =
         http.Request(method, Uri.parse(ApiConfig.exerciseGoals(path)))
-          ..headers.addAll({
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          })
+          ..headers.addAll(await ApiConfig.jsonHeaders())
           ..body = jsonEncode({'user_id': userId, ...body});
 
     final streamedResponse = await request.send().timeout(_requestTimeout);

@@ -167,7 +167,7 @@ class ActivityService {
 
     await _loadCachedActivity(markLoading: false);
 
-    if (session.isDemoMode || userId <= 0) {
+    if (userId <= 0) {
       _emit(
         notifier.value.copyWith(
           isLoading: false,
@@ -216,7 +216,7 @@ class ActivityService {
 
   Future<int> pendingActivityCount() async {
     final session = await UserSessionController.instance.load();
-    if (session.isDemoMode || session.userId == null || session.userId! <= 0) {
+    if (session.userId == null || session.userId! <= 0) {
       return 0;
     }
 
@@ -230,7 +230,7 @@ class ActivityService {
 
     final session = await UserSessionController.instance.load();
     final userId = session.userId;
-    if (session.isDemoMode || userId == null || userId <= 0) {
+    if (userId == null || userId <= 0) {
       return 0;
     }
 
@@ -373,7 +373,7 @@ class ActivityService {
   }
 
   bool _shouldAttemptBackgroundSync(UserSessionSnapshot session) {
-    if (session.isDemoMode || session.userId == null || session.userId! <= 0) {
+    if (session.userId == null || session.userId! <= 0) {
       return false;
     }
 
@@ -441,7 +441,7 @@ class ActivityService {
     ActivityLog log,
   ) async {
     final userId = session.userId;
-    if (session.isDemoMode || userId == null || userId <= 0) {
+    if (userId == null || userId <= 0) {
       return;
     }
 
@@ -488,19 +488,20 @@ class ActivityService {
             steps: 0,
             goalSteps: await _preferredGoalStepsForUser(userId),
           );
-    final updatedLog = ActivityLog.fromSteps(
-      logDate: baseLog.logDate,
-      steps: baseLog.steps,
-      goalSteps: normalizedGoalSteps,
-      source: baseLog.source,
-    ).copyWith(
-      activeMinutes: baseLog.activeMinutes,
-      caloriesBurned: baseLog.caloriesBurned,
-      exerciseType: baseLog.exerciseType,
-    );
+    final updatedLog =
+        ActivityLog.fromSteps(
+          logDate: baseLog.logDate,
+          steps: baseLog.steps,
+          goalSteps: normalizedGoalSteps,
+          source: baseLog.source,
+        ).copyWith(
+          activeMinutes: baseLog.activeMinutes,
+          caloriesBurned: baseLog.caloriesBurned,
+          exerciseType: baseLog.exerciseType,
+        );
 
     await _cacheActivity(userId, updatedLog);
-    if (!session.isDemoMode && userId > 0) {
+    if (userId > 0) {
       await _queuePendingActivity(session, updatedLog);
     }
 
@@ -512,7 +513,7 @@ class ActivityService {
       ),
     );
 
-    if (!session.isDemoMode && _shouldAttemptBackgroundSync(session)) {
+    if (_shouldAttemptBackgroundSync(session)) {
       _lastSyncAttempt = DateTime.now();
       unawaited(syncPendingActivityLogs());
     }

@@ -20,7 +20,7 @@ class NotificationSettingsPage extends StatefulWidget {
 class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   bool _isLoading = true;
   bool _isSaving = false;
-  bool _isDemoMode = false;
+  bool _usesLocalSettings = false;
   int? _userId;
 
   String _preferredLogTime = '20:30';
@@ -60,10 +60,10 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
       return;
     }
 
-    _isDemoMode = session.isDemoMode || session.userId == null;
+    _usesLocalSettings = session.userId == null;
     _userId = session.userId;
 
-    if (_isDemoMode) {
+    if (_usesLocalSettings) {
       setState(() {
         _prefersDailyReminder = localPrefs.notificationsEnabled;
         _prefersHydrationReminder = localPrefs.hydrationReminderEnabled;
@@ -248,7 +248,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   }
 
   Future<void> _saveRemotePreferences() async {
-    if (_isDemoMode || _userId == null) {
+    if (_usesLocalSettings || _userId == null) {
       await _syncLocalNotificationState();
       return;
     }
@@ -567,8 +567,8 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _isDemoMode
-                                  ? 'This device is using demo reminder settings.'
+                              _usesLocalSettings
+                                  ? 'This device is using local reminder settings.'
                                   : 'These reminder defaults are synced from your onboarding preferences.',
                               style: TextStyle(
                                 height: 1.45,

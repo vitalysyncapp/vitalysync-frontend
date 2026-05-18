@@ -17,7 +17,7 @@ class EnvironmentApi {
     required double lon,
   }) async {
     final session = await UserSessionController.instance.load();
-    final userId = session.isDemoMode ? null : session.userId;
+    final userId = session.userId;
     final uri = Uri.parse(
       ApiConfig.environment(lat: lat, lon: lon, userId: userId),
     );
@@ -27,7 +27,7 @@ class EnvironmentApi {
     for (var attempt = 1; attempt <= _maxAttempts; attempt++) {
       try {
         final response = await http
-            .get(uri, headers: {'Content-Type': 'application/json'})
+            .get(uri, headers: await ApiConfig.jsonHeaders())
             .timeout(_requestTimeout);
 
         Map<String, dynamic> data = const {};

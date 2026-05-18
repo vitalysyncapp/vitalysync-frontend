@@ -265,7 +265,8 @@ class WeeklyStepAnalyticsCard extends StatefulWidget {
   });
 
   @override
-  State<WeeklyStepAnalyticsCard> createState() => _WeeklyStepAnalyticsCardState();
+  State<WeeklyStepAnalyticsCard> createState() =>
+      _WeeklyStepAnalyticsCardState();
 }
 
 class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
@@ -291,7 +292,7 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
     }
 
     final session = await UserSessionController.instance.load();
-    if (session.isDemoMode || session.userId == null || session.userId! <= 0) {
+    if (session.userId == null || session.userId! <= 0) {
       if (!mounted) {
         return;
       }
@@ -381,7 +382,9 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
     final bestDay = weeklyLogs.reduce(
       (current, next) => current.steps >= next.steps ? current : next,
     );
-    final bestDayLabel = DateFormat('EEE').format(DateTime.parse(bestDay.logDate));
+    final bestDayLabel = DateFormat(
+      'EEE',
+    ).format(DateTime.parse(bestDay.logDate));
     final statusColor = goalDays >= 5
         ? const Color(0xFF16A34A)
         : goalDays >= 3

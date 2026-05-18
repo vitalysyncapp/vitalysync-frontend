@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../shared/config/api_config.dart';
 import '../../../shared/offline/offline_cache_store.dart';
-import '../../../shared/preferences/user_session.dart';
 
 class BurnoutScoreSnapshot {
   final String scoreDate;
@@ -249,10 +248,6 @@ class BurnoutScoreApi {
   static const String _patternSummaryCache = 'burnout_pattern_summary';
 
   static Future<BurnoutScoreSnapshot?> fetchLatestScore() async {
-    if (await _isDemoMode()) {
-      return null;
-    }
-
     final userId = await _storedUserId();
     if (userId == null) {
       return null;
@@ -262,7 +257,7 @@ class BurnoutScoreApi {
       final response = await http
           .get(
             Uri.parse('${ApiConfig.burnout('/scores/latest')}?user_id=$userId'),
-            headers: {'Content-Type': 'application/json'},
+            headers: await ApiConfig.jsonHeaders(),
           )
           .timeout(_requestTimeout);
 
@@ -285,10 +280,6 @@ class BurnoutScoreApi {
   }
 
   static Future<BurnoutScoreSnapshot?> recalculateToday() async {
-    if (await _isDemoMode()) {
-      return null;
-    }
-
     final userId = await _storedUserId();
     if (userId == null) {
       return null;
@@ -298,7 +289,7 @@ class BurnoutScoreApi {
       final response = await http
           .post(
             Uri.parse(ApiConfig.burnout('/scores/recalculate')),
-            headers: {'Content-Type': 'application/json'},
+            headers: await ApiConfig.jsonHeaders(),
             body: jsonEncode({'user_id': userId}),
           )
           .timeout(_requestTimeout);
@@ -326,10 +317,6 @@ class BurnoutScoreApi {
     String? endDate,
     int limit = 30,
   }) async {
-    if (await _isDemoMode()) {
-      return const [];
-    }
-
     final userId = await _storedUserId();
     if (userId == null) {
       return const [];
@@ -350,7 +337,7 @@ class BurnoutScoreApi {
     ).replace(queryParameters: query);
     try {
       final response = await http
-          .get(uri, headers: {'Content-Type': 'application/json'})
+          .get(uri, headers: await ApiConfig.jsonHeaders())
           .timeout(_requestTimeout);
 
       final data = _decodeResponseMap(response);
@@ -373,10 +360,6 @@ class BurnoutScoreApi {
   }
 
   static Future<BurnoutPatternSummary?> fetchPatternSummary() async {
-    if (await _isDemoMode()) {
-      return null;
-    }
-
     final userId = await _storedUserId();
     if (userId == null) {
       return null;
@@ -388,7 +371,7 @@ class BurnoutScoreApi {
             Uri.parse(
               '${ApiConfig.burnout('/patterns/summary')}?user_id=$userId',
             ),
-            headers: {'Content-Type': 'application/json'},
+            headers: await ApiConfig.jsonHeaders(),
           )
           .timeout(_requestTimeout);
 
@@ -483,11 +466,6 @@ class BurnoutScoreApi {
   static Future<int?> _storedUserId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt('user_id');
-  }
-
-  static Future<bool> _isDemoMode() async {
-    final session = await UserSessionController.instance.load();
-    return session.isDemoMode;
   }
 
   static Map<String, dynamic> _decodeResponseMap(http.Response response) {

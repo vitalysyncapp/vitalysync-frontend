@@ -75,7 +75,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
       );
       await AppPreferencesController.instance.resetToDefaults();
       await OnboardingService.clearDefaults();
-      await LogApi.clearLocalDemoData();
+      await LogApi.clearLocalAccountData();
 
       if (!mounted) {
         return;

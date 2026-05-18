@@ -242,10 +242,6 @@ class NutritionApi {
   static Future<int> _currentUserId() async {
     final session = await UserSessionController.instance.load();
 
-    if (session.isDemoMode) {
-      throw Exception('Nutrition logging is unavailable in demo mode.');
-    }
-
     final userId = session.userId;
     if (userId == null || userId <= 0) {
       throw Exception('Please sign in before logging nutrition.');
@@ -268,7 +264,7 @@ class NutritionApi {
     request.fields['user_id'] = userId.toString();
     request.fields['meal_type'] = mealType;
     request.fields['log_date'] = logDate;
-    request.headers['Accept'] = 'application/json';
+    request.headers.addAll(await ApiConfig.acceptJsonHeaders());
     request.files.add(await http.MultipartFile.fromPath('image', image.path));
 
     final streamedResponse = await request.send();
@@ -307,10 +303,7 @@ class NutritionApi {
     final userId = await _currentUserId();
     final response = await http.post(
       Uri.parse(ApiConfig.nutrition('/analyze')),
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
+      headers: await ApiConfig.jsonHeaders(),
       body: jsonEncode({
         'user_id': userId,
         'input_type': 'manual',
@@ -358,10 +351,7 @@ class NutritionApi {
     final userId = await _currentUserId();
     final response = await http.post(
       Uri.parse(ApiConfig.nutrition('/confirm')),
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
+      headers: await ApiConfig.jsonHeaders(),
       body: jsonEncode({
         'user_id': userId,
         'attempt_id': attemptId,
@@ -385,10 +375,7 @@ class NutritionApi {
     final userId = await _currentUserId();
     final response = await http.post(
       Uri.parse(ApiConfig.nutrition('/discard-attempt')),
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
+      headers: await ApiConfig.jsonHeaders(),
       body: jsonEncode({'user_id': userId, 'attempt_id': attemptId}),
     );
     final data = _decodeBody(
@@ -410,7 +397,7 @@ class NutritionApi {
             Uri.parse(
               '${ApiConfig.nutrition('/daily')}?user_id=$userId&date=$logDate',
             ),
-            headers: {'Accept': 'application/json'},
+            headers: await ApiConfig.acceptJsonHeaders(),
           )
           .timeout(_requestTimeout);
       final data = _decodeBody(
@@ -451,7 +438,7 @@ class NutritionApi {
             Uri.parse(
               '${ApiConfig.nutrition('/history')}?user_id=$userId&start=$start&end=$end',
             ),
-            headers: {'Accept': 'application/json'},
+            headers: await ApiConfig.acceptJsonHeaders(),
           )
           .timeout(_requestTimeout);
       final data = _decodeBody(

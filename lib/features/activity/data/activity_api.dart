@@ -19,7 +19,7 @@ class ActivityApi {
       final response = await http
           .get(
             Uri.parse('${ApiConfig.activity('/today/$userId')}?date=$logDate'),
-            headers: {'Accept': 'application/json'},
+            headers: await ApiConfig.acceptJsonHeaders(),
           )
           .timeout(_requestTimeout);
       final data = _decodeResponseMap(response);
@@ -84,7 +84,7 @@ class ActivityApi {
             Uri.parse(
               '${ApiConfig.activity('/history/$userId')}?start=$startDate&end=$endDate',
             ),
-            headers: {'Accept': 'application/json'},
+            headers: await ApiConfig.acceptJsonHeaders(),
           )
           .timeout(_requestTimeout);
       final data = _decodeResponseMap(response);
@@ -116,10 +116,7 @@ class ActivityApi {
     required ActivityLog log,
   }) async {
     final request = http.Request(method, Uri.parse(url))
-      ..headers.addAll({
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      })
+      ..headers.addAll(await ApiConfig.jsonHeaders())
       ..body = jsonEncode({'user_id': userId, ...log.toJson()});
 
     final streamedResponse = await request.send().timeout(_requestTimeout);

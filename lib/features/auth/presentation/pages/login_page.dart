@@ -35,7 +35,7 @@ class _LoginPageState extends State<LoginPage> {
     try {
       final response = await http.post(
         Uri.parse(loginUrl),
-        headers: {'Content-Type': 'application/json'},
+        headers: await ApiConfig.jsonHeaders(),
         body: jsonEncode({
           'email': emailController.text.trim(),
           'password': passwordController.text.trim(),
@@ -44,10 +44,21 @@ class _LoginPageState extends State<LoginPage> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final authToken = data['access_token']?.toString().trim();
+
+        if (authToken == null || authToken.isEmpty) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Login failed: session token was missing.'),
+            ),
+          );
+          return;
+        }
 
         await UserSessionController.instance.saveUser(
           Map<String, dynamic>.from(data['user'] as Map<String, dynamic>),
-          isDemoMode: false,
+          authToken: authToken,
         );
         await LogApi.persistServerStreakSnapshot(
           data['streak'] as Map<String, dynamic>?,
@@ -87,7 +98,7 @@ class _LoginPageState extends State<LoginPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Unable to reach the server right now. You can try again or continue in demo mode.',
+            'Unable to reach the server right now. Please check your connection and try again.',
           ),
         ),
       );
@@ -96,21 +107,6 @@ class _LoginPageState extends State<LoginPage> {
         setState(() => isLoading = false);
       }
     }
-  }
-
-  Future<void> _continueInDemoMode() async {
-    setState(() => isLoading = true);
-
-    await UserSessionController.instance.enableDemoMode();
-    await LogApi.syncStreakFromBackend();
-
-    if (!mounted) return;
-
-    setState(() => isLoading = false);
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const MainNavigation()),
-    );
   }
 
   Widget glassContainer({required Widget child}) {
@@ -187,16 +183,16 @@ class _LoginPageState extends State<LoginPage> {
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
-                 ),
+                  ),
                   const SizedBox(height: 18),
                   // Email field
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.04),
                       borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.black.withOpacity(0.12),
-                          width: 1,
+                      border: Border.all(
+                        color: Colors.black.withValues(alpha: 0.12),
+                        width: 1,
                       ),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -216,9 +212,9 @@ class _LoginPageState extends State<LoginPage> {
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.04),
                       borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.black.withOpacity(0.12),
-                          width: 1,
+                      border: Border.all(
+                        color: Colors.black.withValues(alpha: 0.12),
+                        width: 1,
                       ),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -226,7 +222,7 @@ class _LoginPageState extends State<LoginPage> {
                       controller: passwordController,
                       obscureText: true,
                       decoration: InputDecoration(
-                        hintText: '••••••••',
+                        hintText: 'Password',
                         border: InputBorder.none,
                         prefixIcon: const Icon(Icons.lock_outline, size: 20),
                       ),
@@ -239,9 +235,7 @@ class _LoginPageState extends State<LoginPage> {
                       onPressed: () {},
                       child: Text(
                         'Forgot Password?',
-                        style: TextStyle(
-                          color: Colors.blue,
-                        ),
+                        style: TextStyle(color: Colors.blue),
                       ),
                     ),
                   ),
@@ -251,36 +245,38 @@ class _LoginPageState extends State<LoginPage> {
                     child: ElevatedButton(
                       onPressed: isLoading ? null : login,
                       style: ButtonStyle(
-                        backgroundColor: MaterialStateProperty.resolveWith<Color?>((states) {
-                          if (states.contains(MaterialState.disabled)) return Colors.blue.withOpacity(0.5);
-                          return Colors.blue;
-                        }),
-                        padding: MaterialStateProperty.all(const EdgeInsets.symmetric(vertical: 14)),
-                        shape: MaterialStateProperty.all(RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        )),
-                        elevation: MaterialStateProperty.all(4),
+                        backgroundColor:
+                            WidgetStateProperty.resolveWith<Color?>((states) {
+                              if (states.contains(WidgetState.disabled)) {
+                                return Colors.blue.withValues(alpha: 0.5);
+                              }
+                              return Colors.blue;
+                            }),
+                        padding: WidgetStateProperty.all(
+                          const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        shape: WidgetStateProperty.all(
+                          RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        elevation: WidgetStateProperty.all(4),
                       ),
                       child: isLoading
-                          ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : Text('Sign in', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: isLoading ? null : _continueInDemoMode,
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.08),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text('Continue in Demo Mode', style: GoogleFonts.inter(fontWeight: FontWeight.normal, color: const Color.fromARGB(255, 47, 1, 103).withValues(alpha: 0.85))),
+                          ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(
+                              'Sign in',
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -292,10 +288,23 @@ class _LoginPageState extends State<LoginPage> {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const SignUpPage()),
+                            MaterialPageRoute(
+                              builder: (_) => const SignUpPage(),
+                            ),
                           );
                         },
-                        child: Text('Create account', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: const Color.fromARGB(255, 1, 103, 79).withValues(alpha: 0.85))),
+                        child: Text(
+                          'Create account',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.bold,
+                            color: const Color.fromARGB(
+                              255,
+                              1,
+                              103,
+                              79,
+                            ).withValues(alpha: 0.85),
+                          ),
+                        ),
                       ),
                     ],
                   ),

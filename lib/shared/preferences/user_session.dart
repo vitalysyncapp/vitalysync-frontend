@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,8 +12,8 @@ class UserSessionSnapshot {
   final int? age;
   final String? gender;
   final String? userType;
+  final String? authToken;
   final bool onboardingCompleted;
-  final bool isDemoMode;
 
   const UserSessionSnapshot({
     required this.userId,
@@ -23,33 +22,12 @@ class UserSessionSnapshot {
     required this.age,
     required this.gender,
     required this.userType,
+    required this.authToken,
     required this.onboardingCompleted,
-    required this.isDemoMode,
   });
 
   bool get isLoggedIn => userId != null && email != null && email!.isNotEmpty;
-
-  UserSessionSnapshot copyWith({
-    int? userId,
-    String? username,
-    String? email,
-    int? age,
-    String? gender,
-    String? userType,
-    bool? onboardingCompleted,
-    bool? isDemoMode,
-  }) {
-    return UserSessionSnapshot(
-      userId: userId ?? this.userId,
-      username: username ?? this.username,
-      email: email ?? this.email,
-      age: age ?? this.age,
-      gender: gender ?? this.gender,
-      userType: userType ?? this.userType,
-      onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
-      isDemoMode: isDemoMode ?? this.isDemoMode,
-    );
-  }
+  bool get hasAuthToken => authToken != null && authToken!.trim().isNotEmpty;
 
   static const empty = UserSessionSnapshot(
     userId: null,
@@ -58,8 +36,8 @@ class UserSessionSnapshot {
     age: null,
     gender: null,
     userType: null,
+    authToken: null,
     onboardingCompleted: false,
-    isDemoMode: false,
   );
 }
 
@@ -74,17 +52,17 @@ class UserSessionController {
   static const String _userTypeKey = 'user_type';
   static const String _genderKey = 'gender';
   static const String _ageKey = 'age';
+  static const String _authTokenKey = 'auth_access_token';
   static const String _onboardingCompletedKey = 'onboarding_completed';
-  static const String _demoModeKey = 'demo_mode_enabled';
-
-  UserSessionSnapshot _debugWebSession = UserSessionSnapshot.empty;
+  static const String _legacyDemoModeKey = 'demo_mode_enabled';
 
   Future<UserSessionSnapshot> load() async {
-    if (kIsWeb && kDebugMode) {
-      return _debugWebSession;
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(_legacyDemoModeKey) == true) {
+      await clearSession();
+      return UserSessionSnapshot.empty;
     }
 
-    final prefs = await SharedPreferences.getInstance();
     return UserSessionSnapshot(
       userId: prefs.getInt(_userIdKey),
       username: prefs.getString(_usernameKey),
@@ -92,33 +70,12 @@ class UserSessionController {
       age: prefs.getInt(_ageKey),
       gender: prefs.getString(_genderKey),
       userType: prefs.getString(_userTypeKey),
+      authToken: prefs.getString(_authTokenKey),
       onboardingCompleted: prefs.getBool(_onboardingCompletedKey) ?? false,
-      isDemoMode: prefs.getBool(_demoModeKey) ?? false,
     );
   }
 
-  Future<void> saveUser(
-    Map<String, dynamic> user, {
-    bool isDemoMode = false,
-  }) async {
-    if (kIsWeb && kDebugMode) {
-      final dynamic rawUserId = user['user_id'];
-      final dynamic rawAge = user['age'];
-      _debugWebSession = UserSessionSnapshot(
-        userId: rawUserId is int
-            ? rawUserId
-            : int.tryParse('${rawUserId ?? ''}'),
-        username: (user['username'] ?? '').toString(),
-        email: (user['email'] ?? '').toString(),
-        age: rawAge is int ? rawAge : int.tryParse('${rawAge ?? ''}'),
-        gender: _normalizedNullable((user['gender'] ?? '').toString()),
-        userType: _normalizedNullable((user['user_type'] ?? '').toString()),
-        onboardingCompleted: user['onboarding_completed'] == true,
-        isDemoMode: isDemoMode,
-      );
-      return;
-    }
-
+  Future<void> saveUser(Map<String, dynamic> user, {String? authToken}) async {
     final prefs = await SharedPreferences.getInstance();
 
     final dynamic rawUserId = user['user_id'];
@@ -155,27 +112,14 @@ class UserSessionController {
     }
 
     await prefs.setBool(_onboardingCompletedKey, onboardingCompleted);
-    await prefs.setBool(_demoModeKey, isDemoMode);
-  }
+    await prefs.remove(_legacyDemoModeKey);
 
-  Future<void> enableDemoMode() async {
-    await saveUser(const {
-      'user_id': 0,
-      'username': 'Demo User',
-      'email': 'demo@vitalysync.app',
-      'age': 24,
-      'gender': 'Other',
-      'user_type': 'Student',
-      'onboarding_completed': true,
-    }, isDemoMode: true);
+    if (authToken != null && authToken.trim().isNotEmpty) {
+      await prefs.setString(_authTokenKey, authToken.trim());
+    }
   }
 
   Future<void> clearSession() async {
-    if (kIsWeb && kDebugMode) {
-      _debugWebSession = UserSessionSnapshot.empty;
-      return;
-    }
-
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_emailKey);
     await prefs.remove(_usernameKey);
@@ -183,8 +127,9 @@ class UserSessionController {
     await prefs.remove(_userTypeKey);
     await prefs.remove(_genderKey);
     await prefs.remove(_ageKey);
+    await prefs.remove(_authTokenKey);
     await prefs.remove(_onboardingCompletedKey);
-    await prefs.remove(_demoModeKey);
+    await prefs.remove(_legacyDemoModeKey);
   }
 
   Future<void> reauthenticateWithPassword({required String password}) async {
@@ -192,7 +137,7 @@ class UserSessionController {
     final email = session.email?.trim() ?? '';
     final normalizedPassword = password.trim();
 
-    if (session.isDemoMode || !session.isLoggedIn || email.isEmpty) {
+    if (!session.isLoggedIn || email.isEmpty) {
       throw Exception(
         'Account re-authentication is only available for signed-in accounts.',
       );
@@ -204,7 +149,7 @@ class UserSessionController {
 
     final response = await http.post(
       Uri.parse(ApiConfig.auth('/login')),
-      headers: {'Content-Type': 'application/json'},
+      headers: await ApiConfig.jsonHeaders(),
       body: jsonEncode({'email': email, 'password': normalizedPassword}),
     );
 
@@ -213,6 +158,14 @@ class UserSessionController {
     if (response.statusCode != 200) {
       throw Exception(data['message'] ?? 'Password verification failed.');
     }
+
+    final token = data['access_token']?.toString();
+    if (token != null && token.isNotEmpty) {
+      await saveUser(
+        Map<String, dynamic>.from(data['user'] as Map<String, dynamic>),
+        authToken: token,
+      );
+    }
   }
 
   Future<void> deleteAccount({required String password}) async {
@@ -220,7 +173,7 @@ class UserSessionController {
     final email = session.email?.trim() ?? '';
     final normalizedPassword = password.trim();
 
-    if (session.isDemoMode || !session.isLoggedIn || session.userId == null) {
+    if (!session.isLoggedIn || session.userId == null) {
       throw Exception(
         'Delete account is only available for signed-in accounts.',
       );
@@ -232,7 +185,7 @@ class UserSessionController {
 
     final response = await http.delete(
       Uri.parse(ApiConfig.auth('/account')),
-      headers: {'Content-Type': 'application/json'},
+      headers: await ApiConfig.jsonHeaders(),
       body: jsonEncode({
         'user_id': session.userId,
         'email': email,
@@ -256,7 +209,6 @@ class UserSessionController {
     int? age,
     String? gender,
     String? userType,
-    required bool isDemoMode,
   }) async {
     final payload = <String, dynamic>{
       'user_id': userId,
@@ -267,20 +219,9 @@ class UserSessionController {
       'user_type': _normalizedNullable(userType),
     };
 
-    if (isDemoMode) {
-      final user = Map<String, dynamic>.from(payload);
-      await saveUser(user, isDemoMode: true);
-      await saveSupplementalProfile(
-        age: age,
-        gender: gender,
-        userType: userType,
-      );
-      return user;
-    }
-
     final response = await http.put(
       Uri.parse(ApiConfig.auth('/profile')),
-      headers: {'Content-Type': 'application/json'},
+      headers: await ApiConfig.jsonHeaders(),
       body: jsonEncode(payload),
     );
 
@@ -293,17 +234,12 @@ class UserSessionController {
     final user = Map<String, dynamic>.from(
       data['user'] as Map<String, dynamic>,
     );
-    await saveUser(user, isDemoMode: false);
+    await saveUser(user);
     await saveSupplementalProfile(age: age, gender: gender, userType: userType);
     return user;
   }
 
   Future<void> updateOnboardingCompleted(bool value) async {
-    if (kIsWeb && kDebugMode) {
-      _debugWebSession = _debugWebSession.copyWith(onboardingCompleted: value);
-      return;
-    }
-
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_onboardingCompletedKey, value);
   }
@@ -313,15 +249,6 @@ class UserSessionController {
     String? gender,
     String? userType,
   }) async {
-    if (kIsWeb && kDebugMode) {
-      _debugWebSession = _debugWebSession.copyWith(
-        age: age,
-        gender: _normalizedNullable(gender),
-        userType: _normalizedNullable(userType),
-      );
-      return;
-    }
-
     final prefs = await SharedPreferences.getInstance();
 
     if (age != null) {

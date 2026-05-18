@@ -10,7 +10,6 @@ import '../../../../features/activity/presentation/widgets/activity_summary_card
 import '../../../../features/log/data/log_api.dart';
 import '../../../../features/onboarding/services/onboarding_service.dart';
 import '../../../../shared/notifications/notification_feed_service.dart';
-import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
 import '../../../../shared/widgets/glass_card.dart';
@@ -45,7 +44,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   bool _isLoadingSummary = true;
   bool _isLoadingEnvironment = true;
   bool _isOfflineSummary = false;
-  bool _isDemoMode = false;
   bool _isUsingCachedEnvironment = false;
   String? _environmentError;
   EnvironmentSnapshot? _environmentSnapshot;
@@ -148,12 +146,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Future<void> _loadLatestSummary({bool showLoader = true}) async {
-    final session = await UserSessionController.instance.load();
-
     if (!mounted) return;
 
     setState(() {
-      _isDemoMode = session.isDemoMode;
       if (showLoader) {
         _isLoadingSummary = true;
       }
@@ -172,12 +167,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         setState(() {
           _sleepValue = '--';
           _hydrationValue = '--';
-          _sleepSubtitle = _isDemoMode
-              ? 'Start with a demo check-in'
-              : 'No log yet';
-          _hydrationSubtitle = _isDemoMode
-              ? 'Start with a demo check-in'
-              : 'No log yet';
+          _sleepSubtitle = 'No log yet';
+          _hydrationSubtitle = 'No log yet';
           _sleepQualityLabel = null;
           _sleepQualityColor = Colors.blue;
           _hydrationLevel = null;
@@ -210,9 +201,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       if (!mounted) return;
 
       setState(() {
-        _sleepSubtitle = _isDemoMode
-            ? 'Demo summary unavailable'
-            : 'Offline - summary unavailable';
+        _sleepSubtitle = 'Offline - summary unavailable';
         _hydrationSubtitle = _sleepSubtitle;
         _sleepQualityLabel = null;
         _sleepQualityColor = Colors.blue;
@@ -417,10 +406,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Widget _buildStatusBanner(BuildContext context) {
-    final message = _isDemoMode
-        ? 'Demo mode is active. Local screens still work even when the backend is unavailable.'
-        : 'You appear to be offline. The app can still show saved screens, but live summary data is unavailable right now.';
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -445,7 +430,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              message,
+              'You appear to be offline. The app can still show saved screens, but live summary data is unavailable right now.',
               style: TextStyle(
                 height: 1.4,
                 color: pagePrimaryTextColor(context),

@@ -7,7 +7,6 @@ import 'package:intl/intl.dart';
 
 import '../../../shared/config/api_config.dart';
 import '../../../shared/offline/offline_cache_store.dart';
-import '../../../shared/preferences/user_session.dart';
 import '../../exercise/data/exercise_goal_service.dart';
 
 part 'log_local_cache_helpers.dart';
@@ -35,8 +34,8 @@ class LogApi {
     '10-12 hours',
   ];
 
-  static const String _localLogsKey = 'demo_local_logs';
-  static const String _localWeeklyPulseKeyPrefix = 'local_weekly_pulse';
+  static const String _legacyLocalLogsKey = 'demo_local_logs';
+  static const String _legacyLocalWeeklyPulseKeyPrefix = 'local_weekly_pulse';
   static const String _pendingLogsKeyPrefix = 'offline_pending_logs';
   static const String _cachedLogsKeyPrefix = 'cached_daily_logs';
   static const String _syncedStreakKeyPrefix = 'synced_log_streak';
@@ -65,11 +64,6 @@ class LogApi {
   static Future<int?> getStoredUserId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt('user_id');
-  }
-
-  static Future<bool> isDemoMode() async {
-    final session = await UserSessionController.instance.load();
-    return session.isDemoMode;
   }
 
   static int parseInt(dynamic value, {int fallback = 0}) {
@@ -157,11 +151,6 @@ class LogApi {
   }
 
   static Future<Map<String, dynamic>?> syncStreakFromBackend() async {
-    if (await isDemoMode()) {
-      final localResponse = await _buildLocalLogResponse();
-      return localResponse['streak'] as Map<String, dynamic>?;
-    }
-
     final userId = await getStoredUserId();
     if (userId == null) {
       return null;
@@ -173,7 +162,7 @@ class LogApi {
       final response = await http
           .get(
             Uri.parse('${ApiConfig.logs('/streak')}?user_id=$userId'),
-            headers: {'Content-Type': 'application/json'},
+            headers: await ApiConfig.jsonHeaders(),
           )
           .timeout(_requestTimeout);
 
@@ -203,10 +192,6 @@ class LogApi {
   }
 
   static Future<Map<String, dynamic>> fetchTodayLog() async {
-    if (await isDemoMode()) {
-      return _buildLocalLogResponse(forToday: true);
-    }
-
     final userId = await getStoredUserId();
     if (userId == null) {
       throw Exception('Missing logged-in user');
@@ -220,7 +205,7 @@ class LogApi {
             Uri.parse(
               '${ApiConfig.logs('/today')}?user_id=$userId&log_date=${todayKey()}',
             ),
-            headers: {'Content-Type': 'application/json'},
+            headers: await ApiConfig.jsonHeaders(),
           )
           .timeout(_requestTimeout);
 
@@ -260,10 +245,6 @@ class LogApi {
   }
 
   static Future<Map<String, dynamic>> fetchLatestLog() async {
-    if (await isDemoMode()) {
-      return _buildLocalLogResponse();
-    }
-
     final userId = await getStoredUserId();
     if (userId == null) {
       throw Exception('Missing logged-in user');
@@ -275,7 +256,7 @@ class LogApi {
       final response = await http
           .get(
             Uri.parse('${ApiConfig.logs('/latest')}?user_id=$userId'),
-            headers: {'Content-Type': 'application/json'},
+            headers: await ApiConfig.jsonHeaders(),
           )
           .timeout(_requestTimeout);
 
@@ -319,15 +300,6 @@ class LogApi {
     required String endDate,
     int limit = 30,
   }) async {
-    if (await isDemoMode()) {
-      final logs = await _readLocalLogs();
-      return _filterLogsByDate(
-        logs,
-        startDate: startDate,
-        endDate: endDate,
-      ).take(limit).toList();
-    }
-
     final userId = await getStoredUserId();
     if (userId == null) {
       return const [];
@@ -345,7 +317,7 @@ class LogApi {
         },
       );
       final response = await http
-          .get(uri, headers: {'Content-Type': 'application/json'})
+          .get(uri, headers: await ApiConfig.jsonHeaders())
           .timeout(_requestTimeout);
       final data = _decodeResponseMap(response);
 
@@ -497,22 +469,6 @@ class LogApi {
     final exerciseGoalMetadata = await ExerciseGoalService.instance
         .goalMetadataForDailyLog();
 
-    if (await isDemoMode()) {
-      return _saveLocalDemoLog(
-        sleepHours: sleepHours,
-        sleepQuality: sleepQuality,
-        moodIndex: moodIndex,
-        energyLevel: energyLevel,
-        hydrationLiters: hydrationLiters,
-        workloadHoursBand: workloadHoursBand,
-        perceivedStressLevel: perceivedStressLevel,
-        breakQualityLevel: breakQualityLevel,
-        exerciseNames: exerciseNames,
-        symptomNames: symptomNames,
-        exerciseGoalMetadata: exerciseGoalMetadata,
-      );
-    }
-
     final userId = await getStoredUserId();
     if (userId == null) {
       throw Exception('Missing logged-in user');
@@ -568,10 +524,6 @@ class LogApi {
   static Future<Map<String, dynamic>> fetchWeeklyPulseStatus() async {
     final weekStart = weekStartKey();
 
-    if (await isDemoMode()) {
-      return _buildLocalWeeklyPulseStatus(weekStart);
-    }
-
     final userId = await getStoredUserId();
     if (userId == null) {
       throw Exception('Missing logged-in user');
@@ -589,7 +541,7 @@ class LogApi {
             Uri.parse(
               '${ApiConfig.logs('/weekly-pulse/status')}?user_id=$userId&date=${todayKey()}',
             ),
-            headers: {'Content-Type': 'application/json'},
+            headers: await ApiConfig.jsonHeaders(),
           )
           .timeout(_requestTimeout);
 
@@ -639,7 +591,7 @@ class LogApi {
     final response = await http
         .post(
           Uri.parse(ApiConfig.logs('/weekly-pulse')),
-          headers: {'Content-Type': 'application/json'},
+          headers: await ApiConfig.jsonHeaders(),
           body: jsonEncode({'user_id': userId, ...body}),
         )
         .timeout(_requestTimeout);
@@ -670,16 +622,6 @@ class LogApi {
     }
 
     final weekStart = weekStartKey();
-
-    if (await isDemoMode()) {
-      return _saveLocalWeeklyPulse(
-        weekStart: weekStart,
-        productivityFocusLevel: productivityFocusLevel,
-        recoveryRestLevel: recoveryRestLevel,
-        detachmentLevel: detachmentLevel,
-        accomplishmentLevel: accomplishmentLevel,
-      );
-    }
 
     final userId = await getStoredUserId();
     if (userId == null) {
@@ -727,12 +669,12 @@ class LogApi {
     }
   }
 
-  static Future<void> clearLocalDemoData() async {
+  static Future<void> clearLocalAccountData() async {
     final prefs = await SharedPreferences.getInstance();
     final logKeys = prefs.getKeys().where(
       (key) =>
-          key == _localLogsKey ||
-          key.startsWith(_localWeeklyPulseKeyPrefix) ||
+          key == _legacyLocalLogsKey ||
+          key.startsWith(_legacyLocalWeeklyPulseKeyPrefix) ||
           key.startsWith(_pendingLogsKeyPrefix) ||
           key.startsWith(_cachedLogsKeyPrefix) ||
           key.startsWith(_syncedStreakKeyPrefix),
@@ -748,10 +690,6 @@ class LogApi {
   }
 
   static Future<int> pendingLogCount() async {
-    if (await isDemoMode()) {
-      return 0;
-    }
-
     final userId = await getStoredUserId();
     if (userId == null) {
       return 0;
@@ -762,10 +700,6 @@ class LogApi {
   }
 
   static Future<int> syncPendingLogs() async {
-    if (await isDemoMode()) {
-      return 0;
-    }
-
     final userId = await getStoredUserId();
     if (userId == null) {
       return 0;

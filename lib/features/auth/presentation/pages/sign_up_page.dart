@@ -78,9 +78,23 @@ class _SignUpPageState extends State<SignUpPage> {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        final authToken = data['access_token']?.toString().trim();
+        if (authToken == null || authToken.isEmpty) {
+          _showFlushbar(
+            'Signup failed: session token was missing.',
+            isError: true,
+          );
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+            });
+          }
+          return;
+        }
+
         await UserSessionController.instance.saveUser(
           Map<String, dynamic>.from(data['user'] as Map<String, dynamic>),
-          isDemoMode: false,
+          authToken: authToken,
         );
         await LogApi.persistServerStreakSnapshot(
           data['streak'] as Map<String, dynamic>?,
@@ -270,7 +284,8 @@ class _SignUpPageState extends State<SignUpPage> {
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Theme.of(context).brightness == Brightness.dark
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
                                 ? Colors.white
                                 : const Color.fromARGB(221, 43, 0, 88),
                           ),
@@ -522,7 +537,12 @@ class _SignUpPageState extends State<SignUpPage> {
                                   }
                                 : null,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color.fromARGB(255, 5, 157, 61),
+                              backgroundColor: const Color.fromARGB(
+                                255,
+                                5,
+                                157,
+                                61,
+                              ),
                               foregroundColor: Colors.white,
                               elevation: 0,
                               shape: RoundedRectangleBorder(

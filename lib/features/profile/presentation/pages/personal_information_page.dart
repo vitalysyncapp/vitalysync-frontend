@@ -17,7 +17,6 @@ class PersonalInformationPage extends StatelessWidget {
   final String exerciseTarget;
   final String burnoutLevel;
   final int burnoutScore;
-  final bool isDemoMode;
 
   const PersonalInformationPage({
     super.key,
@@ -35,7 +34,6 @@ class PersonalInformationPage extends StatelessWidget {
     required this.exerciseTarget,
     required this.burnoutLevel,
     required this.burnoutScore,
-    required this.isDemoMode,
   });
 
   String _value(String? value) {
@@ -180,7 +178,7 @@ class PersonalInformationPage extends StatelessWidget {
                   _InfoRow(
                     icon: Icons.verified_user_outlined,
                     label: 'Session',
-                    value: isDemoMode ? 'Demo mode' : 'Signed in',
+                    value: 'Signed in',
                   ),
                 ],
               ),

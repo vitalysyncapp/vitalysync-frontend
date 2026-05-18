@@ -183,6 +183,23 @@ class _DashboardState extends State<Dashboard> {
                   ),
                   const SizedBox(height: 16),
                   RevealOnBuild(
+                    delay: const Duration(milliseconds: 220),
+                    child: BurnoutRiskTrendCard(
+                      summary: _burnoutPatternSummary,
+                      isLoading: _isLoadingBurnoutPatterns,
+                      onRefresh: _loadBurnoutPatterns,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  RevealOnBuild(
+                    delay: const Duration(milliseconds: 250),
+                    child: _AiBurnoutInsightCard(
+                      recommendation: _aiInsightNudge,
+                      isLoading: _isLoadingAiInsight,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  RevealOnBuild(
                     delay: Duration(milliseconds: 130),
                     child: ValueListenableBuilder<ActivityTrackingState>(
                       valueListenable: ActivityService.instance.notifier,
@@ -199,23 +216,6 @@ class _DashboardState extends State<Dashboard> {
                     delay: const Duration(milliseconds: 190),
                     child: NutritionAnalyticsCard(
                       key: ValueKey('nutrition-analytics-$_refreshVersion'),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  RevealOnBuild(
-                    delay: const Duration(milliseconds: 220),
-                    child: BurnoutRiskTrendCard(
-                      summary: _burnoutPatternSummary,
-                      isLoading: _isLoadingBurnoutPatterns,
-                      onRefresh: _loadBurnoutPatterns,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  RevealOnBuild(
-                    delay: const Duration(milliseconds: 250),
-                    child: _AiBurnoutInsightCard(
-                      recommendation: _aiInsightNudge,
-                      isLoading: _isLoadingAiInsight,
                     ),
                   ),
                   const SizedBox(height: 16),

@@ -113,7 +113,7 @@ class ExerciseGoalService {
       ),
     );
 
-    if (session.isDemoMode || userId <= 0) {
+    if (userId <= 0) {
       return;
     }
 
@@ -162,7 +162,7 @@ class ExerciseGoalService {
     _emit(notifier.value.copyWith(isSaving: true, clearError: true));
 
     try {
-      final savedGoal = session.isDemoMode || userId <= 0
+      final savedGoal = userId <= 0
           ? localGoal
           : await ExerciseGoalApi.choose(userId: userId, goal: localGoal);
       await cacheGoal(userId, savedGoal);
@@ -208,7 +208,7 @@ class ExerciseGoalService {
     _emit(notifier.value.copyWith(isSaving: true, clearError: true));
 
     try {
-      final savedGoal = session.isDemoMode || userId <= 0
+      final savedGoal = userId <= 0
           ? completedGoal
           : await ExerciseGoalApi.complete(
               userId: userId,
@@ -236,7 +236,7 @@ class ExerciseGoalService {
     _emit(notifier.value.copyWith(isSaving: true, clearError: true));
 
     try {
-      final savedGoal = session.isDemoMode || userId <= 0
+      final savedGoal = userId <= 0
           ? canceledGoal
           : await ExerciseGoalApi.cancel(
               userId: userId,
@@ -328,7 +328,7 @@ class ExerciseGoalService {
     _isCompletingDistanceGoal = true;
 
     try {
-      final savedGoal = session.isDemoMode || userId <= 0
+      final savedGoal = userId <= 0
           ? goal.copyWith(status: 'completed', completedAt: DateTime.now())
           : await ExerciseGoalApi.updateProgress(
               userId: userId,

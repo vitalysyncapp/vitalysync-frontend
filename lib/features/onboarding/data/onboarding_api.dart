@@ -15,7 +15,7 @@ class OnboardingApi {
   static Future<Map<String, dynamic>> fetchSummary(int userId) async {
     final response = await http.get(
       Uri.parse(ApiConfig.onboarding('/$userId')),
-      headers: {'Content-Type': 'application/json'},
+      headers: await ApiConfig.jsonHeaders(),
     );
 
     final data = _decodeMap(response);
@@ -29,7 +29,7 @@ class OnboardingApi {
   static Future<Map<String, dynamic>> fetchStatus(int userId) async {
     final response = await http.get(
       Uri.parse(ApiConfig.onboarding('/status/$userId')),
-      headers: {'Content-Type': 'application/json'},
+      headers: await ApiConfig.jsonHeaders(),
     );
 
     final data = _decodeMap(response);
@@ -47,7 +47,7 @@ class OnboardingApi {
   }) async {
     final response = await http.post(
       Uri.parse(ApiConfig.onboarding('/submit')),
-      headers: {'Content-Type': 'application/json'},
+      headers: await ApiConfig.jsonHeaders(),
       body: jsonEncode({
         'user_id': userId,
         'profile': profile,
@@ -66,7 +66,7 @@ class OnboardingApi {
   static Future<Map<String, dynamic>> fetchProfile(int userId) async {
     final response = await http.get(
       Uri.parse(ApiConfig.profile('/$userId')),
-      headers: {'Content-Type': 'application/json'},
+      headers: await ApiConfig.jsonHeaders(),
     );
 
     final data = _decodeMap(response);
@@ -83,7 +83,7 @@ class OnboardingApi {
   }) async {
     final response = await http.put(
       Uri.parse(ApiConfig.onboarding('/$userId')),
-      headers: {'Content-Type': 'application/json'},
+      headers: await ApiConfig.jsonHeaders(),
       body: jsonEncode(onboarding),
     );
 
@@ -101,7 +101,7 @@ class OnboardingApi {
   }) async {
     final response = await http.put(
       Uri.parse(ApiConfig.onboarding('/$userId/preferences')),
-      headers: {'Content-Type': 'application/json'},
+      headers: await ApiConfig.jsonHeaders(),
       body: jsonEncode(preferences),
     );
 

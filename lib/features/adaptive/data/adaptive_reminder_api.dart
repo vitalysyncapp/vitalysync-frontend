@@ -4,7 +4,6 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../shared/config/api_config.dart';
-import '../../../shared/preferences/user_session.dart';
 
 class AdaptiveReminderPreferences {
   final String dailyLogReminderTime;
@@ -137,10 +136,6 @@ class AdaptiveReminderApi {
   static const Duration _requestTimeout = Duration(seconds: 8);
 
   static Future<AdaptiveReminderPreferences> fetchPreferences() async {
-    if (await _isDemoMode()) {
-      return AdaptiveReminderPreferences.defaults;
-    }
-
     final userId = await _storedUserId();
     if (userId == null) {
       return AdaptiveReminderPreferences.defaults;
@@ -149,7 +144,7 @@ class AdaptiveReminderApi {
     final response = await http
         .get(
           Uri.parse('${ApiConfig.adaptive('/reminders')}?user_id=$userId'),
-          headers: {'Content-Type': 'application/json'},
+          headers: await ApiConfig.jsonHeaders(),
         )
         .timeout(_requestTimeout);
     final data = _decodeResponseMap(response);
@@ -172,14 +167,14 @@ class AdaptiveReminderApi {
     AdaptiveReminderPreferences preferences,
   ) async {
     final userId = await _storedUserId();
-    if (await _isDemoMode() || userId == null) {
+    if (userId == null) {
       return preferences;
     }
 
     final response = await http
         .put(
           Uri.parse(ApiConfig.adaptive('/reminders')),
-          headers: {'Content-Type': 'application/json'},
+          headers: await ApiConfig.jsonHeaders(),
           body: jsonEncode(preferences.toJson(userId: userId)),
         )
         .timeout(_requestTimeout);
@@ -202,11 +197,6 @@ class AdaptiveReminderApi {
   static Future<int?> _storedUserId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt('user_id');
-  }
-
-  static Future<bool> _isDemoMode() async {
-    final session = await UserSessionController.instance.load();
-    return session.isDemoMode;
   }
 
   static Map<String, dynamic> _decodeResponseMap(http.Response response) {

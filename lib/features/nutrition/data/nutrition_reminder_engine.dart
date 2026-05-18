@@ -54,7 +54,7 @@ class NutritionReminderEngine {
   }) async {
     final now = DateTime.now();
     final session = await UserSessionController.instance.load();
-    if (session.isDemoMode || session.userId == null) {
+    if (session.userId == null) {
       return null;
     }
 

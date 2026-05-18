@@ -82,13 +82,14 @@ void main() {
 
     await tester.pumpWidget(const MyApp());
     await tester.pump(const Duration(seconds: 2));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('Login'), findsOneWidget);
-    expect(find.text('Create Account'), findsOneWidget);
+    expect(find.text('Welcome back'), findsOneWidget);
+    expect(find.text('Sign in'), findsOneWidget);
+    expect(find.text('Create account'), findsOneWidget);
   });
 
-  testWidgets('opens the main navigation when a saved session exists', (
+  testWidgets('returns to login when a saved session has no token', (
     WidgetTester tester,
   ) async {
     SharedPreferences.setMockInitialValues({
@@ -100,11 +101,9 @@ void main() {
 
     await tester.pumpWidget(const MyApp());
     await tester.pump(const Duration(seconds: 2));
-    await tester.pump(const Duration(milliseconds: 800));
+    await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('Home'), findsOneWidget);
-    expect(find.text('Log'), findsOneWidget);
-    expect(find.text('Nutrition'), findsOneWidget);
-    expect(find.text('Dashboard'), findsOneWidget);
+    expect(find.text('Welcome back'), findsOneWidget);
+    expect(find.text('Sign in'), findsOneWidget);
   });
 }
