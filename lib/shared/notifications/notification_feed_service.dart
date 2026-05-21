@@ -1,513 +1,546 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../features/adaptive/data/adaptive_nudge_api.dart';
-import '../../features/activity/data/activity_service.dart';
-import '../../features/dashboard/data/burnout_score_api.dart';
-import '../../features/dashboard/data/weekly_user_metrics.dart';
-import '../../features/exercise/data/exercise_goal_service.dart';
-import '../../features/log/data/log_api.dart';
-import '../../features/nutrition/data/nutrition_coach.dart';
-import '../../features/nutrition/data/nutrition_insight_store.dart';
-import '../../features/nutrition/data/nutrition_reminder_engine.dart';
-import '../preferences/app_preferences.dart';
+import '../../features/adaptive/data/insight_report_api.dart';
+import '../offline/offline_cache_store.dart';
+import '../preferences/user_session.dart';
+import 'notification_event_api.dart';
+import 'notification_feed_cache.dart';
 
-final ValueNotifier<int> notificationFeedRefreshNotifier = ValueNotifier<int>(
-  0,
-);
-
-Future<void> refreshNotificationFeed() async {
-  notificationFeedRefreshNotifier.value++;
-}
+export 'notification_feed_cache.dart';
 
 class AppNotificationItem {
   final String id;
-  final IconData icon;
-  final Color iconBg;
-  final Color iconColor;
+  final String category;
   final String title;
   final String message;
-  final String time;
   final String sourceLabel;
+  final String priority;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final List<String> metricChips;
   final bool showAction;
   final bool isUnread;
+  final String? reportType;
 
   const AppNotificationItem({
     required this.id,
-    required this.icon,
-    required this.iconBg,
-    required this.iconColor,
+    required this.category,
     required this.title,
     required this.message,
-    required this.time,
     required this.sourceLabel,
+    required this.priority,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.metricChips,
     required this.isUnread,
     this.showAction = false,
+    this.reportType,
   });
+
+  String get time => _timeAgo(updatedAt);
+
+  String get filterKey {
+    if (category == 'daily' || reportType == 'daily') {
+      return 'daily';
+    }
+    if (category == 'weekly' || reportType == 'weekly') {
+      return 'weekly';
+    }
+    if (category == 'nudge') {
+      return 'nudges';
+    }
+    return 'reminders';
+  }
+
+  IconData get icon {
+    switch (filterKey) {
+      case 'daily':
+        return Icons.today_rounded;
+      case 'weekly':
+        return Icons.calendar_month_rounded;
+      case 'nudges':
+        return Icons.auto_awesome_rounded;
+      default:
+        return Icons.notifications_active_outlined;
+    }
+  }
+
+  Color get iconBg {
+    switch (filterKey) {
+      case 'daily':
+        return const Color(0xFFE8F4FF);
+      case 'weekly':
+        return const Color(0xFFEAF8EF);
+      case 'nudges':
+        return const Color(0xFFFFF4CC);
+      default:
+        return const Color(0xFFE7E9FF);
+    }
+  }
+
+  Color get iconColor {
+    switch (filterKey) {
+      case 'daily':
+        return const Color(0xFF1479CC);
+      case 'weekly':
+        return const Color(0xFF22A55D);
+      case 'nudges':
+        return const Color(0xFFE0A100);
+      default:
+        return const Color(0xFF5A4CFF);
+    }
+  }
 
   AppNotificationItem copyWith({bool? isUnread}) {
     return AppNotificationItem(
       id: id,
-      icon: icon,
-      iconBg: iconBg,
-      iconColor: iconColor,
+      category: category,
       title: title,
       message: message,
-      time: time,
       sourceLabel: sourceLabel,
+      priority: priority,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      metricChips: metricChips,
       isUnread: isUnread ?? this.isUnread,
       showAction: showAction,
+      reportType: reportType,
     );
+  }
+
+  factory AppNotificationItem.fromJson(Map<String, dynamic> json) {
+    return AppNotificationItem(
+      id: json['id']?.toString() ?? '',
+      category: json['category']?.toString() ?? 'reminder',
+      title: json['title']?.toString() ?? 'Notification',
+      message: json['message']?.toString() ?? '',
+      sourceLabel: json['source_label']?.toString() ?? 'Notification',
+      priority: json['priority']?.toString() ?? 'low',
+      createdAt: _parseDate(json['created_at']),
+      updatedAt: _parseDate(json['updated_at']),
+      metricChips: (json['metric_chips'] as List<dynamic>? ?? const [])
+          .map((item) => item.toString())
+          .where((item) => item.trim().isNotEmpty)
+          .toList(),
+      isUnread: json['is_unread'] == true,
+      showAction: json['show_action'] == true,
+      reportType: json['report_type']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'category': category,
+      'title': title,
+      'message': message,
+      'source_label': sourceLabel,
+      'priority': priority,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+      'metric_chips': metricChips,
+      'show_action': showAction,
+      'report_type': reportType,
+    };
   }
 }
 
 class NotificationFeedResult {
   final List<AppNotificationItem> items;
   final List<String> functionalSources;
-  final NutritionInsight? nutritionInsight;
+  final DateTime? refreshedAt;
+  final bool isFromCache;
 
   const NotificationFeedResult({
     required this.items,
     required this.functionalSources,
-    required this.nutritionInsight,
+    required this.refreshedAt,
+    required this.isFromCache,
   });
 
   int get unreadCount => items.where((item) => item.isUnread).length;
+
+  bool get hasReports {
+    return items.any((item) => item.filterKey == 'daily' || item.filterKey == 'weekly');
+  }
 }
 
 class NotificationFeedService {
   NotificationFeedService._();
 
   static final NotificationFeedService instance = NotificationFeedService._();
-  static const String _readIdsKey = 'notification_feed_read_ids';
-  static const String _createdAtKey = 'notification_feed_created_at';
+  static const String _readIdsKeyPrefix = 'notification_feed_read_ids_v2';
+  static const Duration _freshnessWindow = Duration(minutes: 10);
 
   Future<int> unreadCount() async {
     final result = await loadFeed();
     return result.unreadCount;
   }
 
-  Future<NotificationFeedResult> loadFeed() async {
-    final readIds = await _readIds();
-    final createdAtById = await _readCreatedAtById();
-    final items = <AppNotificationItem>[];
-    final sources = <String>{};
-
-    await AppPreferencesController.instance.load();
-    final prefs = AppPreferencesController.instance.notifier.value;
-    NutritionInsight? nutritionInsight;
-    if (prefs.notificationsEnabled) {
-      if (prefs.hydrationReminderEnabled) {
-        sources.add('Hydration reminders');
-        items.add(
-          _buildItem(
-            readIds: readIds,
-            createdAtById: createdAtById,
-            id: 'reminder_hydration_${_todayKey()}',
-            icon: Icons.water_drop_outlined,
-            iconBg: const Color(0xFFDDF7FA),
-            iconColor: const Color(0xFF00A7C4),
-            title: 'Hydration Reminder',
-            message:
-                'Drink water every ${_intervalLabel(prefs.hydrationIntervalMinutes)} between ${_timeLabel(prefs.hydrationStartTime)} and ${_timeLabel(prefs.hydrationEndTime)}.',
-            sourceLabel: 'Reminder',
-            showAction: true,
-          ),
-        );
-      }
-
-      if (prefs.bedtimeReminderEnabled) {
-        sources.add('Sleep reminders');
-        items.add(
-          _buildItem(
-            readIds: readIds,
-            createdAtById: createdAtById,
-            id: 'reminder_sleep_${_todayKey()}',
-            icon: Icons.nightlight_round,
-            iconBg: const Color(0xFFE7E9FF),
-            iconColor: const Color(0xFF5A4CFF),
-            title: 'Sleep Wind-down',
-            message:
-                'Start winding down around ${_timeLabel(prefs.sleepWindDownTime)} so recovery has room tonight.',
-            sourceLabel: 'Reminder',
-            showAction: true,
-          ),
-        );
+  Future<NotificationFeedResult> loadFeed({bool forceRefresh = false}) async {
+    if (!forceRefresh) {
+      final cached = await loadCachedFeed();
+      if (cached != null) {
+        return cached;
       }
     }
 
-    if (prefs.mealReminderEnabled) {
-      nutritionInsight = await _loadNutritionInsight(sources);
-    }
-    await _addSmartRecommendations(items, readIds, createdAtById, sources);
-    await _addBurnoutReports(items, readIds, createdAtById, sources);
-    await _addWeeklyProgress(items, readIds, createdAtById, sources);
-    await _addActivityReport(items, readIds, createdAtById, sources);
-    await _addGoalReport(items, readIds, createdAtById, sources);
-    await _writeCreatedAtById(createdAtById, items.map((item) => item.id));
+    return refreshFeed();
+  }
 
-    return NotificationFeedResult(
-      items: items,
-      functionalSources: sources.toList()..sort(),
-      nutritionInsight: nutritionInsight,
+  Future<NotificationFeedResult?> loadCachedFeed() async {
+    final userId = await _storedUserId();
+    if (userId == null) {
+      return null;
+    }
+
+    final data = await OfflineCacheStore.readLatestJson(
+      namespace: notificationFeedCacheNamespace,
+      scope: userId.toString(),
     );
+    if (data == null) {
+      return null;
+    }
+
+    return _resultFromCacheData(userId, data);
+  }
+
+  Future<NotificationFeedResult> refreshFeed() async {
+    final userId = await _storedUserId();
+    if (userId == null) {
+      return const NotificationFeedResult(
+        items: [],
+        functionalSources: [],
+        refreshedAt: null,
+        isFromCache: false,
+      );
+    }
+
+    try {
+      await InsightReportApi.refreshReports();
+      final results = await Future.wait<dynamic>([
+        InsightReportApi.listReports(limit: 30),
+        AdaptiveNudgeApi.listNudgeEvents(limit: 30),
+        NotificationEventApi.listEvents(limit: 30),
+      ]);
+
+      final reports = results[0] as List<InsightReport>;
+      final nudges = results[1] as List<AdaptiveNudgeEvent>;
+      final events = results[2] as List<NotificationEventRecord>;
+      final readIds = await _readIds(userId);
+      final sources = <String>{};
+
+      final items = <AppNotificationItem>[
+        for (final report in reports) _itemFromReport(report, readIds, sources),
+        for (final nudge in nudges) _itemFromNudge(nudge, readIds, sources),
+        for (final event in events) _itemFromNotification(event, readIds, sources),
+      ]..sort((left, right) => right.updatedAt.compareTo(left.updatedAt));
+
+      final limitedItems = items.take(60).toList();
+      final refreshedAt = DateTime.now();
+      final data = {
+        'items': limitedItems.map((item) => item.toJson()).toList(),
+        'sources': sources.toList()..sort(),
+        'refreshed_at': refreshedAt.toIso8601String(),
+      };
+      final sourceList = (data['sources'] as List).cast<String>();
+      await OfflineCacheStore.saveJson(
+        namespace: notificationFeedCacheNamespace,
+        scope: userId.toString(),
+        data: data,
+      );
+
+      return NotificationFeedResult(
+        items: limitedItems,
+        functionalSources: sourceList,
+        refreshedAt: refreshedAt,
+        isFromCache: false,
+      );
+    } catch (_) {
+      final cached = await loadCachedFeed();
+      if (cached != null) {
+        return cached;
+      }
+
+      return const NotificationFeedResult(
+        items: [],
+        functionalSources: [],
+        refreshedAt: null,
+        isFromCache: false,
+      );
+    }
+  }
+
+  Future<bool> shouldRefreshCachedFeed() async {
+    final cached = await loadCachedFeed();
+    if (cached == null) {
+      return true;
+    }
+
+    final refreshedAt = cached.refreshedAt;
+    if (refreshedAt == null) {
+      return true;
+    }
+
+    return DateTime.now().difference(refreshedAt) >= _freshnessWindow;
   }
 
   Future<void> markRead(String id) async {
-    final ids = await _readIds();
+    final userId = await _storedUserId();
+    if (userId == null) {
+      return;
+    }
+
+    final ids = await _readIds(userId);
     ids.add(id);
-    await _writeIds(ids);
+    await _writeIds(userId, ids);
     await refreshNotificationFeed();
   }
 
   Future<void> markAllRead(Iterable<String> ids) async {
-    final saved = await _readIds();
+    final userId = await _storedUserId();
+    if (userId == null) {
+      return;
+    }
+
+    final saved = await _readIds(userId);
     saved.addAll(ids);
-    await _writeIds(saved);
+    await _writeIds(userId, saved);
     await refreshNotificationFeed();
   }
 
-  Future<void> _addSmartRecommendations(
-    List<AppNotificationItem> items,
-    Set<String> readIds,
-    Map<String, DateTime> createdAtById,
-    Set<String> sources,
+  Future<NotificationFeedResult?> _resultFromCacheData(
+    int userId,
+    Map<String, dynamic> data,
   ) async {
-    try {
-      final response = await AdaptiveNudgeApi.fetchRecommendations(
-        limit: 1,
-        record: false,
-        ai: true,
-      );
-      final recommendation = response.recommendations.firstOrNull;
-      if (recommendation == null || recommendation.message.trim().isEmpty) {
-        return;
-      }
-
-      sources.add('Smart recommendations');
-      items.add(
-        _buildItem(
-          readIds: readIds,
-          createdAtById: createdAtById,
-          id: 'smart_${recommendation.nudgeEventId ?? recommendation.nudgeType}_${_todayKey()}',
-          icon: Icons.auto_awesome_rounded,
-          iconBg: const Color(0xFFFFF4CC),
-          iconColor: const Color(0xFFE0A100),
-          title: recommendation.title,
-          message: _oneSentence(recommendation.message),
-          sourceLabel: 'Smart recommendation',
-          showAction: recommendation.actionLabel.trim().isNotEmpty,
-        ),
-      );
-    } catch (_) {
-      // Recommendations are optional; the rest of the feed can still load.
-    }
-  }
-
-  Future<NutritionInsight?> _loadNutritionInsight(Set<String> sources) async {
-    try {
-      final evaluation = await NutritionReminderEngine.instance.evaluate(
-        allowNotification: false,
-      );
-      final insight =
-          evaluation?.insight ??
-          await NutritionInsightStore.instance.readLastInsight();
-      if (insight == null || insight.message.trim().isEmpty) {
-        return null;
-      }
-
-      sources.add('Nutrition insights');
-      return insight;
-    } catch (_) {
-      final insight = await NutritionInsightStore.instance.readLastInsight();
-      if (insight == null || insight.message.trim().isEmpty) {
-        return null;
-      }
-
-      sources.add('Nutrition insights');
-      return insight;
-    }
-  }
-
-  Future<void> _addBurnoutReports(
-    List<AppNotificationItem> items,
-    Set<String> readIds,
-    Map<String, DateTime> createdAtById,
-    Set<String> sources,
-  ) async {
-    try {
-      final summary = await BurnoutScoreApi.fetchPatternSummary();
-      final latest = summary?.latestScore;
-      final pattern = summary?.patterns.firstOrNull;
-      if (latest == null && pattern == null) {
-        return;
-      }
-
-      sources.add('Burnout reports');
-      final scoreText = latest == null
-          ? 'Burnout pattern data is available.'
-          : 'Burnout risk is ${latest.riskLevel} at ${latest.overallScore.round()}/100.';
-      final patternText = pattern?.message.trim();
-      items.add(
-        _buildItem(
-          readIds: readIds,
-          createdAtById: createdAtById,
-          id: 'burnout_${latest?.scoreDate ?? _todayKey()}_${pattern?.type ?? 'score'}',
-          icon: Icons.health_and_safety_outlined,
-          iconBg: const Color(0xFFFFE5E5),
-          iconColor: const Color(0xFFFF3B30),
-          title: 'Burnout Report',
-          message: _oneSentence(
-            patternText == null || patternText.isEmpty
-                ? scoreText
-                : patternText,
-            fallback: scoreText,
-          ),
-          sourceLabel: 'Burnout report',
-        ),
-      );
-    } catch (_) {
-      // Burnout reporting depends on backend data and should fail quietly here.
-    }
-  }
-
-  Future<void> _addWeeklyProgress(
-    List<AppNotificationItem> items,
-    Set<String> readIds,
-    Map<String, DateTime> createdAtById,
-    Set<String> sources,
-  ) async {
-    try {
-      final metrics = await WeeklyUserMetricsService.loadCurrentWeek();
-      if (metrics.loggedDays == 0) {
-        return;
-      }
-
-      sources.add('Progress reports');
-      sources.add('Insights');
-      items.add(
-        _buildItem(
-          readIds: readIds,
-          createdAtById: createdAtById,
-          id: 'progress_${LogApi.weekStartKey()}',
-          icon: Icons.show_chart_rounded,
-          iconBg: const Color(0xFFDDF5E6),
-          iconColor: const Color(0xFF22A55D),
-          title: 'Progress Report',
-          message:
-              '${metrics.weeklyNote} Consistency is ${metrics.consistencyScore}% across ${metrics.loggedDays}/7 logged days.',
-          sourceLabel: 'Progress report',
-        ),
-      );
-    } catch (_) {
-      // Weekly reports should not block reminders.
-    }
-  }
-
-  Future<void> _addActivityReport(
-    List<AppNotificationItem> items,
-    Set<String> readIds,
-    Map<String, DateTime> createdAtById,
-    Set<String> sources,
-  ) async {
-    final state = ActivityService.instance.notifier.value;
-    if (state.isLoading) {
-      return;
+    final readIds = await _readIds(userId);
+    final rawItems = data['items'];
+    if (rawItems is! List) {
+      return null;
     }
 
-    final log = state.log;
-    sources.add('Activity reports');
-    items.add(
-      _buildItem(
-        readIds: readIds,
-        createdAtById: createdAtById,
-        id: 'activity_${log.logDate}_${log.steps}_${log.goalSteps}',
-        icon: Icons.directions_walk_rounded,
-        iconBg: const Color(0xFFE8F4FF),
-        iconColor: const Color(0xFF1479CC),
-        title: 'Activity Report',
-        message:
-            '${NumberFormat.decimalPattern().format(log.steps)} steps logged today; ${log.statusLabel.toLowerCase()} toward ${NumberFormat.decimalPattern().format(log.goalSteps)} steps.',
-        sourceLabel: 'Activity report',
-      ),
+    final items = rawItems
+        .whereType<Map>()
+        .map((item) => AppNotificationItem.fromJson(Map<String, dynamic>.from(item)))
+        .where((item) => item.id.isNotEmpty)
+        .map((item) => item.copyWith(isUnread: !readIds.contains(item.id)))
+        .toList()
+      ..sort((left, right) => right.updatedAt.compareTo(left.updatedAt));
+
+    return NotificationFeedResult(
+      items: items,
+      functionalSources: (data['sources'] as List<dynamic>? ?? const [])
+          .map((item) => item.toString())
+          .toList(),
+      refreshedAt: DateTime.tryParse(data['refreshed_at']?.toString() ?? ''),
+      isFromCache: true,
     );
   }
 
-  Future<void> _addGoalReport(
-    List<AppNotificationItem> items,
+  AppNotificationItem _itemFromReport(
+    InsightReport report,
     Set<String> readIds,
-    Map<String, DateTime> createdAtById,
     Set<String> sources,
-  ) async {
-    final state = ExerciseGoalService.instance.notifier.value;
-    final goal = state.goal;
-    if (goal == null || !goal.hasSelectedGoal || goal.isCanceled) {
-      return;
-    }
-
-    sources.add('Goal reports');
-    final status = goal.isCompleted ? 'completed' : 'active';
-    items.add(
-      _buildItem(
-        readIds: readIds,
-        createdAtById: createdAtById,
-        id: 'goal_${goal.logDate}_${goal.exerciseName}_$status',
-        icon: Icons.flag_outlined,
-        iconBg: const Color(0xFFF0E8FF),
-        iconColor: const Color(0xFF7C3AED),
-        title: 'Goal Report',
-        message:
-            '${goal.exerciseName} is $status today; keep the goal aligned with your current energy.',
-        sourceLabel: 'Goal report',
-      ),
-    );
-  }
-
-  AppNotificationItem _buildItem({
-    required Set<String> readIds,
-    required Map<String, DateTime> createdAtById,
-    required String id,
-    required IconData icon,
-    required Color iconBg,
-    required Color iconColor,
-    required String title,
-    required String message,
-    required String sourceLabel,
-    bool showAction = false,
-  }) {
-    final createdAt = createdAtById.putIfAbsent(id, DateTime.now);
+  ) {
+    final category = report.reportType == 'weekly' ? 'weekly' : 'daily';
+    sources.add(category == 'weekly' ? 'Weekly reports' : 'Daily reports');
+    final id = 'report_${report.insightReportId}';
 
     return AppNotificationItem(
       id: id,
-      icon: icon,
-      iconBg: iconBg,
-      iconColor: iconColor,
-      title: title,
-      message: message,
-      time: _timeAgo(createdAt),
-      sourceLabel: sourceLabel,
+      category: category,
+      title: report.title,
+      message: report.summary,
+      sourceLabel: category == 'weekly' ? 'Weekly report' : 'Daily report',
+      priority: report.priority,
+      createdAt: report.createdAt,
+      updatedAt: report.updatedAt,
+      metricChips: _reportMetricChips(report),
       isUnread: !readIds.contains(id),
-      showAction: showAction,
+      reportType: report.reportType,
     );
   }
 
-  Future<Set<String>> _readIds() async {
-    final prefs = await SharedPreferences.getInstance();
-    return (prefs.getStringList(_readIdsKey) ?? const <String>[]).toSet();
+  AppNotificationItem _itemFromNudge(
+    AdaptiveNudgeEvent event,
+    Set<String> readIds,
+    Set<String> sources,
+  ) {
+    sources.add('Smart nudges');
+    final id = 'nudge_${event.nudgeEventId}';
+    final priority = event.metadata['priority']?.toString() ?? 'medium';
+
+    return AppNotificationItem(
+      id: id,
+      category: 'nudge',
+      title: event.title,
+      message: _oneSentence(event.message),
+      sourceLabel: 'Smart nudge',
+      priority: priority,
+      createdAt: event.createdAt,
+      updatedAt: event.updatedAt,
+      metricChips: [
+        _titleCase(event.status),
+        if (event.nudgeType.trim().isNotEmpty) _humanize(event.nudgeType),
+      ],
+      showAction: event.actionLabel?.trim().isNotEmpty == true,
+      isUnread: !readIds.contains(id),
+    );
   }
 
-  Future<void> _writeIds(Set<String> ids) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_readIdsKey, ids.toList()..sort());
+  AppNotificationItem _itemFromNotification(
+    NotificationEventRecord event,
+    Set<String> readIds,
+    Set<String> sources,
+  ) {
+    sources.add('Reminder history');
+    final id = 'notification_${event.notificationEventId}';
+    final occurredAt = event.sentAt ?? event.scheduledFor ?? event.updatedAt;
+
+    return AppNotificationItem(
+      id: id,
+      category: 'reminder',
+      title: event.title,
+      message: _oneSentence(event.body),
+      sourceLabel: _humanize(event.notificationType),
+      priority: event.status == 'failed' ? 'medium' : 'low',
+      createdAt: event.createdAt,
+      updatedAt: occurredAt,
+      metricChips: [_titleCase(event.status)],
+      isUnread: !readIds.contains(id),
+    );
   }
 
-  Future<Map<String, DateTime>> _readCreatedAtById() async {
+  Future<int?> _storedUserId() async {
+    final session = await UserSessionController.instance.load();
+    final userId = session.userId;
+    return userId == null || userId <= 0 ? null : userId;
+  }
+
+  Future<Set<String>> _readIds(int userId) async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_createdAtKey);
-    if (raw == null || raw.isEmpty) {
-      return <String, DateTime>{};
-    }
+    return (prefs.getStringList(_readIdsKey(userId)) ?? const <String>[]).toSet();
+  }
 
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is! Map) {
-        return <String, DateTime>{};
-      }
+  Future<void> _writeIds(int userId, Set<String> ids) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_readIdsKey(userId), ids.toList()..sort());
+  }
 
-      final values = <String, DateTime>{};
-      for (final entry in decoded.entries) {
-        final parsed = DateTime.tryParse(entry.value.toString());
-        if (parsed != null) {
-          values[entry.key.toString()] = parsed;
+  String _readIdsKey(int userId) {
+    return '${_readIdsKeyPrefix}_$userId';
+  }
+}
+
+List<String> _reportMetricChips(InsightReport report) {
+  final metrics = report.metrics;
+  final chips = <String>[];
+  if (report.reportType == 'weekly') {
+    _addMetric(chips, 'Logs', metrics['logged_days'], suffix: '/7');
+    _addMetric(chips, 'Avg sleep', metrics['average_sleep_hours'], suffix: 'h');
+    _addMetric(chips, 'Steps', metrics['total_steps'], compactNumber: true);
+    _addRiskMetric(chips, metrics['latest_burnout_risk_level']);
+  } else {
+    _addMetric(chips, 'Sleep', metrics['sleep_hours'], suffix: 'h');
+    _addMetric(chips, 'Hydration', metrics['hydration_liters'], suffix: 'L');
+    _addMetric(chips, 'Stress', metrics['perceived_stress_level'], suffix: '/5');
+    _addMetric(chips, 'Steps', metrics['steps'], compactNumber: true);
+    _addRiskMetric(chips, metrics['burnout_risk_level']);
+  }
+
+  return chips.take(4).toList();
+}
+
+void _addMetric(
+  List<String> chips,
+  String label,
+  dynamic value, {
+  String suffix = '',
+  bool compactNumber = false,
+}) {
+  if (value == null) {
+    return;
+  }
+  final parsed = num.tryParse(value.toString());
+  if (parsed == null || parsed == 0) {
+    return;
+  }
+  final formatted = compactNumber
+      ? NumberFormat.compact().format(parsed)
+      : parsed == parsed.roundToDouble()
+          ? parsed.toInt().toString()
+          : parsed.toStringAsFixed(1);
+  chips.add('$label $formatted$suffix');
+}
+
+void _addRiskMetric(List<String> chips, dynamic risk) {
+  final text = risk?.toString().trim();
+  if (text == null || text.isEmpty) {
+    return;
+  }
+
+  chips.add('Risk ${_titleCase(text)}');
+}
+
+DateTime _parseDate(dynamic value) {
+  return DateTime.tryParse(value?.toString() ?? '') ?? DateTime.now();
+}
+
+String _timeAgo(DateTime value) {
+  final now = DateTime.now();
+  final difference = now.difference(value);
+
+  if (difference.inSeconds < 60) {
+    return 'Just now';
+  }
+  if (difference.inMinutes < 60) {
+    final minutes = difference.inMinutes;
+    return minutes == 1 ? '1 minute ago' : '$minutes minutes ago';
+  }
+  if (difference.inHours < 24) {
+    final hours = difference.inHours;
+    return hours == 1 ? '1 hour ago' : '$hours hours ago';
+  }
+  if (difference.inDays < 7) {
+    final days = difference.inDays;
+    return days == 1 ? '1 day ago' : '$days days ago';
+  }
+
+  return DateFormat('MMM d').format(value);
+}
+
+String _oneSentence(String value, {String fallback = 'Insight available.'}) {
+  final normalized = value.trim().replaceAll(RegExp(r'\s+'), ' ');
+  if (normalized.isEmpty) {
+    return fallback;
+  }
+
+  final match = RegExp(r'^.*?[.!?](\s|$)').firstMatch(normalized);
+  if (match != null) {
+    return normalized.substring(0, match.end).trim();
+  }
+
+  return normalized;
+}
+
+String _humanize(String value) {
+  final normalized = value.trim().replaceAll(RegExp(r'[_-]+'), ' ');
+  return _titleCase(normalized);
+}
+
+String _titleCase(String value) {
+  return value
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .map((part) {
+        if (part.length == 1) {
+          return part.toUpperCase();
         }
-      }
-      return values;
-    } catch (_) {
-      return <String, DateTime>{};
-    }
-  }
-
-  Future<void> _writeCreatedAtById(
-    Map<String, DateTime> createdAtById,
-    Iterable<String> activeIds,
-  ) async {
-    final activeIdSet = activeIds.toSet();
-    final normalized = <String, String>{
-      for (final entry in createdAtById.entries)
-        if (activeIdSet.contains(entry.key))
-          entry.key: entry.value.toIso8601String(),
-    };
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_createdAtKey, jsonEncode(normalized));
-  }
-
-  String _todayKey() {
-    return DateFormat('yyyy-MM-dd').format(DateTime.now());
-  }
-
-  String _timeLabel(String value) {
-    final parts = value.split(':');
-    final hour = int.tryParse(parts.firstOrNull ?? '') ?? 0;
-    final minute = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
-    final date = DateTime(2020, 1, 1, hour, minute);
-    return DateFormat('h:mm a').format(date);
-  }
-
-  String _intervalLabel(int minutes) {
-    if (minutes % 60 == 0) {
-      final hours = minutes ~/ 60;
-      return hours == 1 ? '1 hour' : '$hours hours';
-    }
-
-    return '$minutes minutes';
-  }
-
-  String _timeAgo(DateTime value) {
-    final now = DateTime.now();
-    final difference = now.difference(value);
-
-    if (difference.inSeconds < 60) {
-      return 'Just now';
-    }
-    if (difference.inMinutes < 60) {
-      final minutes = difference.inMinutes;
-      return minutes == 1 ? '1 minute ago' : '$minutes minutes ago';
-    }
-    if (difference.inHours < 24) {
-      final hours = difference.inHours;
-      return hours == 1 ? '1 hour ago' : '$hours hours ago';
-    }
-    if (difference.inDays < 7) {
-      final days = difference.inDays;
-      return days == 1 ? '1 day ago' : '$days days ago';
-    }
-    if (difference.inDays < 30) {
-      final weeks = (difference.inDays / 7).floor();
-      return weeks == 1 ? '1 week ago' : '$weeks weeks ago';
-    }
-    if (difference.inDays < 365) {
-      final months = (difference.inDays / 30).floor();
-      return months == 1 ? '1 month ago' : '$months months ago';
-    }
-
-    final years = (difference.inDays / 365).floor();
-    return years == 1 ? '1 year ago' : '$years years ago';
-  }
-
-  String _oneSentence(String value, {String fallback = 'Insight available.'}) {
-    final normalized = value.trim().replaceAll(RegExp(r'\s+'), ' ');
-    if (normalized.isEmpty) {
-      return fallback;
-    }
-
-    final match = RegExp(r'^.*?[.!?](\s|$)').firstMatch(normalized);
-    if (match != null) {
-      return normalized.substring(0, match.end).trim();
-    }
-
-    return normalized;
-  }
+        return '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}';
+      })
+      .join(' ');
 }

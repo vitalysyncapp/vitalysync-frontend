@@ -3,8 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:vitalysync/features/auth/presentation/pages/login_page.dart';
 import 'package:vitalysync/features/dashboard/presentation/widgets/dashboard_header_card.dart';
 import 'package:vitalysync/features/log/presentation/widgets/log_widgets.dart';
+import 'package:vitalysync/features/notifications/presentation/pages/notification_page.dart';
 import 'package:vitalysync/features/nutrition/presentation/widgets/today_nutrition_card.dart';
 import 'package:vitalysync/features/onboarding/presentation/pages/onboarding_page.dart';
+import 'package:vitalysync/shared/notifications/notification_feed_service.dart';
 
 import 'test_helpers.dart';
 
@@ -104,5 +106,33 @@ void main() {
     expect(find.text('Protein'), findsOneWidget);
     expect(find.text('Carbs'), findsOneWidget);
     expect(find.text('Fats'), findsOneWidget);
+  });
+
+  testWidgets('notification card renders report metrics and priority', (
+    tester,
+  ) async {
+    await pumpTestApp(
+      tester,
+      NotificationCard(
+        item: AppNotificationItem(
+          id: 'report_1',
+          category: 'daily',
+          title: 'Daily wellness report',
+          message: 'Sleep is 7h and hydration is 2L.',
+          sourceLabel: 'Daily report',
+          priority: 'medium',
+          createdAt: DateTime(2026, 5, 21, 9),
+          updatedAt: DateTime(2026, 5, 21, 9),
+          metricChips: const ['Sleep 7h', 'Hydration 2L'],
+          isUnread: true,
+          reportType: 'daily',
+        ),
+        onTap: () {},
+      ),
+    );
+
+    expect(find.text('Daily wellness report'), findsOneWidget);
+    expect(find.text('Sleep 7h'), findsOneWidget);
+    expect(find.text('MEDIUM'), findsOneWidget);
   });
 }

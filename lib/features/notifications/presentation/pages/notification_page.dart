@@ -1,7 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../../nutrition/data/nutrition_coach.dart';
 import '../../../../shared/notifications/notification_feed_service.dart';
 import '../../../../shared/theme/app_page_style.dart';
 
@@ -13,41 +14,131 @@ class NotificationPage extends StatefulWidget {
 }
 
 class _NotificationPageState extends State<NotificationPage> {
-  late Future<NotificationFeedResult> _feedFuture;
+  static const List<_NotificationFilter> _filters = [
+    _NotificationFilter('all', 'All'),
+    _NotificationFilter('daily', 'Daily'),
+    _NotificationFilter('weekly', 'Weekly'),
+    _NotificationFilter('nudges', 'Nudges'),
+    _NotificationFilter('reminders', 'Reminders'),
+  ];
+
+  NotificationFeedResult? _feed;
+  bool _isLoading = true;
+  bool _isRefreshing = false;
+  String _selectedFilter = 'all';
 
   @override
   void initState() {
     super.initState();
-    _feedFuture = NotificationFeedService.instance.loadFeed();
+    unawaited(_loadCachedThenRefresh());
   }
 
   @override
   Widget build(BuildContext context) {
+    final feed = _feed;
+    final notifications = _filteredItems(feed?.items ?? const []);
+    final unreadCount = feed?.unreadCount ?? 0;
+
     return Container(
       decoration: buildPageDecoration(context),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: SafeArea(
-          child: FutureBuilder<NotificationFeedResult>(
-            future: _feedFuture,
-            builder: (context, snapshot) {
-              final feed = snapshot.data;
-              final notifications =
-                  feed?.items ?? const <AppNotificationItem>[];
-              final unreadCount = feed?.unreadCount ?? 0;
-
-              return Column(
-                children: [
-                  _buildHeader(context, unreadCount, notifications),
-                  Divider(height: 1, color: pageBorderColor(context)),
-                  Expanded(child: _buildBody(context, snapshot)),
-                ],
-              );
-            },
+          child: Column(
+            children: [
+              _buildHeader(context, unreadCount, feed?.items ?? const []),
+              Divider(height: 1, color: pageBorderColor(context)),
+              if (_isRefreshing && feed != null)
+                const LinearProgressIndicator(minHeight: 2),
+              Expanded(
+                child: _isLoading && feed == null
+                    ? const Center(child: CircularProgressIndicator())
+                    : RefreshIndicator(
+                        onRefresh: () => _refreshFeed(force: true),
+                        child: ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: EdgeInsets.fromLTRB(
+                            20,
+                            18,
+                            20,
+                            pageBottomContentPadding(context),
+                          ),
+                          children: [
+                            _buildSummaryCard(context, feed),
+                            const SizedBox(height: 16),
+                            _buildFilters(context, feed?.items ?? const []),
+                            const SizedBox(height: 18),
+                            if (notifications.isEmpty)
+                              _buildEmptyState(context)
+                            else
+                              ...notifications.map(
+                                (item) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 14),
+                                  child: NotificationCard(
+                                    item: item,
+                                    onTap: () => _markRead(item.id),
+                                    onActionTap: () => _markRead(item.id),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+              ),
+            ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _loadCachedThenRefresh() async {
+    final service = NotificationFeedService.instance;
+    final cached = await service.loadCachedFeed();
+    if (!mounted) {
+      return;
+    }
+
+    if (cached != null) {
+      setState(() {
+        _feed = cached;
+        _isLoading = false;
+      });
+    }
+
+    final shouldRefresh = cached == null || await service.shouldRefreshCachedFeed();
+    if (!shouldRefresh) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+      return;
+    }
+
+    await _refreshFeed(force: cached == null);
+  }
+
+  Future<void> _refreshFeed({bool force = false}) async {
+    if (_isRefreshing) {
+      return;
+    }
+
+    setState(() {
+      _isRefreshing = true;
+      _isLoading = force && _feed == null;
+    });
+
+    final refreshed = await NotificationFeedService.instance.refreshFeed();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      if (!_sameFeed(_feed, refreshed)) {
+        _feed = refreshed;
+      }
+      _isRefreshing = false;
+      _isLoading = false;
+    });
   }
 
   Widget _buildHeader(
@@ -75,7 +166,7 @@ class _NotificationPageState extends State<NotificationPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Notifications',
+                    'Insights',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -97,29 +188,19 @@ class _NotificationPageState extends State<NotificationPage> {
           ),
           Padding(
             padding: const EdgeInsets.only(top: 4),
-            child: GestureDetector(
-              onTap: unreadCount == 0
+            child: TextButton(
+              onPressed: unreadCount == 0
                   ? null
                   : () async {
                       await NotificationFeedService.instance.markAllRead(
                         notifications.map((item) => item.id),
                       );
+                      final updated = await NotificationFeedService.instance
+                          .loadFeed();
                       if (!mounted) return;
-                      setState(() {
-                        _feedFuture = NotificationFeedService.instance
-                            .loadFeed();
-                      });
+                      setState(() => _feed = updated);
                     },
-              child: Text(
-                'Mark all read',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: unreadCount == 0
-                      ? pageSecondaryTextColor(context).withValues(alpha: 0.55)
-                      : const Color(0xFF246BFF),
-                ),
-              ),
+              child: const Text('Mark all read'),
             ),
           ),
         ],
@@ -127,88 +208,29 @@ class _NotificationPageState extends State<NotificationPage> {
     );
   }
 
-  Widget _buildBody(
-    BuildContext context,
-    AsyncSnapshot<NotificationFeedResult> snapshot,
-  ) {
-    if (snapshot.connectionState == ConnectionState.waiting) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (snapshot.hasError) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            'Unable to load notifications right now.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: pageSecondaryTextColor(context),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      );
-    }
-
-    final feed = snapshot.data;
-    final notifications = feed?.items ?? const <AppNotificationItem>[];
-    final sources = feed?.functionalSources ?? const <String>[];
-
-    return ListView(
-      padding: EdgeInsets.fromLTRB(
-        20,
-        20,
-        20,
-        pageBottomContentPadding(context),
-      ),
-      children: [
-        _buildStatusCard(context, sources),
-        const SizedBox(height: 22),
-        _buildNutritionInsightSection(context, feed?.nutritionInsight),
-        const SizedBox(height: 22),
-        if (notifications.isEmpty)
-          _buildEmptyState(context)
-        else
-          ...notifications.map(
-            (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: NotificationCard(
-                item: item,
-                onTap: () => _markRead(item.id),
-                onActionTap: () => _markRead(item.id),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Future<void> _markRead(String id) async {
-    await NotificationFeedService.instance.markRead(id);
-    if (!mounted) return;
-    setState(() {
-      _feedFuture = NotificationFeedService.instance.loadFeed();
-    });
-  }
-
-  Widget _buildStatusCard(BuildContext context, List<String> sources) {
-    final sourceText = sources.isEmpty
-        ? 'No live notification sources are ready yet; reminders and reports appear here when their data exists.'
-        : 'Showing functional sources now: ${sources.join(', ')}.';
+  Widget _buildSummaryCard(BuildContext context, NotificationFeedResult? feed) {
+    final items = feed?.items ?? const <AppNotificationItem>[];
+    final dailyCount = _countFor(items, 'daily');
+    final weeklyCount = _countFor(items, 'weekly');
+    final nudgeCount = _countFor(items, 'nudges');
+    final reminderCount = _countFor(items, 'reminders');
+    final refreshedAt = feed?.refreshedAt;
+    final refreshedText = refreshedAt == null
+        ? 'Waiting for first sync'
+        : 'Updated ${DateFormat('MMM d, h:mm a').format(refreshedAt)}';
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 22),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         gradient: const LinearGradient(
-          colors: [Color(0xFF2563FF), Color(0xFF0891B2)],
+          colors: [Color(0xFF246BFF), Color(0xFF10A7A7)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF2563FF).withValues(alpha: 0.25),
+            color: const Color(0xFF246BFF).withValues(alpha: 0.22),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -219,30 +241,36 @@ class _NotificationPageState extends State<NotificationPage> {
         children: [
           const Row(
             children: [
-              Icon(
-                Icons.notifications_none_rounded,
-                color: Colors.white,
-                size: 24,
-              ),
+              Icon(Icons.insights_rounded, color: Colors.white, size: 24),
               SizedBox(width: 10),
               Text(
-                'Smart Notifications',
+                'Insight history',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 17,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _SummaryPill(label: 'Daily', value: dailyCount),
+              _SummaryPill(label: 'Weekly', value: weeklyCount),
+              _SummaryPill(label: 'Nudges', value: nudgeCount),
+              _SummaryPill(label: 'Reminders', value: reminderCount),
+            ],
+          ),
+          const SizedBox(height: 14),
           Text(
-            sourceText,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 15,
-              height: 1.45,
-              fontWeight: FontWeight.w400,
+            refreshedText,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.86),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -250,106 +278,76 @@ class _NotificationPageState extends State<NotificationPage> {
     );
   }
 
-  Widget _buildNutritionInsightSection(
-    BuildContext context,
-    NutritionInsight? insight,
-  ) {
-    final hasInsight = insight != null && insight.message.trim().isNotEmpty;
-    final title = hasInsight ? insight.title : 'Nutrition Insights';
-    final message = hasInsight
-        ? insight.message
-        : 'No nutrition insight yet. Add a meal log to generate one gentle suggestion.';
-    final timeLabel = hasInsight
-        ? 'Latest insight - ${DateFormat('MMM d, h:mm a').format(insight.generatedAt)}'
-        : 'Last generated suggestion only';
+  Widget _buildFilters(BuildContext context, List<AppNotificationItem> items) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: _filters.map((filter) {
+          final selected = _selectedFilter == filter.key;
+          final count = filter.key == 'all'
+              ? items.length
+              : items.where((item) => item.filterKey == filter.key).length;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Nutrition Insights',
-          style: TextStyle(
-            color: pagePrimaryTextColor(context),
-            fontSize: 17,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: pageSurfaceColor(context),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: pageBorderColor(context)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(
-                  alpha: Theme.of(context).brightness == Brightness.dark
-                      ? 0.16
-                      : 0.06,
-                ),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              selected: selected,
+              label: Text('${filter.label} $count'),
+              onSelected: (_) => setState(() => _selectedFilter = filter.key),
+              selectedColor: const Color(0xFF246BFF),
+              labelStyle: TextStyle(
+                color: selected ? Colors.white : pagePrimaryTextColor(context),
+                fontWeight: FontWeight.w700,
               ),
-            ],
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE5F7F0),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.restaurant_menu_rounded,
-                  color: Color(0xFF1F9D63),
-                  size: 24,
-                ),
+              backgroundColor: pageSurfaceColor(context),
+              side: BorderSide(color: pageBorderColor(context)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: pagePrimaryTextColor(context),
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      message,
-                      style: TextStyle(
-                        color: pageSecondaryTextColor(context),
-                        fontSize: 14,
-                        height: 1.45,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      timeLabel,
-                      style: const TextStyle(
-                        color: Color(0xFF98A2B3),
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+            ),
+          );
+        }).toList(),
+      ),
     );
+  }
+
+  Future<void> _markRead(String id) async {
+    await NotificationFeedService.instance.markRead(id);
+    final updated = await NotificationFeedService.instance.loadFeed();
+    if (!mounted) return;
+    setState(() => _feed = updated);
+  }
+
+  List<AppNotificationItem> _filteredItems(List<AppNotificationItem> items) {
+    if (_selectedFilter == 'all') {
+      return items;
+    }
+
+    return items.where((item) => item.filterKey == _selectedFilter).toList();
+  }
+
+  int _countFor(List<AppNotificationItem> items, String filterKey) {
+    return items.where((item) => item.filterKey == filterKey).length;
+  }
+
+  bool _sameFeed(NotificationFeedResult? left, NotificationFeedResult right) {
+    final leftItems = left?.items ?? const <AppNotificationItem>[];
+    if (leftItems.length != right.items.length) {
+      return false;
+    }
+
+    for (var index = 0; index < leftItems.length; index += 1) {
+      final leftItem = leftItems[index];
+      final rightItem = right.items[index];
+      if (leftItem.id != rightItem.id ||
+          leftItem.updatedAt != rightItem.updatedAt ||
+          leftItem.isUnread != rightItem.isUnread ||
+          leftItem.message != rightItem.message) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   Widget _buildEmptyState(BuildContext context) {
@@ -363,13 +361,13 @@ class _NotificationPageState extends State<NotificationPage> {
       child: Column(
         children: [
           Icon(
-            Icons.notifications_off_outlined,
+            Icons.insights_outlined,
             color: pageSecondaryTextColor(context),
             size: 34,
           ),
           const SizedBox(height: 12),
           Text(
-            'No functional notifications yet',
+            'No insights yet',
             style: TextStyle(
               color: pagePrimaryTextColor(context),
               fontSize: 16,
@@ -378,7 +376,7 @@ class _NotificationPageState extends State<NotificationPage> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Enable reminders or add logs to generate sleep, hydration, activity, goal, burnout, and progress updates.',
+            'Daily and weekly reports appear after wellness, activity, nutrition, or nudge data is available.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: pageSecondaryTextColor(context),
@@ -410,17 +408,21 @@ class NotificationCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(18),
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: pageSurfaceColor(context),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: pageBorderColor(context)),
+          border: Border.all(
+            color: item.isUnread
+                ? item.iconColor.withValues(alpha: 0.42)
+                : pageBorderColor(context),
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(
                 alpha: Theme.of(context).brightness == Brightness.dark
                     ? 0.16
-                    : 0.08,
+                    : 0.07,
               ),
               blurRadius: 10,
               offset: const Offset(0, 3),
@@ -431,26 +433,35 @@ class NotificationCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 52,
-              height: 52,
+              width: 50,
+              height: 50,
               decoration: BoxDecoration(
                 color: item.iconBg,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(item.icon, color: item.iconColor, size: 26),
+              child: Icon(item.icon, color: item.iconColor, size: 25),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    item.title,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: pagePrimaryTextColor(context),
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.title,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: pagePrimaryTextColor(context),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _PriorityBadge(priority: item.priority),
+                    ],
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -459,20 +470,31 @@ class NotificationCard extends StatelessWidget {
                       fontSize: 14,
                       height: 1.45,
                       color: pageSecondaryTextColor(context),
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
+                  if (item.metricChips.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: item.metricChips
+                          .map((chip) => _MetricChip(label: chip))
+                          .toList(),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   Row(
                     children: [
                       Flexible(
                         child: Text(
-                          item.time,
+                          '${item.sourceLabel} - ${item.time}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 13,
+                            fontSize: 12.5,
                             color: Color(0xFF98A2B3),
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
@@ -483,22 +505,13 @@ class NotificationCard extends StatelessWidget {
                           child: const Text(
                             'Mark read',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 13,
                               color: Color(0xFF246BFF),
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
                     ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    item.sourceLabel,
-                    style: TextStyle(
-                      color: item.iconColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
                   ),
                 ],
               ),
@@ -506,8 +519,8 @@ class NotificationCard extends StatelessWidget {
             const SizedBox(width: 8),
             if (item.isUnread)
               Container(
-                width: 10,
-                height: 10,
+                width: 9,
+                height: 9,
                 margin: const EdgeInsets.only(top: 4),
                 decoration: const BoxDecoration(
                   color: Color(0xFF246BFF),
@@ -515,6 +528,104 @@ class NotificationCard extends StatelessWidget {
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NotificationFilter {
+  final String key;
+  final String label;
+
+  const _NotificationFilter(this.key, this.label);
+}
+
+class _SummaryPill extends StatelessWidget {
+  final String label;
+  final int value;
+
+  const _SummaryPill({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+      ),
+      child: Text(
+        '$label $value',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12.5,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _MetricChip extends StatelessWidget {
+  final String label;
+
+  const _MetricChip({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: itemChipColor(context),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: pageBorderColor(context)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: pageSecondaryTextColor(context),
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Color itemChipColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? Colors.white.withValues(alpha: 0.06)
+        : const Color(0xFFF4FBF8);
+  }
+}
+
+class _PriorityBadge extends StatelessWidget {
+  final String priority;
+
+  const _PriorityBadge({required this.priority});
+
+  @override
+  Widget build(BuildContext context) {
+    final normalized = priority.toLowerCase();
+    final color = switch (normalized) {
+      'high' => const Color(0xFFE5484D),
+      'medium' => const Color(0xFFE0A100),
+      _ => const Color(0xFF22A55D),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(11),
+      ),
+      child: Text(
+        normalized.toUpperCase(),
+        style: TextStyle(
+          color: color,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w900,
         ),
       ),
     );

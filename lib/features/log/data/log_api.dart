@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
 import '../../../shared/config/api_config.dart';
+import '../../../shared/notifications/notification_feed_cache.dart';
 import '../../../shared/offline/offline_cache_store.dart';
 import '../../dashboard/data/burnout_score_api.dart';
 import '../../exercise/data/exercise_goal_service.dart';
@@ -520,6 +521,7 @@ class LogApi {
       );
       data['is_offline'] = false;
       data['pending_sync_count'] = await pendingLogCount();
+      await invalidateNotificationFeedCache();
 
       return data;
     } on _LogApiException catch (error) {
@@ -662,6 +664,7 @@ class LogApi {
           isOffline: false,
         ),
       );
+      await invalidateNotificationFeedCache();
       return data;
     } on _LogApiException catch (error) {
       if (!error.canQueueForLater) {
@@ -747,6 +750,9 @@ class LogApi {
     }
 
     await _refreshOptimisticStreak(userId);
+    if (syncedCount > 0) {
+      await invalidateNotificationFeedCache();
+    }
     return syncedCount;
   }
 }

@@ -8,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../shared/preferences/user_session.dart';
+import '../../../shared/notifications/notification_feed_cache.dart';
 import 'activity_api.dart';
 import 'activity_log.dart';
 
@@ -262,6 +263,9 @@ class ActivityService {
           clearError: true,
         ),
       );
+      if (syncedCount > 0) {
+        await invalidateNotificationFeedCache();
+      }
       return syncedCount;
     } catch (_) {
       _emit(
@@ -512,6 +516,7 @@ class ActivityService {
         clearError: true,
       ),
     );
+    await invalidateNotificationFeedCache();
 
     if (_shouldAttemptBackgroundSync(session)) {
       _lastSyncAttempt = DateTime.now();

@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
 import '../../../shared/config/api_config.dart';
+import '../../../shared/notifications/notification_feed_cache.dart';
 import '../../../shared/offline/offline_cache_store.dart';
 import '../../../shared/preferences/user_session.dart';
 
@@ -369,6 +370,8 @@ class NutritionApi {
     if (response.statusCode != 200) {
       throw Exception(data['message'] ?? 'Failed to save nutrition log.');
     }
+
+    await invalidateNotificationFeedCache();
   }
 
   static Future<void> discardAttempt(int attemptId) async {

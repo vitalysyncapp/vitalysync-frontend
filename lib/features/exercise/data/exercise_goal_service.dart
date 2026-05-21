@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../shared/preferences/user_session.dart';
+import '../../../shared/notifications/notification_feed_cache.dart';
 import '../../activity/data/activity_service.dart';
 import 'exercise_goal_api.dart';
 import 'exercise_goal_model.dart';
@@ -174,6 +175,7 @@ class ExerciseGoalService {
         ),
       );
       await _handleActivityChanged();
+      await invalidateNotificationFeedCache();
       return savedGoal;
     } catch (error) {
       await cacheGoal(userId, localGoal);
@@ -185,6 +187,7 @@ class ExerciseGoalService {
               'Saved on this device. It will be included with today\'s log.',
         ),
       );
+      await invalidateNotificationFeedCache();
       return localGoal;
     }
   }
@@ -250,6 +253,7 @@ class ExerciseGoalService {
           clearError: true,
         ),
       );
+      await invalidateNotificationFeedCache();
     } catch (_) {
       await cacheGoal(userId, canceledGoal);
       _emit(
@@ -259,6 +263,7 @@ class ExerciseGoalService {
           errorMessage: 'Canceled locally. The server will update later.',
         ),
       );
+      await invalidateNotificationFeedCache();
     }
   }
 
@@ -362,6 +367,7 @@ class ExerciseGoalService {
         clearError: true,
       ),
     );
+    await invalidateNotificationFeedCache();
   }
 
   ExerciseGoalModel? _todayOrNull(ExerciseGoalModel? goal) {

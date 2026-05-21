@@ -46,6 +46,7 @@ Future<Map<String, dynamic>> _saveOfflineLog(
   await _upsertCachedLog(userId, localLog);
 
   final streak = await _refreshOptimisticStreak(userId);
+  await invalidateNotificationFeedCache();
 
   return {
     'message': 'Daily log saved locally and will sync when online',
@@ -487,6 +488,7 @@ Future<Map<String, dynamic>> _saveOfflineWeeklyPulse({
     scope: _weeklyPulseScope(userId, weekStart),
     data: {'week_start_date': weekStart, 'body': body},
   );
+  await invalidateNotificationFeedCache();
 
   return {
     'message': 'Weekly pulse saved locally and will sync when online',
@@ -600,6 +602,7 @@ Future<void> _syncCachedWeeklyPulse(int userId, String weekStart) async {
     namespace: LogApi._weeklyPulsePendingCache,
     scope: _weeklyPulseScope(userId, weekStart),
   );
+  await invalidateNotificationFeedCache();
 }
 
 String _weeklyPulseScope(int userId, String weekStart) {

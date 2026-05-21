@@ -85,6 +85,59 @@ class AdaptiveNudgeResponse {
   }
 }
 
+class AdaptiveNudgeEvent {
+  final int nudgeEventId;
+  final int userId;
+  final String nudgeType;
+  final String? triggerReason;
+  final String message;
+  final String? actionLabel;
+  final String status;
+  final Map<String, dynamic> metadata;
+  final DateTime? actedAt;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  const AdaptiveNudgeEvent({
+    required this.nudgeEventId,
+    required this.userId,
+    required this.nudgeType,
+    required this.triggerReason,
+    required this.message,
+    required this.actionLabel,
+    required this.status,
+    required this.metadata,
+    required this.actedAt,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory AdaptiveNudgeEvent.fromJson(Map<String, dynamic> json) {
+    return AdaptiveNudgeEvent(
+      nudgeEventId: _parseInt(json['nudge_event_id']),
+      userId: _parseInt(json['user_id']),
+      nudgeType: json['nudge_type']?.toString() ?? 'smart_nudge',
+      triggerReason: json['trigger_reason']?.toString(),
+      message: json['message']?.toString() ?? '',
+      actionLabel: json['action_label']?.toString(),
+      status: json['status']?.toString() ?? 'shown',
+      metadata: _parseMetadata(json['metadata']),
+      actedAt: _parseNullableDate(json['acted_at']),
+      createdAt: _parseDate(json['created_at']),
+      updatedAt: _parseDate(json['updated_at']),
+    );
+  }
+
+  String get title {
+    final rawTitle = metadata['title']?.toString().trim() ?? '';
+    if (rawTitle.isNotEmpty) {
+      return rawTitle;
+    }
+
+    return 'Smart nudge';
+  }
+}
+
 class AdaptiveNudgeApi {
   static const Duration _requestTimeout = Duration(seconds: 8);
   static const Duration _aiRequestTimeout = Duration(seconds: 25);
@@ -155,6 +208,41 @@ class AdaptiveNudgeApi {
     }
   }
 
+  static Future<List<AdaptiveNudgeEvent>> listNudgeEvents({
+    int limit = 30,
+  }) async {
+    final userId = await _storedUserId();
+    if (userId == null) {
+      return const [];
+    }
+
+    try {
+      final uri = Uri.parse(ApiConfig.adaptive('/nudge-events')).replace(
+        queryParameters: {
+          'user_id': userId.toString(),
+          'limit': limit.toString(),
+        },
+      );
+      final response = await http
+          .get(uri, headers: await ApiConfig.jsonHeaders())
+          .timeout(_requestTimeout);
+      final data = _decodeResponseMap(response);
+      if (response.statusCode != 200) {
+        return const [];
+      }
+
+      return (data['events'] as List<dynamic>? ?? const [])
+          .whereType<Map>()
+          .map(
+            (item) =>
+                AdaptiveNudgeEvent.fromJson(Map<String, dynamic>.from(item)),
+          )
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
   static Future<int?> _storedUserId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt('user_id');
@@ -215,6 +303,19 @@ class AdaptiveNudgeApi {
       patterns: <Map<String, dynamic>>[],
     );
   }
+}
+
+DateTime _parseDate(dynamic value) {
+  return DateTime.tryParse(value?.toString() ?? '') ?? DateTime.now();
+}
+
+DateTime? _parseNullableDate(dynamic value) {
+  final text = value?.toString();
+  if (text == null || text.trim().isEmpty) {
+    return null;
+  }
+
+  return DateTime.tryParse(text);
 }
 
 int _parseInt(dynamic value) {
