@@ -64,7 +64,7 @@ class _NutritionAnalyticsCardState extends State<NutritionAnalyticsCard> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _WeeklyCalorieLevelsCard(data: data, isLoading: isLoading),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             _NutritionBalanceCard(data: data, isLoading: isLoading),
           ],
         );
@@ -105,38 +105,26 @@ class _WeeklyCalorieLevelsCard extends StatelessWidget {
                 : 'Daily energy intake made easier to read',
             gradientColors: const [Color(0xFF1FB489), Color(0xFFF59E0B)],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
           if (isLoading)
             const SizedBox(
-              height: 220,
+              height: 170,
               child: Center(child: CircularProgressIndicator()),
             )
           else
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final columns = _calorieTileColumnCount(constraints.maxWidth);
-                final spacing = 8.0;
-                final tileWidth =
-                    (constraints.maxWidth - (spacing * (columns - 1))) /
-                    columns;
-
-                return Wrap(
-                  spacing: spacing,
-                  runSpacing: spacing,
-                  children: data.days
-                      .map(
-                        (day) => SizedBox(
-                          width: tileWidth,
-                          child: _CalorieLevelTile(day: day),
-                        ),
-                      )
-                      .toList(),
+            Column(
+              children: List.generate(data.days.length, (index) {
+                return Padding(
+                  padding: EdgeInsets.only(
+                    bottom: index == data.days.length - 1 ? 0 : 8,
+                  ),
+                  child: _CalorieLevelListItem(day: data.days[index]),
                 );
-              },
+              }),
             ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           Divider(color: pageBorderColor(context)),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
@@ -187,10 +175,10 @@ class _NutritionBalanceCard extends StatelessWidget {
                 : 'Log meals with macros to build this view',
             gradientColors: const [Color(0xFF2F80ED), Color(0xFF1FB489)],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
           if (isLoading)
             const SizedBox(
-              height: 170,
+              height: 130,
               child: Center(child: CircularProgressIndicator()),
             )
           else
@@ -210,10 +198,10 @@ class _NutritionSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: pageSurfaceColor(context),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: pageBorderColor(context)),
         boxShadow: [
           BoxShadow(
@@ -222,8 +210,8 @@ class _NutritionSurface extends StatelessWidget {
                   ? 0.2
                   : 0.06,
             ),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -250,15 +238,15 @@ class _NutritionSectionHeader extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 38,
-          height: 38,
+          width: 34,
+          height: 34,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: LinearGradient(colors: gradientColors),
           ),
-          child: Icon(icon, color: Colors.white, size: 20),
+          child: Icon(icon, color: Colors.white, size: 18),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -267,18 +255,18 @@ class _NutritionSectionHeader extends StatelessWidget {
                 title,
                 style: TextStyle(
                   color: pagePrimaryTextColor(context),
-                  fontSize: 17,
+                  fontSize: 15,
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 1),
               Text(
                 subtitle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: pageSecondaryTextColor(context),
-                  fontSize: 12.5,
+                  fontSize: 11.5,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -290,10 +278,10 @@ class _NutritionSectionHeader extends StatelessWidget {
   }
 }
 
-class _CalorieLevelTile extends StatelessWidget {
+class _CalorieLevelListItem extends StatelessWidget {
   final _NutritionAnalyticsDay day;
 
-  const _CalorieLevelTile({required this.day});
+  const _CalorieLevelListItem({required this.day});
 
   @override
   Widget build(BuildContext context) {
@@ -304,95 +292,130 @@ class _CalorieLevelTile extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      constraints: const BoxConstraints(minHeight: 124),
-      padding: const EdgeInsets.all(12),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
       decoration: BoxDecoration(
-        color: level.color.withValues(alpha: isDark ? 0.14 : 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: level.color.withValues(alpha: 0.28)),
+        color: isDark
+            ? level.color.withValues(alpha: 0.12)
+            : Colors.white.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: level.color.withValues(alpha: 0.22)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: level.color.withValues(alpha: isDark ? 0.2 : 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
                   day.dayLabel,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: pagePrimaryTextColor(context),
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w800,
+                    color: level.color,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-              ),
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: level.color,
-                  shape: BoxShape.circle,
+                const SizedBox(height: 1),
+                Text(
+                  day.dateLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: pageSecondaryTextColor(context),
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          Text(
-            day.dateLabel,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: pageSecondaryTextColor(context),
-              fontSize: 11.5,
-              fontWeight: FontWeight.w600,
+              ],
             ),
           ),
-          const SizedBox(height: 14),
-          Text(
-            hasLog ? '${_formatCalories(day.calories)} cal' : '--',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: pagePrimaryTextColor(context),
-              fontSize: 17,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            level.label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: level.color,
-              fontSize: 12.5,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 7,
-              backgroundColor: pageBorderColor(context).withValues(alpha: 0.55),
-              valueColor: AlwaysStoppedAnimation<Color>(level.color),
-            ),
-          ),
-          const SizedBox(height: 7),
-          Text(
-            hasLog ? '${day.mealCount} $mealText logged' : 'No meal logged',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: pageSecondaryTextColor(context),
-              fontSize: 11.5,
-              fontWeight: FontWeight.w600,
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        hasLog ? '${_formatCalories(day.calories)} cal' : '--',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: pagePrimaryTextColor(context),
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    _CalorieLevelPill(level: level),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 6,
+                    backgroundColor: pageBorderColor(
+                      context,
+                    ).withValues(alpha: 0.55),
+                    valueColor: AlwaysStoppedAnimation<Color>(level.color),
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  hasLog
+                      ? '${day.mealCount} $mealText logged'
+                      : 'No meal logged',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: pageSecondaryTextColor(context),
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CalorieLevelPill extends StatelessWidget {
+  final _CalorieLevel level;
+
+  const _CalorieLevelPill({required this.level});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: level.color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: level.color.withValues(alpha: 0.22)),
+      ),
+      child: Text(
+        level.label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: level.color,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w900,
+        ),
       ),
     );
   }
@@ -415,7 +438,7 @@ class _NutritionBalanceDiagram extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               chart,
-              const SizedBox(width: 18),
+              const SizedBox(width: 12),
               Expanded(child: legend),
             ],
           );
@@ -424,7 +447,7 @@ class _NutritionBalanceDiagram extends StatelessWidget {
         return Column(
           children: [
             Center(child: chart),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             legend,
           ],
         );
@@ -473,8 +496,8 @@ class _MacroPieChart extends StatelessWidget {
           ];
 
     return SizedBox(
-      width: 150,
-      height: 150,
+      width: 128,
+      height: 128,
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -482,7 +505,7 @@ class _MacroPieChart extends StatelessWidget {
             PieChartData(
               startDegreeOffset: -90,
               sectionsSpace: 3,
-              centerSpaceRadius: 42,
+              centerSpaceRadius: 35,
               borderData: FlBorderData(show: false),
               sections: sections,
             ),
@@ -494,7 +517,7 @@ class _MacroPieChart extends StatelessWidget {
                 hasMacroData ? 'Balance' : 'No data',
                 style: TextStyle(
                   color: primaryTextColor,
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -524,7 +547,7 @@ class _MacroPieChart extends StatelessWidget {
       value: value,
       title: percent >= 12 ? '${percent.round()}%' : '',
       color: color,
-      radius: 24,
+      radius: 21,
       titleStyle: const TextStyle(
         color: Colors.white,
         fontSize: 11,
@@ -551,7 +574,7 @@ class _MacroBalanceLegend extends StatelessWidget {
           gramsPerDay: data.averageProteinG,
           hasData: data.hasMacroData,
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 7),
         _MacroLegendRow(
           color: _carbColor,
           label: 'Carbs',
@@ -559,7 +582,7 @@ class _MacroBalanceLegend extends StatelessWidget {
           gramsPerDay: data.averageCarbsG,
           hasData: data.hasMacroData,
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 7),
         _MacroLegendRow(
           color: _fatColor,
           label: 'Fat',
@@ -567,10 +590,10 @@ class _MacroBalanceLegend extends StatelessWidget {
           gramsPerDay: data.averageFatG,
           hasData: data.hasMacroData,
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 9),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(9),
           decoration: BoxDecoration(
             color: pageBorderColor(context).withValues(alpha: 0.28),
             borderRadius: BorderRadius.circular(14),
@@ -581,7 +604,7 @@ class _MacroBalanceLegend extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: pagePrimaryTextColor(context),
-              fontSize: 12.5,
+              fontSize: 11.5,
               height: 1.35,
               fontWeight: FontWeight.w700,
             ),
@@ -632,7 +655,7 @@ class _MacroLegendRow extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: pageSecondaryTextColor(context),
-            fontSize: 12.5,
+            fontSize: 11.5,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -658,16 +681,16 @@ class _NutritionMetric extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: pagePrimaryTextColor(context),
-            fontSize: 19,
+            fontSize: 16,
             fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: 3),
+        const SizedBox(height: 2),
         Text(
           label,
           style: TextStyle(
             color: pageSecondaryTextColor(context),
-            fontSize: 12.5,
+            fontSize: 11.5,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -832,17 +855,6 @@ class _CalorieLevel {
   final Color color;
 
   const _CalorieLevel({required this.label, required this.color});
-}
-
-int _calorieTileColumnCount(double width) {
-  if (width >= 620) {
-    return 4;
-  }
-  if (width >= 460) {
-    return 3;
-  }
-
-  return 2;
 }
 
 String _formatCalories(double calories) {

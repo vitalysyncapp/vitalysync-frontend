@@ -28,7 +28,7 @@ class TodaysMealsCard extends StatelessWidget {
               const Text(
                 "Today's Meals",
                 style: TextStyle(
-                  fontSize: 17,
+                  fontSize: 15.5,
                   fontWeight: FontWeight.w800,
                   color: Color(0xFF0F172A),
                 ),
@@ -40,8 +40,8 @@ class TodaysMealsCard extends StatelessWidget {
                   onTap: onAddTap,
                   child: Container(
                     padding: EdgeInsets.symmetric(
-                      horizontal: isCompact ? 10 : 12,
-                      vertical: isCompact ? 6 : 7,
+                      horizontal: isCompact ? 8 : 10,
+                      vertical: isCompact ? 5 : 6,
                     ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFEFF6FF),
@@ -54,13 +54,13 @@ class TodaysMealsCard extends StatelessWidget {
                         Icon(
                           Icons.add,
                           color: const Color(0xFF2563EB),
-                          size: isCompact ? 18 : 20,
+                          size: isCompact ? 16 : 18,
                         ),
                         SizedBox(width: isCompact ? 4 : 6),
                         Text(
                           'Manual Log',
                           style: TextStyle(
-                            fontSize: isCompact ? 11.5 : 12,
+                            fontSize: isCompact ? 10.5 : 11,
                             fontWeight: FontWeight.w700,
                             color: const Color(0xFF2563EB),
                           ),
@@ -72,19 +72,19 @@ class TodaysMealsCard extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: isCompact ? 14 : 18),
+          SizedBox(height: isCompact ? 10 : 12),
           if (meals.isEmpty)
             Text(
               'No meals logged yet today.',
               style: TextStyle(
-                fontSize: isCompact ? 13 : 15,
+                fontSize: isCompact ? 12 : 13,
                 color: const Color(0xFF64748B),
               ),
             )
           else
             ...meals.map(
               (meal) => Padding(
-                padding: EdgeInsets.only(bottom: isCompact ? 10 : 14),
+                padding: EdgeInsets.only(bottom: isCompact ? 8 : 10),
                 child: MealItemCard(
                   mealName: _mealLabel(meal.mealType),
                   calories: '${meal.totalCalories.round()} cal',
@@ -134,10 +134,10 @@ class MealItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(isCompact ? 14 : 18),
+      padding: EdgeInsets.all(isCompact ? 11 : 13),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(isCompact ? 14 : 18),
+        borderRadius: BorderRadius.circular(isCompact ? 12 : 14),
         border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
       child: Column(
@@ -149,7 +149,7 @@ class MealItemCard extends StatelessWidget {
                 child: Text(
                   mealName,
                   style: TextStyle(
-                    fontSize: isCompact ? 15 : 17,
+                    fontSize: isCompact ? 13.5 : 15,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF0F172A),
                   ),
@@ -158,47 +158,47 @@ class MealItemCard extends StatelessWidget {
               Text(
                 calories,
                 style: TextStyle(
-                  fontSize: isCompact ? 15 : 17,
+                  fontSize: isCompact ? 13.5 : 15,
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFF0F172A),
                 ),
               ),
             ],
           ),
-          SizedBox(height: isCompact ? 10 : 12),
+          SizedBox(height: isCompact ? 8 : 9),
           Text(
             foods.isEmpty ? 'Saved meal items' : foods,
             maxLines: isCompact ? 2 : 3,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: isCompact ? 13 : 15,
+              fontSize: isCompact ? 12 : 13,
               color: const Color(0xFF334155),
               height: 1.4,
             ),
           ),
-          SizedBox(height: isCompact ? 10 : 14),
+          SizedBox(height: isCompact ? 8 : 10),
           Row(
             children: [
               Text(
                 'P: $protein',
                 style: TextStyle(
-                  fontSize: isCompact ? 12 : 14,
+                  fontSize: isCompact ? 11 : 12.5,
                   color: const Color(0xFF9333EA),
                 ),
               ),
-              SizedBox(width: isCompact ? 12 : 18),
+              SizedBox(width: isCompact ? 10 : 14),
               Text(
                 'C: $carbs',
                 style: TextStyle(
-                  fontSize: isCompact ? 12 : 14,
+                  fontSize: isCompact ? 11 : 12.5,
                   color: const Color(0xFFF97316),
                 ),
               ),
-              SizedBox(width: isCompact ? 12 : 18),
+              SizedBox(width: isCompact ? 10 : 14),
               Text(
                 'F: $fats',
                 style: TextStyle(
-                  fontSize: isCompact ? 12 : 14,
+                  fontSize: isCompact ? 11 : 12.5,
                   color: const Color(0xFFEF4444),
                 ),
               ),

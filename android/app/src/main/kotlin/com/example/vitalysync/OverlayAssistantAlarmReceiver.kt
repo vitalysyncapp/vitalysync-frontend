@@ -6,8 +6,9 @@ import android.content.Intent
 
 class OverlayAssistantAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
-        if (intent?.action == OverlayAssistantManager.actionAlarm) {
-            OverlayAssistantManager.onAutoShowAlarm(context)
+        when (intent?.action) {
+            OverlayAssistantManager.actionAlarm -> OverlayAssistantManager.onAutoShowAlarm(context)
+            OverlayAssistantManager.actionDayStart -> OverlayAssistantManager.onDayStartAlarm(context)
         }
     }
 }

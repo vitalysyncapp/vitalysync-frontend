@@ -12,16 +12,16 @@ class WhiteCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(isCompact ? 14 : 18),
+      padding: EdgeInsets.all(isCompact ? 12 : 14),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(isCompact ? 18 : 24),
+        borderRadius: BorderRadius.circular(isCompact ? 16 : 18),
         border: Border.all(color: const Color(0xFFE5E7EB)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: isCompact ? 10 : 14,
-            offset: Offset(0, isCompact ? 4 : 6),
+            blurRadius: isCompact ? 8 : 10,
+            offset: Offset(0, isCompact ? 3 : 4),
           ),
         ],
       ),

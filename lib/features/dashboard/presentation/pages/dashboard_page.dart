@@ -170,11 +170,16 @@ class _DashboardState extends State<Dashboard> {
             onRefresh: _refreshDashboard,
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 16),
+              padding: EdgeInsets.fromLTRB(
+                12,
+                12,
+                12,
+                pageBottomContentPadding(context, extra: 84),
+              ),
               child: Column(
                 children: [
                   const RevealOnBuild(child: DashboardHeaderCard()),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 70),
                     child: Row(
@@ -187,14 +192,14 @@ class _DashboardState extends State<Dashboard> {
                           icon: _burnoutTrendIcon(),
                           iconColor: _burnoutTrendColor(),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         _AvgSleepStatCard(
                           key: ValueKey('avg-sleep-$_refreshVersion'),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 220),
                     child: BurnoutRiskTrendCard(
@@ -203,7 +208,7 @@ class _DashboardState extends State<Dashboard> {
                       onRefresh: _loadBurnoutPatterns,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 250),
                     child: _AiBurnoutInsightCard(
@@ -211,7 +216,7 @@ class _DashboardState extends State<Dashboard> {
                       isLoading: _isLoadingAiInsight,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   RevealOnBuild(
                     delay: Duration(milliseconds: 130),
                     child: ValueListenableBuilder<ActivityTrackingState>(
@@ -224,42 +229,42 @@ class _DashboardState extends State<Dashboard> {
                       },
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 190),
                     child: NutritionAnalyticsCard(
                       key: ValueKey('nutrition-analytics-$_refreshVersion'),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 310),
                     child: SleepPatternCard(
                       key: ValueKey('sleep-pattern-$_refreshVersion'),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 370),
                     child: WellnessIndexCard(
                       key: ValueKey('wellness-index-$_refreshVersion'),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 430),
                     child: MoodVolatilityCard(
                       key: ValueKey('mood-volatility-$_refreshVersion'),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 490),
                     child: SymptomFrequencyCard(
                       key: ValueKey('symptom-frequency-$_refreshVersion'),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 550),
                     child: WeeklyPerformanceCard(
@@ -445,22 +450,22 @@ class _AiBurnoutInsightCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: pageSurfaceColor(context),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: pageBorderColor(context)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.06),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
       child: isLoading
           ? const SizedBox(
-              height: 72,
+              height: 56,
               child: Center(child: CircularProgressIndicator()),
             )
           : Column(
@@ -469,8 +474,8 @@ class _AiBurnoutInsightCard extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      width: 38,
-                      height: 38,
+                      width: 34,
+                      height: 34,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
@@ -485,10 +490,10 @@ class _AiBurnoutInsightCard extends StatelessWidget {
                       child: const Icon(
                         Icons.auto_awesome_rounded,
                         color: Colors.white,
-                        size: 20,
+                        size: 18,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -497,18 +502,18 @@ class _AiBurnoutInsightCard extends StatelessWidget {
                             'AI Insight',
                             style: TextStyle(
                               color: pagePrimaryTextColor(context),
-                              fontSize: 17,
+                              fontSize: 15,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 1),
                           Text(
                             aiEnhanced
                                 ? 'Personalized from your pattern data'
                                 : 'Rule-based fallback insight',
                             style: TextStyle(
                               color: pageSecondaryTextColor(context),
-                              fontSize: 12.5,
+                              fontSize: 11.5,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -517,16 +522,16 @@ class _AiBurnoutInsightCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
                 Text(
                   recommendation?.title ?? 'Keep building your trend baseline',
                   style: TextStyle(
                     color: pagePrimaryTextColor(context),
-                    fontSize: 16,
+                    fontSize: 14.5,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
                   recommendation?.message ??
                       'Complete a few more check-ins so VitalySync can personalize burnout insights more accurately.',
@@ -534,43 +539,46 @@ class _AiBurnoutInsightCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: pageSecondaryTextColor(context),
-                    height: 1.45,
+                    fontSize: 12.5,
+                    height: 1.35,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 if (why != null && why.isNotEmpty) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 9),
                   Text(
                     why,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: pagePrimaryTextColor(context),
-                      height: 1.4,
+                      fontSize: 12.5,
+                      height: 1.35,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
                 if (steps.isNotEmpty) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 9),
                   ...steps.map(
                     (step) => Padding(
-                      padding: const EdgeInsets.only(top: 6),
+                      padding: const EdgeInsets.only(top: 5),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Icon(
                             Icons.check_circle_rounded,
-                            size: 17,
+                            size: 15,
                             color: Color(0xFF1FB489),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                           Expanded(
                             child: Text(
                               step,
                               style: TextStyle(
                                 color: pageSecondaryTextColor(context),
-                                height: 1.35,
+                                fontSize: 12,
+                                height: 1.3,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),

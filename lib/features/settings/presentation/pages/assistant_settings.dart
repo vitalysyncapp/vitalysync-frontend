@@ -14,13 +14,15 @@ class AssistantSettings extends StatefulWidget {
 class _AssistantSettingsState extends State<AssistantSettings>
     with WidgetsBindingObserver {
   bool? _overlayPermissionGranted;
+  bool? _exactAlarmPermissionGranted;
   bool _pendingAssistantOverlayEnable = false;
+  bool _pendingAssistantAutoShowEnable = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _loadOverlayPermissionStatus();
+    _loadPermissionStatuses();
   }
 
   @override
@@ -32,23 +34,27 @@ class _AssistantSettingsState extends State<AssistantSettings>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _loadOverlayPermissionStatus().then((_) {
+      _loadPermissionStatuses().then((_) {
         if (mounted) {
           _completePendingAssistantOverlayEnable();
+          _completePendingAssistantAutoShowEnable();
         }
       });
     }
   }
 
-  Future<void> _loadOverlayPermissionStatus() async {
-    final granted = await OverlayAssistantController.instance
+  Future<void> _loadPermissionStatuses() async {
+    final overlayGranted = await OverlayAssistantController.instance
         .isOverlayPermissionGranted();
+    final exactAlarmGranted = await OverlayAssistantController.instance
+        .canScheduleExactAlarms();
     if (!mounted) {
       return;
     }
 
     setState(() {
-      _overlayPermissionGranted = granted;
+      _overlayPermissionGranted = overlayGranted;
+      _exactAlarmPermissionGranted = exactAlarmGranted;
     });
   }
 
@@ -72,6 +78,41 @@ class _AssistantSettingsState extends State<AssistantSettings>
         content: Text(
           'Floating assistant is ready and will appear when you leave VitalySync.',
         ),
+      ),
+    );
+  }
+
+  Future<void> _completePendingAssistantAutoShowEnable() async {
+    if (!_pendingAssistantAutoShowEnable) {
+      return;
+    }
+
+    if (_exactAlarmPermissionGranted != true) {
+      _pendingAssistantAutoShowEnable = false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Turn on Alarms & reminders access, then try enabling auto appear again.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    _pendingAssistantAutoShowEnable = false;
+    await AppPreferencesController.instance
+        .updateAssistantOverlayAutoShowEnabled(true);
+    await OverlayAssistantController.instance.syncSettings(
+      AppPreferencesController.instance.notifier.value,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Auto appear is scheduled for your selected time.'),
       ),
     );
   }
@@ -116,7 +157,7 @@ class _AssistantSettingsState extends State<AssistantSettings>
           ),
         );
       }
-      await _loadOverlayPermissionStatus();
+      await _loadPermissionStatuses();
       return;
     }
 
@@ -139,8 +180,39 @@ class _AssistantSettingsState extends State<AssistantSettings>
   }
 
   Future<void> _handleAssistantAutoShowToggle(bool value) async {
+    if (value) {
+      final canScheduleExactAlarms = await OverlayAssistantController.instance
+          .canScheduleExactAlarms();
+      if (!canScheduleExactAlarms) {
+        if (!mounted) {
+          return;
+        }
+
+        _pendingAssistantAutoShowEnable = true;
+        final prompted = await OverlayAssistantController.instance
+            .ensureExactAlarmPermissionWithPrompt(context);
+        if (!prompted && mounted) {
+          _pendingAssistantAutoShowEnable = false;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Auto appear needs Alarms & reminders access to run on schedule.',
+              ),
+            ),
+          );
+        }
+        await _loadPermissionStatuses();
+        return;
+      }
+    } else {
+      _pendingAssistantAutoShowEnable = false;
+    }
+
     await AppPreferencesController.instance
         .updateAssistantOverlayAutoShowEnabled(value);
+    await OverlayAssistantController.instance.syncSettings(
+      AppPreferencesController.instance.notifier.value,
+    );
   }
 
   Future<void> _pickAssistantOverlayTime(String currentValue) async {
@@ -154,6 +226,9 @@ class _AssistantSettingsState extends State<AssistantSettings>
 
     await AppPreferencesController.instance.updateAssistantOverlayAutoShowTime(
       _formatTimeOfDay(picked),
+    );
+    await OverlayAssistantController.instance.syncSettings(
+      AppPreferencesController.instance.notifier.value,
     );
   }
 
@@ -196,8 +271,12 @@ class _AssistantSettingsState extends State<AssistantSettings>
       return 'Enable the floating assistant first';
     }
 
+    if (_exactAlarmPermissionGranted == false) {
+      return 'Allow Android Alarms & reminders so it can appear at the scheduled time';
+    }
+
     return prefs.assistantOverlayAutoShowEnabled
-        ? 'Daily outside-app assistant at ${_displayTime(context, prefs.assistantOverlayAutoShowTime)}'
+        ? 'Daily outside-app assistant after ${_displayTime(context, prefs.assistantOverlayAutoShowTime)}, including when you unlock later'
         : 'Automatically surface the assistant outside the app each morning';
   }
 

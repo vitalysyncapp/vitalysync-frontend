@@ -278,7 +278,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             onRefresh: _refreshHome,
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 16),
+              padding: EdgeInsets.fromLTRB(
+                12,
+                12,
+                12,
+                pageBottomContentPadding(context, extra: 84),
+              ),
               child: Column(
                 children: [
                   if (_isOfflineSummary) ...[
@@ -294,7 +299,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 160),
                     child: Row(
@@ -313,7 +318,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: GlassCard(
                             child: InfoCard(
@@ -331,7 +336,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 220),
                     child: ValueListenableBuilder<ActivityTrackingState>(
@@ -345,7 +350,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       },
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 280),
                     child: GlassCard(
@@ -357,7 +362,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   const RevealOnBuild(
                     delay: Duration(milliseconds: 340),
                     child: QuickActionsSection(),
@@ -369,7 +374,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       key: ValueKey('home-weekly-$_refreshVersion'),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                 ],
               ),
             ),
@@ -416,12 +421,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Widget _buildStatusBanner(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Theme.of(context).brightness == Brightness.dark
             ? const Color(0xFF1E293B)
             : const Color(0xFFEFF6FF),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: Theme.of(context).brightness == Brightness.dark
               ? Colors.white10

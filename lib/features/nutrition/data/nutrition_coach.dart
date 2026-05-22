@@ -201,7 +201,7 @@ class NutritionCoach {
           generatedAt: generatedAt,
           title: 'Nutrition check-in',
           message:
-              'If energy feels low, a balanced meal today might help a bit 🙂',
+              'If energy feels low, a balanced meal today may help steady it.',
           confidence: analysis.confidence,
           source: 'nutrition_assistant',
         ),

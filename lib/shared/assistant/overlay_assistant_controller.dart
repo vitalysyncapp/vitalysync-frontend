@@ -33,12 +33,37 @@ class OverlayAssistantController {
     }
   }
 
+  Future<bool> canScheduleExactAlarms() async {
+    if (!Platform.isAndroid) {
+      return false;
+    }
+
+    try {
+      final granted = await _channel.invokeMethod<bool>(
+        'canScheduleExactAlarms',
+      );
+      return granted ?? false;
+    } on PlatformException {
+      return false;
+    } on MissingPluginException {
+      return false;
+    }
+  }
+
   Future<void> openOverlayPermissionSettings() async {
     if (!Platform.isAndroid) {
       return;
     }
 
     await _invokeOverlayMethod('openOverlayPermissionSettings');
+  }
+
+  Future<void> openExactAlarmSettings() async {
+    if (!Platform.isAndroid) {
+      return;
+    }
+
+    await _invokeOverlayMethod('openExactAlarmSettings');
   }
 
   Future<void> startOverlayService() async {
@@ -63,6 +88,14 @@ class OverlayAssistantController {
     }
 
     await _invokeOverlayMethod('collapseOverlay');
+  }
+
+  Future<void> openApp({String payload = ''}) async {
+    if (!Platform.isAndroid) {
+      return;
+    }
+
+    await _invokeOverlayMethod('openApp', {'payload': payload});
   }
 
   Future<void> syncSettings(AppPreferencesState prefs) async {
@@ -143,6 +176,53 @@ class OverlayAssistantController {
     }
 
     await openOverlayPermissionSettings();
+    return true;
+  }
+
+  Future<bool> ensureExactAlarmPermissionWithPrompt(
+    BuildContext context,
+  ) async {
+    if (!Platform.isAndroid) {
+      return false;
+    }
+
+    if (await canScheduleExactAlarms()) {
+      return true;
+    }
+
+    if (!context.mounted) {
+      return false;
+    }
+
+    final approved = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        final theme = Theme.of(context);
+        return AlertDialog(
+          title: const Text('Allow scheduled assistant'),
+          content: Text(
+            'VitalySync needs Android "Alarms & reminders" access so the assistant can appear at your selected time when the app is closed.',
+            style: theme.textTheme.bodyMedium,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Not now'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Open settings'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (approved != true) {
+      return false;
+    }
+
+    await openExactAlarmSettings();
     return true;
   }
 }

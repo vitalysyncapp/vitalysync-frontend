@@ -6,7 +6,6 @@ import '../../features/adaptive/data/adaptive_nudge_api.dart';
 import '../../features/adaptive/data/insight_report_api.dart';
 import '../offline/offline_cache_store.dart';
 import '../preferences/user_session.dart';
-import 'notification_event_api.dart';
 import 'notification_feed_cache.dart';
 
 export 'notification_feed_cache.dart';
@@ -164,7 +163,9 @@ class NotificationFeedResult {
   int get unreadCount => items.where((item) => item.isUnread).length;
 
   bool get hasReports {
-    return items.any((item) => item.filterKey == 'daily' || item.filterKey == 'weekly');
+    return items.any(
+      (item) => item.filterKey == 'daily' || item.filterKey == 'weekly',
+    );
   }
 }
 
@@ -224,19 +225,16 @@ class NotificationFeedService {
       final results = await Future.wait<dynamic>([
         InsightReportApi.listReports(limit: 30),
         AdaptiveNudgeApi.listNudgeEvents(limit: 30),
-        NotificationEventApi.listEvents(limit: 30),
       ]);
 
       final reports = results[0] as List<InsightReport>;
       final nudges = results[1] as List<AdaptiveNudgeEvent>;
-      final events = results[2] as List<NotificationEventRecord>;
       final readIds = await _readIds(userId);
       final sources = <String>{};
 
       final items = <AppNotificationItem>[
         for (final report in reports) _itemFromReport(report, readIds, sources),
         for (final nudge in nudges) _itemFromNudge(nudge, readIds, sources),
-        for (final event in events) _itemFromNotification(event, readIds, sources),
       ]..sort((left, right) => right.updatedAt.compareTo(left.updatedAt));
 
       final limitedItems = items.take(60).toList();
@@ -322,13 +320,18 @@ class NotificationFeedService {
       return null;
     }
 
-    final items = rawItems
-        .whereType<Map>()
-        .map((item) => AppNotificationItem.fromJson(Map<String, dynamic>.from(item)))
-        .where((item) => item.id.isNotEmpty)
-        .map((item) => item.copyWith(isUnread: !readIds.contains(item.id)))
-        .toList()
-      ..sort((left, right) => right.updatedAt.compareTo(left.updatedAt));
+    final items =
+        rawItems
+            .whereType<Map>()
+            .map(
+              (item) =>
+                  AppNotificationItem.fromJson(Map<String, dynamic>.from(item)),
+            )
+            .where((item) => item.id.isNotEmpty)
+            .where(_isInsightFeedItem)
+            .map((item) => item.copyWith(isUnread: !readIds.contains(item.id)))
+            .toList()
+          ..sort((left, right) => right.updatedAt.compareTo(left.updatedAt));
 
     return NotificationFeedResult(
       items: items,
@@ -391,29 +394,6 @@ class NotificationFeedService {
     );
   }
 
-  AppNotificationItem _itemFromNotification(
-    NotificationEventRecord event,
-    Set<String> readIds,
-    Set<String> sources,
-  ) {
-    sources.add('Reminder history');
-    final id = 'notification_${event.notificationEventId}';
-    final occurredAt = event.sentAt ?? event.scheduledFor ?? event.updatedAt;
-
-    return AppNotificationItem(
-      id: id,
-      category: 'reminder',
-      title: event.title,
-      message: _oneSentence(event.body),
-      sourceLabel: _humanize(event.notificationType),
-      priority: event.status == 'failed' ? 'medium' : 'low',
-      createdAt: event.createdAt,
-      updatedAt: occurredAt,
-      metricChips: [_titleCase(event.status)],
-      isUnread: !readIds.contains(id),
-    );
-  }
-
   Future<int?> _storedUserId() async {
     final session = await UserSessionController.instance.load();
     final userId = session.userId;
@@ -422,7 +402,8 @@ class NotificationFeedService {
 
   Future<Set<String>> _readIds(int userId) async {
     final prefs = await SharedPreferences.getInstance();
-    return (prefs.getStringList(_readIdsKey(userId)) ?? const <String>[]).toSet();
+    return (prefs.getStringList(_readIdsKey(userId)) ?? const <String>[])
+        .toSet();
   }
 
   Future<void> _writeIds(int userId, Set<String> ids) async {
@@ -433,6 +414,12 @@ class NotificationFeedService {
   String _readIdsKey(int userId) {
     return '${_readIdsKeyPrefix}_$userId';
   }
+}
+
+bool _isInsightFeedItem(AppNotificationItem item) {
+  return item.filterKey == 'daily' ||
+      item.filterKey == 'weekly' ||
+      item.filterKey == 'nudges';
 }
 
 List<String> _reportMetricChips(InsightReport report) {
@@ -446,7 +433,12 @@ List<String> _reportMetricChips(InsightReport report) {
   } else {
     _addMetric(chips, 'Sleep', metrics['sleep_hours'], suffix: 'h');
     _addMetric(chips, 'Hydration', metrics['hydration_liters'], suffix: 'L');
-    _addMetric(chips, 'Stress', metrics['perceived_stress_level'], suffix: '/5');
+    _addMetric(
+      chips,
+      'Stress',
+      metrics['perceived_stress_level'],
+      suffix: '/5',
+    );
     _addMetric(chips, 'Steps', metrics['steps'], compactNumber: true);
     _addRiskMetric(chips, metrics['burnout_risk_level']);
   }
@@ -471,8 +463,8 @@ void _addMetric(
   final formatted = compactNumber
       ? NumberFormat.compact().format(parsed)
       : parsed == parsed.roundToDouble()
-          ? parsed.toInt().toString()
-          : parsed.toStringAsFixed(1);
+      ? parsed.toInt().toString()
+      : parsed.toStringAsFixed(1);
   chips.add('$label $formatted$suffix');
 }
 

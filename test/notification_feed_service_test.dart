@@ -57,8 +57,38 @@ void main() {
     final feed = await NotificationFeedService.instance.loadFeed();
 
     expect(feed.unreadCount, 1);
-    expect(feed.items.firstWhere((item) => item.id == 'report_1').isUnread, isFalse);
-    expect(feed.items.firstWhere((item) => item.id == 'nudge_1').isUnread, isTrue);
+    expect(
+      feed.items.firstWhere((item) => item.id == 'report_1').isUnread,
+      isFalse,
+    );
+    expect(
+      feed.items.firstWhere((item) => item.id == 'nudge_1').isUnread,
+      isTrue,
+    );
+  });
+
+  test('cached reminders are excluded from the insight feed', () async {
+    await OfflineCacheStore.saveJson(
+      namespace: notificationFeedCacheNamespace,
+      scope: '1',
+      data: {
+        'refreshed_at': '2026-05-21T10:00:00.000Z',
+        'sources': ['Daily reports', 'Reminder history'],
+        'items': [
+          _itemJson(id: 'report_1', title: 'Daily report'),
+          _itemJson(
+            id: 'notification_1',
+            title: 'Hydration reminder',
+            category: 'reminder',
+          ),
+        ],
+      },
+    );
+
+    final feed = await NotificationFeedService.instance.loadFeed();
+
+    expect(feed.items.map((item) => item.id), ['report_1']);
+    expect(feed.items.any((item) => item.filterKey == 'reminders'), isFalse);
   });
 }
 

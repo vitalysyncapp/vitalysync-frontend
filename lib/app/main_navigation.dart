@@ -19,6 +19,7 @@ class MainNavigationController extends InheritedWidget {
   final ValueChanged<int> onTabSelected;
   final int nutritionLogFocusRequest;
   final VoidCallback onNutritionLogRequested;
+  final VoidCallback onLogRequested;
 
   const MainNavigationController({
     super.key,
@@ -26,6 +27,7 @@ class MainNavigationController extends InheritedWidget {
     required this.onTabSelected,
     required this.nutritionLogFocusRequest,
     required this.onNutritionLogRequested,
+    required this.onLogRequested,
     required super.child,
   });
 
@@ -116,6 +118,14 @@ class _MainNavigationState extends State<MainNavigation>
     _syncPendingLogs();
   }
 
+  void _openLogPage() {
+    setState(() {
+      _currentIndex = 1;
+    });
+
+    _syncPendingLogs();
+  }
+
   Future<void> _syncPendingLogs() async {
     if (_isSyncingOfflineLogs) {
       return;
@@ -146,6 +156,7 @@ class _MainNavigationState extends State<MainNavigation>
       onTabSelected: _selectTab,
       nutritionLogFocusRequest: _nutritionLogFocusRequest,
       onNutritionLogRequested: _openNutritionLog,
+      onLogRequested: _openLogPage,
       child: Scaffold(
         extendBody: true,
         body: Stack(
@@ -186,9 +197,12 @@ class _MainNavigationState extends State<MainNavigation>
                 ),
               );
             }),
-            const FloatingSmartNudgeAssistant(
+            FloatingSmartNudgeAssistant(
               message:
                   "You're doing well today. Log sleep and hydration to keep your streak going.",
+              buttonSize: _currentIndex == 1 ? 46 : 54,
+              onLogMealRequested: _openNutritionLog,
+              onLogPageRequested: _openLogPage,
             ),
           ],
         ),

@@ -21,19 +21,19 @@ class SelectedExerciseGoalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (goal.isNoneToday) {
+      return _NoneTodayGoalCard(isSaving: isSaving, onChooseAgain: onCancel);
+    }
+
     final progress = goal.isDistanceBased
         ? goal.progressForDistance(distanceMeters)
         : goal.isCompleted
         ? 1.0
         : 0.0;
     final progressPercent = (progress * 100).round();
-    final canMarkDone =
-        goal.canManualComplete &&
-        (!goal.isStepTrackedMovement || progress >= 1.0);
+    final canMarkDone = goal.canManualComplete;
     final accent = goal.isCompleted
         ? const Color(0xFF16A34A)
-        : goal.isNoneToday
-        ? const Color(0xFF64748B)
         : const Color(0xFF1EAD83);
 
     return Container(
@@ -58,8 +58,6 @@ class SelectedExerciseGoalCard extends StatelessWidget {
                 child: Icon(
                   goal.isCompleted
                       ? Icons.check_circle_rounded
-                      : goal.isNoneToday
-                      ? Icons.self_improvement_rounded
                       : Icons.flag_rounded,
                   color: accent,
                 ),
@@ -124,7 +122,7 @@ class SelectedExerciseGoalCard extends StatelessWidget {
           Align(
             alignment: Alignment.centerRight,
             child: Text(
-              goal.isNoneToday ? 'Saved' : '$progressPercent%',
+              '$progressPercent%',
               style: TextStyle(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w800,
@@ -177,7 +175,7 @@ class SelectedExerciseGoalCard extends StatelessWidget {
                         ? 'Distance reached. This will save as complete automatically.'
                         : 'Distance reached. Tap Done when finished.'
                   : goal.isStepTrackedMovement
-                  ? 'Walks, jogs, and runs complete automatically when your live steps reach the target.'
+                  ? 'Walks, jogs, and runs complete automatically when your live distance reaches the target. Tap Done if live tracking is unavailable.'
                   : 'Tap Done when this exercise is complete.',
               style: TextStyle(
                 fontSize: 12,
@@ -192,10 +190,6 @@ class SelectedExerciseGoalCard extends StatelessWidget {
   }
 
   String _statusLabel() {
-    if (goal.isNoneToday) {
-      return 'None today saved';
-    }
-
     if (goal.isCompleted) {
       return 'Completed';
     }
@@ -213,6 +207,102 @@ class SelectedExerciseGoalCard extends StatelessWidget {
     }
 
     return '${meters.round()} m';
+  }
+}
+
+class _NoneTodayGoalCard extends StatelessWidget {
+  final bool isSaving;
+  final VoidCallback onChooseAgain;
+
+  const _NoneTodayGoalCard({
+    required this.isSaving,
+    required this.onChooseAgain,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const accent = Color(0xFF64748B);
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: pageSurfaceColor(context),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: pageBorderColor(context)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  Icons.self_improvement_rounded,
+                  color: accent,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'None today',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: pagePrimaryTextColor(context),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Rest choice saved',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: accent,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'That is okay. Choosing rest deliberately still counts as taking care of today. You can pick movement later if your energy changes.',
+            style: TextStyle(
+              color: pageSecondaryTextColor(context),
+              fontSize: 13.5,
+              height: 1.4,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: isSaving ? null : onChooseAgain,
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('Choose Again'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: pagePrimaryTextColor(context),
+                side: BorderSide(color: pageBorderColor(context)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

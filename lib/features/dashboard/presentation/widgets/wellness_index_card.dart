@@ -35,7 +35,7 @@ class _WellnessIndexCardState extends State<WellnessIndexCard> {
         ];
 
         return Container(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(14),
           decoration: _cardDecoration(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -43,19 +43,19 @@ class _WellnessIndexCardState extends State<WellnessIndexCard> {
               const Text(
                 'Wellness Index',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 15.5,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF0B1F44),
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 12),
               if (snapshot.connectionState == ConnectionState.waiting)
                 const SizedBox(
-                  height: 300,
+                  height: 230,
                   child: Center(child: CircularProgressIndicator()),
                 )
               else
-                SizedBox(height: 300, child: RadarChart(_chartData(entries))),
+                SizedBox(height: 230, child: RadarChart(_chartData(entries))),
             ],
           ),
         );
@@ -69,13 +69,13 @@ class _WellnessIndexCardState extends State<WellnessIndexCard> {
       radarBorderData: const BorderSide(color: Colors.transparent),
       gridBorderData: BorderSide(color: Colors.grey.withValues(alpha: 0.20)),
       tickBorderData: BorderSide(color: Colors.grey.withValues(alpha: 0.15)),
-      ticksTextStyle: const TextStyle(color: Color(0xFF9AA5B1), fontSize: 11),
+      ticksTextStyle: const TextStyle(color: Color(0xFF9AA5B1), fontSize: 10),
       getTitle: (index, angle) {
         const titles = ['Sleep', 'Mood', 'Energy', 'Water', 'Move', 'Recover'];
         return RadarChartTitle(text: titles[index], angle: 0);
       },
-      titleTextStyle: const TextStyle(color: Color(0xFF4F5D75), fontSize: 13),
-      titlePositionPercentageOffset: 0.18,
+      titleTextStyle: const TextStyle(color: Color(0xFF4F5D75), fontSize: 11.5),
+      titlePositionPercentageOffset: 0.16,
       dataSets: [
         RadarDataSet(
           fillColor: const Color(0xFF39C8A5).withValues(alpha: 0.42),
@@ -95,12 +95,12 @@ class _WellnessIndexCardState extends State<WellnessIndexCard> {
   BoxDecoration _cardDecoration() {
     return BoxDecoration(
       color: Colors.white.withValues(alpha: 0.94),
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(18),
       boxShadow: [
         BoxShadow(
           color: Colors.black.withValues(alpha: 0.06),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
+          blurRadius: 8,
+          offset: const Offset(0, 3),
         ),
       ],
       border: Border.all(color: Colors.grey.withValues(alpha: 0.10)),

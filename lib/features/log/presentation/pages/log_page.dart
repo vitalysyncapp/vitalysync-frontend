@@ -53,15 +53,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     '\u{1F60A}',
   ];
 
-  final List<String> exercises = [
-    'Walking',
-    'Running',
-    'Gym',
-    'Yoga',
-    'Cycling',
-    'Swimming',
-    'None',
-  ];
+  final List<String> exercises = LogApi.exerciseOptions;
 
   final List<String> symptoms = [
     'Headache',
@@ -74,11 +66,11 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   ];
 
   final List<String> habits = [
-    'Mindful break',
-    'Outdoor light',
-    'Screen boundary',
-    'Healthy meal',
-    'Social connection',
+    'Quiet break',
+    'Sunlight or fresh air',
+    'Less screen time',
+    'Balanced meal',
+    'Talked with someone',
     'None',
   ];
 
@@ -126,6 +118,8 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     try {
       final defaults = await OnboardingService.loadDefaults();
       final data = await LogApi.fetchTodayLog();
+      final hydrationPrefill = await LogApi.readHydrationPrefill();
+      final exercisePrefill = await LogApi.readExercisePrefill();
       final streak = data['streak'] as Map<String, dynamic>?;
       final hasLog = data['has_log'] == true;
       final pendingCount = LogApi.parseInt(data['pending_sync_count']);
@@ -149,7 +143,10 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
         _populateFromLog(data['log'] as Map<String, dynamic>);
       } else {
         setState(() {
-          _resetForm();
+          _resetForm(
+            hydrationPrefill: hydrationPrefill,
+            exercisePrefill: exercisePrefill,
+          );
         });
       }
 
@@ -197,10 +194,27 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
         ..clear()
         ..addAll(
           ((log['habit_names'] as List<dynamic>? ?? const []).map(
-            (item) => item.toString(),
+            (item) => _readableHabitName(item.toString()),
           )),
         );
     });
+  }
+
+  String _readableHabitName(String habit) {
+    switch (habit) {
+      case 'Mindful break':
+        return 'Quiet break';
+      case 'Outdoor light':
+        return 'Sunlight or fresh air';
+      case 'Screen boundary':
+        return 'Less screen time';
+      case 'Healthy meal':
+        return 'Balanced meal';
+      case 'Social connection':
+        return 'Talked with someone';
+      default:
+        return habit;
+    }
   }
 
   bool _validateLog() {
@@ -293,16 +307,25 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     });
   }
 
-  void _resetForm() {
+  void _resetForm({double hydrationPrefill = 0, String? exercisePrefill}) {
     sleepHours = defaultSleepHours;
     sleepQuality = 2;
     moodIndex = 3;
     energyLevel = 1;
-    hydration = 0.5;
+    hydration = hydrationPrefill > 0
+        ? hydrationPrefill.clamp(0, 10).toDouble()
+        : 0.5;
     workloadHoursBand = 'None';
     perceivedStressLevel = null;
     breakQualityLevel = null;
     selectedExercises.clear();
+    final normalizedExercisePrefill = exercisePrefill == null
+        ? null
+        : LogApi.normalizeExerciseNameForLog(exercisePrefill);
+    if (normalizedExercisePrefill != null &&
+        normalizedExercisePrefill.isNotEmpty) {
+      selectedExercises.add(normalizedExercisePrefill);
+    }
     selectedSymptoms.clear();
     selectedHabits.clear();
   }
@@ -391,15 +414,15 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                           : SingleChildScrollView(
                               key: const ValueKey('log_form'),
                               padding: EdgeInsets.fromLTRB(
-                                14,
                                 12,
-                                14,
-                                pageBottomContentPadding(context, extra: 16),
+                                10,
+                                12,
+                                pageBottomContentPadding(context, extra: 84),
                               ),
                               child: Column(
                                 children: [
                                   RevealOnBuild(child: _buildLogHeaderCard()),
-                                  const SizedBox(height: 18),
+                                  const SizedBox(height: 12),
                                   RevealOnBuild(
                                     delay: const Duration(milliseconds: 90),
                                     child: LogWidgets(
@@ -485,7 +508,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                                       onHabitToggle: _toggleHabit,
                                     ),
                                   ),
-                                  const SizedBox(height: 22),
+                                  const SizedBox(height: 14),
                                   RevealOnBuild(
                                     delay: const Duration(milliseconds: 180),
                                     child: _buildSaveButton(),
@@ -517,7 +540,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   Widget _buildSaveButton() {
     return SizedBox(
       width: double.infinity,
-      height: 64,
+      height: 54,
       child: ElevatedButton(
         onPressed: isSaving ? null : _saveLog,
         style: ElevatedButton.styleFrom(
@@ -525,7 +548,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
           ),
         ),
         child: isSaving
@@ -542,7 +565,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                     ? 'Update Today\'s Check-in'
                     : 'Save Daily Check-in',
                 style: const TextStyle(
-                  fontSize: 22,
+                  fontSize: 18,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -554,7 +577,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     return Center(
       key: const ValueKey('success_screen'),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(18),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -566,56 +589,56 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                 return Transform.scale(scale: scale, child: child);
               },
               child: Container(
-                width: 112,
-                height: 112,
+                width: 88,
+                height: 88,
                 decoration: BoxDecoration(
                   color: const Color(0xFFE0F2FE),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
                       color: const Color(0xFF38BDF8).withValues(alpha: 0.22),
-                      blurRadius: 18,
-                      spreadRadius: 2,
+                      blurRadius: 14,
+                      spreadRadius: 1,
                     ),
                   ],
                 ),
                 child: const Icon(
                   Icons.check_circle_rounded,
-                  size: 64,
+                  size: 52,
                   color: Color(0xFF0284C7),
                 ),
               ),
             ),
-            const SizedBox(height: 26),
+            const SizedBox(height: 18),
             Text(
               lastSaveWasOffline ? 'Check-in Saved Offline' : 'Check-in Saved!',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 28,
+                fontSize: 23,
                 fontWeight: FontWeight.w800,
                 color: pagePrimaryTextColor(context),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Text(
               hasPendingSync
                   ? 'Your daily wellness log is saved on this device. It will sync automatically when internet access is available again.'
                   : 'Your daily wellness log has been recorded. Come back tomorrow for your next check-in, or redo today\'s entry if you need to update it.',
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 16,
+                fontSize: 14,
                 color: Color(0xFF64748B),
                 height: 1.4,
               ),
             ),
             if (hasPendingSync) ...[
-              const SizedBox(height: 18),
+              const SizedBox(height: 12),
               _buildPendingSyncBanner(),
             ],
-            const SizedBox(height: 34),
+            const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
-              height: 56,
+              height: 48,
               child: OutlinedButton(
                 onPressed: _redoLog,
                 style: OutlinedButton.styleFrom(
@@ -627,7 +650,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                 child: const Text(
                   'Redo Today\'s Log',
                   style: TextStyle(
-                    fontSize: 17,
+                    fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF334155),
                   ),
@@ -643,10 +666,10 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   Widget _buildPendingSyncBanner() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFFEFF6FF),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFBFDBFE)),
       ),
       child: Row(
@@ -671,16 +694,16 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   Widget _buildLogHeaderCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
         color: pageSurfaceColor(context),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: pageBorderColor(context)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -694,21 +717,21 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                 Text(
                   'Log Your Day',
                   style: TextStyle(
-                    fontSize: 22,
+                    fontSize: 18,
                     fontWeight: FontWeight.w800,
                     color: pagePrimaryTextColor(context),
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   'It is recommended to log after your day or at night.',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 12.5,
                     color: pageSecondaryTextColor(context),
                     height: 1.4,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -733,10 +756,10 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
           ),
           const SizedBox(width: 12),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
             decoration: BoxDecoration(
               color: const Color(0xFFFFF7ED),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFFFED7AA)),
             ),
             child: Row(
@@ -744,7 +767,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                 Text(
                   '$currentStreak',
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: 15,
                     fontWeight: FontWeight.w800,
                     color: Color(0xFF9A3412),
                   ),
@@ -752,7 +775,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                 const SizedBox(width: 6),
                 const Icon(
                   Icons.local_fire_department_rounded,
-                  size: 18,
+                  size: 16,
                   color: Color(0xFFFF6B35),
                 ),
               ],
@@ -765,7 +788,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
 
   Widget _buildDefaultChip(IconData icon, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
         color: Theme.of(context).brightness == Brightness.dark
             ? Colors.white.withValues(alpha: 0.06)
@@ -776,12 +799,12 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 15, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 6),
+          Icon(icon, size: 13, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 5),
           Text(
             label,
             style: TextStyle(
-              fontSize: 12.5,
+              fontSize: 11.5,
               fontWeight: FontWeight.w700,
               color: pagePrimaryTextColor(context),
             ),

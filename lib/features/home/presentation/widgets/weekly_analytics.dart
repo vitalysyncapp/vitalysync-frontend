@@ -30,18 +30,18 @@ class WeeklyAnalyticsCard extends StatelessWidget {
     final borderColor = pageBorderColor(context);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
             color: isDark
                 ? Colors.black.withValues(alpha: 0.25)
                 : Colors.black.withValues(alpha: 0.05),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -54,7 +54,7 @@ class WeeklyAnalyticsCard extends StatelessWidget {
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 15.5,
                   fontWeight: FontWeight.w700,
                   color: titleColor,
                 ),
@@ -82,7 +82,7 @@ class WeeklyAnalyticsCard extends StatelessWidget {
                 child: Text(
                   'View All',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 12.5,
                     fontWeight: FontWeight.w500,
                     color: linkColor,
                   ),
@@ -90,12 +90,12 @@ class WeeklyAnalyticsCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
           ...List.generate(items.length, (index) {
             final item = items[index];
             return Padding(
               padding: EdgeInsets.only(
-                bottom: index == items.length - 1 ? 0 : 18,
+                bottom: index == items.length - 1 ? 0 : 11,
               ),
               child: _buildStatRow(
                 label: item.label,
@@ -125,7 +125,7 @@ class WeeklyAnalyticsCard extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 13,
               fontWeight: FontWeight.w400,
               color: labelColor,
             ),
@@ -136,7 +136,7 @@ class WeeklyAnalyticsCard extends StatelessWidget {
           value,
           textAlign: TextAlign.right,
           style: TextStyle(
-            fontSize: 15,
+            fontSize: 13,
             fontWeight: valueWeight,
             color: valueColor,
           ),

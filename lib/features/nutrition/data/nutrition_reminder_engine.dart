@@ -83,10 +83,15 @@ class NutritionReminderEngine {
     );
   }
 
-  Future<NutritionInsight?> assistantInsightForToday() async {
+  Future<NutritionInsight?> assistantInsightForToday({
+    bool forceRefresh = false,
+  }) async {
     final now = DateTime.now();
-    if (await _store.hasShownAssistantToday(now: now)) {
-      return null;
+    if (!forceRefresh) {
+      final cached = await _store.readAssistantInsightForToday(now: now);
+      if (cached != null) {
+        return cached;
+      }
     }
 
     final evaluation = await evaluate(allowNotification: false);
@@ -102,13 +107,15 @@ class NutritionReminderEngine {
         return null;
       }
 
-      await _store.markAssistantShownToday(now: now);
-      await _store.rememberMessage(lastInsight.message, at: now);
-      return lastInsight.copyWith(
+      final insight = lastInsight.copyWith(
         title: 'Nutrition check-in',
         source: 'nutrition_assistant',
         generatedAt: now,
       );
+      await _store.markAssistantShownToday(now: now);
+      await _store.rememberMessage(insight.message, at: now);
+      await _store.saveAssistantInsightForToday(insight, now: now);
+      return insight;
     }
 
     final candidates = NutritionCoach.buildAssistantCandidates(
@@ -120,8 +127,25 @@ class NutritionReminderEngine {
       if (await _store.canUseMessage(candidate.message, now: now)) {
         await _store.markAssistantShownToday(now: now);
         await _store.rememberMessage(candidate.message, at: now);
+        await _store.saveAssistantInsightForToday(candidate, now: now);
         return candidate;
       }
+    }
+
+    final cached = await _store.readAssistantInsightForToday(now: now);
+    if (cached != null) {
+      return cached;
+    }
+
+    if (lastInsight != null && lastInsight.message.trim().isNotEmpty) {
+      final insight = lastInsight.copyWith(
+        id: 'assistant_${lastInsight.id}',
+        title: 'Nutrition check-in',
+        source: 'nutrition_assistant',
+        generatedAt: now,
+      );
+      await _store.saveAssistantInsightForToday(insight, now: now);
+      return insight;
     }
 
     return null;

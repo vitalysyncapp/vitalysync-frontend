@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../features/adaptive/data/adaptive_nudge_api.dart';
@@ -12,25 +13,87 @@ import '../../features/exercise/data/exercise_recommendation_model.dart';
 import '../../features/exercise/data/exercise_recommendation_service.dart';
 import '../../features/exercise/presentation/widgets/assistant_exercise_card.dart';
 import '../../features/exercise/presentation/widgets/selected_exercise_goal_card.dart';
+import '../../features/home/data/environment_model.dart';
 import '../../features/log/data/log_api.dart';
+import '../../features/nutrition/data/nutrition_analyzer.dart';
 import '../../features/nutrition/data/nutrition_coach.dart';
+import '../../features/nutrition/data/nutrition_insight_store.dart';
 import '../../features/nutrition/data/nutrition_reminder_engine.dart';
-import '../notifications/local_notification_service.dart';
 import '../theme/app_page_style.dart';
 
 part 'assistant_bubbles.dart';
 part 'assistant_experience_panel.dart';
+part 'assistant_quick_log_bar.dart';
 part 'smart_nudge_dialog_card.dart';
 part 'weekly_pulse_widgets.dart';
 part 'assistant_visual_widgets.dart';
 
 const _assistantAnimationPath = 'assets/animations/Assistant.json';
+const _assistantSmartNudgeSectionIndex = 0;
+const _assistantExerciseSectionIndex = 1;
+
+enum _AssistantBubbleKind { smartNudge, nutrition, exercise }
+
+String _shortAssistantText(String value, {int maxChars = 112}) {
+  final clean = value.replaceAll(RegExp(r'\s+'), ' ').trim();
+  if (clean.isEmpty) {
+    return '';
+  }
+
+  final sentenceMatch = RegExp(r'^(.+?[.!?])(?:\s|$)').firstMatch(clean);
+  final firstSentence = sentenceMatch?.group(1)?.trim();
+  final candidate = firstSentence != null && firstSentence.length <= maxChars
+      ? firstSentence
+      : clean;
+
+  if (candidate.length <= maxChars) {
+    return candidate;
+  }
+
+  final clipped = candidate.substring(0, maxChars).trimRight();
+  final lastSpace = clipped.lastIndexOf(' ');
+  final safeClip = lastSpace > maxChars * 0.62
+      ? clipped.substring(0, lastSpace)
+      : clipped;
+  return '$safeClip...';
+}
+
+bool _isAiEnhancedNudge(AdaptiveNudgeRecommendation recommendation) {
+  return recommendation.metadata['ai_enhanced'] == true;
+}
+
+bool _isFallbackNudge(AdaptiveNudgeRecommendation recommendation) {
+  return recommendation.triggerReason == 'Local fallback' ||
+      recommendation.metadata['local_fallback'] == true;
+}
+
+List<AdaptiveNudgeRecommendation> prioritizeAssistantNudges(
+  List<AdaptiveNudgeRecommendation> recommendations,
+) {
+  final unique = <String, AdaptiveNudgeRecommendation>{};
+  for (final recommendation in recommendations) {
+    final key =
+        '${recommendation.nudgeEventId ?? 0}:${recommendation.nudgeType}:${recommendation.title}';
+    unique[key] = recommendation;
+  }
+
+  final items = unique.values.toList();
+  return [
+    ...items.where(_isAiEnhancedNudge),
+    ...items.where(
+      (item) => !_isAiEnhancedNudge(item) && !_isFallbackNudge(item),
+    ),
+    ...items.where(_isFallbackNudge),
+  ];
+}
 
 class FloatingSmartNudgeAssistant extends StatefulWidget {
   final String message;
   final String emoji;
   final double buttonSize;
   final Duration autoHideDuration;
+  final VoidCallback? onLogMealRequested;
+  final VoidCallback? onLogPageRequested;
 
   const FloatingSmartNudgeAssistant({
     super.key,
@@ -38,6 +101,8 @@ class FloatingSmartNudgeAssistant extends StatefulWidget {
     this.emoji = '\u{1F499}',
     this.buttonSize = 54,
     this.autoHideDuration = const Duration(seconds: 10),
+    this.onLogMealRequested,
+    this.onLogPageRequested,
   });
 
   @override
@@ -67,7 +132,7 @@ class _AssistantFloatingBubbleVisualState
   @override
   void initState() {
     super.initState();
-    _loadWeeklyPulseIndicator();
+    unawaited(_loadWeeklyPulseIndicator());
   }
 
   Future<void> _loadWeeklyPulseIndicator() async {
@@ -107,7 +172,7 @@ class _FloatingSmartNudgeAssistantState
   static const _moveAnimationDuration = Duration(milliseconds: 220);
 
   bool _isBubbleVisible = false;
-  bool _isExercisePreviewVisible = false;
+  _AssistantBubbleKind _activeBubbleKind = _AssistantBubbleKind.smartNudge;
   bool _isDragging = false;
   bool _isDialogOpen = false;
   bool _hasCustomPosition = false;
@@ -125,12 +190,13 @@ class _FloatingSmartNudgeAssistantState
   @override
   void initState() {
     super.initState();
-    ExerciseGoalService.instance.start();
+    unawaited(ActivityService.instance.startTracking());
+    unawaited(ExerciseGoalService.instance.start());
     ExerciseGoalService.instance.notifier.addListener(_handleGoalEvent);
-    _loadRecommendations();
-    _loadAdaptiveNudges();
-    _loadNutritionInsight();
-    _loadWeeklyPulseIndicator();
+    unawaited(_loadRecommendations());
+    unawaited(_loadAdaptiveNudges());
+    unawaited(_loadNutritionInsight());
+    unawaited(_loadWeeklyPulseIndicator());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _showBubble();
@@ -144,27 +210,47 @@ class _FloatingSmartNudgeAssistantState
     super.dispose();
   }
 
-  Future<void> _loadRecommendations() async {
-    final recommendations = await _recommendationService.loadRecommendations();
-    if (!mounted) return;
+  Future<List<ExerciseRecommendationModel>> _loadRecommendations() async {
+    await ActivityService.instance.startTracking(refreshFromBackend: false);
 
-    setState(() {
-      _recommendations = recommendations;
-    });
+    try {
+      final recommendations = await _recommendationService
+          .loadRecommendations();
+      if (!mounted) return recommendations;
+
+      setState(() {
+        _recommendations = recommendations;
+      });
+      return recommendations;
+    } catch (_) {
+      return _recommendations;
+    }
   }
 
-  Future<List<AdaptiveNudgeRecommendation>> _loadAdaptiveNudges() async {
+  Future<EnvironmentSnapshot?> _loadEnvironmentSnapshot() {
+    return _recommendationService.loadEnvironmentSnapshot();
+  }
+
+  Future<List<AdaptiveNudgeRecommendation>> _loadAdaptiveNudges({
+    bool forceRefresh = false,
+  }) async {
     try {
-      final response = await AdaptiveNudgeApi.fetchRecommendations(limit: 3);
+      final response = await AdaptiveNudgeApi.fetchAssistantRecommendations(
+        limit: 3,
+        forceRefresh: forceRefresh,
+      );
+      final recommendations = prioritizeAssistantNudges(
+        response.recommendations,
+      );
       if (!mounted) {
-        return response.recommendations;
+        return recommendations;
       }
 
       setState(() {
-        _adaptiveNudges = response.recommendations;
+        _adaptiveNudges = recommendations;
       });
 
-      return response.recommendations;
+      return recommendations;
     } catch (_) {
       if (!mounted) {
         return _adaptiveNudges;
@@ -177,25 +263,29 @@ class _FloatingSmartNudgeAssistantState
     }
   }
 
-  Future<void> _loadNutritionInsight() async {
+  Future<NutritionInsight?> _loadNutritionInsight({
+    bool forceRefresh = false,
+  }) async {
     try {
       final insight = await NutritionReminderEngine.instance
-          .assistantInsightForToday();
+          .assistantInsightForToday(forceRefresh: forceRefresh);
       if (!mounted) {
-        return;
+        return insight;
       }
 
       setState(() {
         _nutritionInsight = insight;
       });
+      return insight;
     } catch (_) {
       if (!mounted) {
-        return;
+        return _nutritionInsight;
       }
 
       setState(() {
         _nutritionInsight = null;
       });
+      return null;
     }
   }
 
@@ -224,6 +314,16 @@ class _FloatingSmartNudgeAssistantState
     }
 
     _lastCompletionEventId = state.completionEventId;
+    final completedGoal = state.goal;
+    if (completedGoal != null &&
+        completedGoal.isCompleted &&
+        !completedGoal.isNoneToday) {
+      unawaited(
+        LogApi.applyExerciseGoalSelection(completedGoal).catchError((_) {
+          return <String, dynamic>{};
+        }),
+      );
+    }
     if (!mounted) return;
 
     ScaffoldMessenger.of(
@@ -236,10 +336,10 @@ class _FloatingSmartNudgeAssistantState
 
     setState(() {
       _isBubbleVisible = true;
-      _isExercisePreviewVisible = false;
+      _activeBubbleKind = _availableBubbleKinds().first;
     });
 
-    _bubbleSwitchTimer = Timer(widget.autoHideDuration, _showExercisePreview);
+    _scheduleNextBubble();
   }
 
   void _hideBubble() {
@@ -249,22 +349,46 @@ class _FloatingSmartNudgeAssistantState
 
     setState(() {
       _isBubbleVisible = false;
-      _isExercisePreviewVisible = false;
     });
   }
 
-  void _showExercisePreview() {
+  List<_AssistantBubbleKind> _availableBubbleKinds() {
+    return [
+      _AssistantBubbleKind.smartNudge,
+      if (_nutritionInsight != null &&
+          _nutritionInsight!.message.trim().isNotEmpty)
+        _AssistantBubbleKind.nutrition,
+      _AssistantBubbleKind.exercise,
+    ];
+  }
+
+  void _scheduleNextBubble() {
+    _bubbleSwitchTimer?.cancel();
+    _bubbleSwitchTimer = Timer(widget.autoHideDuration, _advanceBubblePreview);
+  }
+
+  void _advanceBubblePreview() {
     if (!mounted || !_isBubbleVisible) return;
 
+    final bubbleKinds = _availableBubbleKinds();
+    final currentIndex = bubbleKinds.indexOf(_activeBubbleKind);
+    final nextIndex = currentIndex < 0 ? 0 : currentIndex + 1;
+
+    if (nextIndex >= bubbleKinds.length) {
+      _hideBubble();
+      return;
+    }
+
     setState(() {
-      _isExercisePreviewVisible = true;
+      _activeBubbleKind = bubbleKinds[nextIndex];
     });
 
-    _bubbleSwitchTimer?.cancel();
-    _bubbleSwitchTimer = Timer(widget.autoHideDuration, _hideBubble);
+    _scheduleNextBubble();
   }
 
-  Future<void> _openAssistantDialog() async {
+  Future<void> _openAssistantDialog({
+    int initialSectionIndex = _assistantSmartNudgeSectionIndex,
+  }) async {
     if (_isDialogOpen) {
       return;
     }
@@ -273,26 +397,61 @@ class _FloatingSmartNudgeAssistantState
     setState(() {
       _isDialogOpen = true;
       _isBubbleVisible = false;
-      _isExercisePreviewVisible = false;
     });
 
     if (!mounted) return;
 
     try {
-      await showModalBottomSheet<void>(
+      await showGeneralDialog<void>(
         context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (context) {
-          return AssistantExperiencePanel(
-            message: widget.message,
-            emoji: widget.emoji,
-            recommendations: _recommendations,
-            adaptiveNudges: _adaptiveNudges,
-            nutritionInsight: _nutritionInsight,
-            onRefreshRecommendations: _loadRecommendations,
-            onRefreshAdaptiveNudges: _loadAdaptiveNudges,
-            onClose: () => Navigator.of(context).pop(),
+        barrierDismissible: true,
+        barrierLabel: MaterialLocalizations.of(
+          context,
+        ).modalBarrierDismissLabel,
+        barrierColor: Colors.black.withValues(alpha: 0.42),
+        transitionDuration: const Duration(milliseconds: 260),
+        pageBuilder: (dialogContext, _, _) {
+          final screenSize = MediaQuery.sizeOf(dialogContext);
+          return Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: min(460, screenSize.width - 24),
+                maxHeight: screenSize.height * 0.84,
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: AssistantExperiencePanel(
+                  message: widget.message,
+                  emoji: widget.emoji,
+                  recommendations: _recommendations,
+                  adaptiveNudges: _adaptiveNudges,
+                  nutritionInsight: _nutritionInsight,
+                  initialSectionIndex: initialSectionIndex,
+                  onRefreshRecommendations: _loadRecommendations,
+                  onRefreshAdaptiveNudges: _loadAdaptiveNudges,
+                  onRefreshNutritionInsight: _loadNutritionInsight,
+                  onRefreshEnvironment: _loadEnvironmentSnapshot,
+                  onLogMealRequested: widget.onLogMealRequested,
+                  onLogPageRequested: widget.onLogPageRequested,
+                  useSafeAreaPadding: false,
+                  onClose: () => Navigator.of(dialogContext).pop(),
+                ),
+              ),
+            ),
+          );
+        },
+        transitionBuilder: (context, animation, _, child) {
+          final curved = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeInCubic,
+          );
+          return FadeTransition(
+            opacity: curved,
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.96, end: 1).animate(curved),
+              child: child,
+            ),
           );
         },
       );
@@ -311,6 +470,98 @@ class _FloatingSmartNudgeAssistantState
 
   void _handleAssistantTap() {
     _openAssistantDialog();
+  }
+
+  void _openExerciseDialog() {
+    _openAssistantDialog(initialSectionIndex: _assistantExerciseSectionIndex);
+  }
+
+  Future<void> _acceptExercisePreview(
+    ExerciseRecommendationModel recommendation,
+  ) async {
+    if (ExerciseGoalService.instance.notifier.value.isSaving) {
+      return;
+    }
+
+    _bubbleSwitchTimer?.cancel();
+    try {
+      final goal = await ExerciseGoalService.instance.chooseExercise(
+        recommendation,
+      );
+      var appliedToLog = false;
+      var queuedForLog = false;
+
+      try {
+        final result = await LogApi.applyExerciseGoalSelection(goal);
+        appliedToLog = result['exercise_applied_to_log'] == true;
+        queuedForLog = result['exercise_applied_to_log'] == false;
+      } catch (_) {
+        // The goal remains saved locally even if today's log sync is delayed.
+      }
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _exerciseSelectionMessage(
+              exerciseName: goal.exerciseName,
+              isNoneToday: goal.isNoneToday,
+              appliedToLog: appliedToLog,
+              queuedForLog: queuedForLog,
+            ),
+          ),
+        ),
+      );
+
+      if (goal.isNoneToday) {
+        setState(() {
+          _isBubbleVisible = true;
+          _activeBubbleKind = _AssistantBubbleKind.exercise;
+        });
+        _scheduleNextBubble();
+        return;
+      }
+
+      await _openAssistantDialog(
+        initialSectionIndex: _assistantExerciseSectionIndex,
+      );
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Unable to save exercise: ${error.toString().replaceFirst('Exception: ', '')}',
+          ),
+        ),
+      );
+      _scheduleNextBubble();
+    }
+  }
+
+  String _exerciseSelectionMessage({
+    required String exerciseName,
+    required bool isNoneToday,
+    required bool appliedToLog,
+    required bool queuedForLog,
+  }) {
+    final normalizedName = LogApi.normalizeExerciseNameForLog(exerciseName);
+    var message = '$exerciseName saved as today\'s goal.';
+    if (isNoneToday) {
+      message = 'Rest choice saved for today.';
+      if (appliedToLog) {
+        message += ' Today\'s log now shows None.';
+      } else if (queuedForLog) {
+        message += ' None will prefill the Log page.';
+      }
+    } else if (appliedToLog) {
+      message += ' $normalizedName also updated today\'s log.';
+    } else if (queuedForLog) {
+      message += ' $normalizedName will prefill the Log page.';
+    }
+
+    return message;
   }
 
   EdgeInsets _dragPadding(BuildContext context, Size bounds) {
@@ -404,11 +655,41 @@ class _FloatingSmartNudgeAssistantState
     });
 
     if (_isBubbleVisible) {
-      _bubbleSwitchTimer?.cancel();
-      _bubbleSwitchTimer = Timer(
-        widget.autoHideDuration,
-        _isExercisePreviewVisible ? _hideBubble : _showExercisePreview,
-      );
+      _scheduleNextBubble();
+    }
+  }
+
+  Widget _buildActiveBubble(ExerciseGoalState goalState) {
+    final primaryNudge = _adaptiveNudges.isEmpty ? null : _adaptiveNudges.first;
+
+    switch (_activeBubbleKind) {
+      case _AssistantBubbleKind.nutrition:
+        final insight = _nutritionInsight;
+        if (insight == null) {
+          return _SmartNudgeBubble(
+            emoji: widget.emoji,
+            message: _shortAssistantText(
+              primaryNudge?.message ?? widget.message,
+            ),
+            onClose: _hideBubble,
+          );
+        }
+
+        return _NutritionNudgeBubble(insight: insight, onClose: _hideBubble);
+      case _AssistantBubbleKind.exercise:
+        return _ExercisePreviewBubble(
+          goalState: goalState,
+          recommendations: _recommendations,
+          onClose: _hideBubble,
+          onChoose: _openExerciseDialog,
+          onAccept: _acceptExercisePreview,
+        );
+      case _AssistantBubbleKind.smartNudge:
+        return _SmartNudgeBubble(
+          emoji: widget.emoji,
+          message: _shortAssistantText(primaryNudge?.message ?? widget.message),
+          onClose: _hideBubble,
+        );
     }
   }
 
@@ -476,28 +757,8 @@ class _FloatingSmartNudgeAssistantState
                       opacity: _isBubbleVisible ? 1 : 0,
                       child: ValueListenableBuilder<ExerciseGoalState>(
                         valueListenable: ExerciseGoalService.instance.notifier,
-                        builder: (context, goalState, _) {
-                          if (_isExercisePreviewVisible) {
-                            return _ExercisePreviewBubble(
-                              goalState: goalState,
-                              recommendations: _recommendations,
-                              onClose: _hideBubble,
-                              onOpen: _openAssistantDialog,
-                            );
-                          }
-
-                          return _SmartNudgeBubble(
-                            emoji: widget.emoji,
-                            title: _adaptiveNudges.isEmpty
-                                ? 'Smart Nudge'
-                                : _adaptiveNudges.first.title,
-                            message: _adaptiveNudges.isEmpty
-                                ? widget.message
-                                : _adaptiveNudges.first.message,
-                            nutritionInsight: _nutritionInsight,
-                            onClose: _hideBubble,
-                          );
-                        },
+                        builder: (context, goalState, _) =>
+                            _buildActiveBubble(goalState),
                       ),
                     ),
                   ),

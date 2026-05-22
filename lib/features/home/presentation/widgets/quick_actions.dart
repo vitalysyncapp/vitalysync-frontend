@@ -10,7 +10,6 @@ class QuickActionCard extends StatelessWidget {
   final List<Color> gradientColors;
   final Color iconColor;
   final Color titleColor;
-  final Color subtitleColor;
 
   const QuickActionCard({
     super.key,
@@ -20,7 +19,6 @@ class QuickActionCard extends StatelessWidget {
     required this.gradientColors,
     required this.iconColor,
     required this.titleColor,
-    required this.subtitleColor,
   });
 
   @override
@@ -31,19 +29,19 @@ class QuickActionCard extends StatelessWidget {
           context,
         ).scale(1).clamp(1.0, 1.35);
         final isCompact = constraints.maxWidth < 170;
-        final cardPadding = isCompact ? 14.0 : 16.0;
-        final iconBoxSize = isCompact ? 40.0 : 44.0;
-        final actionSize = isCompact ? 30.0 : 34.0;
+        final cardPadding = isCompact ? 8.0 : 9.0;
+        final iconBoxSize = isCompact ? 28.0 : 30.0;
+        final actionSize = isCompact ? 22.0 : 24.0;
         final cardHeight =
-            (isCompact ? 136.0 : 144.0) + ((textScale - 1.0) * 28.0);
+            (isCompact ? 62.0 : 66.0) + ((textScale - 1.0) * 10.0);
 
         return InkWell(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(14),
           onTap: onTap,
           child: Container(
             height: cardHeight,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(14),
               gradient: LinearGradient(
                 colors: gradientColors,
                 begin: Alignment.topLeft,
@@ -51,75 +49,52 @@ class QuickActionCard extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: gradientColors.last.withValues(alpha: 0.18),
-                  blurRadius: 16,
-                  offset: const Offset(0, 10),
+                  color: gradientColors.last.withValues(alpha: 0.12),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
             child: Padding(
               padding: EdgeInsets.all(cardPadding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Row(
                 children: [
                   Container(
                     width: iconBoxSize,
                     height: iconBoxSize,
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.72),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(icon, color: iconColor, size: 24),
+                    child: Icon(icon, color: iconColor, size: 18),
                   ),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              title,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: titleColor,
-                                fontSize: isCompact ? 14.5 : 16,
-                                fontWeight: FontWeight.w700,
-                                height: 1.1,
-                              ),
-                            ),
-                            SizedBox(height: isCompact ? 3 : 4),
-                            Text(
-                              'Open now',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: subtitleColor,
-                                fontSize: isCompact ? 12 : 12.5,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
+                  SizedBox(width: isCompact ? 7 : 8),
+                  Expanded(
+                    child: Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: titleColor,
+                        fontSize: isCompact ? 12 : 12.5,
+                        fontWeight: FontWeight.w800,
+                        height: 1.05,
                       ),
-                      SizedBox(width: isCompact ? 8 : 10),
-                      Container(
-                        width: actionSize,
-                        height: actionSize,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.82),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.arrow_forward_rounded,
-                          color: titleColor,
-                          size: isCompact ? 16 : 18,
-                        ),
-                      ),
-                    ],
+                    ),
+                  ),
+                  SizedBox(width: isCompact ? 5 : 6),
+                  Container(
+                    width: actionSize,
+                    height: actionSize,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.82),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.arrow_forward_rounded,
+                      color: titleColor,
+                      size: isCompact ? 13 : 14,
+                    ),
                   ),
                 ],
               ),
@@ -172,7 +147,6 @@ class QuickActionsSection extends StatelessWidget {
         gradientColors: const [Color(0xFFE6F6FF), Color(0xFFDDEEFF)],
         iconColor: const Color(0xFF2067C9),
         titleColor: const Color(0xFF15447C),
-        subtitleColor: const Color(0xFF55789C),
         onTap: () => _goToTab(context, 1),
       ),
       _QuickActionItem(
@@ -181,27 +155,26 @@ class QuickActionsSection extends StatelessWidget {
         gradientColors: const [Color(0xFFE6FBF1), Color(0xFFD7F6E8)],
         iconColor: const Color(0xFF178A58),
         titleColor: const Color(0xFF17583B),
-        subtitleColor: const Color(0xFF4C7C64),
         onTap: () => _goToNutritionLog(context),
       ),
     ];
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: pageSurfaceColor(context),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: pageBorderColor(context)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(
               alpha: Theme.of(context).brightness == Brightness.dark
-                  ? 0.25
-                  : 0.05,
+                  ? 0.18
+                  : 0.04,
             ),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -210,8 +183,9 @@ class QuickActionsSection extends StatelessWidget {
           final textScale = MediaQuery.textScalerOf(
             context,
           ).scale(1).clamp(1.0, 1.35);
-          final spacing = 12.0;
-          final useSingleColumn = constraints.maxWidth < 360 || textScale > 1.1;
+          final spacing = 8.0;
+          final useSingleColumn =
+              constraints.maxWidth < 320 || textScale > 1.18;
           final cardWidth = useSingleColumn
               ? constraints.maxWidth
               : (constraints.maxWidth - spacing) / 2;
@@ -222,39 +196,30 @@ class QuickActionsSection extends StatelessWidget {
               Text(
                 'Quick Actions',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 13,
                   fontWeight: FontWeight.bold,
                   color: pagePrimaryTextColor(context),
                 ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                'Pick up a healthy habit in one tap.',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: pageSecondaryTextColor(context),
-                ),
-              ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
               Wrap(
                 spacing: spacing,
                 runSpacing: spacing,
-                children: actions
-                    .map(
-                      (action) => SizedBox(
-                        width: cardWidth,
-                        child: QuickActionCard(
-                          icon: action.icon,
-                          title: action.title,
-                          onTap: action.onTap,
-                          gradientColors: action.gradientColors,
-                          iconColor: action.iconColor,
-                          titleColor: action.titleColor,
-                          subtitleColor: action.subtitleColor,
-                        ),
+                children: [
+                  ...actions.map(
+                    (action) => SizedBox(
+                      width: cardWidth,
+                      child: QuickActionCard(
+                        icon: action.icon,
+                        title: action.title,
+                        onTap: action.onTap,
+                        gradientColors: action.gradientColors,
+                        iconColor: action.iconColor,
+                        titleColor: action.titleColor,
                       ),
-                    )
-                    .toList(),
+                    ),
+                  ),
+                ],
               ),
             ],
           );
@@ -271,7 +236,6 @@ class _QuickActionItem {
   final List<Color> gradientColors;
   final Color iconColor;
   final Color titleColor;
-  final Color subtitleColor;
 
   const _QuickActionItem({
     required this.icon,
@@ -280,6 +244,5 @@ class _QuickActionItem {
     required this.gradientColors,
     required this.iconColor,
     required this.titleColor,
-    required this.subtitleColor,
   });
 }

@@ -29,9 +29,9 @@ class _WeeklyPerformanceCardState extends State<WeeklyPerformanceCard> {
 
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(22),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(18),
             gradient: const LinearGradient(
               colors: [Color(0xFF4A86F7), Color.fromARGB(255, 122, 86, 189)],
               begin: Alignment.topLeft,
@@ -40,14 +40,14 @@ class _WeeklyPerformanceCardState extends State<WeeklyPerformanceCard> {
             boxShadow: [
               BoxShadow(
                 color: Colors.blue.withValues(alpha: 0.18),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
+                blurRadius: 12,
+                offset: const Offset(0, 5),
               ),
             ],
           ),
           child: snapshot.connectionState == ConnectionState.waiting
               ? const SizedBox(
-                  height: 120,
+                  height: 92,
                   child: Center(
                     child: CircularProgressIndicator(color: Colors.white),
                   ),
@@ -59,11 +59,11 @@ class _WeeklyPerformanceCardState extends State<WeeklyPerformanceCard> {
                       'Weekly Performance',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 17,
+                        fontSize: 15,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 22),
+                    const SizedBox(height: 14),
                     Row(
                       children: [
                         Expanded(
@@ -80,16 +80,16 @@ class _WeeklyPerformanceCardState extends State<WeeklyPerformanceCard> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 12),
                     const Divider(color: Colors.white24),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
                     Text(
                       metrics?.weeklyNote ??
                           'Add logs to see your weekly performance.',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 15,
-                        height: 1.5,
+                        fontSize: 12.5,
+                        height: 1.35,
                       ),
                     ),
                   ],
@@ -115,14 +115,14 @@ class _MetricBlock extends StatelessWidget {
           value,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 42,
+            fontSize: 32,
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2),
         Text(
           label,
-          style: const TextStyle(color: Colors.white70, fontSize: 15),
+          style: const TextStyle(color: Colors.white70, fontSize: 12.5),
         ),
       ],
     );

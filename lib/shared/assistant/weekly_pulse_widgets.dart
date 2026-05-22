@@ -1,52 +1,5 @@
 part of 'floating_smart_nudge_assistant.dart';
 
-class _NudgeStatusHint extends StatelessWidget {
-  final String status;
-  final bool isUpdating;
-
-  const _NudgeStatusHint({required this.status, required this.isUpdating});
-
-  @override
-  Widget build(BuildContext context) {
-    final isAccepted = status == 'completed';
-    final color = isAccepted
-        ? const Color(0xFFBBF7D0)
-        : Colors.white.withValues(alpha: 0.72);
-    final icon = isAccepted
-        ? Icons.check_circle_rounded
-        : Icons.remove_circle_rounded;
-    final label = isAccepted
-        ? 'Accepted. I will use this as a helpful signal.'
-        : 'Dismissed. I will ease off this type of nudge.';
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: isAccepted ? 0.12 : 0.16),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 17, color: color),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              isUpdating ? 'Saving...' : label,
-              style: TextStyle(
-                color: color,
-                fontSize: 12.5,
-                height: 1.25,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _WeeklyPulseCard extends StatelessWidget {
   final bool isLoading;
   final bool isSaving;

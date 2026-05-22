@@ -491,12 +491,12 @@ class _NutritionPageState extends State<NutritionPage> {
           Text(
             'Review Meal',
             style: TextStyle(
-              fontSize: isCompact ? 17 : 18,
+              fontSize: isCompact ? 15.5 : 16.5,
               fontWeight: FontWeight.w800,
               color: const Color(0xFF0F172A),
             ),
           ),
-          SizedBox(height: isCompact ? 12 : 16),
+          SizedBox(height: isCompact ? 9 : 11),
           ..._reviewItems.asMap().entries.map((entry) {
             final editor = _ReviewItemEditor(
               key: ValueKey('review-${entry.key}-${entry.value.foodName}'),
@@ -516,7 +516,7 @@ class _NutritionPageState extends State<NutritionPage> {
 
             return KeyedSubtree(key: _firstReviewItemKey, child: editor);
           }),
-          SizedBox(height: isCompact ? 10 : 14),
+          SizedBox(height: isCompact ? 8 : 10),
           Row(
             children: [
               Expanded(
@@ -525,7 +525,7 @@ class _NutritionPageState extends State<NutritionPage> {
                   child: const Text('Cancel'),
                 ),
               ),
-              SizedBox(width: isCompact ? 8 : 10),
+              SizedBox(width: isCompact ? 7 : 8),
               Expanded(
                 child: OutlinedButton(
                   onPressed: _isSaving ? null : _analyzeSelectedMeal,
@@ -534,15 +534,15 @@ class _NutritionPageState extends State<NutritionPage> {
               ),
             ],
           ),
-          SizedBox(height: isCompact ? 8 : 10),
+          SizedBox(height: isCompact ? 7 : 8),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: _isSaving ? null : _confirmMeal,
               icon: _isSaving
                   ? const SizedBox(
-                      width: 18,
-                      height: 18,
+                      width: 16,
+                      height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         color: Colors.white,
@@ -553,7 +553,7 @@ class _NutritionPageState extends State<NutritionPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF16A34A),
                 foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: isCompact ? 12 : 14),
+                padding: EdgeInsets.symmetric(vertical: isCompact ? 10 : 12),
               ),
             ),
           ),
@@ -566,8 +566,8 @@ class _NutritionPageState extends State<NutritionPage> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isCompact = screenWidth < 380;
-    final pagePadding = isCompact ? 12.0 : 16.0;
-    final sectionSpacing = isCompact ? 12.0 : 16.0;
+    final pagePadding = isCompact ? 10.0 : 12.0;
+    final sectionSpacing = isCompact ? 10.0 : 12.0;
 
     return Container(
       decoration: buildPageDecoration(context),
@@ -581,7 +581,7 @@ class _NutritionPageState extends State<NutritionPage> {
               pagePadding,
               pagePadding,
               pagePadding,
-              pageBottomContentPadding(context, extra: 20),
+              pageBottomContentPadding(context, extra: 84),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

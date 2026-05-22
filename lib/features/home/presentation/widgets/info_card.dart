@@ -44,35 +44,35 @@ class InfoCard extends StatelessWidget {
     final subtitleColor = isDark ? Colors.white70 : Colors.grey[600];
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: cardBackground,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         boxShadow: boxShadow,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: 8),
+          Icon(icon, color: color, size: 26),
+          const SizedBox(height: 6),
           Text(
             title,
             style: TextStyle(
               color: subtitleColor,
-              fontSize: 14,
+              fontSize: 12.5,
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
             child: isLoading
                 ? SizedBox(
                     key: const ValueKey('loading'),
-                    height: 34,
-                    width: 34,
+                    height: 28,
+                    width: 28,
                     child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
+                      strokeWidth: 2.2,
                       color: color,
                     ),
                   )
@@ -80,18 +80,23 @@ class InfoCard extends StatelessWidget {
                     value,
                     key: ValueKey(value),
                     style: TextStyle(
-                      fontSize: 28,
+                      fontSize: 23,
                       fontWeight: FontWeight.bold,
                       color: textColor,
                     ),
                   ),
           ),
           const SizedBox(height: 4),
-          Text(subtitle, style: TextStyle(color: subtitleColor, fontSize: 12)),
+          Text(
+            subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: subtitleColor, fontSize: 11),
+          ),
           if (statusHint != null && statusHint!.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
               decoration: BoxDecoration(
                 color: (statusColor ?? color).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(999),
@@ -104,7 +109,7 @@ class InfoCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 10.5,
+                  fontSize: 10,
                   fontWeight: FontWeight.w700,
                   color: statusColor ?? color,
                 ),

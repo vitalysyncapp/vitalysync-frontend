@@ -23,15 +23,15 @@ class TodayNutritionCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(isCompact ? 14 : 16),
+      padding: EdgeInsets.all(isCompact ? 9 : 11),
       decoration: BoxDecoration(
         color: const Color.fromARGB(255, 8, 137, 184),
-        borderRadius: BorderRadius.circular(isCompact ? 18 : 24),
+        borderRadius: BorderRadius.circular(isCompact ? 14 : 16),
         boxShadow: [
           BoxShadow(
             color: Colors.green.withValues(alpha: 0.18),
-            blurRadius: isCompact ? 10 : 14,
-            offset: Offset(0, isCompact ? 4 : 6),
+            blurRadius: isCompact ? 6 : 8,
+            offset: Offset(0, isCompact ? 2 : 3),
           ),
         ],
       ),
@@ -42,11 +42,11 @@ class TodayNutritionCard extends StatelessWidget {
             "Today's Nutrition",
             style: TextStyle(
               color: Colors.white,
-              fontSize: 15,
+              fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
           ),
-          SizedBox(height: isCompact ? 12 : 16),
+          SizedBox(height: isCompact ? 6 : 7),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -58,17 +58,17 @@ class TodayNutritionCard extends StatelessWidget {
                       calories.round().toString(),
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: isCompact ? 30 : 38,
+                        fontSize: isCompact ? 22 : 26,
                         fontWeight: FontWeight.w800,
                         height: 1,
                       ),
                     ),
-                    SizedBox(height: isCompact ? 4 : 6),
+                    SizedBox(height: isCompact ? 2 : 3),
                     Text(
                       'Calories',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: isCompact ? 14 : 16,
+                        fontSize: isCompact ? 11 : 12,
                       ),
                     ),
                   ],
@@ -82,16 +82,16 @@ class TodayNutritionCard extends StatelessWidget {
                       'Goal: 2,000',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: isCompact ? 14 : 16,
+                        fontSize: isCompact ? 11 : 12,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    SizedBox(height: isCompact ? 10 : 12),
+                    SizedBox(height: isCompact ? 5 : 6),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(20),
                       child: LinearProgressIndicator(
                         value: progress,
-                        minHeight: isCompact ? 8 : 10,
+                        minHeight: isCompact ? 5 : 6,
                         backgroundColor: Colors.white24,
                         valueColor: const AlwaysStoppedAnimation<Color>(
                           Colors.white,
@@ -103,9 +103,9 @@ class TodayNutritionCard extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: isCompact ? 14 : 18),
+          SizedBox(height: isCompact ? 7 : 8),
           Container(height: 1, color: Colors.white24),
-          SizedBox(height: isCompact ? 12 : 16),
+          SizedBox(height: isCompact ? 6 : 7),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -152,16 +152,16 @@ class _MacroMiniStat extends StatelessWidget {
           value,
           style: TextStyle(
             color: Colors.white,
-            fontSize: isCompact ? 20 : 24,
+            fontSize: isCompact ? 14.5 : 17,
             fontWeight: FontWeight.w800,
           ),
         ),
-        SizedBox(height: isCompact ? 1 : 2),
+        const SizedBox(height: 1),
         Text(
           label,
           style: TextStyle(
             color: Colors.white70,
-            fontSize: isCompact ? 13 : 15,
+            fontSize: isCompact ? 10.5 : 11.5,
           ),
         ),
       ],

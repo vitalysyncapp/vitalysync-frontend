@@ -74,6 +74,8 @@ class ActivityService {
   static const String _pendingActivityKeyPrefix = 'pending_daily_activity';
   static const String _baselineDateKeyPrefix = 'activity_baseline_date';
   static const String _baselineStepsKeyPrefix = 'activity_baseline_steps';
+  static const String _lastRawDateKeyPrefix = 'activity_last_raw_date';
+  static const String _lastRawStepsKeyPrefix = 'activity_last_raw_steps';
   static const String _preferredGoalStepsKeyPrefix =
       'activity_preferred_goal_steps';
 
@@ -81,6 +83,7 @@ class ActivityService {
       ValueNotifier<ActivityTrackingState>(ActivityTrackingState.initial());
 
   StreamSubscription<StepCount>? _stepSubscription;
+  Timer? _dayBoundaryTimer;
   DateTime? _lastSyncAttempt;
   bool _hasStarted = false;
   bool _isStarting = false;
@@ -96,6 +99,7 @@ class ActivityService {
   Future<void> startTracking({bool refreshFromBackend = true}) async {
     if (_hasStarted || _isStarting) {
       await _loadCachedActivity(markLoading: false);
+      _scheduleDayBoundaryRefresh();
       if (refreshFromBackend) {
         unawaited(refresh());
       }
@@ -105,6 +109,7 @@ class ActivityService {
     _isStarting = true;
     try {
       await _loadCachedActivity();
+      _scheduleDayBoundaryRefresh();
 
       if (refreshFromBackend) {
         unawaited(refresh());
@@ -136,6 +141,7 @@ class ActivityService {
       }
 
       await _listenToStepCount();
+      _scheduleDayBoundaryRefresh();
       _hasStarted = true;
     } finally {
       _isStarting = false;
@@ -282,7 +288,9 @@ class ActivityService {
 
   Future<void> disposeTracking() async {
     await _stepSubscription?.cancel();
+    _dayBoundaryTimer?.cancel();
     _stepSubscription = null;
+    _dayBoundaryTimer = null;
     _hasStarted = false;
   }
 
@@ -326,9 +334,17 @@ class ActivityService {
     final rawSteps = max(0, event.steps);
     var baselineDate = prefs.getString(_baselineDateKey(userId));
     var baselineSteps = prefs.getInt(_baselineStepsKey(userId));
+    final lastRawDate = prefs.getString(_lastRawDateKey(userId));
+    final lastRawSteps = prefs.getInt(_lastRawStepsKey(userId));
 
     if (baselineDate != today || baselineSteps == null) {
-      baselineSteps = max(0, rawSteps - cachedTodaySteps);
+      baselineSteps =
+          lastRawDate != null &&
+              lastRawDate != today &&
+              lastRawSteps != null &&
+              rawSteps >= lastRawSteps
+          ? max(0, lastRawSteps)
+          : max(0, rawSteps - cachedTodaySteps);
       baselineDate = today;
       await prefs.setString(_baselineDateKey(userId), baselineDate);
       await prefs.setInt(_baselineStepsKey(userId), baselineSteps);
@@ -347,6 +363,8 @@ class ActivityService {
     );
 
     await _cacheActivity(userId, log);
+    await prefs.setString(_lastRawDateKey(userId), today);
+    await prefs.setInt(_lastRawStepsKey(userId), rawSteps);
     await _queuePendingActivity(session, log);
 
     _emit(
@@ -364,6 +382,17 @@ class ActivityService {
       _lastSyncAttempt = DateTime.now();
       unawaited(syncPendingActivityLogs());
     }
+  }
+
+  void _scheduleDayBoundaryRefresh() {
+    _dayBoundaryTimer?.cancel();
+    final now = DateTime.now();
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
+    final delay = tomorrow.difference(now) + const Duration(minutes: 1);
+    _dayBoundaryTimer = Timer(delay, () {
+      unawaited(_loadCachedActivity(markLoading: false));
+      _scheduleDayBoundaryRefresh();
+    });
   }
 
   void _handleStepCountError(Object error) {
@@ -585,6 +614,14 @@ class ActivityService {
 
   String _baselineStepsKey(int userId) {
     return '${_baselineStepsKeyPrefix}_$userId';
+  }
+
+  String _lastRawDateKey(int userId) {
+    return '${_lastRawDateKeyPrefix}_$userId';
+  }
+
+  String _lastRawStepsKey(int userId) {
+    return '${_lastRawStepsKeyPrefix}_$userId';
   }
 
   String _preferredGoalStepsKey(int userId) {

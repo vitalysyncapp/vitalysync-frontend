@@ -40,50 +40,50 @@ class LogNewMealCard extends StatelessWidget {
           const Text(
             'Log New Meal',
             style: TextStyle(
-              fontSize: 17,
+              fontSize: 14,
               fontWeight: FontWeight.w800,
               color: Color(0xFF0F172A),
             ),
           ),
-          SizedBox(height: isCompact ? 14 : 18),
+          SizedBox(height: isCompact ? 7 : 8),
           MealTypeChoices(
             selectedMealType: selectedMealType,
             onMealTypeChanged: onMealTypeChanged,
             canSelectMealType: canSelectMealType,
             onLockedMealTypeTap: onLockedMealTypeTap,
           ),
-          SizedBox(height: isCompact ? 14 : 18),
+          SizedBox(height: isCompact ? 7 : 8),
           InkWell(
-            borderRadius: BorderRadius.circular(isCompact ? 18 : 22),
+            borderRadius: BorderRadius.circular(isCompact ? 13 : 15),
             onTap: onTakePhoto,
             child: Container(
               width: double.infinity,
               padding: EdgeInsets.symmetric(
-                vertical: isCompact ? 24 : 36,
-                horizontal: isCompact ? 16 : 20,
+                vertical: isCompact ? 11 : 14,
+                horizontal: isCompact ? 10 : 12,
               ),
               decoration: BoxDecoration(
                 color: const Color(0xFFF3F7FF),
-                borderRadius: BorderRadius.circular(isCompact ? 18 : 22),
+                borderRadius: BorderRadius.circular(isCompact ? 13 : 15),
                 border: Border.all(color: const Color(0xFF82B5FF), width: 1.4),
               ),
               child: Column(
                 children: [
                   if (selectedImage != null) ...[
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(isCompact ? 12 : 16),
+                      borderRadius: BorderRadius.circular(isCompact ? 10 : 12),
                       child: Image.file(
                         selectedImage!,
-                        height: isCompact ? 140 : 180,
+                        height: isCompact ? 82 : 104,
                         width: double.infinity,
                         fit: BoxFit.cover,
                       ),
                     ),
-                    SizedBox(height: isCompact ? 12 : 16),
+                    SizedBox(height: isCompact ? 6 : 7),
                   ] else ...[
                     Container(
-                      width: isCompact ? 64 : 82,
-                      height: isCompact ? 64 : 82,
+                      width: isCompact ? 38 : 46,
+                      height: isCompact ? 38 : 46,
                       decoration: const BoxDecoration(
                         color: Color(0xFF2563EB),
                         shape: BoxShape.circle,
@@ -91,27 +91,27 @@ class LogNewMealCard extends StatelessWidget {
                       child: Icon(
                         Icons.camera_alt_outlined,
                         color: Colors.white,
-                        size: isCompact ? 28 : 34,
+                        size: isCompact ? 19 : 22,
                       ),
                     ),
-                    SizedBox(height: isCompact ? 12 : 16),
+                    SizedBox(height: isCompact ? 6 : 7),
                   ],
                   Text(
                     'Take Photo',
                     style: TextStyle(
-                      fontSize: isCompact ? 16 : 18,
+                      fontSize: isCompact ? 12.5 : 13.5,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFF1D4ED8),
                     ),
                   ),
-                  SizedBox(height: isCompact ? 4 : 6),
+                  SizedBox(height: isCompact ? 2 : 3),
                   Text(
                     selectedImage == null
                         ? 'Snap a picture of your meal'
                         : 'Tap to retake meal photo',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: isCompact ? 13 : 14,
+                      fontSize: isCompact ? 10.5 : 11,
                       color: const Color(0xFF2563EB),
                     ),
                   ),
@@ -119,19 +119,19 @@ class LogNewMealCard extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(height: isCompact ? 14 : 18),
+          SizedBox(height: isCompact ? 7 : 8),
           InkWell(
-            borderRadius: BorderRadius.circular(isCompact ? 16 : 18),
+            borderRadius: BorderRadius.circular(isCompact ? 12 : 13),
             onTap: onChooseFromGallery,
             child: Container(
               width: double.infinity,
               padding: EdgeInsets.symmetric(
-                vertical: isCompact ? 14 : 18,
-                horizontal: isCompact ? 14 : 16,
+                vertical: isCompact ? 8 : 9,
+                horizontal: isCompact ? 10 : 12,
               ),
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(isCompact ? 16 : 18),
+                borderRadius: BorderRadius.circular(isCompact ? 12 : 13),
                 border: Border.all(color: const Color(0xFFE5E7EB)),
               ),
               child: Row(
@@ -140,13 +140,13 @@ class LogNewMealCard extends StatelessWidget {
                   Icon(
                     Icons.photo_library_outlined,
                     color: const Color(0xFF475569),
-                    size: isCompact ? 22 : 26,
+                    size: isCompact ? 17 : 19,
                   ),
-                  SizedBox(width: isCompact ? 8 : 10),
+                  SizedBox(width: isCompact ? 6 : 8),
                   Text(
                     'Choose from Gallery',
                     style: TextStyle(
-                      fontSize: isCompact ? 14 : 16,
+                      fontSize: isCompact ? 11.5 : 12.5,
                       fontWeight: FontWeight.w500,
                       color: const Color(0xFF334155),
                     ),
@@ -155,15 +155,15 @@ class LogNewMealCard extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(height: isCompact ? 14 : 18),
+          SizedBox(height: isCompact ? 7 : 8),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: isAnalyzing ? null : onAnalyze,
               icon: isAnalyzing
                   ? const SizedBox(
-                      width: 18,
-                      height: 18,
+                      width: 16,
+                      height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         color: Colors.white,
@@ -174,9 +174,9 @@ class LogNewMealCard extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF16A34A),
                 foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: isCompact ? 12 : 14),
+                padding: EdgeInsets.symmetric(vertical: isCompact ? 8 : 10),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(isCompact ? 14 : 16),
+                  borderRadius: BorderRadius.circular(isCompact ? 11 : 12),
                 ),
               ),
             ),
@@ -204,8 +204,8 @@ class MealTypeChoices extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: 5,
+      runSpacing: 5,
       children: nutritionMealTypeChoices.map((choice) {
         final isSelected = selectedMealType == choice.value;
         return ChoiceChip(
@@ -221,10 +221,15 @@ class MealTypeChoices extends StatelessWidget {
             onLockedMealTypeTap?.call(choice.value);
           },
           selectedColor: const Color(0xFFDCFCE7),
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
+          labelPadding: const EdgeInsets.symmetric(horizontal: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
           labelStyle: TextStyle(
             color: isSelected
                 ? const Color(0xFF15803D)
                 : const Color(0xFF475569),
+            fontSize: 11.5,
             fontWeight: FontWeight.w700,
           ),
         );

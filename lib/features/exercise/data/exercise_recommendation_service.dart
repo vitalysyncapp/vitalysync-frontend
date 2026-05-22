@@ -1,6 +1,7 @@
 import '../../activity/data/activity_service.dart';
 import '../../adaptive/data/adaptive_nudge_api.dart';
 import '../../dashboard/data/burnout_score_api.dart';
+import '../../home/data/device_location_service.dart';
 import '../../home/data/environment_api.dart';
 import '../../home/data/environment_model.dart';
 import '../../log/data/log_api.dart';
@@ -11,6 +12,9 @@ import 'exercise_recommendation_model.dart';
 class ExerciseRecommendationService {
   const ExerciseRecommendationService();
   static const String _recommendationsCache = 'exercise_recommendations';
+  static const double _fallbackLatitude = 9.65;
+  static const double _fallbackLongitude = 123.85;
+  static const Duration _freshEnvironmentWindow = Duration(minutes: 45);
 
   Future<List<ExerciseRecommendationModel>> loadRecommendations() async {
     try {
@@ -26,10 +30,31 @@ class ExerciseRecommendationService {
     }
   }
 
+  Future<EnvironmentSnapshot?> loadEnvironmentSnapshot() async {
+    final cached = await EnvironmentApi.loadCachedSnapshot();
+    final now = DateTime.now();
+    if (cached != null) {
+      final age = now.difference(cached.fetchedAt.toLocal());
+      if (!age.isNegative && age < _freshEnvironmentWindow) {
+        return cached;
+      }
+    }
+
+    try {
+      final coordinates = await DeviceLocationService.getCurrentCoordinates();
+      return await EnvironmentApi.fetchEnvironment(
+        lat: coordinates?.latitude ?? _fallbackLatitude,
+        lon: coordinates?.longitude ?? _fallbackLongitude,
+      );
+    } catch (_) {
+      return cached;
+    }
+  }
+
   Future<List<ExerciseRecommendationModel>> _buildRecommendations() async {
     final defaults = await OnboardingService.loadDefaults();
+    final environment = await loadEnvironmentSnapshot();
     final activity = ActivityService.instance.notifier.value.log;
-    final environment = await EnvironmentApi.loadCachedSnapshot();
     final burnoutSummary = await _safeBurnoutPatternSummary();
     final adaptiveNudges = await _safeAdaptiveNudges();
     final latestLog = await _safeLatestLog();

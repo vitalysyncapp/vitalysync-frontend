@@ -116,9 +116,9 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
   }
 
   return AppBar(
-    toolbarHeight: 88,
+    toolbarHeight: 76,
     elevation: 0,
-    titleSpacing: 18,
+    titleSpacing: 14,
     surfaceTintColor: Colors.transparent,
     flexibleSpace: Stack(
       fit: StackFit.expand,
@@ -142,8 +142,8 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.1),
-                blurRadius: 22,
-                offset: const Offset(0, 10),
+                blurRadius: 16,
+                offset: const Offset(0, 7),
               ),
             ],
           ),
@@ -164,26 +164,26 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
             Text(
               greeting(),
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: Colors.white70,
               ),
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 2),
             Text(
               username,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                fontSize: 20,
+                fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 3),
             Text(
               today,
-              style: const TextStyle(fontSize: 12.5, color: Colors.white70),
+              style: const TextStyle(fontSize: 11.5, color: Colors.white70),
             ),
           ],
         );
@@ -220,8 +220,8 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
                     child: Container(
                       margin: const EdgeInsets.only(right: 6),
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 7,
+                        horizontal: 10,
+                        vertical: 6,
                       ),
                       decoration: actionChipDecoration(),
                       child: Row(
@@ -231,13 +231,13 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w700,
-                              fontSize: 14,
+                              fontSize: 13,
                             ),
                           ),
                           const SizedBox(width: 6),
                           Icon(
                             Icons.local_fire_department_rounded,
-                            size: 18,
+                            size: 16,
                             color: loggedToday
                                 ? const Color(0xFFFFB15A)
                                 : Colors.white54,
@@ -315,7 +315,7 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
                     },
                   ),
                   Padding(
-                    padding: const EdgeInsets.only(right: 16),
+                    padding: const EdgeInsets.only(right: 12),
                     child: PopupMenuButton<int>(
                       offset: const Offset(0, 54),
                       shape: RoundedRectangleBorder(
@@ -332,7 +332,7 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
                           ),
                         ),
                         child: CircleAvatar(
-                          radius: 16,
+                          radius: 14,
                           backgroundImage: AssetImage(avatarImage),
                         ),
                       ),

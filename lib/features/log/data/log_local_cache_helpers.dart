@@ -44,6 +44,8 @@ Future<Map<String, dynamic>> _saveOfflineLog(
   _upsertLogByDate(pendingLogs, localLog);
   await _writePendingLogs(userId, pendingLogs);
   await _upsertCachedLog(userId, localLog);
+  await _clearHydrationPrefillForUser(userId);
+  await _clearExercisePrefillForUser(userId);
 
   final streak = await _refreshOptimisticStreak(userId);
   await invalidateNotificationFeedCache();
@@ -467,6 +469,54 @@ String _cachedLogsKey(int userId) {
 
 String _syncedStreakKey(int userId) {
   return '${LogApi._syncedStreakKeyPrefix}_$userId';
+}
+
+String _hydrationPrefillKey(int userId) {
+  return '${LogApi._hydrationPrefillKeyPrefix}_$userId';
+}
+
+String _exercisePrefillKey(int userId) {
+  return '${LogApi._exercisePrefillKeyPrefix}_$userId';
+}
+
+Future<double> _readHydrationPrefillForUser(int userId) async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getDouble(_hydrationPrefillKey(userId)) ?? 0;
+}
+
+Future<void> _clearHydrationPrefillForUser(int userId) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.remove(_hydrationPrefillKey(userId));
+}
+
+Future<Map<String, dynamic>?> _readExercisePrefillForUser(int userId) async {
+  final prefs = await SharedPreferences.getInstance();
+  final raw = prefs.getString(_exercisePrefillKey(userId));
+  if (raw == null || raw.isEmpty) {
+    return null;
+  }
+
+  try {
+    final decoded = jsonDecode(raw);
+    if (decoded is! Map) {
+      return null;
+    }
+
+    final data = Map<String, dynamic>.from(decoded);
+    if (data['date']?.toString() != LogApi.todayKey()) {
+      await _clearExercisePrefillForUser(userId);
+      return null;
+    }
+
+    return data;
+  } catch (_) {
+    return null;
+  }
+}
+
+Future<void> _clearExercisePrefillForUser(int userId) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.remove(_exercisePrefillKey(userId));
 }
 
 Future<Map<String, dynamic>> _saveOfflineWeeklyPulse({

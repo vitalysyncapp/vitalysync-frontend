@@ -77,10 +77,10 @@ class ActivitySummaryCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(compact ? 18 : 20),
+      padding: EdgeInsets.all(compact ? 14 : 15),
       decoration: BoxDecoration(
         color: pageSurfaceColor(context),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: pageBorderColor(context)),
         boxShadow: [
           BoxShadow(
@@ -89,8 +89,8 @@ class ActivitySummaryCard extends StatelessWidget {
                   ? 0.22
                   : 0.05,
             ),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -99,7 +99,7 @@ class ActivitySummaryCard extends StatelessWidget {
         child: state.isLoading
             ? const SizedBox(
                 key: ValueKey('activity-loading'),
-                height: 150,
+                height: 110,
                 child: Center(child: CircularProgressIndicator()),
               )
             : Column(
@@ -109,13 +109,13 @@ class ActivitySummaryCard extends StatelessWidget {
                   Row(
                     children: [
                       Container(
-                        width: 44,
-                        height: 44,
+                        width: 38,
+                        height: 38,
                         decoration: BoxDecoration(
                           color: const Color(
                             0xFF1EAD83,
                           ).withValues(alpha: 0.13),
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(13),
                         ),
                         child: const Icon(
                           Icons.directions_walk_rounded,
@@ -132,7 +132,7 @@ class ActivitySummaryCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: compact ? 16 : 18,
+                                fontSize: compact ? 14.5 : 15.5,
                                 fontWeight: FontWeight.w800,
                                 color: pagePrimaryTextColor(context),
                               ),
@@ -143,7 +143,7 @@ class ActivitySummaryCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 11,
                                 color: pageSecondaryTextColor(context),
                               ),
                             ),
@@ -170,7 +170,7 @@ class ActivitySummaryCard extends StatelessWidget {
                         ),
                     ],
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
@@ -179,7 +179,7 @@ class ActivitySummaryCard extends StatelessWidget {
                           value: numberFormat.format(log.steps),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: _ActivityMetric(
                           label: 'Distance',
@@ -188,14 +188,14 @@ class ActivitySummaryCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
                         child: Text(
                           'Step goal',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: pageSecondaryTextColor(context),
                           ),
@@ -204,24 +204,24 @@ class ActivitySummaryCard extends StatelessWidget {
                       Text(
                         '${numberFormat.format(log.goalSteps)} steps',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: pagePrimaryTextColor(context),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(999),
                     child: LinearProgressIndicator(
-                      minHeight: 10,
+                      minHeight: 8,
                       value: log.progress,
                       backgroundColor: pageBorderColor(context),
                       valueColor: AlwaysStoppedAnimation<Color>(statusColor),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       _StatusPill(label: log.statusLabel, color: statusColor),
@@ -229,7 +229,7 @@ class ActivitySummaryCard extends StatelessWidget {
                       Text(
                         '$progressPercent%',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: FontWeight.w800,
                           color: pagePrimaryTextColor(context),
                         ),
@@ -401,10 +401,10 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(widget.compact ? 18 : 20),
+      padding: EdgeInsets.all(widget.compact ? 14 : 15),
       decoration: BoxDecoration(
         color: pageSurfaceColor(context),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: pageBorderColor(context)),
         boxShadow: [
           BoxShadow(
@@ -413,8 +413,8 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
                   ? 0.22
                   : 0.05,
             ),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -423,7 +423,7 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
         child: _isLoading
             ? const SizedBox(
                 key: ValueKey('weekly-activity-loading'),
-                height: 150,
+                height: 110,
                 child: Center(child: CircularProgressIndicator()),
               )
             : Column(
@@ -433,13 +433,13 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
                   Row(
                     children: [
                       Container(
-                        width: 44,
-                        height: 44,
+                        width: 38,
+                        height: 38,
                         decoration: BoxDecoration(
                           color: const Color(
                             0xFF1EAD83,
                           ).withValues(alpha: 0.13),
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(13),
                         ),
                         child: const Icon(
                           Icons.insights_rounded,
@@ -456,7 +456,7 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: widget.compact ? 16 : 18,
+                                fontSize: widget.compact ? 14.5 : 15.5,
                                 fontWeight: FontWeight.w800,
                                 color: pagePrimaryTextColor(context),
                               ),
@@ -467,7 +467,7 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 11,
                                 color: pageSecondaryTextColor(context),
                               ),
                             ),
@@ -476,7 +476,7 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
@@ -485,7 +485,7 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
                           value: numberFormat.format(totalSteps),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: _ActivityMetric(
                           label: 'Daily Avg',
@@ -494,7 +494,7 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       _StatusPill(
@@ -506,13 +506,13 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
                       _StatusPill(label: statusLabel, color: statusColor),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       Text(
                         '$goalDays of ${weeklyLogs.length} goal days reached',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: FontWeight.w800,
                           color: pagePrimaryTextColor(context),
                         ),
@@ -619,16 +619,16 @@ class _ActivityMetric extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontSize: 28,
+            fontSize: 22,
             fontWeight: FontWeight.w800,
             color: pagePrimaryTextColor(context),
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 3),
         Text(
           label,
           style: TextStyle(
-            fontSize: 13,
+            fontSize: 11.5,
             fontWeight: FontWeight.w600,
             color: pageSecondaryTextColor(context),
           ),
@@ -648,7 +648,7 @@ class _StatusPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Flexible(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(999),
@@ -659,7 +659,7 @@ class _StatusPill extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: FontWeight.w800,
             color: color,
           ),

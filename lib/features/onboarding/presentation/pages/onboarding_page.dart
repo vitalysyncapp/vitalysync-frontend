@@ -1,7 +1,11 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 
 import '../../../../app/main_navigation.dart';
 import '../../../../shared/preferences/user_session.dart';
+import '../../../../shared/theme/animated_gradient_background.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../data/onboarding_api.dart';
 import '../../models/onboarding_question.dart';
@@ -21,6 +25,13 @@ class OnboardingPage extends StatefulWidget {
 }
 
 class _OnboardingPageState extends State<OnboardingPage> {
+  static const _aboutAnimationPath =
+      'assets/animations/onboarding_profile.json';
+  static const _routineAnimationPath =
+      'assets/animations/onboarding_yoga_carpet.json';
+  static const _burnoutAnimationPath =
+      'assets/animations/onboarding_heart.json';
+
   static const _roles = [
     'Student',
     'Working Professional',
@@ -45,8 +56,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
   ];
   static const _exerciseGoalOptions = [
     '0 days',
-    '1–2 days',
-    '3–4 days',
+    '1-2 days',
+    '3-4 days',
     '5+ days',
   ];
   static const _workloadScale = [
@@ -72,7 +83,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   ];
   static const _burnoutSections = [
     BurnoutSection(
-      title: '😵 Emotional Exhaustion',
+      title: '\u{1F635} Emotional Exhaustion',
       category: 'emotional_exhaustion',
       questions: [
         BurnoutQuestion(
@@ -104,7 +115,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       ],
     ),
     BurnoutSection(
-      title: '🧊 Detachment',
+      title: '\u{1F9CA} Detachment',
       category: 'depersonalization',
       questions: [
         BurnoutQuestion(
@@ -131,13 +142,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
         BurnoutQuestion(
           questionKey: 'dp_05',
           questionText:
-              'I sometimes feel like I’m just going through the motions.',
+              "I sometimes feel like I'm just going through the motions.",
           category: 'depersonalization',
         ),
       ],
     ),
     BurnoutSection(
-      title: '🏆 Personal Accomplishment',
+      title: '\u{1F3C6} Personal Accomplishment',
       category: 'personal_accomplishment',
       questions: [
         BurnoutQuestion(
@@ -193,7 +204,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   List<_OnboardingStep> get _steps {
     return [
       _OnboardingStep(
-        sectionTitle: '👤 About You',
+        sectionTitle: '\u{1F464} About You',
         title: 'What best describes you?',
         isComplete: () => _role != null,
         builder: (context) => _buildChoicePage(
@@ -208,7 +219,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ),
       ),
       _OnboardingStep(
-        sectionTitle: '👤 About You',
+        sectionTitle: '\u{1F464} About You',
         title: 'How would you describe your lifestyle?',
         isComplete: () => _lifestyleType != null,
         builder: (context) => _buildChoicePage(
@@ -223,7 +234,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ),
       ),
       _OnboardingStep(
-        sectionTitle: '👤 About You',
+        sectionTitle: '\u{1F464} About You',
         title: 'What is your main wellness goal?',
         isComplete: () => _wellnessGoal != null,
         builder: (context) => _buildChoicePage(
@@ -238,7 +249,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ),
       ),
       _OnboardingStep(
-        sectionTitle: '🌙 Routine Defaults',
+        sectionTitle: '\u{1F319} Routine Defaults',
         title: 'What time do you usually sleep?',
         isComplete: () => _usualSleepTime != null,
         builder: (context) => _buildTimePage(
@@ -250,7 +261,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ),
       ),
       _OnboardingStep(
-        sectionTitle: '🌙 Routine Defaults',
+        sectionTitle: '\u{1F319} Routine Defaults',
         title: 'What time do you usually wake up?',
         isComplete: () => _usualWakeTime != null,
         builder: (context) => _buildTimePage(
@@ -262,7 +273,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ),
       ),
       _OnboardingStep(
-        sectionTitle: '🌙 Routine Defaults',
+        sectionTitle: '\u{1F319} Routine Defaults',
         title: 'How many days per week do you want to exercise?',
         isComplete: () => _exerciseGoalDays != null,
         builder: (context) => _buildChoicePage(
@@ -277,7 +288,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ),
       ),
       _OnboardingStep(
-        sectionTitle: '🌙 Routine Defaults',
+        sectionTitle: '\u{1F319} Routine Defaults',
         title: 'How heavy is your usual workload?',
         isComplete: () => _workloadLevel != null,
         builder: (context) => _buildLikertPage(
@@ -290,14 +301,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ),
       ),
       _OnboardingStep(
-        sectionTitle: '🌙 Routine Defaults',
+        sectionTitle: '\u{1F319} Routine Defaults',
         title: 'Do you usually have extra responsibilities?',
         isComplete: () => _hasExtraResponsibilities != null,
         builder: (context) => _buildYesNoPage(context),
       ),
       if (_hasExtraResponsibilities == true)
         _OnboardingStep(
-          sectionTitle: '🌙 Routine Defaults',
+          sectionTitle: '\u{1F319} Routine Defaults',
           title: 'How demanding are those extra responsibilities?',
           isComplete: () => _extraResponsibilityLevel != null,
           builder: (context) => _buildLikertPage(
@@ -311,7 +322,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ),
       ..._burnoutSections.map(
         (section) => _OnboardingStep(
-          sectionTitle: '🔥 Burnout Baseline',
+          sectionTitle: '\u{1F525} Burnout Baseline',
           title: section.title,
           isComplete: () => section.questions.every(
             (question) => _burnoutAnswers[question.questionKey] != null,
@@ -379,7 +390,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Your VitalySync baseline is ready 💙')),
+        const SnackBar(
+          content: Text('Your VitalySync baseline is ready \u{1F499}'),
+        ),
       );
 
       Navigator.pushAndRemoveUntil(
@@ -415,10 +428,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   void _goToStep(int step) {
+    if (step < 0 || step >= _steps.length) return;
+
     setState(() => _currentStep = step);
     _pageController.animateToPage(
       step,
-      duration: const Duration(milliseconds: 280),
+      duration: const Duration(milliseconds: 420),
       curve: Curves.easeOutCubic,
     );
   }
@@ -436,6 +451,96 @@ class _OnboardingPageState extends State<OnboardingPage> {
     return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 
+  IconData _iconForCurrentStep(_OnboardingStep step) {
+    if (step.sectionTitle.contains('About')) {
+      return Icons.person_rounded;
+    }
+    if (step.sectionTitle.contains('Routine')) {
+      return Icons.nights_stay_rounded;
+    }
+    return Icons.local_fire_department_rounded;
+  }
+
+  String _animationForCurrentStep(_OnboardingStep step) {
+    if (step.sectionTitle.contains('About')) {
+      return _aboutAnimationPath;
+    }
+    if (step.sectionTitle.contains('Routine')) {
+      return _routineAnimationPath;
+    }
+    return _burnoutAnimationPath;
+  }
+
+  IconData _iconForQuestion(String field) {
+    switch (field) {
+      case 'role':
+        return Icons.badge_rounded;
+      case 'lifestyle_type':
+        return Icons.directions_walk_rounded;
+      case 'wellness_goal':
+        return Icons.favorite_rounded;
+      case 'exercise_goal_days':
+        return Icons.fitness_center_rounded;
+      default:
+        return Icons.auto_awesome_rounded;
+    }
+  }
+
+  IconData _iconForOption(String option) {
+    switch (option) {
+      case 'Student':
+        return Icons.school_rounded;
+      case 'Working Professional':
+        return Icons.work_rounded;
+      case 'Freelancer':
+        return Icons.laptop_mac_rounded;
+      case 'Unemployed':
+        return Icons.home_rounded;
+      case 'Other':
+        return Icons.more_horiz_rounded;
+      case 'Sedentary':
+        return Icons.chair_rounded;
+      case 'Lightly Active':
+        return Icons.directions_walk_rounded;
+      case 'Moderately Active':
+        return Icons.directions_run_rounded;
+      case 'Active':
+        return Icons.bolt_rounded;
+      case 'Very Active':
+        return Icons.rocket_launch_rounded;
+      case 'Reduce stress':
+        return Icons.spa_rounded;
+      case 'Improve sleep':
+        return Icons.bedtime_rounded;
+      case 'Be more active':
+        return Icons.directions_bike_rounded;
+      case 'Improve focus':
+        return Icons.center_focus_strong_rounded;
+      case 'Build healthier habits':
+        return Icons.eco_rounded;
+      case 'Manage burnout':
+        return Icons.local_fire_department_rounded;
+      case '0 days':
+        return Icons.event_busy_rounded;
+      case '5+ days':
+        return Icons.star_rounded;
+      default:
+        if (option.startsWith('1')) return Icons.looks_one_rounded;
+        if (option.startsWith('3')) return Icons.filter_3_rounded;
+        return Icons.check_circle_outline_rounded;
+    }
+  }
+
+  String _sectionSubtitle(_OnboardingStep step) {
+    if (step.sectionTitle.contains('About')) {
+      return 'Personalize your wellness baseline.';
+    }
+    if (step.sectionTitle.contains('Routine')) {
+      return 'Set defaults that make daily logs faster.';
+    }
+    return 'Answer honestly so insights start from your real rhythm.';
+  }
+
   @override
   Widget build(BuildContext context) {
     final steps = _steps;
@@ -446,50 +551,22 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
     return PopScope(
       canPop: false,
-      child: Container(
-        decoration: buildPageDecoration(context),
+      child: AnimatedGradientBackground(
         child: Scaffold(
           backgroundColor: Colors.transparent,
           body: SafeArea(
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        currentStep.sectionTitle,
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: pagePrimaryTextColor(context),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(999),
-                              child: LinearProgressIndicator(
-                                value: progress,
-                                minHeight: 9,
-                                backgroundColor: pageBorderColor(context),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Step ${safeStepIndex + 1} of ${steps.length}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: pageSecondaryTextColor(context),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 8),
+                  child: _OnboardingHeader(
+                    step: currentStep,
+                    icon: _iconForCurrentStep(currentStep),
+                    subtitle: _sectionSubtitle(currentStep),
+                    animationPath: _animationForCurrentStep(currentStep),
+                    progress: progress,
+                    currentStep: safeStepIndex + 1,
+                    totalSteps: steps.length,
                   ),
                 ),
                 Expanded(
@@ -498,8 +575,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: steps.length,
                     itemBuilder: (context, index) {
-                      return AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 220),
+                      return _StepEntrance(
+                        key: ValueKey('${steps[index].title}-$index'),
                         child: steps[index].builder(context),
                       );
                     },
@@ -519,7 +596,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                           onPressed: _isSaving || _currentStep == 0
                               ? null
                               : () => _goToStep(_currentStep - 1),
-                          child: const Text('Back'),
+                          child: const Icon(Icons.arrow_back_rounded),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -538,10 +615,28 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                     color: Colors.white,
                                   ),
                                 )
-                              : Text(
-                                  _currentStep == steps.length - 1
-                                      ? 'Finish Setup'
-                                      : 'Next',
+                              : AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 180),
+                                  child: Row(
+                                    key: ValueKey(
+                                      _currentStep == steps.length - 1,
+                                    ),
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        _currentStep == steps.length - 1
+                                            ? 'Finish Setup'
+                                            : 'Next',
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Icon(
+                                        _currentStep == steps.length - 1
+                                            ? Icons.check_rounded
+                                            : Icons.arrow_forward_rounded,
+                                        size: 20,
+                                      ),
+                                    ],
+                                  ),
                                 ),
                         ),
                       ),
@@ -569,6 +664,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _PromptBadge(
+                icon: _iconForQuestion(question.field),
+                label: question.field.replaceAll('_', ' '),
+              ),
+              const SizedBox(height: 14),
               _QuestionTitle(question.title),
               if (question.helperText != null) ...[
                 const SizedBox(height: 8),
@@ -580,6 +680,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: _OptionTile(
                     label: option,
+                    icon: _iconForOption(option),
                     selected: value == option,
                     onTap: () => onChanged(option),
                   ),
@@ -606,6 +707,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const _PromptBadge(
+                icon: Icons.schedule_rounded,
+                label: 'routine time',
+              ),
+              const SizedBox(height: 14),
               _QuestionTitle(title),
               const SizedBox(height: 24),
               InkWell(
@@ -635,9 +741,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   ),
                   child: Row(
                     children: [
-                      Icon(
+                      _AnimatedIconBadge(
                         Icons.schedule_rounded,
-                        color: Theme.of(context).colorScheme.primary,
+                        selected: value != null,
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -680,6 +786,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const _PromptBadge(
+                icon: Icons.tune_rounded,
+                label: 'baseline scale',
+              ),
+              const SizedBox(height: 14),
               LikertQuestion(
                 question: title,
                 value: value,
@@ -705,18 +816,25 @@ class _OnboardingPageState extends State<OnboardingPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const _PromptBadge(
+                icon: Icons.task_alt_rounded,
+                label: 'responsibilities',
+              ),
+              const SizedBox(height: 14),
               const _QuestionTitle(
                 'Do you usually have extra responsibilities outside your main role?',
               ),
               const SizedBox(height: 22),
               _OptionTile(
                 label: 'Yes',
+                icon: Icons.check_rounded,
                 selected: _hasExtraResponsibilities == true,
                 onTap: () => setState(() => _hasExtraResponsibilities = true),
               ),
               const SizedBox(height: 12),
               _OptionTile(
                 label: 'No',
+                icon: Icons.close_rounded,
                 selected: _hasExtraResponsibilities == false,
                 onTap: () => setState(() {
                   _hasExtraResponsibilities = false;
@@ -741,6 +859,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const _PromptBadge(
+                icon: Icons.local_fire_department_rounded,
+                label: 'burnout baseline',
+              ),
+              const SizedBox(height: 14),
               _QuestionTitle(section.title),
               const SizedBox(height: 8),
               const _HelperText('Use 1 for Never and 5 for Always.'),

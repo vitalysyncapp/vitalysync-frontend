@@ -29,7 +29,7 @@ class _SleepPatternCardState extends State<SleepPatternCard> {
         final average = metrics?.averageSleep ?? 0;
 
         return Container(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(14),
           decoration: _cardDecoration(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -37,28 +37,31 @@ class _SleepPatternCardState extends State<SleepPatternCard> {
               const Text(
                 'Sleep Pattern',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 15.5,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF0B1F44),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
               if (snapshot.connectionState == ConnectionState.waiting)
                 const SizedBox(
-                  height: 250,
+                  height: 200,
                   child: Center(child: CircularProgressIndicator()),
                 )
               else
-                SizedBox(height: 250, child: BarChart(_chartData(days))),
-              const SizedBox(height: 18),
+                SizedBox(height: 200, child: BarChart(_chartData(days))),
+              const SizedBox(height: 12),
               Divider(color: Colors.grey.withValues(alpha: 0.25)),
-              const SizedBox(height: 14),
+              const SizedBox(height: 9),
               Row(
                 children: [
                   const Expanded(
                     child: Text(
                       'Recommended: 7-9 hours',
-                      style: TextStyle(fontSize: 15, color: Color(0xFF4F5D75)),
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: Color(0xFF4F5D75),
+                      ),
                     ),
                   ),
                   Text(
@@ -66,7 +69,7 @@ class _SleepPatternCardState extends State<SleepPatternCard> {
                         ? 'Average: ${average.toStringAsFixed(1)}h'
                         : 'No logs yet',
                     style: const TextStyle(
-                      fontSize: 15,
+                      fontSize: 12.5,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF2F66F3),
                     ),
@@ -97,7 +100,7 @@ class _SleepPatternCardState extends State<SleepPatternCard> {
     return BarChartData(
       maxY: 10,
       minY: 0,
-      groupsSpace: 8,
+      groupsSpace: 6,
       gridData: FlGridData(
         show: true,
         drawVerticalLine: false,
@@ -124,7 +127,7 @@ class _SleepPatternCardState extends State<SleepPatternCard> {
             reservedSize: 28,
             getTitlesWidget: (value, meta) => Text(
               value.toInt().toString(),
-              style: const TextStyle(color: Color(0xFF8A94A6), fontSize: 12),
+              style: const TextStyle(color: Color(0xFF8A94A6), fontSize: 10.5),
             ),
           ),
         ),
@@ -137,12 +140,12 @@ class _SleepPatternCardState extends State<SleepPatternCard> {
                 return const SizedBox();
               }
               return Padding(
-                padding: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.only(top: 6),
                 child: Text(
                   chartDays[index].dayLabel,
                   style: const TextStyle(
                     color: Color(0xFF8A94A6),
-                    fontSize: 13,
+                    fontSize: 11,
                   ),
                 ),
               );
@@ -160,7 +163,7 @@ class _SleepPatternCardState extends State<SleepPatternCard> {
               const TextStyle(
                 color: Colors.black87,
                 fontWeight: FontWeight.w600,
-                fontSize: 13,
+                fontSize: 11.5,
                 height: 1.4,
               ),
             );
@@ -174,7 +177,7 @@ class _SleepPatternCardState extends State<SleepPatternCard> {
           barRods: [
             BarChartRodData(
               toY: chartDays[index].sleepHours,
-              width: 24,
+              width: 18,
               borderRadius: BorderRadius.circular(8),
               color: chartDays[index].sleepHours >= 7
                   ? const Color(0xFF1FB489)
@@ -189,12 +192,12 @@ class _SleepPatternCardState extends State<SleepPatternCard> {
   BoxDecoration _cardDecoration() {
     return BoxDecoration(
       color: Colors.white.withValues(alpha: 0.94),
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(18),
       boxShadow: [
         BoxShadow(
           color: Colors.black.withValues(alpha: 0.06),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
+          blurRadius: 8,
+          offset: const Offset(0, 3),
         ),
       ],
       border: Border.all(color: Colors.grey.withValues(alpha: 0.10)),

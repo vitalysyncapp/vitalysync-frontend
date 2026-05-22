@@ -26,12 +26,12 @@ class MacroBalanceCard extends StatelessWidget {
           Text(
             'Macro Balance',
             style: TextStyle(
-              fontSize: isCompact ? 17 : 18,
+              fontSize: isCompact ? 15.5 : 16.5,
               fontWeight: FontWeight.w800,
               color: const Color(0xFF0F172A),
             ),
           ),
-          SizedBox(height: isCompact ? 16 : 22),
+          SizedBox(height: isCompact ? 11 : 14),
           MacroProgressRow(
             label: 'Protein',
             current: '${proteinG.round()}g',
@@ -40,7 +40,7 @@ class MacroBalanceCard extends StatelessWidget {
             color: const Color(0xFFA855F7),
             isCompact: isCompact,
           ),
-          SizedBox(height: isCompact ? 14 : 18),
+          SizedBox(height: isCompact ? 10 : 12),
           MacroProgressRow(
             label: 'Carbs',
             current: '${carbsG.round()}g',
@@ -49,7 +49,7 @@ class MacroBalanceCard extends StatelessWidget {
             color: const Color(0xFFF97316),
             isCompact: isCompact,
           ),
-          SizedBox(height: isCompact ? 14 : 18),
+          SizedBox(height: isCompact ? 10 : 12),
           MacroProgressRow(
             label: 'Fats',
             current: '${fatG.round()}g',
@@ -93,7 +93,7 @@ class MacroProgressRow extends StatelessWidget {
               child: Text(
                 label,
                 style: TextStyle(
-                  fontSize: isCompact ? 14 : 16,
+                  fontSize: isCompact ? 12.5 : 14,
                   color: const Color(0xFF334155),
                   fontWeight: FontWeight.w500,
                 ),
@@ -102,19 +102,19 @@ class MacroProgressRow extends StatelessWidget {
             Text(
               '$current / $goal',
               style: TextStyle(
-                fontSize: isCompact ? 14 : 16,
+                fontSize: isCompact ? 12.5 : 14,
                 color: const Color(0xFF0F172A),
                 fontWeight: FontWeight.w700,
               ),
             ),
           ],
         ),
-        SizedBox(height: isCompact ? 8 : 10),
+        SizedBox(height: isCompact ? 6 : 8),
         ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: LinearProgressIndicator(
             value: progress,
-            minHeight: isCompact ? 8 : 10,
+            minHeight: isCompact ? 7 : 8,
             backgroundColor: const Color(0xFFE5E7EB),
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),

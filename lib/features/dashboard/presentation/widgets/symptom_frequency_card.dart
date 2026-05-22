@@ -29,7 +29,7 @@ class _SymptomFrequencyCardState extends State<SymptomFrequencyCard> {
         final visibleRows = rows.take(4).toList();
 
         return Container(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(14),
           decoration: _cardDecoration(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -37,15 +37,15 @@ class _SymptomFrequencyCardState extends State<SymptomFrequencyCard> {
               const Text(
                 'Symptom Frequency',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 15.5,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF0B1F44),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
               if (snapshot.connectionState == ConnectionState.waiting)
                 const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 28),
+                  padding: EdgeInsets.symmetric(vertical: 18),
                   child: Center(child: CircularProgressIndicator()),
                 )
               else if (visibleRows.isEmpty)
@@ -53,7 +53,7 @@ class _SymptomFrequencyCardState extends State<SymptomFrequencyCard> {
                   padding: EdgeInsets.symmetric(vertical: 8),
                   child: Text(
                     'No symptoms logged this week.',
-                    style: TextStyle(color: Color(0xFF4F5D75), fontSize: 15),
+                    style: TextStyle(color: Color(0xFF4F5D75), fontSize: 12.5),
                   ),
                 )
               else
@@ -79,7 +79,7 @@ class _SymptomFrequencyCardState extends State<SymptomFrequencyCard> {
     required Color color,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 11),
       child: Column(
         children: [
           Row(
@@ -90,7 +90,7 @@ class _SymptomFrequencyCardState extends State<SymptomFrequencyCard> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: 13,
                     color: Color(0xFF24324A),
                   ),
                 ),
@@ -98,19 +98,19 @@ class _SymptomFrequencyCardState extends State<SymptomFrequencyCard> {
               Text(
                 days,
                 style: const TextStyle(
-                  fontSize: 16,
+                  fontSize: 13,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF0B1F44),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           ClipRRect(
             borderRadius: BorderRadius.circular(20),
             child: LinearProgressIndicator(
               value: progress,
-              minHeight: 10,
+              minHeight: 8,
               backgroundColor: const Color(0xFFE5E7EB),
               valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
@@ -129,12 +129,12 @@ class _SymptomFrequencyCardState extends State<SymptomFrequencyCard> {
   BoxDecoration _cardDecoration() {
     return BoxDecoration(
       color: Colors.white.withValues(alpha: 0.94),
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(18),
       boxShadow: [
         BoxShadow(
           color: Colors.black.withValues(alpha: 0.06),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
+          blurRadius: 8,
+          offset: const Offset(0, 3),
         ),
       ],
       border: Border.all(color: Colors.grey.withValues(alpha: 0.10)),

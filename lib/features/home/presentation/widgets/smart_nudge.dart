@@ -25,17 +25,17 @@ class SmartNudgeCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         gradient: backgroundGradient,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
             color: isDark
                 ? Colors.black.withValues(alpha: 0.4)
                 : Colors.amber.withValues(alpha: 0.18),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -45,15 +45,15 @@ class SmartNudgeCard extends StatelessWidget {
           Text(
             "Today's Smart Nudge",
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 12.5,
               color: textColor.withValues(alpha: 0.85),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Text(
             message,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 12.5,
               color: textColor,
               fontWeight: FontWeight.bold,
               height: 1.45,

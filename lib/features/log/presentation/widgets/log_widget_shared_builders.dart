@@ -1,19 +1,22 @@
 part of 'log_widgets.dart';
 
 extension _LogWidgetSharedBuilders on LogWidgets {
-  Widget _buildCard({required Widget child}) {
+  Widget _buildCard({
+    required Widget child,
+    EdgeInsetsGeometry padding = const EdgeInsets.all(12),
+  }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: padding,
       decoration: BoxDecoration(
         color: const Color(0xFFFDFDFE),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -31,15 +34,15 @@ extension _LogWidgetSharedBuilders on LogWidgets {
     return Row(
       children: [
         Container(
-          width: 48,
-          height: 48,
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
             color: iconBg,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: iconColor, size: 24),
+          child: Icon(icon, color: iconColor, size: 21),
         ),
-        const SizedBox(width: 14),
+        const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -49,17 +52,17 @@ extension _LogWidgetSharedBuilders on LogWidgets {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF0F172A),
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 1),
               Text(
                 subtitle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 15, color: Color(0xFF64748B)),
+                style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
               ),
             ],
           ),
@@ -73,16 +76,16 @@ extension _LogWidgetSharedBuilders on LogWidgets {
       child: GestureDetector(
         onTap: () => onHydrationAdd(addAmount),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: const Color(0xFFEAF7F9),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Center(
             child: Text(
               label,
               style: const TextStyle(
-                fontSize: 15,
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF0F4C81),
               ),
@@ -101,13 +104,13 @@ extension _LogWidgetSharedBuilders on LogWidgets {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 38,
-        height: 38,
+        width: 34,
+        height: 34,
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(9),
         ),
-        child: Icon(icon, size: 20, color: color),
+        child: Icon(icon, size: 18, color: color),
       ),
     );
   }
@@ -117,12 +120,15 @@ extension _LogWidgetSharedBuilders on LogWidgets {
     required bool selected,
     required VoidCallback onTap,
     double width = 150,
-    double height = 56,
+    double height = 48,
     EdgeInsetsGeometry contentPadding = const EdgeInsets.symmetric(
       horizontal: 12,
     ),
     AlignmentGeometry alignment = Alignment.center,
     IconData? leadingIcon,
+    double iconSize = 16,
+    double fontSize = 12.5,
+    double checkIconSize = 16,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -132,7 +138,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
         padding: contentPadding,
         decoration: BoxDecoration(
           color: selected ? const Color(0xFFF8FAFC) : Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: selected ? const Color(0xFF2563EB) : const Color(0xFFD1D5DB),
             width: selected ? 2 : 1.3,
@@ -145,12 +151,12 @@ extension _LogWidgetSharedBuilders on LogWidgets {
               if (leadingIcon != null) ...[
                 Icon(
                   leadingIcon,
-                  size: 18,
+                  size: iconSize,
                   color: selected
                       ? const Color(0xFF2563EB)
                       : const Color(0xFF64748B),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
               ],
               Expanded(
                 child: Text(
@@ -158,7 +164,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: fontSize,
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                     color: selected
                         ? const Color(0xFF1D4ED8)
@@ -166,12 +172,12 @@ extension _LogWidgetSharedBuilders on LogWidgets {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Icon(
                 selected
                     ? Icons.check_circle_rounded
                     : Icons.radio_button_unchecked_rounded,
-                size: 18,
+                size: checkIconSize,
                 color: selected
                     ? const Color(0xFF2563EB)
                     : const Color(0xFF94A3B8),

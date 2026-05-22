@@ -27,7 +27,7 @@ class BurnoutRiskTrendCard extends StatelessWidget {
         : null;
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(14),
       decoration: _cardDecoration(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -38,7 +38,7 @@ class BurnoutRiskTrendCard extends StatelessWidget {
                 child: Text(
                   "Burnout Risk Trend",
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 15.5,
                     fontWeight: FontWeight.bold,
                     color: pagePrimaryTextColor(context),
                   ),
@@ -55,19 +55,19 @@ class BurnoutRiskTrendCard extends StatelessWidget {
             _subtitle(sevenDayWindow),
             style: TextStyle(
               color: pageSecondaryTextColor(context),
-              fontSize: 14,
+              fontSize: 12.5,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
           if (isLoading)
             const SizedBox(
-              height: 250,
+              height: 200,
               child: Center(child: CircularProgressIndicator()),
             )
           else if (points.isEmpty)
             SizedBox(
-              height: 250,
+              height: 200,
               child: Center(
                 child: Text(
                   'No score history yet',
@@ -80,10 +80,10 @@ class BurnoutRiskTrendCard extends StatelessWidget {
             )
           else
             SizedBox(
-              height: 250,
+              height: 200,
               child: LineChart(_chartData(context, points, sevenDayWindow)),
             ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           _buildPatternFooter(context, sevenDayWindow, pattern),
         ],
       ),
@@ -272,7 +272,7 @@ class BurnoutRiskTrendCard extends StatelessWidget {
             pattern.title,
             style: TextStyle(
               color: pagePrimaryTextColor(context),
-              fontSize: 14.5,
+              fontSize: 13,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -281,7 +281,7 @@ class BurnoutRiskTrendCard extends StatelessWidget {
             pattern.message,
             style: TextStyle(
               color: pageSecondaryTextColor(context),
-              fontSize: 13.2,
+              fontSize: 12,
               height: 1.35,
               fontWeight: FontWeight.w600,
             ),
@@ -298,7 +298,7 @@ class BurnoutRiskTrendCard extends StatelessWidget {
     Color color,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(999),
@@ -307,13 +307,13 @@ class BurnoutRiskTrendCard extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 15, color: color),
-          const SizedBox(width: 6),
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 5),
           Text(
             label,
             style: TextStyle(
               color: color,
-              fontSize: 12.5,
+              fontSize: 11.2,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -362,7 +362,7 @@ class BurnoutRiskTrendCard extends StatelessWidget {
 
     return BoxDecoration(
       color: pageSurfaceColor(context),
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(18),
       boxShadow: [
         BoxShadow(
           color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.06),

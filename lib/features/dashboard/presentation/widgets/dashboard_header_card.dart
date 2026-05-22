@@ -7,9 +7,9 @@ class DashboardHeaderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(18),
         gradient: const LinearGradient(
           colors: [Color.fromARGB(255, 135, 97, 186), Color(0xFF5DB8F0)],
           begin: Alignment.topLeft,
@@ -18,8 +18,8 @@ class DashboardHeaderCard extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF3CB7C8).withValues(alpha: 0.18),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -34,23 +34,23 @@ class DashboardHeaderCard extends StatelessWidget {
                   "Your Wellness Analytics Dashboard",
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 20,
+                    fontSize: 17,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 6),
+                SizedBox(height: 4),
                 Text(
                   "Track your wellness trends, sleep, mood, symptoms, and overall performance.",
                   style: TextStyle(
                     color: Colors.white70,
-                    fontSize: 13,
-                    height: 1.45,
+                    fontSize: 11.5,
+                    height: 1.35,
                   ),
                 ),
               ],
             ),
           ),
-          SizedBox(width: 16),
+          SizedBox(width: 10),
           _HeaderIcon(),
         ],
       ),
@@ -64,13 +64,13 @@ class _HeaderIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 52,
-      height: 52,
+      width: 42,
+      height: 42,
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
       ),
-      child: const Icon(Icons.insights_rounded, color: Colors.white, size: 28),
+      child: const Icon(Icons.insights_rounded, color: Colors.white, size: 24),
     );
   }
 }

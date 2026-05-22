@@ -32,32 +32,32 @@ extension _LogHydrationActivityCards on LogWidgets {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Row(
             children: [
               _hydrationButton("+0.25L", 0.25),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               _hydrationButton("+0.5L", 0.5),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               _hydrationButton("+0.75L", 0.75),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               _hydrationButton("+1L", 1.0),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           AnimatedContainer(
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeOut,
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 22),
+            padding: const EdgeInsets.symmetric(vertical: 14),
             decoration: BoxDecoration(
               color: hydrationAccent.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
               boxShadow: [
                 BoxShadow(
                   color: hydrationAccent.withValues(alpha: 0.16),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
                 ),
               ],
               border: Border.all(
@@ -74,7 +74,7 @@ extension _LogHydrationActivityCards on LogWidgets {
                     "${hydration.toStringAsFixed(hydration % 1 == 0 ? 0 : 1)}L",
                     key: ValueKey(hydration),
                     style: const TextStyle(
-                      fontSize: 36,
+                      fontSize: 29,
                       fontWeight: FontWeight.w800,
                       color: Color(0xFF0891B2),
                     ),
@@ -84,7 +84,7 @@ extension _LogHydrationActivityCards on LogWidgets {
                 Text(
                   "Goal: 2.5L",
                   style: TextStyle(
-                    fontSize: 17,
+                    fontSize: 14,
                     color: hydrationAccent.withValues(alpha: 0.82),
                   ),
                 ),
@@ -98,6 +98,7 @@ extension _LogHydrationActivityCards on LogWidgets {
 
   Widget _buildExerciseCard() {
     return _buildCard(
+      padding: const EdgeInsets.all(10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -108,40 +109,15 @@ extension _LogHydrationActivityCards on LogWidgets {
             title: "Exercise",
             subtitle: "Goal: $exerciseGoalLabel per week",
           ),
-          const SizedBox(height: 12),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              const spacing = 8.0;
-              final isSingleColumn = constraints.maxWidth < 340;
-              final itemWidth = isSingleColumn
-                  ? constraints.maxWidth
-                  : (constraints.maxWidth - spacing) / 2;
-
-              return Wrap(
-                alignment: WrapAlignment.start,
-                spacing: spacing,
-                runSpacing: spacing,
-                children: exercises.map((exercise) {
-                  final selected = selectedExercises.contains(exercise);
-
-                  return _selectionBox(
-                    label: exercise,
-                    selected: selected,
-                    width: itemWidth,
-                    height: 48,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    alignment: Alignment.centerLeft,
-                    leadingIcon: exercise == 'None'
-                        ? Icons.block_rounded
-                        : Icons.directions_run_rounded,
-                    onTap: () => onExerciseToggle(exercise),
-                  );
-                }).toList(),
-              );
-            },
+          const SizedBox(height: 8),
+          _buildTwoRowSelectionGrid(
+            options: exercises,
+            minItemWidth: 104,
+            isSelected: selectedExercises.contains,
+            leadingIconFor: (exercise) => exercise == 'None'
+                ? Icons.block_rounded
+                : Icons.directions_run_rounded,
+            onSelected: onExerciseToggle,
           ),
         ],
       ),
@@ -159,7 +135,7 @@ extension _LogHydrationActivityCards on LogWidgets {
             title: "Symptoms",
             subtitle: "Any symptoms today?",
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 7),
           Wrap(
             spacing: 6,
             runSpacing: 6,
@@ -169,8 +145,8 @@ extension _LogHydrationActivityCards on LogWidgets {
                 onTap: () => onSymptomToggle(symptom),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+                    horizontal: 10,
+                    vertical: 6,
                   ),
                   decoration: BoxDecoration(
                     color: selected ? const Color(0xFFFFF1F2) : Colors.white,
@@ -197,7 +173,7 @@ extension _LogHydrationActivityCards on LogWidgets {
                   child: Text(
                     symptom,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 12,
                       fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                       color: selected
                           ? const Color(0xFFB91C1C)
@@ -222,9 +198,9 @@ extension _LogHydrationActivityCards on LogWidgets {
             iconBg: const Color(0xFFE7F8EF),
             iconColor: const Color(0xFF16A34A),
             title: "Recovery Habits",
-            subtitle: "Which small routines supported your recovery today?",
+            subtitle: "Pick what helped you rest or feel supported today.",
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 7),
           Wrap(
             spacing: 6,
             runSpacing: 6,
@@ -234,8 +210,8 @@ extension _LogHydrationActivityCards on LogWidgets {
                 onTap: () => onHabitToggle(habit),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+                    horizontal: 10,
+                    vertical: 6,
                   ),
                   decoration: BoxDecoration(
                     color: selected ? const Color(0xFFECFDF5) : Colors.white,
@@ -262,7 +238,7 @@ extension _LogHydrationActivityCards on LogWidgets {
                   child: Text(
                     habit,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 12,
                       fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                       color: selected
                           ? const Color(0xFF166534)
@@ -280,6 +256,7 @@ extension _LogHydrationActivityCards on LogWidgets {
 
   Widget _buildWorkloadCard() {
     return _buildCard(
+      padding: const EdgeInsets.all(10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -290,42 +267,105 @@ extension _LogHydrationActivityCards on LogWidgets {
             title: "Workload Hours",
             subtitle: "How much focused work did today ask from you?",
           ),
-          const SizedBox(height: 14),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              const spacing = 8.0;
-              final isSingleColumn = constraints.maxWidth < 340;
-              final itemWidth = isSingleColumn
-                  ? constraints.maxWidth
-                  : (constraints.maxWidth - spacing) / 2;
-
-              return Wrap(
-                spacing: spacing,
-                runSpacing: spacing,
-                children: workloadOptions.map((option) {
-                  final selected = workloadHoursBand == option;
-
-                  return _selectionBox(
-                    label: option,
-                    selected: selected,
-                    width: itemWidth,
-                    height: 48,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    alignment: Alignment.centerLeft,
-                    leadingIcon: option == 'None'
-                        ? Icons.self_improvement_rounded
-                        : Icons.schedule_rounded,
-                    onTap: () => onWorkloadChanged(option),
-                  );
-                }).toList(),
-              );
-            },
+          const SizedBox(height: 8),
+          _buildTwoRowSelectionGrid(
+            options: workloadOptions,
+            minItemWidth: 116,
+            isSelected: (option) => workloadHoursBand == option,
+            leadingIconFor: (option) => option == 'None'
+                ? Icons.self_improvement_rounded
+                : Icons.schedule_rounded,
+            onSelected: onWorkloadChanged,
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTwoRowSelectionGrid({
+    required List<String> options,
+    required double minItemWidth,
+    required bool Function(String option) isSelected,
+    required IconData Function(String option) leadingIconFor,
+    required ValueChanged<String> onSelected,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const spacing = 6.0;
+        final columns = (options.length / 2).ceil();
+        final minimumGridWidth =
+            (columns * minItemWidth) + (spacing * (columns - 1));
+        final gridWidth = minimumGridWidth > constraints.maxWidth
+            ? minimumGridWidth
+            : constraints.maxWidth;
+        final itemWidth = (gridWidth - (spacing * (columns - 1))) / columns;
+        final firstRow = options.take(columns).toList();
+        final secondRow = options.skip(columns).toList();
+
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: gridWidth,
+            child: Column(
+              children: [
+                _selectionGridRow(
+                  items: firstRow,
+                  itemWidth: itemWidth,
+                  spacing: spacing,
+                  isSelected: isSelected,
+                  leadingIconFor: leadingIconFor,
+                  onSelected: onSelected,
+                ),
+                if (secondRow.isNotEmpty) ...[
+                  const SizedBox(height: spacing),
+                  _selectionGridRow(
+                    items: secondRow,
+                    itemWidth: itemWidth,
+                    spacing: spacing,
+                    isSelected: isSelected,
+                    leadingIconFor: leadingIconFor,
+                    onSelected: onSelected,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _selectionGridRow({
+    required List<String> items,
+    required double itemWidth,
+    required double spacing,
+    required bool Function(String option) isSelected,
+    required IconData Function(String option) leadingIconFor,
+    required ValueChanged<String> onSelected,
+  }) {
+    return Row(
+      children: List.generate(items.length, (index) {
+        final option = items[index];
+
+        return Padding(
+          padding: EdgeInsets.only(
+            right: index == items.length - 1 ? 0 : spacing,
+          ),
+          child: _selectionBox(
+            label: option,
+            selected: isSelected(option),
+            width: itemWidth,
+            height: 36,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+            alignment: Alignment.centerLeft,
+            leadingIcon: leadingIconFor(option),
+            iconSize: 14,
+            fontSize: 11.5,
+            checkIconSize: 14,
+            onTap: () => onSelected(option),
+          ),
+        );
+      }),
     );
   }
 }

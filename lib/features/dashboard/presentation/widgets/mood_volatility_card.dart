@@ -28,7 +28,7 @@ class _MoodVolatilityCardState extends State<MoodVolatilityCard> {
         final progress = ((metrics?.moodIndex ?? 0) / 100).clamp(0.0, 1.0);
 
         return Container(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(14),
           decoration: _cardDecoration(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -36,58 +36,61 @@ class _MoodVolatilityCardState extends State<MoodVolatilityCard> {
               const Text(
                 'Mood Trend',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 15.5,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF0B1F44),
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   const Icon(
                     Icons.sentiment_satisfied_alt_rounded,
                     color: Color(0xFF1FB489),
-                    size: 34,
+                    size: 28,
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 9),
                   const Expanded(
                     child: Text(
                       'This week',
-                      style: TextStyle(color: Color(0xFF5C6B80), fontSize: 15),
+                      style: TextStyle(
+                        color: Color(0xFF5C6B80),
+                        fontSize: 12.5,
+                      ),
                     ),
                   ),
                   Text(
                     metrics?.moodStabilityLabel ?? 'Loading',
                     style: const TextStyle(
                       color: Color(0xFF5C6B80),
-                      fontSize: 15,
+                      fontSize: 12.5,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               ClipRRect(
                 borderRadius: BorderRadius.circular(30),
                 child: LinearProgressIndicator(
                   value: progress,
-                  minHeight: 10,
+                  minHeight: 8,
                   backgroundColor: const Color(0xFFE5E7EB),
                   valueColor: const AlwaysStoppedAnimation<Color>(
                     Color(0xFF11C95D),
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
               Row(
                 children: days.map((day) {
                   return Expanded(
                     child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      padding: const EdgeInsets.symmetric(vertical: 9),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF7F8FA),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(13),
                       ),
                       child: Column(
                         children: [
@@ -97,16 +100,16 @@ class _MoodVolatilityCardState extends State<MoodVolatilityCard> {
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: Color(0xFF24324A),
-                              fontSize: 16,
+                              fontSize: 14,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 4),
                           Text(
                             day.dayLabel.substring(0, 1),
                             style: const TextStyle(
                               color: Color(0xFF5C6B80),
-                              fontSize: 14,
+                              fontSize: 12,
                             ),
                           ),
                         ],
@@ -142,12 +145,12 @@ class _MoodVolatilityCardState extends State<MoodVolatilityCard> {
   BoxDecoration _cardDecoration() {
     return BoxDecoration(
       color: Colors.white.withValues(alpha: 0.94),
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(18),
       boxShadow: [
         BoxShadow(
           color: Colors.black.withValues(alpha: 0.06),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
+          blurRadius: 8,
+          offset: const Offset(0, 3),
         ),
       ],
       border: Border.all(color: Colors.grey.withValues(alpha: 0.10)),

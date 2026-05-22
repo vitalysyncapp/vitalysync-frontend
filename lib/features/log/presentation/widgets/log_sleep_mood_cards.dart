@@ -12,18 +12,18 @@ extension _LogSleepMoodCards on LogWidgets {
             title: "Sleep Duration",
             subtitle: "Last night",
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
                 child: SliderTheme(
                   data: SliderTheme.of(context).copyWith(
-                    trackHeight: 6,
+                    trackHeight: 5,
                     thumbShape: const RoundSliderThumbShape(
-                      enabledThumbRadius: 10,
+                      enabledThumbRadius: 8,
                     ),
                     overlayShape: const RoundSliderOverlayShape(
-                      overlayRadius: 18,
+                      overlayRadius: 14,
                     ),
                     activeTrackColor: const Color(0xFF4B3FF2),
                     inactiveTrackColor: const Color(0xFFD8DCE2),
@@ -39,11 +39,11 @@ extension _LogSleepMoodCards on LogWidgets {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Text(
                 "${sleepHours.round()}h",
                 style: const TextStyle(
-                  fontSize: 20,
+                  fontSize: 17,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF4B3FF2),
                 ),
@@ -63,12 +63,12 @@ extension _LogSleepMoodCards on LogWidgets {
           const Text(
             "Sleep Quality",
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.w700,
               color: Color(0xFF0F172A),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -81,21 +81,21 @@ extension _LogSleepMoodCards on LogWidgets {
 
                 return Padding(
                   padding: EdgeInsets.only(
-                    right: index == sleepLabels.length - 1 ? 0 : 10,
+                    right: index == sleepLabels.length - 1 ? 0 : 8,
                   ),
                   child: GestureDetector(
                     onTap: () => onSleepQualityChanged(index),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 220),
                       curve: Curves.easeOutCubic,
-                      width: 96,
+                      width: 90,
                       padding: EdgeInsets.symmetric(
-                        vertical: starCount >= 4 ? 10 : 14,
+                        vertical: starCount >= 4 ? 8 : 11,
                         horizontal: 8,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: selected
                               ? const Color(0xFF4B3FF2)
@@ -108,7 +108,7 @@ extension _LogSleepMoodCards on LogWidgets {
                                   color: const Color(
                                     0xFF4B3FF2,
                                   ).withValues(alpha: 0.16),
-                                  blurRadius: 14,
+                                  blurRadius: 10,
                                   spreadRadius: 1,
                                   offset: const Offset(0, 4),
                                 ),
@@ -116,51 +116,49 @@ extension _LogSleepMoodCards on LogWidgets {
                             : [
                                 BoxShadow(
                                   color: Colors.black.withValues(alpha: 0.04),
-                                  blurRadius: 6,
+                                  blurRadius: 5,
                                   offset: const Offset(0, 2),
                                 ),
                               ],
                       ),
-                      child: AnimatedScale(
-                        duration: const Duration(milliseconds: 220),
-                        curve: Curves.easeOutBack,
-                        scale: selected ? 1.03 : 1.0,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (starCount >= 4)
-                              Wrap(
-                                alignment: WrapAlignment.center,
-                                spacing: 2,
-                                runSpacing: 2,
-                                children: List.generate(
-                                  starCount,
-                                  (starIndex) => AnimatedContainer(
-                                    duration: const Duration(milliseconds: 250),
-                                    curve: Curves.easeOut,
-                                    decoration: selected
-                                        ? BoxDecoration(
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: const Color(
-                                                  0xFFF4C430,
-                                                ).withValues(alpha: 0.45),
-                                                blurRadius: 10,
-                                                spreadRadius: 1,
-                                              ),
-                                            ],
-                                          )
-                                        : null,
-                                    child: Icon(
-                                      Icons.star_rounded,
-                                      size: starSize,
-                                      color: const Color(0xFFF4C430),
-                                    ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (starCount >= 4)
+                            Wrap(
+                              alignment: WrapAlignment.center,
+                              spacing: 2,
+                              runSpacing: 2,
+                              children: List.generate(
+                                starCount,
+                                (starIndex) => AnimatedContainer(
+                                  duration: const Duration(milliseconds: 250),
+                                  curve: Curves.easeOut,
+                                  decoration: selected
+                                      ? BoxDecoration(
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: const Color(
+                                                0xFFF4C430,
+                                              ).withValues(alpha: 0.45),
+                                              blurRadius: 10,
+                                              spreadRadius: 1,
+                                            ),
+                                          ],
+                                        )
+                                      : null,
+                                  child: Icon(
+                                    Icons.star_rounded,
+                                    size: starSize,
+                                    color: const Color(0xFFF4C430),
                                   ),
                                 ),
-                              )
-                            else
-                              Row(
+                              ),
+                            )
+                          else
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 mainAxisSize: MainAxisSize.min,
                                 children: List.generate(
@@ -196,26 +194,30 @@ extension _LogSleepMoodCards on LogWidgets {
                                   ),
                                 ),
                               ),
-                            const SizedBox(height: 10),
-                            AnimatedDefaultTextStyle(
-                              duration: const Duration(milliseconds: 220),
-                              curve: Curves.easeOut,
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: selected
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
-                                color: selected
-                                    ? const Color(0xFF4B3FF2)
-                                    : const Color(0xFF334155),
-                              ),
+                            ),
+                          const SizedBox(height: 7),
+                          AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 220),
+                            curve: Curves.easeOut,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: selected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: selected
+                                  ? const Color(0xFF4B3FF2)
+                                  : const Color(0xFF334155),
+                            ),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
                               child: Text(
                                 sleepLabels[index],
+                                maxLines: 1,
                                 textAlign: TextAlign.center,
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -239,7 +241,7 @@ extension _LogSleepMoodCards on LogWidgets {
             title: "Mood",
             subtitle: "How are you feeling today?",
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(moods.length, (index) {
@@ -247,15 +249,15 @@ extension _LogSleepMoodCards on LogWidgets {
               return Expanded(
                 child: Padding(
                   padding: EdgeInsets.only(
-                    right: index == moods.length - 1 ? 0 : 10,
+                    right: index == moods.length - 1 ? 0 : 8,
                   ),
                   child: GestureDetector(
                     onTap: () => onMoodChanged(index),
                     child: Container(
-                      height: 88,
+                      height: 70,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: selected
                               ? const Color(0xFFF4B400)
@@ -266,7 +268,7 @@ extension _LogSleepMoodCards on LogWidgets {
                       child: Center(
                         child: Text(
                           moods[index],
-                          style: const TextStyle(fontSize: 34),
+                          style: const TextStyle(fontSize: 28),
                         ),
                       ),
                     ),
@@ -291,12 +293,12 @@ extension _LogSleepMoodCards on LogWidgets {
             title: "Energy Level",
             subtitle: "Current energy",
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
           SliderTheme(
             data: SliderTheme.of(context).copyWith(
-              trackHeight: 6,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
+              trackHeight: 5,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
               activeTrackColor: const Color(0xFFFF5A00),
               inactiveTrackColor: const Color(0xFFD8DCE2),
               thumbColor: const Color(0xFFFF5A00),
@@ -310,21 +312,21 @@ extension _LogSleepMoodCards on LogWidgets {
               onChanged: onEnergyChanged,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 1),
           const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 "Low",
-                style: TextStyle(fontSize: 15, color: Color(0xFF64748B)),
+                style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
               ),
               Text(
                 "Medium",
-                style: TextStyle(fontSize: 15, color: Color(0xFF64748B)),
+                style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
               ),
               Text(
                 "High",
-                style: TextStyle(fontSize: 15, color: Color(0xFF64748B)),
+                style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
               ),
             ],
           ),

@@ -18,35 +18,6 @@ class _AssistantLoadingCard extends StatelessWidget {
   }
 }
 
-class _AssistantPageDots extends StatelessWidget {
-  final int count;
-  final int currentIndex;
-
-  const _AssistantPageDots({required this.count, required this.currentIndex});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(count, (index) {
-        final selected = index == currentIndex;
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          width: selected ? 22 : 8,
-          height: 8,
-          margin: const EdgeInsets.symmetric(horizontal: 3),
-          decoration: BoxDecoration(
-            color: selected
-                ? const Color(0xFF1FB489)
-                : pageBorderColor(context),
-            borderRadius: BorderRadius.circular(999),
-          ),
-        );
-      }),
-    );
-  }
-}
-
 class _AssistantLottieIcon extends StatelessWidget {
   final String emoji;
   final double size;

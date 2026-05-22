@@ -21,10 +21,10 @@ class EnvironmentalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: pageSurfaceColor(context),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: pageBorderColor(context)),
         boxShadow: [
           BoxShadow(
@@ -33,8 +33,8 @@ class EnvironmentalCard extends StatelessWidget {
                   ? 0.18
                   : 0.08,
             ),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -44,12 +44,12 @@ class EnvironmentalCard extends StatelessWidget {
           Text(
             'Environmental Conditions',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 14.5,
               fontWeight: FontWeight.bold,
               color: pagePrimaryTextColor(context),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           if (isLoading)
             _buildLoadingState(context)
           else if (errorMessage != null)
@@ -69,17 +69,17 @@ class EnvironmentalCard extends StatelessWidget {
       children: [
         if (isCached) ...[
           _buildCachedBanner(context, snapshot),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
         ],
         Text(
           snapshot.location,
           style: TextStyle(
-            fontSize: 13,
+            fontSize: 12,
             fontWeight: FontWeight.w600,
             color: pageSecondaryTextColor(context),
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 10),
         _row(
           context: context,
           icon: Icons.wb_sunny_rounded,
@@ -90,7 +90,7 @@ class EnvironmentalCard extends StatelessWidget {
           status: _buildWeatherStatus(snapshot.weather.main),
           statusColor: _statusColor(snapshot.weather.main),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 9),
         _row(
           context: context,
           icon: Icons.opacity_rounded,
@@ -100,7 +100,7 @@ class EnvironmentalCard extends StatelessWidget {
           status: 'Now',
           statusColor: Colors.lightBlueAccent,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 9),
         _row(
           context: context,
           icon: Icons.air_rounded,
@@ -120,7 +120,7 @@ class EnvironmentalCard extends StatelessWidget {
   ) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: Theme.of(context).brightness == Brightness.dark
             ? const Color(0xFF1E293B)
@@ -159,14 +159,14 @@ class EnvironmentalCard extends StatelessWidget {
     return Row(
       children: [
         SizedBox(
-          width: 20,
-          height: 20,
+          width: 18,
+          height: 18,
           child: CircularProgressIndicator(
-            strokeWidth: 2.4,
+            strokeWidth: 2.2,
             color: Theme.of(context).colorScheme.primary,
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Expanded(
           child: Text(
             'Loading live weather and air quality...',
@@ -185,7 +185,7 @@ class EnvironmentalCard extends StatelessWidget {
           Icons.cloud_off_rounded,
           color: Theme.of(context).colorScheme.primary,
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
         Expanded(
           child: Text(
             message,
@@ -245,17 +245,24 @@ class EnvironmentalCard extends StatelessWidget {
   }) {
     return Row(
       children: [
-        Icon(icon, color: iconColor),
+        Icon(icon, color: iconColor, size: 20),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             '$label: $value',
-            style: TextStyle(color: pagePrimaryTextColor(context)),
+            style: TextStyle(
+              color: pagePrimaryTextColor(context),
+              fontSize: 12.5,
+            ),
           ),
         ),
         Text(
           status,
-          style: TextStyle(color: statusColor, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            color: statusColor,
+            fontSize: 12.5,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ],
     );

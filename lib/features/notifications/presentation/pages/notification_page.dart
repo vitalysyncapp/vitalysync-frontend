@@ -19,7 +19,6 @@ class _NotificationPageState extends State<NotificationPage> {
     _NotificationFilter('daily', 'Daily'),
     _NotificationFilter('weekly', 'Weekly'),
     _NotificationFilter('nudges', 'Nudges'),
-    _NotificationFilter('reminders', 'Reminders'),
   ];
 
   NotificationFeedResult? _feed;
@@ -106,7 +105,8 @@ class _NotificationPageState extends State<NotificationPage> {
       });
     }
 
-    final shouldRefresh = cached == null || await service.shouldRefreshCachedFeed();
+    final shouldRefresh =
+        cached == null || await service.shouldRefreshCachedFeed();
     if (!shouldRefresh) {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -213,7 +213,6 @@ class _NotificationPageState extends State<NotificationPage> {
     final dailyCount = _countFor(items, 'daily');
     final weeklyCount = _countFor(items, 'weekly');
     final nudgeCount = _countFor(items, 'nudges');
-    final reminderCount = _countFor(items, 'reminders');
     final refreshedAt = feed?.refreshedAt;
     final refreshedText = refreshedAt == null
         ? 'Waiting for first sync'
@@ -261,7 +260,6 @@ class _NotificationPageState extends State<NotificationPage> {
               _SummaryPill(label: 'Daily', value: dailyCount),
               _SummaryPill(label: 'Weekly', value: weeklyCount),
               _SummaryPill(label: 'Nudges', value: nudgeCount),
-              _SummaryPill(label: 'Reminders', value: reminderCount),
             ],
           ),
           const SizedBox(height: 14),

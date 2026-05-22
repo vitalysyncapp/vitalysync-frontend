@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../features/auth/presentation/pages/loading_screen.dart';
@@ -21,6 +24,10 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  static const MethodChannel _appLaunchChannel = MethodChannel(
+    'vitalysync/app_launch',
+  );
+
   final AppPreferencesController _preferences =
       AppPreferencesController.instance;
 
@@ -32,11 +39,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     _preferences.notifier.addListener(_handlePreferencesChanged);
     LocalNotificationService.instance.onNotificationPayload =
         _handleNotificationPayload;
+    _appLaunchChannel.setMethodCallHandler(_handleAppLaunchMethodCall);
+    unawaited(_consumeInitialAppLaunchPayload());
     _handlePreferencesChanged();
-    OverlayAssistantController.instance.syncAppLifecycle(
-      isForeground: true,
-      prefs: _preferences.notifier.value,
-    );
   }
 
   @override
@@ -44,12 +49,17 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _preferences.notifier.removeListener(_handlePreferencesChanged);
     LocalNotificationService.instance.onNotificationPayload = null;
+    _appLaunchChannel.setMethodCallHandler(null);
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final prefs = _preferences.notifier.value;
+    if (!prefs.isLoaded) {
+      return;
+    }
+
     final isForeground = switch (state) {
       AppLifecycleState.resumed => true,
       AppLifecycleState.inactive => false,
@@ -65,9 +75,43 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   }
 
   void _handlePreferencesChanged() {
-    OverlayAssistantController.instance.syncSettings(
-      _preferences.notifier.value,
-    );
+    final prefs = _preferences.notifier.value;
+    if (!prefs.isLoaded) {
+      return;
+    }
+
+    OverlayAssistantController.instance.syncSettings(prefs);
+  }
+
+  Future<void> _consumeInitialAppLaunchPayload() async {
+    try {
+      final payload = await _appLaunchChannel.invokeMethod<String>(
+        'consumeInitialPayload',
+      );
+      final normalized = payload?.trim();
+      if (normalized == null || normalized.isEmpty) {
+        return;
+      }
+
+      LocalNotificationService.instance.rememberPendingPayload(normalized);
+    } on PlatformException {
+      return;
+    } on MissingPluginException {
+      return;
+    }
+  }
+
+  Future<dynamic> _handleAppLaunchMethodCall(MethodCall call) async {
+    switch (call.method) {
+      case 'launchPayload':
+        final payload = call.arguments?.toString().trim() ?? '';
+        if (payload.isNotEmpty) {
+          await _handleNotificationPayload(payload);
+        }
+        break;
+    }
+
+    return null;
   }
 
   Future<void> _handleNotificationPayload(String payload) async {

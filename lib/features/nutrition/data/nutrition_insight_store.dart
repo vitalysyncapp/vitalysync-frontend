@@ -10,9 +10,11 @@ class NutritionInsightStore {
   static final NutritionInsightStore instance = NutritionInsightStore._();
 
   static const String _lastInsightKey = 'nutrition_last_insight';
+  static const String _assistantInsightKey = 'nutrition_assistant_insight';
   static const String _messageHistoryKey = 'nutrition_message_history';
   static const String _lastPushDateKey = 'nutrition_last_push_date';
   static const String _assistantShownDateKey = 'nutrition_assistant_shown_date';
+  static const String _insightFeedbackKey = 'nutrition_insight_feedback';
 
   Future<NutritionInsight?> readLastInsight() async {
     final prefs = await SharedPreferences.getInstance();
@@ -37,6 +39,51 @@ class NutritionInsightStore {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_lastInsightKey, jsonEncode(insight.toJson()));
     await rememberMessage(insight.message, at: insight.generatedAt);
+  }
+
+  Future<NutritionInsight?> readAssistantInsightForToday({
+    DateTime? now,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_assistantInsightKey);
+    if (raw == null || raw.isEmpty) {
+      return null;
+    }
+
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) {
+        return null;
+      }
+
+      final data = Map<String, dynamic>.from(decoded);
+      if (data['date']?.toString() != _dateKey(now ?? DateTime.now())) {
+        return null;
+      }
+
+      final insight = data['insight'];
+      if (insight is Map) {
+        return NutritionInsight.fromJson(Map<String, dynamic>.from(insight));
+      }
+    } catch (_) {
+      return null;
+    }
+
+    return null;
+  }
+
+  Future<void> saveAssistantInsightForToday(
+    NutritionInsight insight, {
+    DateTime? now,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _assistantInsightKey,
+      jsonEncode({
+        'date': _dateKey(now ?? DateTime.now()),
+        'insight': insight.toJson(),
+      }),
+    );
   }
 
   Future<bool> canUseMessage(
@@ -106,6 +153,22 @@ class NutritionInsightStore {
     );
   }
 
+  Future<String?> readFeedbackStatus(String insightId) async {
+    final history = await _readFeedbackHistory();
+    return history[insightId]?['status']?.toString();
+  }
+
+  Future<void> saveFeedbackStatus(String insightId, String status) async {
+    final history = await _readFeedbackHistory();
+    history[insightId] = {
+      'status': status,
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_insightFeedbackKey, jsonEncode(history));
+  }
+
   Future<Map<String, DateTime>> _readMessageHistory() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_messageHistoryKey);
@@ -129,6 +192,30 @@ class NutritionInsightStore {
       return history;
     } catch (_) {
       return <String, DateTime>{};
+    }
+  }
+
+  Future<Map<String, Map<String, dynamic>>> _readFeedbackHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_insightFeedbackKey);
+    if (raw == null || raw.isEmpty) {
+      return <String, Map<String, dynamic>>{};
+    }
+
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) {
+        return <String, Map<String, dynamic>>{};
+      }
+
+      return decoded.map((key, value) {
+        final normalizedValue = value is Map
+            ? Map<String, dynamic>.from(value)
+            : <String, dynamic>{};
+        return MapEntry(key.toString(), normalizedValue);
+      });
+    } catch (_) {
+      return <String, Map<String, dynamic>>{};
     }
   }
 

@@ -51,9 +51,9 @@ Widget buildBottomNav({
     top: false,
     child: Padding(
       padding: EdgeInsets.only(
-        left: isCompact ? 10 : 14,
-        right: isCompact ? 10 : 14,
-        bottom: bottomInset > 0 ? 10 : 18,
+        left: isCompact ? 8 : 12,
+        right: isCompact ? 8 : 12,
+        bottom: bottomInset > 0 ? 8 : 12,
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(30),
@@ -62,7 +62,7 @@ Widget buildBottomNav({
           child: Container(
             padding: EdgeInsets.symmetric(
               horizontal: isCompact ? 6 : 8,
-              vertical: 9,
+              vertical: 6,
             ),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(30),
@@ -168,10 +168,10 @@ class _FloatingNavItem extends StatelessWidget {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 280),
             curve: Curves.easeOutCubic,
-            constraints: const BoxConstraints(minHeight: 70),
+            constraints: const BoxConstraints(minHeight: 58),
             padding: EdgeInsets.symmetric(
               horizontal: isCompact ? 4 : 6,
-              vertical: 9,
+              vertical: 6,
             ),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(22),
@@ -215,18 +215,18 @@ class _FloatingNavItem extends StatelessWidget {
                     scale: isSelected ? 1.08 : 1,
                     child: Icon(
                       isSelected ? item.activeIcon : item.icon,
-                      size: isCompact ? 22 : 24,
+                      size: isCompact ? 20 : 22,
                       color: isSelected ? Colors.white : inactiveIconColor,
                     ),
                   ),
                 ),
-                const SizedBox(height: 5),
+                const SizedBox(height: 3),
                 AnimatedDefaultTextStyle(
                   duration: const Duration(milliseconds: 220),
                   curve: Curves.easeOut,
                   style: TextStyle(
                     color: isSelected ? Colors.white : inactiveLabelColor,
-                    fontSize: isCompact ? 10.5 : 11.2,
+                    fontSize: isCompact ? 10 : 10.8,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                     letterSpacing: 0,
                   ),

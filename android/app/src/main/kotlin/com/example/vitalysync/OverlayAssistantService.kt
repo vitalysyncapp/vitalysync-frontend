@@ -82,6 +82,10 @@ class OverlayAssistantService : Service() {
                 ensureOverlayView()
                 expandPanel()
             }
+            OverlayAssistantManager.actionAutoShow -> {
+                ensureOverlayView()
+                expandPanel()
+            }
             else -> {
                 if (!OverlayAssistantManager.isEnabled(this) ||
                     !OverlayAssistantManager.isOverlayPermissionGranted(this)
@@ -135,6 +139,14 @@ class OverlayAssistantService : Service() {
                     }
                     "stopOverlayService" -> {
                         stopSelf()
+                        result.success(null)
+                    }
+                    "openApp" -> {
+                        OverlayAssistantManager.openApp(
+                            applicationContext,
+                            call.argument<String>("payload"),
+                        )
+                        detachOverlayWindow()
                         result.success(null)
                     }
                     else -> result.notImplemented()
@@ -304,9 +316,9 @@ class OverlayAssistantService : Service() {
         flutterEngine?.lifecycleChannel?.appIsResumed()
         val metrics = resources.displayMetrics
         val horizontalMargin = dpToPx(16)
-        val bottomMargin = dpToPx(20)
+        val verticalMargin = dpToPx(32)
         val width = max(dpToPx(320), minOf(dpToPx(420), metrics.widthPixels - (horizontalMargin * 2)))
-        val height = minOf((metrics.heightPixels * 0.78f).toInt(), metrics.heightPixels - dpToPx(48))
+        val height = minOf((metrics.heightPixels * 0.76f).toInt(), metrics.heightPixels - (verticalMargin * 2))
 
         val params = windowLayoutParams ?: WindowManager.LayoutParams(
             width,
@@ -323,7 +335,7 @@ class OverlayAssistantService : Service() {
         params.width = width
         params.height = height
         params.x = ((metrics.widthPixels - width) / 2).coerceAtLeast(horizontalMargin)
-        params.y = (metrics.heightPixels - height - bottomMargin).coerceAtLeast(dpToPx(24))
+        params.y = ((metrics.heightPixels - height) / 2).coerceAtLeast(verticalMargin)
         windowLayoutParams = params
 
         attachOrUpdateRootView(root, params)

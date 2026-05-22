@@ -7,19 +7,19 @@ extension _LogPressureRecoveryCards on LogWidgets {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color.fromARGB(255, 157, 94, 230), Color(0xFF56B4D3)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF1FB489).withValues(alpha: 0.22),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -30,19 +30,19 @@ extension _LogPressureRecoveryCards on LogWidgets {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 48,
-                height: 48,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.22),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(13),
                 ),
                 child: const Icon(
                   Icons.spa_outlined,
                   color: Colors.white,
-                  size: 25,
+                  size: 22,
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 10),
               const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,16 +51,16 @@ extension _LogPressureRecoveryCards on LogWidgets {
                       "Today's Pressure Check",
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 19,
+                        fontSize: 16.5,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    SizedBox(height: 3),
                     Text(
                       "Choose the level that best matches how much pressure you carried today.",
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 14,
+                        fontSize: 12.5,
                         height: 1.35,
                         fontWeight: FontWeight.w600,
                       ),
@@ -70,7 +70,7 @@ extension _LogPressureRecoveryCards on LogWidgets {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Row(
             children: List.generate(stressLabels.length, (index) {
               final value = index + 1;
@@ -79,20 +79,20 @@ extension _LogPressureRecoveryCards on LogWidgets {
               return Expanded(
                 child: Padding(
                   padding: EdgeInsets.only(
-                    right: index == stressLabels.length - 1 ? 0 : 7,
+                    right: index == stressLabels.length - 1 ? 0 : 6,
                   ),
                   child: GestureDetector(
                     onTap: () => onPerceivedStressChanged(value),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
                       curve: Curves.easeOut,
-                      height: 74,
+                      height: 58,
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       decoration: BoxDecoration(
                         color: selected
                             ? Colors.white
                             : Colors.white.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(13),
                         border: Border.all(
                           color: Colors.white.withValues(
                             alpha: selected ? 0.95 : 0.32,
@@ -109,11 +109,11 @@ extension _LogPressureRecoveryCards on LogWidgets {
                               color: selected
                                   ? const Color(0xFF0F766E)
                                   : Colors.white,
-                              fontSize: 20,
+                              fontSize: 17,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
-                          const SizedBox(height: 5),
+                          const SizedBox(height: 3),
                           FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Text(
@@ -123,7 +123,7 @@ extension _LogPressureRecoveryCards on LogWidgets {
                                 color: selected
                                     ? const Color(0xFF0F766E)
                                     : Colors.white,
-                                fontSize: 12.5,
+                                fontSize: 11,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
@@ -136,14 +136,14 @@ extension _LogPressureRecoveryCards on LogWidgets {
               );
             }),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 9),
           Text(
             selectedLevel == null
                 ? 'Your answer helps VitalySync understand today with more care.'
                 : 'Logged as ${stressLabels[selectedLevel - 1].toLowerCase()} pressure.',
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 13.5,
+              fontSize: 12,
               height: 1.35,
               fontWeight: FontWeight.w600,
             ),
@@ -168,7 +168,7 @@ extension _LogPressureRecoveryCards on LogWidgets {
             title: 'Recovery Breaks',
             subtitle: 'How restorative were your pauses today?',
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Row(
             children: List.generate(breakLabels.length, (index) {
               final value = index + 1;
@@ -177,14 +177,14 @@ extension _LogPressureRecoveryCards on LogWidgets {
               return Expanded(
                 child: Padding(
                   padding: EdgeInsets.only(
-                    right: index == breakLabels.length - 1 ? 0 : 7,
+                    right: index == breakLabels.length - 1 ? 0 : 6,
                   ),
                   child: GestureDetector(
                     onTap: () => onBreakQualityChanged(value),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
                       curve: Curves.easeOut,
-                      height: 70,
+                      height: 56,
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       decoration: BoxDecoration(
                         gradient: selected
@@ -195,7 +195,7 @@ extension _LogPressureRecoveryCards on LogWidgets {
                               )
                             : null,
                         color: selected ? null : const Color(0xFFF0FDF9),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(13),
                         border: Border.all(
                           color: selected
                               ? const Color(0xFF1FB489)
@@ -208,8 +208,8 @@ extension _LogPressureRecoveryCards on LogWidgets {
                                   color: const Color(
                                     0xFF1FB489,
                                   ).withValues(alpha: 0.18),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 6),
+                                  blurRadius: 9,
+                                  offset: const Offset(0, 4),
                                 ),
                               ]
                             : null,
@@ -223,11 +223,11 @@ extension _LogPressureRecoveryCards on LogWidgets {
                               color: selected
                                   ? Colors.white
                                   : const Color(0xFF0F766E),
-                              fontSize: 20,
+                              fontSize: 17,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
-                          const SizedBox(height: 5),
+                          const SizedBox(height: 3),
                           FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Text(
@@ -237,7 +237,7 @@ extension _LogPressureRecoveryCards on LogWidgets {
                                 color: selected
                                     ? Colors.white
                                     : const Color(0xFF0F766E),
-                                fontSize: 12.5,
+                                fontSize: 11,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
@@ -250,14 +250,14 @@ extension _LogPressureRecoveryCards on LogWidgets {
               );
             }),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 9),
           Text(
             selectedLevel == null
                 ? 'Optional, but useful for spotting recovery patterns over time.'
                 : 'Recovery logged as ${breakLabels[selectedLevel - 1].toLowerCase()}.',
             style: const TextStyle(
               color: Color(0xFF0F766E),
-              fontSize: 13.5,
+              fontSize: 12,
               height: 1.35,
               fontWeight: FontWeight.w700,
             ),

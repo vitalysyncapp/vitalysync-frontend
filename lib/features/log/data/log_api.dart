@@ -9,6 +9,7 @@ import '../../../shared/config/api_config.dart';
 import '../../../shared/notifications/notification_feed_cache.dart';
 import '../../../shared/offline/offline_cache_store.dart';
 import '../../dashboard/data/burnout_score_api.dart';
+import '../../exercise/data/exercise_goal_model.dart';
 import '../../exercise/data/exercise_goal_service.dart';
 
 part 'log_local_cache_helpers.dart';
@@ -41,9 +42,26 @@ class LogApi {
   static const String _pendingLogsKeyPrefix = 'offline_pending_logs';
   static const String _cachedLogsKeyPrefix = 'cached_daily_logs';
   static const String _syncedStreakKeyPrefix = 'synced_log_streak';
+  static const String _hydrationPrefillKeyPrefix =
+      'assistant_hydration_prefill';
+  static const String _exercisePrefillKeyPrefix = 'assistant_exercise_prefill';
   static const String _weeklyPulseStatusCache = 'weekly_pulse_status';
   static const String _weeklyPulsePendingCache = 'weekly_pulse_pending';
   static const Duration _requestTimeout = Duration(seconds: 8);
+
+  static const List<String> exerciseOptions = [
+    'Walking',
+    'Jogging',
+    'Running',
+    'Bodyweight',
+    'Stretching',
+    'Breathing',
+    'Yoga',
+    'Gym',
+    'Cycling',
+    'Swimming',
+    'None',
+  ];
 
   static String todayKey() {
     final now = DateTime.now();
@@ -111,6 +129,47 @@ class LogApi {
   static String? normalizeWorkloadHoursBand(dynamic value) {
     final normalized = value?.toString().trim() ?? '';
     return workloadHoursBandOptions.contains(normalized) ? normalized : null;
+  }
+
+  static String normalizeExerciseNameForLog(String value) {
+    final normalized = value.trim();
+    final lower = normalized.toLowerCase();
+
+    if (normalized.isEmpty || lower.contains('none')) {
+      return 'None';
+    }
+    if (lower.contains('walk')) {
+      return 'Walking';
+    }
+    if (lower.contains('jog')) {
+      return 'Jogging';
+    }
+    if (lower.contains('run')) {
+      return 'Running';
+    }
+    if (lower.contains('bodyweight') || lower.contains('circuit')) {
+      return 'Bodyweight';
+    }
+    if (lower.contains('stretch')) {
+      return 'Stretching';
+    }
+    if (lower.contains('breath')) {
+      return 'Breathing';
+    }
+    if (lower.contains('yoga')) {
+      return 'Yoga';
+    }
+    if (lower.contains('gym') || lower.contains('strength')) {
+      return 'Gym';
+    }
+    if (lower.contains('cycl')) {
+      return 'Cycling';
+    }
+    if (lower.contains('swim')) {
+      return 'Swimming';
+    }
+
+    return exerciseOptions.contains(normalized) ? normalized : normalized;
   }
 
   static int? parseLikert(dynamic value) {
@@ -501,6 +560,13 @@ class LogApi {
       ...exerciseGoalMetadata,
     });
 
+    return _savePreparedDailyLog(userId, log);
+  }
+
+  static Future<Map<String, dynamic>> _savePreparedDailyLog(
+    int userId,
+    Map<String, dynamic> log,
+  ) async {
     try {
       await syncPendingLogs();
     } catch (_) {
@@ -511,6 +577,8 @@ class LogApi {
       final data = await _postDailyLog(userId, log);
       final savedLog = data['log'] as Map<String, dynamic>?;
       await _upsertCachedLog(userId, savedLog ?? log);
+      await _clearHydrationPrefillForUser(userId);
+      await _clearExercisePrefillForUser(userId);
       await _refreshBurnoutCacheAfterInputChange(data);
 
       final streak = data['streak'] as Map<String, dynamic>?;
@@ -533,6 +601,148 @@ class LogApi {
     } catch (_) {
       return _saveOfflineLog(userId, log);
     }
+  }
+
+  static Future<Map<String, dynamic>> quickAddHydration({
+    required double amountLiters,
+  }) async {
+    final amount = amountLiters.clamp(0.0, 10.0).toDouble();
+    if (amount <= 0) {
+      throw Exception('Hydration amount must be greater than 0.');
+    }
+
+    final userId = await getStoredUserId();
+    if (userId == null) {
+      throw Exception('Missing logged-in user');
+    }
+
+    final data = await fetchTodayLog();
+    final rawLog = data['log'];
+    if (data['has_log'] == true && rawLog is Map) {
+      final log = Map<String, dynamic>.from(rawLog);
+      final updatedHydration = (parseDouble(log['hydration_liters']) + amount)
+          .clamp(0.0, 10.0)
+          .toDouble();
+      final saved = await _savePreparedDailyLog(
+        userId,
+        _normalizeLog({...log, 'hydration_liters': updatedHydration}),
+      );
+
+      return {
+        ...saved,
+        'quick_hydration_saved': true,
+        'hydration_liters': updatedHydration,
+      };
+    }
+
+    final queuedTotal = await queueHydrationPrefill(amount);
+    return {
+      'has_log': false,
+      'quick_hydration_saved': false,
+      'queued_hydration_liters': queuedTotal,
+    };
+  }
+
+  static Future<double> queueHydrationPrefill(double amountLiters) async {
+    final userId = await getStoredUserId();
+    if (userId == null) {
+      throw Exception('Missing logged-in user');
+    }
+
+    final current = await _readHydrationPrefillForUser(userId);
+    final total = (current + amountLiters).clamp(0.0, 10.0).toDouble();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_hydrationPrefillKey(userId), total);
+    return total;
+  }
+
+  static Future<double> readHydrationPrefill() async {
+    final userId = await getStoredUserId();
+    if (userId == null) {
+      return 0;
+    }
+
+    return _readHydrationPrefillForUser(userId);
+  }
+
+  static Future<void> clearHydrationPrefill() async {
+    final userId = await getStoredUserId();
+    if (userId == null) {
+      return;
+    }
+
+    await _clearHydrationPrefillForUser(userId);
+  }
+
+  static Future<Map<String, dynamic>> applyExerciseGoalSelection(
+    ExerciseGoalModel goal,
+  ) async {
+    final userId = await getStoredUserId();
+    if (userId == null) {
+      throw Exception('Missing logged-in user');
+    }
+
+    final exerciseName = normalizeExerciseNameForLog(goal.exerciseName);
+    final goalMetadata = goal.toDailyLogMetadata();
+    final data = await fetchTodayLog();
+    final rawLog = data['log'];
+
+    if (data['has_log'] == true && rawLog is Map) {
+      final updatedLog = _normalizeLog({
+        ...Map<String, dynamic>.from(rawLog),
+        'exercise_names': [exerciseName],
+        ...goalMetadata,
+      });
+      final saved = await _savePreparedDailyLog(userId, updatedLog);
+      return {
+        ...saved,
+        'exercise_applied_to_log': true,
+        'exercise_name': exerciseName,
+      };
+    }
+
+    await queueExercisePrefill(goal);
+    return {
+      'has_log': false,
+      'exercise_applied_to_log': false,
+      'exercise_name': exerciseName,
+    };
+  }
+
+  static Future<void> queueExercisePrefill(ExerciseGoalModel goal) async {
+    final userId = await getStoredUserId();
+    if (userId == null) {
+      throw Exception('Missing logged-in user');
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _exercisePrefillKey(userId),
+      jsonEncode({
+        'date': todayKey(),
+        'exercise_name': normalizeExerciseNameForLog(goal.exerciseName),
+        'goal': goal.toJson(),
+      }),
+    );
+  }
+
+  static Future<String?> readExercisePrefill() async {
+    final userId = await getStoredUserId();
+    if (userId == null) {
+      return null;
+    }
+
+    final data = await _readExercisePrefillForUser(userId);
+    return data?['exercise_name']?.toString();
+  }
+
+  static Future<void> clearExercisePrefill() async {
+    final userId = await getStoredUserId();
+    if (userId == null) {
+      return;
+    }
+
+    await _clearExercisePrefillForUser(userId);
   }
 
   static Future<Map<String, dynamic>> fetchWeeklyPulseStatus() async {
@@ -693,6 +903,8 @@ class LogApi {
           key.startsWith(_legacyLocalWeeklyPulseKeyPrefix) ||
           key.startsWith(_pendingLogsKeyPrefix) ||
           key.startsWith(_cachedLogsKeyPrefix) ||
+          key.startsWith(_hydrationPrefillKeyPrefix) ||
+          key.startsWith(_exercisePrefillKeyPrefix) ||
           key.startsWith(_syncedStreakKeyPrefix),
     );
 
