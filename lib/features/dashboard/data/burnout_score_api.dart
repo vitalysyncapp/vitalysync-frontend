@@ -292,7 +292,10 @@ class BurnoutScoreApi {
           .post(
             Uri.parse(ApiConfig.burnout('/scores/recalculate')),
             headers: await ApiConfig.jsonHeaders(),
-            body: jsonEncode({'user_id': userId}),
+            body: jsonEncode({
+              'user_id': userId,
+              'score_date': _todayKey(),
+            }),
           )
           .timeout(_requestTimeout);
 
@@ -361,20 +364,23 @@ class BurnoutScoreApi {
     }
   }
 
-  static Future<BurnoutPatternSummary?> fetchPatternSummary() async {
+  static Future<BurnoutPatternSummary?> fetchPatternSummary({
+    String? endDate,
+  }) async {
     final userId = await _storedUserId();
     if (userId == null) {
       return null;
     }
 
     try {
+      final uri = Uri.parse(ApiConfig.burnout('/patterns/summary')).replace(
+        queryParameters: {
+          'user_id': userId.toString(),
+          'end': endDate ?? _todayKey(),
+        },
+      );
       final response = await http
-          .get(
-            Uri.parse(
-              '${ApiConfig.burnout('/patterns/summary')}?user_id=$userId',
-            ),
-            headers: await ApiConfig.jsonHeaders(),
-          )
+          .get(uri, headers: await ApiConfig.jsonHeaders())
           .timeout(_requestTimeout);
 
       final data = _decodeResponseMap(response);
@@ -500,6 +506,13 @@ class BurnoutScoreApi {
   static Future<int?> _storedUserId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt('user_id');
+  }
+
+  static String _todayKey() {
+    final now = DateTime.now();
+    final month = now.month.toString().padLeft(2, '0');
+    final day = now.day.toString().padLeft(2, '0');
+    return '${now.year}-$month-$day';
   }
 
   static Map<String, dynamic> _decodeResponseMap(http.Response response) {
