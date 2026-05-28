@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared/preferences/app_preferences.dart';
+import '../../../../shared/preferences/session_reset_service.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
-import '../../../auth/presentation/pages/login_page.dart';
-import '../../../log/data/log_api.dart';
-import '../../../onboarding/services/onboarding_service.dart';
+import '../../../auth/presentation/pages/auth_start_page.dart';
 
 class DeleteAccountPage extends StatefulWidget {
   final String verifiedPassword;
@@ -73,9 +71,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
       await UserSessionController.instance.deleteAccount(
         password: widget.verifiedPassword,
       );
-      await AppPreferencesController.instance.resetToDefaults();
-      await OnboardingService.clearDefaults();
-      await LogApi.clearLocalAccountData();
+      await SessionResetService.instance.resetForLogout();
 
       if (!mounted) {
         return;
@@ -83,7 +79,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
 
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const LoginPage()),
+        MaterialPageRoute(builder: (_) => const AuthStartPage()),
         (route) => false,
       );
     } catch (error) {

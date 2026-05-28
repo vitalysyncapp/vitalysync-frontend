@@ -43,6 +43,8 @@ class NutritionInsightStore {
 
   Future<NutritionInsight?> readAssistantInsightForToday({
     DateTime? now,
+    Duration? maxAge,
+    bool allowStale = true,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_assistantInsightKey);
@@ -63,7 +65,16 @@ class NutritionInsightStore {
 
       final insight = data['insight'];
       if (insight is Map) {
-        return NutritionInsight.fromJson(Map<String, dynamic>.from(insight));
+        final parsedInsight = NutritionInsight.fromJson(
+          Map<String, dynamic>.from(insight),
+        );
+        if (maxAge != null &&
+            !allowStale &&
+            !_isFreshAssistantCache(data, parsedInsight, maxAge, now)) {
+          return null;
+        }
+
+        return parsedInsight;
       }
     } catch (_) {
       return null;
@@ -81,6 +92,7 @@ class NutritionInsightStore {
       _assistantInsightKey,
       jsonEncode({
         'date': _dateKey(now ?? DateTime.now()),
+        'cached_at': DateTime.now().toIso8601String(),
         'insight': insight.toJson(),
       }),
     );
@@ -221,6 +233,19 @@ class NutritionInsightStore {
 
   String _normalizeMessage(String message) {
     return message.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+  }
+
+  bool _isFreshAssistantCache(
+    Map<String, dynamic> data,
+    NutritionInsight insight,
+    Duration maxAge,
+    DateTime? now,
+  ) {
+    final cachedAt =
+        DateTime.tryParse(data['cached_at']?.toString() ?? '') ??
+        insight.generatedAt;
+
+    return (now ?? DateTime.now()).difference(cachedAt) <= maxAge;
   }
 
   String _dateKey(DateTime date) {

@@ -402,6 +402,10 @@ class NotificationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (item.filterKey == 'daily' || item.filterKey == 'weekly') {
+      return _buildReportCard(context);
+    }
+
     return InkWell(
       borderRadius: BorderRadius.circular(18),
       onTap: onTap,
@@ -530,6 +534,181 @@ class NotificationCard extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildReportCard(BuildContext context) {
+    final isWeekly = item.filterKey == 'weekly';
+    final accent = item.iconColor;
+    final title = item.title.trim().isEmpty
+        ? (isWeekly ? 'Weekly wellness report' : 'Daily wellness report')
+        : item.title.trim();
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: pageSurfaceColor(context),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: item.isUnread
+                ? accent.withValues(alpha: 0.44)
+                : pageBorderColor(context),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(
+                alpha: Theme.of(context).brightness == Brightness.dark
+                    ? 0.16
+                    : 0.07,
+              ),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: item.iconBg,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(item.icon, color: accent, size: 24),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          _ReportTypePill(
+                            label: isWeekly
+                                ? 'Weekly wellness report'
+                                : 'Daily wellness report',
+                            color: accent,
+                          ),
+                          _PriorityBadge(priority: item.priority),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 16,
+                          height: 1.25,
+                          fontWeight: FontWeight.w800,
+                          color: pagePrimaryTextColor(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (item.isUnread) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 9,
+                    height: 9,
+                    margin: const EdgeInsets.only(top: 5),
+                    decoration: BoxDecoration(
+                      color: accent,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: reportSummaryColor(context, accent),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: accent.withValues(alpha: 0.14)),
+              ),
+              child: Text(
+                item.message,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.5,
+                  color: pageSecondaryTextColor(context),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            if (item.metricChips.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Text(
+                'Key signals',
+                style: TextStyle(
+                  color: pagePrimaryTextColor(context),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _ReportMetricGrid(metrics: item.metricChips, accent: accent),
+            ],
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Icon(
+                  Icons.schedule_rounded,
+                  size: 15,
+                  color: pageSecondaryTextColor(context),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '${item.sourceLabel} - ${item.time}',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: pageSecondaryTextColor(context),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                if (item.showAction) ...[
+                  const SizedBox(width: 10),
+                  GestureDetector(
+                    onTap: onActionTap,
+                    child: const Text(
+                      'Mark read',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF246BFF),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color reportSummaryColor(BuildContext context, Color accent) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? accent.withValues(alpha: 0.08)
+        : accent.withValues(alpha: 0.06);
+  }
 }
 
 class _NotificationFilter {
@@ -596,6 +775,162 @@ class _MetricChip extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.06)
         : const Color(0xFFF4FBF8);
   }
+}
+
+class _ReportTypePill extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _ReportTypePill({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11.5,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _ReportMetricGrid extends StatelessWidget {
+  final List<String> metrics;
+  final Color accent;
+
+  const _ReportMetricGrid({required this.metrics, required this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const spacing = 8.0;
+        final useTwoColumns = constraints.maxWidth >= 300;
+        final itemWidth = useTwoColumns
+            ? (constraints.maxWidth - spacing) / 2
+            : constraints.maxWidth;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: metrics
+              .map(
+                (metric) => SizedBox(
+                  width: itemWidth,
+                  child: _ReportMetricTile(metric: metric, accent: accent),
+                ),
+              )
+              .toList(),
+        );
+      },
+    );
+  }
+}
+
+class _ReportMetricTile extends StatelessWidget {
+  final String metric;
+  final Color accent;
+
+  const _ReportMetricTile({required this.metric, required this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = _splitReportMetric(metric);
+
+    return Container(
+      constraints: const BoxConstraints(minHeight: 56),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? Colors.white.withValues(alpha: 0.05)
+            : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(color: pageBorderColor(context)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 32,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.72),
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  parts.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: pageSecondaryTextColor(context),
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  parts.value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: pagePrimaryTextColor(context),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReportMetricParts {
+  final String label;
+  final String value;
+
+  const _ReportMetricParts({required this.label, required this.value});
+}
+
+_ReportMetricParts _splitReportMetric(String metric) {
+  final normalized = metric.trim().replaceAll(RegExp(r'\s+'), ' ');
+  if (normalized.isEmpty) {
+    return const _ReportMetricParts(label: 'Signal', value: 'Available');
+  }
+
+  if (normalized.startsWith('Risk ')) {
+    return _ReportMetricParts(
+      label: 'Burnout risk',
+      value: normalized.substring('Risk '.length),
+    );
+  }
+
+  final lastSpace = normalized.lastIndexOf(' ');
+  if (lastSpace <= 0 || lastSpace == normalized.length - 1) {
+    return _ReportMetricParts(label: 'Signal', value: normalized);
+  }
+
+  return _ReportMetricParts(
+    label: normalized.substring(0, lastSpace),
+    value: normalized.substring(lastSpace + 1),
+  );
 }
 
 class _PriorityBadge extends StatelessWidget {

@@ -245,8 +245,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           iconBg: const Color(0xFFE5F7F0),
                           iconColor: const Color(0xFF1F9D63),
                           title: "Assistant",
-                          subtitle:
-                              "Manage outside-app access, auto appear, and schedule",
+                          subtitle: "Manage outside-app assistant access",
                           onTap: () {
                             Navigator.push(
                               context,

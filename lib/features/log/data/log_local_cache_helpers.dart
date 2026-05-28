@@ -106,7 +106,7 @@ Map<String, dynamic> _buildLogRequestBody(
     'sleep_hours': LogApi.parseDouble(log['sleep_hours']),
     'sleep_quality': LogApi.parseInt(log['sleep_quality']),
     'mood_index': LogApi.parseInt(log['mood_index']),
-    'energy_level': LogApi.parseInt(log['energy_level']),
+    'energy_level': LogApi.parseEnergyLevel(log['energy_level']) ?? 3,
     'hydration_liters': LogApi.parseDouble(log['hydration_liters']),
     'workload_hours_band':
         LogApi.normalizeWorkloadHoursBand(log['workload_hours_band']) ?? 'None',
@@ -154,7 +154,8 @@ Future<List<Map<String, dynamic>>> _readMergedUserLogs(int userId) async {
   return logs;
 }
 
-Future<List<Map<String, dynamic>>> _readPendingLogs(int userId) {
+Future<List<Map<String, dynamic>>> _readPendingLogs(int userId) async {
+  await _migrateLocalEnergyScale(userId);
   return _readLogList(_pendingLogsKey(userId));
 }
 
@@ -162,7 +163,8 @@ Future<void> _writePendingLogs(int userId, List<Map<String, dynamic>> logs) {
   return _writeLogList(_pendingLogsKey(userId), logs);
 }
 
-Future<List<Map<String, dynamic>>> _readCachedLogs(int userId) {
+Future<List<Map<String, dynamic>>> _readCachedLogs(int userId) async {
+  await _migrateLocalEnergyScale(userId);
   return _readLogList(_cachedLogsKey(userId));
 }
 
@@ -340,7 +342,8 @@ Map<String, dynamic> _normalizeLog(Map<String, dynamic> log) {
   normalized['sleep_hours'] = LogApi.parseDouble(log['sleep_hours']);
   normalized['sleep_quality'] = LogApi.parseInt(log['sleep_quality']);
   normalized['mood_index'] = LogApi.parseInt(log['mood_index']);
-  normalized['energy_level'] = LogApi.parseInt(log['energy_level']);
+  normalized['energy_level'] =
+      LogApi.parseEnergyLevel(log['energy_level']) ?? 3;
   normalized['hydration_liters'] = LogApi.parseDouble(log['hydration_liters']);
   normalized['workload_hours_band'] =
       LogApi.normalizeWorkloadHoursBand(log['workload_hours_band']) ?? 'None';
@@ -469,6 +472,73 @@ String _cachedLogsKey(int userId) {
 
 String _syncedStreakKey(int userId) {
   return '${LogApi._syncedStreakKeyPrefix}_$userId';
+}
+
+String _energyScaleMigrationKey(int userId) {
+  return '${LogApi._energyScaleMigrationKeyPrefix}_$userId';
+}
+
+Future<void> _migrateLocalEnergyScale(int userId) async {
+  final prefs = await SharedPreferences.getInstance();
+  final markerKey = _energyScaleMigrationKey(userId);
+  if (prefs.getBool(markerKey) == true) {
+    return;
+  }
+
+  await _migrateLogListEnergyScale(prefs, _pendingLogsKey(userId));
+  await _migrateLogListEnergyScale(prefs, _cachedLogsKey(userId));
+  await prefs.setBool(markerKey, true);
+}
+
+Future<void> _migrateLogListEnergyScale(
+  SharedPreferences prefs,
+  String key,
+) async {
+  final raw = prefs.getString(key);
+  if (raw == null || raw.isEmpty) {
+    return;
+  }
+
+  try {
+    final decoded = jsonDecode(raw);
+    if (decoded is! List) {
+      return;
+    }
+
+    var changed = false;
+    final migrated = decoded.map((item) {
+      if (item is! Map) {
+        return item;
+      }
+
+      final log = Map<String, dynamic>.from(item);
+      final legacyEnergy = LogApi.parseInt(log['energy_level'], fallback: -1);
+      if (legacyEnergy >= 0 && legacyEnergy <= 2) {
+        log['energy_level'] = _legacyEnergyToLikert(legacyEnergy);
+        changed = true;
+      }
+      return log;
+    }).toList();
+
+    if (changed) {
+      await prefs.setString(key, jsonEncode(migrated));
+    }
+  } catch (_) {
+    // Corrupt cache data should fall back to the normal empty-cache path.
+  }
+}
+
+int _legacyEnergyToLikert(int value) {
+  switch (value) {
+    case 0:
+      return 1;
+    case 1:
+      return 3;
+    case 2:
+      return 5;
+    default:
+      return 3;
+  }
 }
 
 String _hydrationPrefillKey(int userId) {

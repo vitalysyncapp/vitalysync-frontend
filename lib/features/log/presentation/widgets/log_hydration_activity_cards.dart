@@ -110,7 +110,7 @@ extension _LogHydrationActivityCards on LogWidgets {
             subtitle: "Goal: $exerciseGoalLabel per week",
           ),
           const SizedBox(height: 8),
-          _buildTwoRowSelectionGrid(
+          _buildCenteredSelectionGrid(
             options: exercises,
             minItemWidth: 104,
             isSelected: selectedExercises.contains,
@@ -268,7 +268,7 @@ extension _LogHydrationActivityCards on LogWidgets {
             subtitle: "How much focused work did today ask from you?",
           ),
           const SizedBox(height: 8),
-          _buildTwoRowSelectionGrid(
+          _buildCenteredSelectionGrid(
             options: workloadOptions,
             minItemWidth: 116,
             isSelected: (option) => workloadHoursBand == option,
@@ -282,7 +282,7 @@ extension _LogHydrationActivityCards on LogWidgets {
     );
   }
 
-  Widget _buildTwoRowSelectionGrid({
+  Widget _buildCenteredSelectionGrid({
     required List<String> options,
     required double minItemWidth,
     required bool Function(String option) isSelected,
@@ -292,80 +292,71 @@ extension _LogHydrationActivityCards on LogWidgets {
     return LayoutBuilder(
       builder: (context, constraints) {
         const spacing = 6.0;
-        final columns = (options.length / 2).ceil();
-        final minimumGridWidth =
-            (columns * minItemWidth) + (spacing * (columns - 1));
-        final gridWidth = minimumGridWidth > constraints.maxWidth
-            ? minimumGridWidth
-            : constraints.maxWidth;
-        final itemWidth = (gridWidth - (spacing * (columns - 1))) / columns;
-        final firstRow = options.take(columns).toList();
-        final secondRow = options.skip(columns).toList();
+        final screenSize = MediaQuery.sizeOf(context);
+        final isNarrowScreen = screenSize.width < 430;
+        final isTallNarrowScreen = isNarrowScreen && screenSize.height >= 780;
+        final comfortableColumnCount =
+            ((constraints.maxWidth + spacing) / (minItemWidth + spacing))
+                .floor();
+        final columnCount = isNarrowScreen
+            ? (isTallNarrowScreen ? 2 : 3)
+            : comfortableColumnCount.clamp(2, 3).toInt();
+        final totalSpacing = spacing * (columnCount - 1);
+        final availableItemWidth =
+            (constraints.maxWidth - totalSpacing) / columnCount;
+        final itemWidth = availableItemWidth <= 0
+            ? constraints.maxWidth
+            : availableItemWidth;
+        final rows = <List<String>>[];
 
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SizedBox(
-            width: gridWidth,
-            child: Column(
-              children: [
-                _selectionGridRow(
-                  items: firstRow,
-                  itemWidth: itemWidth,
-                  spacing: spacing,
-                  isSelected: isSelected,
-                  leadingIconFor: leadingIconFor,
-                  onSelected: onSelected,
-                ),
-                if (secondRow.isNotEmpty) ...[
-                  const SizedBox(height: spacing),
-                  _selectionGridRow(
-                    items: secondRow,
-                    itemWidth: itemWidth,
-                    spacing: spacing,
-                    isSelected: isSelected,
-                    leadingIconFor: leadingIconFor,
-                    onSelected: onSelected,
-                  ),
-                ],
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+        for (var index = 0; index < options.length; index += columnCount) {
+          final end = index + columnCount > options.length
+              ? options.length
+              : index + columnCount;
+          rows.add(options.sublist(index, end));
+        }
 
-  Widget _selectionGridRow({
-    required List<String> items,
-    required double itemWidth,
-    required double spacing,
-    required bool Function(String option) isSelected,
-    required IconData Function(String option) leadingIconFor,
-    required ValueChanged<String> onSelected,
-  }) {
-    return Row(
-      children: List.generate(items.length, (index) {
-        final option = items[index];
-
-        return Padding(
-          padding: EdgeInsets.only(
-            right: index == items.length - 1 ? 0 : spacing,
-          ),
-          child: _selectionBox(
+        Widget tile(String option) {
+          return _selectionBox(
             label: option,
             selected: isSelected(option),
             width: itemWidth,
             height: 36,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-            alignment: Alignment.centerLeft,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: columnCount == 3 ? 6 : 8,
+            ),
+            alignment: Alignment.center,
             leadingIcon: leadingIconFor(option),
-            iconSize: 14,
-            fontSize: 11.5,
-            checkIconSize: 14,
+            iconSize: columnCount == 3 ? 13 : 14,
+            fontSize: columnCount == 3 ? 10.8 : 11.5,
+            checkIconSize: columnCount == 3 ? 13 : 14,
             onTap: () => onSelected(option),
-          ),
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: rows.asMap().entries.map((entry) {
+            final row = entry.value;
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: entry.key == rows.length - 1 ? 0 : spacing,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: row.asMap().entries.map((rowEntry) {
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      right: rowEntry.key == row.length - 1 ? 0 : spacing,
+                    ),
+                    child: tile(rowEntry.value),
+                  );
+                }).toList(),
+              ),
+            );
+          }).toList(),
         );
-      }),
+      },
     );
   }
 }

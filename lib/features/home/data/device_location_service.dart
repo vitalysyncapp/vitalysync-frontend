@@ -76,6 +76,38 @@ class DeviceLocationService {
     }
   }
 
+  static Future<DeviceCoordinates?> getLastKnownCoordinates() async {
+    final preferences = AppPreferencesController.instance;
+
+    final isServiceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!isServiceEnabled) {
+      return null;
+    }
+
+    final permission = await Geolocator.checkPermission();
+    if (!_hasLocationPermission(permission)) {
+      return null;
+    }
+
+    await preferences.updateLocationPermissionChoice(
+      AppLocationPermissionChoice.allowed,
+    );
+
+    try {
+      final lastKnownPosition = await Geolocator.getLastKnownPosition();
+      if (lastKnownPosition == null) {
+        return null;
+      }
+
+      return DeviceCoordinates(
+        latitude: lastKnownPosition.latitude,
+        longitude: lastKnownPosition.longitude,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
   static Future<bool> enableLocationAccess() async {
     final preferences = AppPreferencesController.instance;
 
@@ -114,5 +146,10 @@ class DeviceLocationService {
     final openedAppSettings = await Geolocator.openAppSettings();
     final openedLocationSettings = await Geolocator.openLocationSettings();
     return openedAppSettings || openedLocationSettings;
+  }
+
+  static bool _hasLocationPermission(LocationPermission permission) {
+    return permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse;
   }
 }

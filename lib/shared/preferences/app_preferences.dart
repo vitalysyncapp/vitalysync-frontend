@@ -25,8 +25,6 @@ class AppPreferencesState {
   final bool biometricLockEnabled;
   final AppLocationPermissionChoice locationPermissionChoice;
   final bool assistantOverlayEnabled;
-  final bool assistantOverlayAutoShowEnabled;
-  final String assistantOverlayAutoShowTime;
   final bool isLoaded;
 
   const AppPreferencesState({
@@ -46,8 +44,6 @@ class AppPreferencesState {
     required this.biometricLockEnabled,
     required this.locationPermissionChoice,
     required this.assistantOverlayEnabled,
-    required this.assistantOverlayAutoShowEnabled,
-    required this.assistantOverlayAutoShowTime,
     required this.isLoaded,
   });
 
@@ -68,8 +64,6 @@ class AppPreferencesState {
       biometricLockEnabled = false,
       locationPermissionChoice = AppLocationPermissionChoice.undecided,
       assistantOverlayEnabled = false,
-      assistantOverlayAutoShowEnabled = false,
-      assistantOverlayAutoShowTime = '06:50',
       isLoaded = false;
 
   AppPreferencesState copyWith({
@@ -89,8 +83,6 @@ class AppPreferencesState {
     bool? biometricLockEnabled,
     AppLocationPermissionChoice? locationPermissionChoice,
     bool? assistantOverlayEnabled,
-    bool? assistantOverlayAutoShowEnabled,
-    String? assistantOverlayAutoShowTime,
     bool? isLoaded,
   }) {
     return AppPreferencesState(
@@ -115,11 +107,6 @@ class AppPreferencesState {
           locationPermissionChoice ?? this.locationPermissionChoice,
       assistantOverlayEnabled:
           assistantOverlayEnabled ?? this.assistantOverlayEnabled,
-      assistantOverlayAutoShowEnabled:
-          assistantOverlayAutoShowEnabled ??
-          this.assistantOverlayAutoShowEnabled,
-      assistantOverlayAutoShowTime:
-          assistantOverlayAutoShowTime ?? this.assistantOverlayAutoShowTime,
       isLoaded: isLoaded ?? this.isLoaded,
     );
   }
@@ -202,10 +189,6 @@ class AppPreferencesController {
   static const String _locationPermissionChoiceKey =
       'location_permission_choice';
   static const String _assistantOverlayEnabledKey = 'assistant_overlay_enabled';
-  static const String _assistantOverlayAutoShowEnabledKey =
-      'assistant_overlay_auto_show_enabled';
-  static const String _assistantOverlayAutoShowTimeKey =
-      'assistant_overlay_auto_show_time';
 
   final ValueNotifier<AppPreferencesState> notifier =
       ValueNotifier<AppPreferencesState>(const AppPreferencesState.defaults());
@@ -235,12 +218,6 @@ class AppPreferencesController {
       final assistantOverlayEnabled = prefs.getBool(
         _assistantOverlayEnabledKey,
       );
-      final assistantOverlayAutoShowEnabled = prefs.getBool(
-        _assistantOverlayAutoShowEnabledKey,
-      );
-      final assistantOverlayAutoShowTime = prefs.getString(
-        _assistantOverlayAutoShowTimeKey,
-      );
 
       notifier.value = AppPreferencesState(
         themeMode: _themeModeFromString(themeModeName),
@@ -261,9 +238,6 @@ class AppPreferencesController {
           locationPermissionChoice,
         ),
         assistantOverlayEnabled: assistantOverlayEnabled ?? false,
-        assistantOverlayAutoShowEnabled:
-            assistantOverlayAutoShowEnabled ?? false,
-        assistantOverlayAutoShowTime: assistantOverlayAutoShowTime ?? '06:50',
         isLoaded: true,
       );
     } catch (error, stackTrace) {
@@ -349,22 +323,6 @@ class AppPreferencesController {
     notifier.value = notifier.value.copyWith(assistantOverlayEnabled: value);
   }
 
-  Future<void> updateAssistantOverlayAutoShowEnabled(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_assistantOverlayAutoShowEnabledKey, value);
-    notifier.value = notifier.value.copyWith(
-      assistantOverlayAutoShowEnabled: value,
-    );
-  }
-
-  Future<void> updateAssistantOverlayAutoShowTime(String value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_assistantOverlayAutoShowTimeKey, value);
-    notifier.value = notifier.value.copyWith(
-      assistantOverlayAutoShowTime: value,
-    );
-  }
-
   Future<void> syncNotificationPreferences({
     required bool notificationsEnabled,
     required bool bedtimeReminderEnabled,
@@ -432,8 +390,6 @@ class AppPreferencesController {
     await prefs.remove(_biometricLockKey);
     await prefs.remove(_locationPermissionChoiceKey);
     await prefs.remove(_assistantOverlayEnabledKey);
-    await prefs.remove(_assistantOverlayAutoShowEnabledKey);
-    await prefs.remove(_assistantOverlayAutoShowTimeKey);
     notifier.value = AppPreferencesState.defaults().copyWith(isLoaded: true);
   }
 

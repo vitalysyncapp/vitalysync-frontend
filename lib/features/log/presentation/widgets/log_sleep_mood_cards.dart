@@ -69,161 +69,184 @@ extension _LogSleepMoodCards on LogWidgets {
             ),
           ),
           const SizedBox(height: 12),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: List.generate(sleepLabels.length, (index) {
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const spacing = 8.0;
+              final threeItemWidth = (constraints.maxWidth - (spacing * 2)) / 3;
+              final itemWidth = threeItemWidth <= 0
+                  ? constraints.maxWidth
+                  : threeItemWidth.clamp(0.0, 90.0).toDouble();
+
+              Widget tile(int index) {
                 final selected = sleepQuality == index;
                 final starCount = sleepStars[index];
                 final starSize = (26 - (starCount * 2))
                     .clamp(14, 22)
                     .toDouble();
 
-                return Padding(
-                  padding: EdgeInsets.only(
-                    right: index == sleepLabels.length - 1 ? 0 : 8,
-                  ),
-                  child: GestureDetector(
-                    onTap: () => onSleepQualityChanged(index),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 220),
-                      curve: Curves.easeOutCubic,
-                      width: 90,
-                      padding: EdgeInsets.symmetric(
-                        vertical: starCount >= 4 ? 8 : 11,
-                        horizontal: 8,
+                return GestureDetector(
+                  onTap: () => onSleepQualityChanged(index),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    width: itemWidth,
+                    padding: EdgeInsets.symmetric(
+                      vertical: starCount >= 4 ? 8 : 11,
+                      horizontal: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: selected
+                            ? const Color(0xFF4B3FF2)
+                            : const Color(0xFFD1D5DB),
+                        width: selected ? 2 : 1.3,
                       ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: selected
-                              ? const Color(0xFF4B3FF2)
-                              : const Color(0xFFD1D5DB),
-                          width: selected ? 2 : 1.3,
-                        ),
-                        boxShadow: selected
-                            ? [
-                                BoxShadow(
-                                  color: const Color(
-                                    0xFF4B3FF2,
-                                  ).withValues(alpha: 0.16),
-                                  blurRadius: 10,
-                                  spreadRadius: 1,
-                                  offset: const Offset(0, 4),
+                      boxShadow: selected
+                          ? [
+                              BoxShadow(
+                                color: const Color(
+                                  0xFF4B3FF2,
+                                ).withValues(alpha: 0.16),
+                                blurRadius: 10,
+                                spreadRadius: 1,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.04),
+                                blurRadius: 5,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (starCount >= 4)
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 2,
+                            runSpacing: 2,
+                            children: List.generate(
+                              starCount,
+                              (starIndex) => AnimatedContainer(
+                                duration: const Duration(milliseconds: 250),
+                                curve: Curves.easeOut,
+                                decoration: selected
+                                    ? BoxDecoration(
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(
+                                              0xFFF4C430,
+                                            ).withValues(alpha: 0.45),
+                                            blurRadius: 10,
+                                            spreadRadius: 1,
+                                          ),
+                                        ],
+                                      )
+                                    : null,
+                                child: Icon(
+                                  Icons.star_rounded,
+                                  size: starSize,
+                                  color: const Color(0xFFF4C430),
                                 ),
-                              ]
-                            : [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.04),
-                                  blurRadius: 5,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (starCount >= 4)
-                            Wrap(
-                              alignment: WrapAlignment.center,
-                              spacing: 2,
-                              runSpacing: 2,
+                              ),
+                            ),
+                          )
+                        else
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
                               children: List.generate(
                                 starCount,
-                                (starIndex) => AnimatedContainer(
-                                  duration: const Duration(milliseconds: 250),
-                                  curve: Curves.easeOut,
-                                  decoration: selected
-                                      ? BoxDecoration(
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: const Color(
-                                                0xFFF4C430,
-                                              ).withValues(alpha: 0.45),
-                                              blurRadius: 10,
-                                              spreadRadius: 1,
-                                            ),
-                                          ],
-                                        )
-                                      : null,
-                                  child: Icon(
-                                    Icons.star_rounded,
-                                    size: starSize,
-                                    color: const Color(0xFFF4C430),
+                                (starIndex) => Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 1,
                                   ),
-                                ),
-                              ),
-                            )
-                          else
-                            FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                mainAxisSize: MainAxisSize.min,
-                                children: List.generate(
-                                  starCount,
-                                  (starIndex) => Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 1,
-                                    ),
-                                    child: AnimatedContainer(
-                                      duration: const Duration(
-                                        milliseconds: 250,
-                                      ),
-                                      curve: Curves.easeOut,
-                                      decoration: selected
-                                          ? BoxDecoration(
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: const Color(
-                                                    0xFFF4C430,
-                                                  ).withValues(alpha: 0.45),
-                                                  blurRadius: 10,
-                                                  spreadRadius: 1,
-                                                ),
-                                              ],
-                                            )
-                                          : null,
-                                      child: Icon(
-                                        Icons.star_rounded,
-                                        size: starSize,
-                                        color: const Color(0xFFF4C430),
-                                      ),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 250),
+                                    curve: Curves.easeOut,
+                                    decoration: selected
+                                        ? BoxDecoration(
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: const Color(
+                                                  0xFFF4C430,
+                                                ).withValues(alpha: 0.45),
+                                                blurRadius: 10,
+                                                spreadRadius: 1,
+                                              ),
+                                            ],
+                                          )
+                                        : null,
+                                    child: Icon(
+                                      Icons.star_rounded,
+                                      size: starSize,
+                                      color: const Color(0xFFF4C430),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ),
-                          const SizedBox(height: 7),
-                          AnimatedDefaultTextStyle(
-                            duration: const Duration(milliseconds: 220),
-                            curve: Curves.easeOut,
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: selected
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                              color: selected
-                                  ? const Color(0xFF4B3FF2)
-                                  : const Color(0xFF334155),
-                            ),
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                sleepLabels[index],
-                                maxLines: 1,
-                                textAlign: TextAlign.center,
                               ),
                             ),
                           ),
-                        ],
-                      ),
+                        const SizedBox(height: 7),
+                        AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeOut,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: selected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            color: selected
+                                ? const Color(0xFF4B3FF2)
+                                : const Color(0xFF334155),
+                          ),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              sleepLabels[index],
+                              maxLines: 1,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 );
-              }),
-            ),
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      tile(0),
+                      const SizedBox(width: spacing),
+                      tile(1),
+                      const SizedBox(width: spacing),
+                      tile(2),
+                    ],
+                  ),
+                  const SizedBox(height: spacing),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      tile(3),
+                      const SizedBox(width: spacing),
+                      tile(4),
+                    ],
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -283,52 +306,113 @@ extension _LogSleepMoodCards on LogWidgets {
   }
 
   Widget _buildEnergyCard(BuildContext context) {
+    const energyLabels = ['Very low', 'Low', 'Moderate', 'High', 'Very high'];
+    final selectedLevel = energyLevel;
+
     return _buildCard(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionHeader(
             icon: Icons.battery_5_bar_rounded,
             iconBg: const Color(0xFFFFEEDB),
             iconColor: const Color(0xFFFF5A00),
             title: "Energy Level",
-            subtitle: "Current energy",
+            subtitle: "How much energy did you have today?",
           ),
           const SizedBox(height: 12),
-          SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              trackHeight: 5,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-              activeTrackColor: const Color(0xFFFF5A00),
-              inactiveTrackColor: const Color(0xFFD8DCE2),
-              thumbColor: const Color(0xFFFF5A00),
-              overlayColor: const Color(0x33FF5A00),
-            ),
-            child: Slider(
-              value: energyLevel,
-              min: 0,
-              max: 2,
-              divisions: 2,
-              onChanged: onEnergyChanged,
-            ),
+          Row(
+            children: List.generate(energyLabels.length, (index) {
+              final value = index + 1;
+              final selected = selectedLevel == value;
+
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    right: index == energyLabels.length - 1 ? 0 : 6,
+                  ),
+                  child: GestureDetector(
+                    onTap: () => onEnergyChanged(value),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOut,
+                      height: 56,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        gradient: selected
+                            ? const LinearGradient(
+                                colors: [Color(0xFFFF8A1F), Color(0xFFFFC04D)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              )
+                            : null,
+                        color: selected ? null : const Color(0xFFFFF7ED),
+                        borderRadius: BorderRadius.circular(13),
+                        border: Border.all(
+                          color: selected
+                              ? const Color(0xFFFF8A1F)
+                              : const Color(0xFFFED7AA),
+                          width: selected ? 1.7 : 1.1,
+                        ),
+                        boxShadow: selected
+                            ? [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFFFF8A1F,
+                                  ).withValues(alpha: 0.18),
+                                  blurRadius: 9,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '$value',
+                            style: TextStyle(
+                              color: selected
+                                  ? Colors.white
+                                  : const Color(0xFFC2410C),
+                              fontSize: 17,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              energyLabels[index],
+                              maxLines: 1,
+                              style: TextStyle(
+                                color: selected
+                                    ? Colors.white
+                                    : const Color(0xFFC2410C),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
           ),
-          const SizedBox(height: 1),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "Low",
-                style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-              ),
-              Text(
-                "Medium",
-                style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-              ),
-              Text(
-                "High",
-                style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-              ),
-            ],
+          const SizedBox(height: 9),
+          Text(
+            selectedLevel == null
+                ? 'Choose a 1-5 energy level to complete today\'s check-in.'
+                : 'Energy logged as ${energyLabels[selectedLevel - 1].toLowerCase()}.',
+            style: const TextStyle(
+              color: Color(0xFFC2410C),
+              fontSize: 12,
+              height: 1.35,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),

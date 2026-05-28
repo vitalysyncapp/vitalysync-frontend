@@ -18,6 +18,7 @@ class ActivityTrackingState {
   final bool isOffline;
   final bool permissionGranted;
   final bool isTracking;
+  final bool isStepTrackingSupported;
   final int pendingSyncCount;
   final String? errorMessage;
 
@@ -27,6 +28,7 @@ class ActivityTrackingState {
     required this.isOffline,
     required this.permissionGranted,
     required this.isTracking,
+    required this.isStepTrackingSupported,
     required this.pendingSyncCount,
     required this.errorMessage,
   });
@@ -38,6 +40,7 @@ class ActivityTrackingState {
       isOffline: false,
       permissionGranted: false,
       isTracking: false,
+      isStepTrackingSupported: true,
       pendingSyncCount: 0,
       errorMessage: null,
     );
@@ -49,6 +52,7 @@ class ActivityTrackingState {
     bool? isOffline,
     bool? permissionGranted,
     bool? isTracking,
+    bool? isStepTrackingSupported,
     int? pendingSyncCount,
     String? errorMessage,
     bool clearError = false,
@@ -59,6 +63,8 @@ class ActivityTrackingState {
       isOffline: isOffline ?? this.isOffline,
       permissionGranted: permissionGranted ?? this.permissionGranted,
       isTracking: isTracking ?? this.isTracking,
+      isStepTrackingSupported:
+          isStepTrackingSupported ?? this.isStepTrackingSupported,
       pendingSyncCount: pendingSyncCount ?? this.pendingSyncCount,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
     );
@@ -120,6 +126,7 @@ class ActivityService {
           notifier.value.copyWith(
             isLoading: false,
             isTracking: false,
+            isStepTrackingSupported: false,
             permissionGranted: false,
             errorMessage: 'Phone step sensor is available on Android and iOS.',
           ),
@@ -164,6 +171,66 @@ class ActivityService {
 
     final requestedStatus = await Permission.activityRecognition.request();
     return requestedStatus.isGranted;
+  }
+
+  Future<bool> hasActivityRecognitionPermission() async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return true;
+    }
+
+    final status = await Permission.activityRecognition.status;
+    return status.isGranted;
+  }
+
+  Future<bool> primeStepTrackingSnapshot({
+    Duration timeout = const Duration(seconds: 12),
+  }) async {
+    await _loadCachedActivity(markLoading: false);
+
+    if (!_canUsePhoneSensors) {
+      return false;
+    }
+
+    final hasPermission = await hasActivityRecognitionPermission();
+    if (!hasPermission) {
+      return false;
+    }
+
+    final eventCompleter = Completer<StepCount?>();
+    StreamSubscription<StepCount>? subscription;
+    Timer? timeoutTimer;
+
+    try {
+      timeoutTimer = Timer(timeout, () {
+        if (!eventCompleter.isCompleted) {
+          eventCompleter.complete(null);
+        }
+      });
+      subscription = Pedometer.stepCountStream.listen(
+        (event) {
+          if (!eventCompleter.isCompleted) {
+            eventCompleter.complete(event);
+          }
+        },
+        onError: (_) {
+          if (!eventCompleter.isCompleted) {
+            eventCompleter.complete(null);
+          }
+        },
+      );
+      final event = await eventCompleter.future;
+      if (event == null) {
+        return false;
+      }
+
+      await _handleStepCount(event);
+      return true;
+    } catch (_) {
+      return false;
+    } finally {
+      timeoutTimer?.cancel();
+      await subscription?.cancel();
+    }
   }
 
   Future<void> refresh() async {
@@ -294,6 +361,13 @@ class ActivityService {
     _hasStarted = false;
   }
 
+  Future<void> resetForLogout() async {
+    await disposeTracking();
+    _lastSyncAttempt = null;
+    _isStarting = false;
+    _emit(ActivityTrackingState.initial().copyWith(isLoading: false));
+  }
+
   bool get _canUsePhoneSensors {
     return !kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.android ||
@@ -314,6 +388,7 @@ class ActivityService {
         notifier.value.copyWith(
           isLoading: false,
           isTracking: true,
+          isStepTrackingSupported: true,
           permissionGranted: true,
           clearError: true,
         ),
@@ -372,6 +447,7 @@ class ActivityService {
         log: log,
         isLoading: false,
         isTracking: true,
+        isStepTrackingSupported: true,
         permissionGranted: true,
         pendingSyncCount: await pendingActivityCount(),
         clearError: true,
@@ -400,6 +476,7 @@ class ActivityService {
       notifier.value.copyWith(
         isLoading: false,
         isTracking: false,
+        isStepTrackingSupported: false,
         errorMessage: 'Step sensor is unavailable on this device.',
       ),
     );

@@ -22,7 +22,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   double sleepHours = 7;
   int sleepQuality = 2;
   int moodIndex = 3;
-  double energyLevel = 1;
+  int? energyLevel;
   double hydration = 0.5;
   String workloadHoursBand = 'None';
   int? perceivedStressLevel;
@@ -169,7 +169,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       sleepHours = LogApi.parseDouble(log['sleep_hours'], fallback: 7);
       sleepQuality = LogApi.parseInt(log['sleep_quality'], fallback: 2);
       moodIndex = LogApi.parseInt(log['mood_index'], fallback: 3);
-      energyLevel = LogApi.parseDouble(log['energy_level'], fallback: 1);
+      energyLevel = LogApi.parseEnergyLevel(log['energy_level']);
       hydration = LogApi.parseDouble(log['hydration_liters'], fallback: 0.5);
       workloadHoursBand =
           LogApi.normalizeWorkloadHoursBand(log['workload_hours_band']) ??
@@ -219,6 +219,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
 
   bool _validateLog() {
     if (hydration <= 0) return false;
+    if (energyLevel == null) return false;
     if (workloadHoursBand.isEmpty) return false;
     if (perceivedStressLevel == null) return false;
     if (selectedExercises.isEmpty) return false;
@@ -232,7 +233,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Please complete hydration, workload, stress, exercise, symptoms, and recovery habits before saving.',
+            'Please complete energy, hydration, workload, stress, exercise, symptoms, and recovery habits before saving.',
           ),
         ),
       );
@@ -248,7 +249,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
         sleepHours: sleepHours,
         sleepQuality: sleepQuality,
         moodIndex: moodIndex,
-        energyLevel: energyLevel.round(),
+        energyLevel: energyLevel!,
         hydrationLiters: hydration,
         workloadHoursBand: workloadHoursBand,
         perceivedStressLevel: perceivedStressLevel!,
@@ -311,7 +312,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     sleepHours = defaultSleepHours;
     sleepQuality = 2;
     moodIndex = 3;
-    energyLevel = 1;
+    energyLevel = null;
     hydration = hydrationPrefill > 0
         ? hydrationPrefill.clamp(0, 10).toDouble()
         : 0.5;
@@ -417,7 +418,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                                 12,
                                 10,
                                 12,
-                                pageBottomContentPadding(context, extra: 84),
+                                pageBottomContentPadding(context, extra: 21),
                               ),
                               child: Column(
                                 children: [

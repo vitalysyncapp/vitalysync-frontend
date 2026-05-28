@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -12,7 +11,8 @@ import '../../../../features/onboarding/services/onboarding_service.dart';
 import '../../../../features/onboarding/data/onboarding_api.dart';
 import '../../../../shared/config/api_config.dart';
 import '../../../../shared/preferences/user_session.dart';
-import '../../../../shared/theme/animated_gradient_background.dart';
+import '../../../../shared/theme/app_page_style.dart';
+import '../widgets/auth_chrome.dart';
 import 'sign_up_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -28,6 +28,22 @@ class _LoginPageState extends State<LoginPage> {
 
   bool isLoading = false;
   final String loginUrl = ApiConfig.auth('/login');
+
+  @override
+  void initState() {
+    super.initState();
+    _prefillCachedEmail();
+  }
+
+  Future<void> _prefillCachedEmail() async {
+    final cachedEmail = await UserSessionController.instance
+        .loadLastLoginEmail();
+    if (!mounted || cachedEmail == null || emailController.text.isNotEmpty) {
+      return;
+    }
+
+    emailController.text = cachedEmail;
+  }
 
   String _loginFailureMessage(http.Response response) {
     const fallback = 'Login failed';
@@ -98,13 +114,14 @@ class _LoginPageState extends State<LoginPage> {
         }
 
         if (!mounted) return;
-        Navigator.pushReplacement(
+        Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
             builder: (_) => onboardingCompleted
                 ? const MainNavigation()
                 : OnboardingPage(userId: userId),
           ),
+          (route) => false,
         );
       } else {
         if (!mounted) return;
@@ -128,43 +145,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Widget glassContainer({required Widget child}) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.50),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.55)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.12),
-                blurRadius: 24,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
-          child: child,
-        ),
-      ),
-    );
-  }
-
-  InputDecoration inputDecoration(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.1),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(15),
-        borderSide: BorderSide.none,
-      ),
-    );
-  }
-
   @override
   void dispose() {
     emailController.dispose();
@@ -174,163 +154,89 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: AnimatedGradientBackground(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: glassContainer(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Image.asset('assets/images/logo.png', height: 80),
-                  const SizedBox(height: 5),
-                  Text(
-                    'VitalySync',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? Colors.white
-                          : const Color.fromARGB(221, 43, 0, 88),
-                    ),
+    return AuthScaffold(
+      illustrationAsset: authWorkStressAsset,
+      child: AuthGlassPanel(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const AuthHeroIllustration(
+              asset: authWorkStressAsset,
+              semanticsLabel: 'Stress and recovery illustration',
+              height: 152,
+            ),
+            const SizedBox(height: 12),
+            const AuthBrandHeader(
+              title: 'Welcome back',
+              subtitle:
+                  'Continue your check-ins and keep your wellness rhythm visible.',
+              logoSize: 68,
+            ),
+            const SizedBox(height: 24),
+            AuthTextField(
+              controller: emailController,
+              label: 'Email',
+              hintText: 'you@gmail.com',
+              icon: Icons.email_outlined,
+              keyboardType: TextInputType.emailAddress,
+            ),
+            const SizedBox(height: 14),
+            AuthTextField(
+              controller: passwordController,
+              label: 'Password',
+              icon: Icons.lock_outline,
+              obscureText: true,
+            ),
+            const SizedBox(height: 6),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () {},
+                child: Text(
+                  'Forgot Password?',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Welcome back',
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  // Email field
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.04),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.black.withValues(alpha: 0.12),
-                        width: 1,
-                      ),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: TextFormField(
-                      controller: emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: InputDecoration(
-                        hintText: 'you@gmail.com',
-                        border: InputBorder.none,
-                        prefixIcon: const Icon(Icons.email_outlined, size: 20),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Password field
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.04),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.black.withValues(alpha: 0.12),
-                        width: 1,
-                      ),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: TextFormField(
-                      controller: passwordController,
-                      obscureText: true,
-                      decoration: InputDecoration(
-                        hintText: 'Password',
-                        border: InputBorder.none,
-                        prefixIcon: const Icon(Icons.lock_outline, size: 20),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () {},
-                      child: Text(
-                        'Forgot Password?',
-                        style: TextStyle(color: Colors.blue),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: isLoading ? null : login,
-                      style: ButtonStyle(
-                        backgroundColor:
-                            WidgetStateProperty.resolveWith<Color?>((states) {
-                              if (states.contains(WidgetState.disabled)) {
-                                return Colors.blue.withValues(alpha: 0.5);
-                              }
-                              return Colors.blue;
-                            }),
-                        padding: WidgetStateProperty.all(
-                          const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        shape: WidgetStateProperty.all(
-                          RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        elevation: WidgetStateProperty.all(4),
-                      ),
-                      child: isLoading
-                          ? const SizedBox(
-                              height: 18,
-                              width: 18,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : Text(
-                              'Sign in',
-                              style: GoogleFonts.inter(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('New to VitalySync? '),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const SignUpPage(),
-                            ),
-                          );
-                        },
-                        child: Text(
-                          'Create account',
-                          style: GoogleFonts.inter(
-                            fontWeight: FontWeight.bold,
-                            color: const Color.fromARGB(
-                              255,
-                              1,
-                              103,
-                              79,
-                            ).withValues(alpha: 0.85),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
+            const SizedBox(height: 8),
+            AuthButton.primary(
+              label: 'Sign in',
+              icon: Icons.login_rounded,
+              onPressed: login,
+              isLoading: isLoading,
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  'New to VitalySync? ',
+                  style: GoogleFonts.inter(
+                    color: pageSecondaryTextColor(context),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SignUpPage()),
+                    );
+                  },
+                  child: Text(
+                    'Create account',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w800,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

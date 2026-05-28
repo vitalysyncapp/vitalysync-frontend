@@ -282,7 +282,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 12,
                 12,
                 12,
-                pageBottomContentPadding(context, extra: 84),
+                pageBottomContentPadding(context, extra: 21),
               ),
               child: Column(
                 children: [
@@ -337,18 +337,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  RevealOnBuild(
-                    delay: const Duration(milliseconds: 220),
-                    child: ValueListenableBuilder<ActivityTrackingState>(
-                      valueListenable: ActivityService.instance.notifier,
-                      builder: (context, activityState, _) {
-                        return ActivitySummaryCard(
-                          state: activityState,
-                          onRefresh: () => ActivityService.instance.refresh(),
-                          onEditGoal: ActivityService.instance.updateGoalSteps,
-                        );
-                      },
-                    ),
+                  const RevealOnBuild(
+                    delay: Duration(milliseconds: 220),
+                    child: QuickActionsSection(),
                   ),
                   const SizedBox(height: 12),
                   RevealOnBuild(
@@ -363,9 +354,23 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const RevealOnBuild(
-                    delay: Duration(milliseconds: 340),
-                    child: QuickActionsSection(),
+                  RevealOnBuild(
+                    delay: const Duration(milliseconds: 340),
+                    child: ValueListenableBuilder<ActivityTrackingState>(
+                      valueListenable: ActivityService.instance.notifier,
+                      builder: (context, activityState, _) {
+                        if (!activityState.isStepTrackingSupported) {
+                          return const SizedBox.shrink();
+                        }
+
+                        return ActivitySummaryCard(
+                          state: activityState,
+                          compact: true,
+                          onRefresh: () => ActivityService.instance.refresh(),
+                          onEditGoal: ActivityService.instance.updateGoalSteps,
+                        );
+                      },
+                    ),
                   ),
                   const SizedBox(height: 12),
                   RevealOnBuild(
@@ -373,6 +378,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     child: HomeWeeklyAnalyticsCard(
                       key: ValueKey('home-weekly-$_refreshVersion'),
                     ),
+                  ),
+                  ValueListenableBuilder<ActivityTrackingState>(
+                    valueListenable: ActivityService.instance.notifier,
+                    builder: (context, activityState, _) {
+                      if (activityState.isStepTrackingSupported) {
+                        return const SizedBox.shrink();
+                      }
+
+                      return Column(
+                        children: [
+                          const SizedBox(height: 12),
+                          RevealOnBuild(
+                            delay: const Duration(milliseconds: 460),
+                            child: _buildDailyStepsUnsupportedNote(context),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -451,6 +474,53 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDailyStepsUnsupportedNote(BuildContext context) {
+    final accentColor = const Color(0xFF1EAD83);
+
+    return Center(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: pageSurfaceColor(context),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: pageBorderColor(context)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(
+                alpha: Theme.of(context).brightness == Brightness.dark
+                    ? 0.20
+                    : 0.05,
+              ),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.directions_walk_rounded, size: 19, color: accentColor),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'Daily steps is not supported on this device.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: pagePrimaryTextColor(context),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  height: 1.3,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

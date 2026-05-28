@@ -168,6 +168,7 @@ class AdaptiveNudgeEvent {
 class AdaptiveNudgeApi {
   static const Duration _requestTimeout = Duration(seconds: 8);
   static const Duration _aiRequestTimeout = Duration(seconds: 25);
+  static const Duration _assistantCacheMaxAge = Duration(minutes: 30);
   static const String _recommendationsCache = 'adaptive_nudge_recommendations';
   static const String _assistantRecommendationsCache =
       'assistant_nudge_recommendations';
@@ -243,17 +244,25 @@ class AdaptiveNudgeApi {
     }
 
     final scope = _assistantCacheScope(userId);
+    OfflineCachedJson? cachedSnapshot;
     if (!forceRefresh) {
-      final cached = await OfflineCacheStore.readLatestJson(
+      cachedSnapshot = await OfflineCacheStore.readLatestJsonSnapshot(
         namespace: _assistantRecommendationsCache,
         scope: scope,
       );
-      if (cached != null) {
-        return AdaptiveNudgeResponse.fromJson(cached);
+      if (cachedSnapshot != null &&
+          cachedSnapshot.isFresh(_assistantCacheMaxAge)) {
+        return AdaptiveNudgeResponse.fromJson(cachedSnapshot.data);
       }
     }
 
     final response = await fetchRecommendations(limit: limit);
+    if (!forceRefresh &&
+        cachedSnapshot != null &&
+        _isLocalFallbackResponse(response)) {
+      return AdaptiveNudgeResponse.fromJson(cachedSnapshot.data);
+    }
+
     await OfflineCacheStore.saveJson(
       namespace: _assistantRecommendationsCache,
       scope: scope,
@@ -547,6 +556,15 @@ class AdaptiveNudgeApi {
     return response.recommendations.any(
       (recommendation) => recommendation.metadata['ai_enhanced'] == true,
     );
+  }
+
+  static bool _isLocalFallbackResponse(AdaptiveNudgeResponse response) {
+    return response.recommendations.isNotEmpty &&
+        response.recommendations.every(
+          (recommendation) =>
+              recommendation.metadata['local_fallback'] == true ||
+              recommendation.triggerReason == 'Local fallback',
+        );
   }
 
   static AdaptiveNudgeResponse _fallbackResponse() {

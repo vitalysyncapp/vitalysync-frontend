@@ -77,10 +77,10 @@ class ActivitySummaryCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(compact ? 14 : 15),
+      padding: EdgeInsets.all(compact ? 11 : 15),
       decoration: BoxDecoration(
         color: pageSurfaceColor(context),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(compact ? 15 : 18),
         border: Border.all(color: pageBorderColor(context)),
         boxShadow: [
           BoxShadow(
@@ -97,9 +97,9 @@ class ActivitySummaryCard extends StatelessWidget {
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 220),
         child: state.isLoading
-            ? const SizedBox(
-                key: ValueKey('activity-loading'),
-                height: 110,
+            ? SizedBox(
+                key: const ValueKey('activity-loading'),
+                height: compact ? 84 : 110,
                 child: Center(child: CircularProgressIndicator()),
               )
             : Column(
@@ -109,20 +109,23 @@ class ActivitySummaryCard extends StatelessWidget {
                   Row(
                     children: [
                       Container(
-                        width: 38,
-                        height: 38,
+                        width: compact ? 32 : 38,
+                        height: compact ? 32 : 38,
                         decoration: BoxDecoration(
                           color: const Color(
                             0xFF1EAD83,
                           ).withValues(alpha: 0.13),
-                          borderRadius: BorderRadius.circular(13),
+                          borderRadius: BorderRadius.circular(
+                            compact ? 11 : 13,
+                          ),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.directions_walk_rounded,
-                          color: Color(0xFF1EAD83),
+                          color: const Color(0xFF1EAD83),
+                          size: compact ? 19 : 24,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: compact ? 9 : 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,25 +161,36 @@ class ActivitySummaryCard extends StatelessWidget {
                               IconButton(
                                 tooltip: 'Retry activity sync',
                                 onPressed: onRefresh,
+                                constraints: BoxConstraints.tightFor(
+                                  width: compact ? 36 : 44,
+                                  height: compact ? 36 : 44,
+                                ),
+                                padding: EdgeInsets.zero,
                                 icon: const Icon(Icons.refresh_rounded),
                               ),
                             if (onEditGoal != null)
                               IconButton(
                                 tooltip: 'Edit daily step goal',
                                 onPressed: () => _handleEditGoal(context),
+                                constraints: BoxConstraints.tightFor(
+                                  width: compact ? 36 : 44,
+                                  height: compact ? 36 : 44,
+                                ),
+                                padding: EdgeInsets.zero,
                                 icon: const Icon(Icons.edit_rounded),
                               ),
                           ],
                         ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: compact ? 9 : 12),
                   Row(
                     children: [
                       Expanded(
                         child: _ActivityMetric(
                           label: 'Steps',
                           value: numberFormat.format(log.steps),
+                          compact: compact,
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -184,11 +198,12 @@ class ActivitySummaryCard extends StatelessWidget {
                         child: _ActivityMetric(
                           label: 'Distance',
                           value: distanceText,
+                          compact: compact,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: compact ? 9 : 12),
                   Row(
                     children: [
                       Expanded(
@@ -211,17 +226,17 @@ class ActivitySummaryCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: compact ? 5 : 6),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(999),
                     child: LinearProgressIndicator(
-                      minHeight: 8,
+                      minHeight: compact ? 6 : 8,
                       value: log.progress,
                       backgroundColor: pageBorderColor(context),
                       valueColor: AlwaysStoppedAnimation<Color>(statusColor),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: compact ? 6 : 8),
                   Row(
                     children: [
                       _StatusPill(label: log.statusLabel, color: statusColor),
@@ -606,8 +621,13 @@ Future<int?> _showStepGoalDialog(
 class _ActivityMetric extends StatelessWidget {
   final String label;
   final String value;
+  final bool compact;
 
-  const _ActivityMetric({required this.label, required this.value});
+  const _ActivityMetric({
+    required this.label,
+    required this.value,
+    this.compact = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -619,16 +639,18 @@ class _ActivityMetric extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontSize: 22,
+            fontSize: compact ? 18 : 22,
             fontWeight: FontWeight.w800,
             color: pagePrimaryTextColor(context),
           ),
         ),
-        const SizedBox(height: 3),
+        SizedBox(height: compact ? 2 : 3),
         Text(
           label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontSize: 11.5,
+            fontSize: compact ? 10.5 : 11.5,
             fontWeight: FontWeight.w600,
             color: pageSecondaryTextColor(context),
           ),

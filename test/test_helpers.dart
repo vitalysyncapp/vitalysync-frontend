@@ -10,10 +10,22 @@ final Uint8List transparentImageBytes = base64Decode(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wn8q3sAAAAASUVORK5CYII=',
 );
 
+const minimalSvg =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80" viewBox="0 0 120 80"><rect width="120" height="80" fill="#DDF7EF"/><circle cx="60" cy="40" r="24" fill="#1EAD83"/></svg>';
+
 final ByteData assetManifestBytes = const StandardMessageCodec().encodeMessage(
   <Object?, Object?>{
     'assets/images/logo.png': <Object?>[
       <Object?, Object?>{'asset': 'assets/images/logo.png'},
+    ],
+    'assets/images/auth_healthy_lifestyle.svg': <Object?>[
+      <Object?, Object?>{'asset': 'assets/images/auth_healthy_lifestyle.svg'},
+    ],
+    'assets/images/auth_workout.svg': <Object?>[
+      <Object?, Object?>{'asset': 'assets/images/auth_workout.svg'},
+    ],
+    'assets/images/auth_work_stress.svg': <Object?>[
+      <Object?, Object?>{'asset': 'assets/images/auth_work_stress.svg'},
     ],
     'assets/images/user.png': <Object?>[
       <Object?, Object?>{'asset': 'assets/images/user.png'},
@@ -64,6 +76,10 @@ Future<void> configureTestAssets() async {
 
         if (key == 'FontManifest.json') {
           return byteDataFromString('[]');
+        }
+
+        if (key.endsWith('.svg')) {
+          return byteDataFromString(minimalSvg);
         }
 
         return ByteData.sublistView(transparentImageBytes);

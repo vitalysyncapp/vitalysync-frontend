@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -10,9 +11,10 @@ import '../../../../features/onboarding/presentation/pages/onboarding_page.dart'
 import '../../../../features/onboarding/services/onboarding_service.dart';
 import '../../../../shared/notifications/local_notification_service.dart';
 import '../../../../shared/notifications/notification_payload_router.dart';
+import '../../../../shared/preferences/session_reset_service.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/animated_gradient_background.dart';
-import 'login_page.dart';
+import 'auth_start_page.dart';
 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
@@ -23,6 +25,8 @@ class LoadingScreen extends StatefulWidget {
 
 class _LoadingScreenState extends State<LoadingScreen>
     with SingleTickerProviderStateMixin {
+  static const Duration _onboardingRefreshTimeout = Duration(seconds: 3);
+
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
 
@@ -32,7 +36,7 @@ class _LoadingScreenState extends State<LoadingScreen>
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: const Duration(milliseconds: 450),
     );
 
     _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
@@ -42,13 +46,11 @@ class _LoadingScreenState extends State<LoadingScreen>
   }
 
   Future<void> _checkLoginStatus() async {
-    await Future.delayed(const Duration(seconds: 2));
-
     final session = await UserSessionController.instance.load();
     final email = session.email;
     final userId = session.userId;
     final signedInUserId = userId ?? 0;
-    var onboardingCompleted = session.onboardingCompleted;
+    final onboardingCompleted = session.onboardingCompleted;
     final hasSignedInAccount =
         session.isLoggedIn &&
         session.hasAuthToken &&
@@ -56,24 +58,7 @@ class _LoadingScreenState extends State<LoadingScreen>
         signedInUserId > 0;
 
     if (hasSignedInAccount) {
-      try {
-        await LogApi.syncStreakFromBackend();
-      } catch (_) {
-        // Keep the cached streak if the refresh fails during boot.
-      }
-
-      try {
-        final summary = await OnboardingApi.fetchSummary(signedInUserId);
-        onboardingCompleted = summary['onboarding_completed'] == true;
-        if (onboardingCompleted) {
-          await OnboardingService.saveDefaultsFromSummary(summary);
-        }
-        await UserSessionController.instance.updateOnboardingCompleted(
-          onboardingCompleted,
-        );
-      } catch (_) {
-        // Fall back to the locally cached onboarding state.
-      }
+      unawaited(_refreshStartupData(signedInUserId));
 
       if (!mounted) return;
 
@@ -97,15 +82,52 @@ class _LoadingScreenState extends State<LoadingScreen>
     }
 
     if (session.isLoggedIn || session.hasAuthToken || userId != null) {
-      await UserSessionController.instance.clearSession();
+      await SessionResetService.instance.resetForLogout();
     }
 
     if (!mounted) return;
 
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const LoginPage()),
+      MaterialPageRoute(builder: (_) => const AuthStartPage()),
     );
+  }
+
+  Future<void> _refreshStartupData(int userId) async {
+    await Future.wait([
+      _refreshStreakFromBackend(),
+      _refreshOnboardingSummary(userId),
+    ]);
+  }
+
+  Future<void> _refreshStreakFromBackend() async {
+    try {
+      await LogApi.syncStreakFromBackend();
+    } catch (_) {
+      // Keep cached streak data if startup refresh fails.
+    }
+  }
+
+  Future<void> _refreshOnboardingSummary(int userId) async {
+    try {
+      final summary = await OnboardingApi.fetchSummary(
+        userId,
+      ).timeout(_onboardingRefreshTimeout);
+      final currentSession = await UserSessionController.instance.load();
+      if (currentSession.userId != userId || !currentSession.hasAuthToken) {
+        return;
+      }
+
+      final onboardingCompleted = summary['onboarding_completed'] == true;
+      if (onboardingCompleted) {
+        await OnboardingService.saveDefaultsFromSummary(summary);
+      }
+      await UserSessionController.instance.updateOnboardingCompleted(
+        onboardingCompleted,
+      );
+    } catch (_) {
+      // Keep cached onboarding state if startup refresh is slow or unavailable.
+    }
   }
 
   Widget glassContainer({required Widget child}) {

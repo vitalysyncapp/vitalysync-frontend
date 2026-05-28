@@ -6,7 +6,9 @@ import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'notification_event_api.dart';
+import '../assistant/overlay_assistant_controller.dart';
 import '../preferences/app_preferences.dart';
+import '../preferences/user_session.dart';
 
 class LocalNotificationService {
   LocalNotificationService._();
@@ -20,6 +22,9 @@ class LocalNotificationService {
   static const int _adaptiveReminderId = 1100;
   static const int _adaptiveNowId = 1101;
   static const int _nutritionNowId = 1200;
+  static const String _generalReminderChannelId = 'vitalysync_reminders';
+  static const String _hydrationReminderChannelId =
+      'vitalysync_hydration_reminders';
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
@@ -127,7 +132,17 @@ class LocalNotificationService {
       return;
     }
 
-    final prefs = AppPreferencesController.instance.notifier.value;
+    if (!await _hasActiveSession()) {
+      await clearSessionNotifications();
+      return;
+    }
+
+    final preferences = AppPreferencesController.instance;
+    if (!preferences.notifier.value.isLoaded) {
+      await preferences.load();
+    }
+
+    final prefs = preferences.notifier.value;
     await _cancelDefaultReminders();
 
     if (!prefs.notificationsEnabled) {
@@ -156,6 +171,25 @@ class LocalNotificationService {
         minute: sleepTime.minute,
       );
     }
+  }
+
+  Future<void> clearSessionNotifications() async {
+    _pendingLaunchPayload = null;
+    try {
+      await initialize();
+    } catch (_) {
+      return;
+    }
+    _pendingLaunchPayload = null;
+    if (kIsWeb) {
+      return;
+    }
+
+    await _plugin.cancelAll();
+    await _cancelDefaultReminders();
+    await _plugin.cancel(id: _adaptiveReminderId);
+    await _plugin.cancel(id: _adaptiveNowId);
+    await _plugin.cancel(id: _nutritionNowId);
   }
 
   Future<void> scheduleDailyLogReminder({
@@ -249,6 +283,9 @@ class LocalNotificationService {
     if (kIsWeb || defaultTargetPlatform == TargetPlatform.linux) {
       return;
     }
+    if (!await _hasActiveSession()) {
+      return;
+    }
 
     await requestPermissions();
     final scheduledDate = _zonedFromLocal(DateTime.now().add(delay));
@@ -257,7 +294,9 @@ class LocalNotificationService {
       title: title,
       body: body,
       scheduledDate: scheduledDate,
-      notificationDetails: _notificationDetails(),
+      notificationDetails: _notificationDetails(
+        notificationType: 'adaptive_nudge_reminder',
+      ),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       payload: payload,
     );
@@ -282,14 +321,26 @@ class LocalNotificationService {
     if (kIsWeb) {
       return;
     }
+    if (!await _hasActiveSession()) {
+      return;
+    }
 
     await requestPermissions();
     await _plugin.show(
       id: _adaptiveNowId,
       title: title,
       body: body,
-      notificationDetails: _notificationDetails(),
+      notificationDetails: _notificationDetails(
+        notificationType: 'adaptive_nudge_now',
+      ),
       payload: payload,
+    );
+    unawaited(
+      OverlayAssistantController.instance.showGeneratedPreview(
+        kind: 'smart',
+        title: _shortOverlayPreviewText(title, maxChars: 34),
+        body: _shortOverlayPreviewText(body, maxChars: 108),
+      ),
     );
     unawaited(
       _safeLogNotificationEvent(
@@ -314,14 +365,26 @@ class LocalNotificationService {
     if (kIsWeb) {
       return;
     }
+    if (!await _hasActiveSession()) {
+      return;
+    }
 
     await requestPermissions();
     await _plugin.show(
       id: _nutritionNowId,
       title: title,
       body: body,
-      notificationDetails: _notificationDetails(),
+      notificationDetails: _notificationDetails(
+        notificationType: notificationType,
+      ),
       payload: payload,
+    );
+    unawaited(
+      OverlayAssistantController.instance.showGeneratedPreview(
+        kind: 'nutrition',
+        title: _shortOverlayPreviewText(title, maxChars: 34),
+        body: _shortOverlayPreviewText(body, maxChars: 108),
+      ),
     );
     unawaited(
       _safeLogNotificationEvent(
@@ -342,10 +405,19 @@ class LocalNotificationService {
 
   Future<void> _cancelDefaultReminders() async {
     await _plugin.cancel(id: _dailyLogReminderId);
+    await OverlayAssistantController.instance.cancelReminderPreview(
+      _dailyLogReminderId,
+    );
     for (var index = 0; index < _hydrationReminderMaxSlots; index += 1) {
       await _plugin.cancel(id: _hydrationReminderBaseId + index);
+      await OverlayAssistantController.instance.cancelReminderPreview(
+        _hydrationReminderBaseId + index,
+      );
     }
     await _plugin.cancel(id: _sleepReminderId);
+    await OverlayAssistantController.instance.cancelReminderPreview(
+      _sleepReminderId,
+    );
   }
 
   Future<void> _scheduleDaily({
@@ -369,10 +441,21 @@ class LocalNotificationService {
       title: title,
       body: body,
       scheduledDate: scheduledDate,
-      notificationDetails: _notificationDetails(),
+      notificationDetails: _notificationDetails(
+        notificationType: notificationType,
+      ),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       payload: payload,
       matchDateTimeComponents: DateTimeComponents.time,
+    );
+    await OverlayAssistantController.instance.scheduleReminderPreview(
+      id: id,
+      title: title,
+      body: body,
+      hour: hour,
+      minute: minute,
+      payload: payload,
+      notificationType: notificationType,
     );
     unawaited(
       _safeLogNotificationEvent(
@@ -419,6 +502,26 @@ class LocalNotificationService {
     );
   }
 
+  String _shortOverlayPreviewText(String value, {required int maxChars}) {
+    final clean = value.replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (clean.isEmpty || clean.length <= maxChars) {
+      return clean;
+    }
+
+    final sentenceMatch = RegExp(r'^(.+?[.!?])(?:\s|$)').firstMatch(clean);
+    final firstSentence = sentenceMatch?.group(1)?.trim();
+    if (firstSentence != null && firstSentence.length <= maxChars) {
+      return firstSentence;
+    }
+
+    final clipped = clean.substring(0, maxChars).trimRight();
+    final lastSpace = clipped.lastIndexOf(' ');
+    final safeClip = lastSpace > maxChars * 0.58
+        ? clipped.substring(0, lastSpace)
+        : clipped;
+    return '$safeClip...';
+  }
+
   Future<void> _safeLogNotificationEvent({
     required String notificationType,
     required String title,
@@ -443,22 +546,36 @@ class LocalNotificationService {
     }
   }
 
-  NotificationDetails _notificationDetails() {
-    const android = AndroidNotificationDetails(
-      'vitalysync_reminders',
-      'VitalySync Reminders',
-      channelDescription:
-          'Daily check-ins, hydration prompts, meal reminders, sleep wind-downs, and adaptive nudges.',
-      importance: Importance.defaultImportance,
-      priority: Priority.defaultPriority,
-    );
+  Future<bool> _hasActiveSession() async {
+    final session = await UserSessionController.instance.load();
+    return session.isLoggedIn && session.hasAuthToken && session.userId != null;
+  }
+
+  NotificationDetails _notificationDetails({required String notificationType}) {
+    final android = notificationType == 'hydration_reminder'
+        ? const AndroidNotificationDetails(
+            _hydrationReminderChannelId,
+            'Hydration Reminders',
+            channelDescription:
+                'Water break reminders that should stay visible even while the floating assistant is active.',
+            importance: Importance.high,
+            priority: Priority.high,
+            category: AndroidNotificationCategory.reminder,
+            visibility: NotificationVisibility.public,
+          )
+        : const AndroidNotificationDetails(
+            _generalReminderChannelId,
+            'VitalySync Reminders',
+            channelDescription:
+                'Daily check-ins, hydration prompts, meal reminders, sleep wind-downs, and adaptive nudges.',
+            importance: Importance.defaultImportance,
+            priority: Priority.defaultPriority,
+            category: AndroidNotificationCategory.reminder,
+            visibility: NotificationVisibility.public,
+          );
     const darwin = DarwinNotificationDetails();
 
-    return const NotificationDetails(
-      android: android,
-      iOS: darwin,
-      macOS: darwin,
-    );
+    return NotificationDetails(android: android, iOS: darwin, macOS: darwin);
   }
 }
 

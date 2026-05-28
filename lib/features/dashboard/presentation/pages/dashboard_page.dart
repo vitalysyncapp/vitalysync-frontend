@@ -174,7 +174,7 @@ class _DashboardState extends State<Dashboard> {
                 12,
                 12,
                 12,
-                pageBottomContentPadding(context, extra: 84),
+                pageBottomContentPadding(context, extra: 21),
               ),
               child: Column(
                 children: [

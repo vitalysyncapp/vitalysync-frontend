@@ -2,6 +2,22 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+class OfflineCachedJson {
+  final Map<String, dynamic> data;
+  final DateTime? cachedAt;
+
+  const OfflineCachedJson({required this.data, required this.cachedAt});
+
+  bool isFresh(Duration maxAge, {DateTime? now}) {
+    final cachedAt = this.cachedAt;
+    if (cachedAt == null) {
+      return false;
+    }
+
+    return (now ?? DateTime.now()).difference(cachedAt) <= maxAge;
+  }
+}
+
 class OfflineCacheStore {
   static const int maxSnapshots = 2;
   static const String _keyPrefix = 'offline_cache_v1';
@@ -34,13 +50,33 @@ class OfflineCacheStore {
     required String namespace,
     required String scope,
   }) async {
+    final snapshot = await readLatestJsonSnapshot(
+      namespace: namespace,
+      scope: scope,
+    );
+    return snapshot?.data;
+  }
+
+  static Future<OfflineCachedJson?> readLatestJsonSnapshot({
+    required String namespace,
+    required String scope,
+  }) async {
     final snapshots = await _readSnapshots(namespace: namespace, scope: scope);
     if (snapshots.isEmpty) {
       return null;
     }
 
     final data = snapshots.first['data'];
-    return data is Map ? Map<String, dynamic>.from(data) : null;
+    if (data is! Map) {
+      return null;
+    }
+
+    return OfflineCachedJson(
+      data: Map<String, dynamic>.from(data),
+      cachedAt: DateTime.tryParse(
+        snapshots.first['cached_at']?.toString() ?? '',
+      ),
+    );
   }
 
   static Future<Map<String, dynamic>?> readPreviousJson({

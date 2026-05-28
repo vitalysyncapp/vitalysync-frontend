@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../../shared/preferences/app_preferences.dart';
+import '../../../../shared/preferences/session_reset_service.dart';
 import '../../../../shared/theme/app_page_style.dart';
-import '../../../auth/presentation/pages/login_page.dart';
-import '../../../log/data/log_api.dart';
-import '../../../onboarding/services/onboarding_service.dart';
-import '../../../../shared/preferences/user_session.dart';
+import '../../../auth/presentation/pages/auth_start_page.dart';
 
 class ClearAccountDataPage extends StatefulWidget {
   const ClearAccountDataPage({super.key});
@@ -50,10 +47,7 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
     setState(() => _isSubmitting = true);
 
     try {
-      await AppPreferencesController.instance.resetToDefaults();
-      await LogApi.clearLocalAccountData();
-      await OnboardingService.clearDefaults();
-      await UserSessionController.instance.clearSession();
+      await SessionResetService.instance.resetForLogout();
 
       if (!mounted) {
         return;
@@ -61,7 +55,7 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
 
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const LoginPage()),
+        MaterialPageRoute(builder: (_) => const AuthStartPage()),
         (route) => false,
       );
     } finally {

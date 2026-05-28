@@ -100,6 +100,18 @@ class ExerciseGoalService {
     await refresh();
   }
 
+  Future<void> resetForLogout() async {
+    final activityListener = _activityListener;
+    if (activityListener != null) {
+      ActivityService.instance.notifier.removeListener(activityListener);
+    }
+
+    _activityListener = null;
+    _hasStarted = false;
+    _isCompletingDistanceGoal = false;
+    _emit(ExerciseGoalState.initial().copyWith(isLoading: false));
+  }
+
   Future<void> refresh() async {
     final session = await UserSessionController.instance.load();
     final userId = session.userId ?? 0;

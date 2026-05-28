@@ -3,10 +3,12 @@ part of 'nutrition_page.dart';
 class _ManualLogDialog extends StatefulWidget {
   final String initialMealType;
   final Map<String, bool> loggedMealTypes;
+  final List<String> mealSuggestions;
 
   const _ManualLogDialog({
     required this.initialMealType,
     required this.loggedMealTypes,
+    required this.mealSuggestions,
   });
 
   @override
@@ -14,6 +16,7 @@ class _ManualLogDialog extends StatefulWidget {
 }
 
 class _ManualLogDialogState extends State<_ManualLogDialog> {
+  final ScrollController _scrollController = ScrollController();
   final List<_ManualMealDraft> _drafts = [_ManualMealDraft()];
   late String _selectedMealType;
   final Set<String> _unlockedLoggedMealTypes = {};
@@ -30,6 +33,7 @@ class _ManualLogDialogState extends State<_ManualLogDialog> {
 
   @override
   void dispose() {
+    _scrollController.dispose();
     for (final draft in _drafts) {
       draft.dispose();
     }
@@ -41,6 +45,21 @@ class _ManualLogDialogState extends State<_ManualLogDialog> {
       _errorText = null;
       _drafts.add(_ManualMealDraft());
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToLatestMealForm();
+    });
+  }
+
+  Future<void> _scrollToLatestMealForm() async {
+    if (!mounted || !_scrollController.hasClients) {
+      return;
+    }
+
+    await _scrollController.animateTo(
+      _scrollController.position.maxScrollExtent,
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   void _removeMealForm(int index) {
@@ -222,6 +241,7 @@ class _ManualLogDialogState extends State<_ManualLogDialog> {
                 ),
                 Flexible(
                   child: SingleChildScrollView(
+                    controller: _scrollController,
                     padding: EdgeInsets.symmetric(
                       horizontal: isCompact ? 16 : 20,
                     ),
@@ -243,6 +263,7 @@ class _ManualLogDialogState extends State<_ManualLogDialog> {
                             canRemove: _drafts.length > 1,
                             onRemove: () => _removeMealForm(entry.key),
                             isCompact: isCompact,
+                            mealSuggestions: widget.mealSuggestions,
                           ),
                         ),
                         if (_errorText != null) ...[
@@ -319,6 +340,7 @@ class _ManualMealDraft {
   final TextEditingController mealNameController = TextEditingController();
   final TextEditingController quantityController = TextEditingController();
   final TextEditingController notesController = TextEditingController();
+  final FocusNode mealNameFocusNode = FocusNode();
 
   String get mealName => mealNameController.text.trim();
   String get quantity => quantityController.text.trim();
@@ -335,6 +357,7 @@ class _ManualMealDraft {
 
   void dispose() {
     mealNameController.dispose();
+    mealNameFocusNode.dispose();
     quantityController.dispose();
     notesController.dispose();
   }
@@ -346,6 +369,7 @@ class _ManualMealForm extends StatelessWidget {
   final bool canRemove;
   final VoidCallback onRemove;
   final bool isCompact;
+  final List<String> mealSuggestions;
 
   const _ManualMealForm({
     super.key,
@@ -354,6 +378,7 @@ class _ManualMealForm extends StatelessWidget {
     required this.canRemove,
     required this.onRemove,
     required this.isCompact,
+    required this.mealSuggestions,
   });
 
   @override
@@ -393,10 +418,12 @@ class _ManualMealForm extends StatelessWidget {
             ],
           ),
           SizedBox(height: isCompact ? 8 : 10),
-          TextField(
+          _MealNameAutocompleteField(
             controller: draft.mealNameController,
+            focusNode: draft.mealNameFocusNode,
+            suggestions: mealSuggestions,
+            isCompact: isCompact,
             textInputAction: TextInputAction.next,
-            decoration: _inputDecoration('Meal Name'),
           ),
           SizedBox(height: isCompact ? 8 : 10),
           TextField(
@@ -413,6 +440,142 @@ class _ManualMealForm extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  InputDecoration _inputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(isCompact ? 12 : 14),
+        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(isCompact ? 12 : 14),
+        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(isCompact ? 12 : 14),
+        borderSide: const BorderSide(color: Color(0xFF16A34A), width: 1.4),
+      ),
+    );
+  }
+}
+
+class _MealNameAutocompleteField extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final List<String> suggestions;
+  final bool isCompact;
+  final TextInputAction textInputAction;
+
+  const _MealNameAutocompleteField({
+    required this.controller,
+    required this.focusNode,
+    required this.suggestions,
+    required this.isCompact,
+    required this.textInputAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return RawAutocomplete<String>(
+      textEditingController: controller,
+      focusNode: focusNode,
+      displayStringForOption: (option) => option,
+      optionsBuilder: (textEditingValue) {
+        final query = textEditingValue.text.trim().toLowerCase();
+        if (query.isEmpty || suggestions.isEmpty) {
+          return const Iterable<String>.empty();
+        }
+
+        return suggestions
+            .where((suggestion) {
+              final normalizedSuggestion = suggestion.toLowerCase();
+              return normalizedSuggestion.contains(query) &&
+                  normalizedSuggestion != query;
+            })
+            .take(5);
+      },
+      onSelected: (selection) {
+        controller.value = TextEditingValue(
+          text: selection,
+          selection: TextSelection.collapsed(offset: selection.length),
+        );
+      },
+      fieldViewBuilder:
+          (context, fieldController, fieldFocusNode, onFieldSubmitted) {
+            return TextField(
+              controller: fieldController,
+              focusNode: fieldFocusNode,
+              textInputAction: textInputAction,
+              decoration: _inputDecoration('Meal Name'),
+            );
+          },
+      optionsViewBuilder: (context, onSelected, options) {
+        final screenWidth = MediaQuery.sizeOf(context).width;
+        final optionWidth = screenWidth - (isCompact ? 56 : 88);
+
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 8,
+            borderRadius: BorderRadius.circular(isCompact ? 12 : 14),
+            color: Colors.white,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: optionWidth.clamp(240, 480).toDouble(),
+                maxHeight: 220,
+              ),
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                shrinkWrap: true,
+                itemCount: options.length,
+                separatorBuilder: (_, _) => const Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: Color(0xFFE5E7EB),
+                ),
+                itemBuilder: (context, index) {
+                  final option = options.elementAt(index);
+                  return InkWell(
+                    onTap: () => onSelected(option),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isCompact ? 12 : 14,
+                        vertical: isCompact ? 10 : 12,
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.history_rounded,
+                            size: 18,
+                            color: Color(0xFF16A34A),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              option,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFF0F172A),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

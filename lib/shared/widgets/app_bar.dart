@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../features/auth/presentation/pages/login_page.dart';
+import '../../features/auth/presentation/pages/auth_start_page.dart';
 import '../../features/log/data/log_api.dart';
 import '../../features/notifications/presentation/pages/notification_page.dart';
-import '../../features/onboarding/services/onboarding_service.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../notifications/notification_feed_service.dart';
-import '../preferences/user_session.dart';
+import '../preferences/session_reset_service.dart';
 
 final ValueNotifier<int> streakRefreshNotifier = ValueNotifier<int>(0);
 
@@ -35,19 +34,13 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
   }
 
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await UserSessionController.instance.clearSession();
-    await OnboardingService.clearDefaults();
-    await LogApi.clearLocalAccountData();
-    await prefs.remove('log_streak');
-    await prefs.remove('longest_log_streak');
-    await prefs.remove('last_log_date');
+    await SessionResetService.instance.resetForLogout();
     await refreshAppBarStreak();
 
     if (!context.mounted) return;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginPage()),
+    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const AuthStartPage()),
+      (route) => false,
     );
   }
 
@@ -82,7 +75,7 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
     );
 
     if (shouldLogout == true) {
-      logout();
+      await logout();
     }
   }
 
@@ -116,6 +109,7 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
   }
 
   return AppBar(
+    automaticallyImplyLeading: false,
     toolbarHeight: 76,
     elevation: 0,
     titleSpacing: 14,

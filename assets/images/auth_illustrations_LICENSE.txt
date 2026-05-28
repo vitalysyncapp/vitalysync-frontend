@@ -1,0 +1,20 @@
+Auth illustration asset notes
+
+- auth_healthy_lifestyle.svg
+  Source: unDraw, "Healthy lifestyle"
+  URL: https://undraw.co/illustration/healthy-lifestyle_8zpg
+  Asset URL: https://cdn.undraw.co/illustrations/healthy-lifestyle_8zpg.svg
+  License summary: free for personal and commercial use, with restrictions on
+  redistributing asset packs, replicating unDraw, and AI/ML training use.
+
+- auth_workout.svg
+  Source: Scale by Flexiple, "Workout vectors"
+  URL: https://scale.flexiple.com/illustrations/workout-multi/
+  License summary: free for personal, academic, and commercial use without
+  attribution; do not resell/repackage illustrations or duplicate Scale.
+
+- auth_work_stress.svg
+  Source: Scale by Flexiple, "Work stress illustration"
+  URL: https://scale.flexiple.com/illustrations/work-stress-multi/
+  License summary: free for personal, academic, and commercial use without
+  attribution; do not resell/repackage illustrations or duplicate Scale.

@@ -3,6 +3,7 @@ package com.example.vitalysync
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.provider.Settings
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -16,6 +17,11 @@ class MainActivity : FlutterActivity() {
 
     private var appLaunchChannel: MethodChannel? = null
     private var pendingLaunchPayload: String? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        BackgroundWellnessManager.scheduleDailyCollection(applicationContext)
+    }
 
     override fun onResume() {
         super.onResume()
@@ -71,10 +77,6 @@ class MainActivity : FlutterActivity() {
                     result.success(OverlayAssistantManager.isOverlayPermissionGranted(this))
                 }
 
-                "canScheduleExactAlarms" -> {
-                    result.success(OverlayAssistantManager.canScheduleExactAlarms(this))
-                }
-
                 "openOverlayPermissionSettings" -> {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                         val intent = Intent(
@@ -88,28 +90,11 @@ class MainActivity : FlutterActivity() {
                     result.success(null)
                 }
 
-                "openExactAlarmSettings" -> {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        val intent = Intent(
-                            Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
-                            Uri.parse("package:$packageName"),
-                        ).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }
-                        runCatching { startActivity(intent) }
-                    }
-                    result.success(null)
-                }
-
                 "syncOverlaySettings" -> {
                     val enabled = call.argument<Boolean>("enabled") ?: false
-                    val autoShowEnabled = call.argument<Boolean>("autoShowEnabled") ?: false
-                    val autoShowTime = call.argument<String>("autoShowTime") ?: "06:50"
                     OverlayAssistantManager.syncSettings(
                         context = applicationContext,
                         enabled = enabled,
-                        autoShowEnabled = autoShowEnabled,
-                        autoShowTime = autoShowTime,
                     )
                     result.success(null)
                 }
@@ -146,6 +131,38 @@ class MainActivity : FlutterActivity() {
                         payload = call.argument<String>("payload"),
                     )
                     result.success(null)
+                }
+
+                "scheduleReminderPreview" -> {
+                    OverlayAssistantManager.scheduleReminderPreview(
+                        context = applicationContext,
+                        id = call.argument<Int>("id") ?: -1,
+                        title = call.argument<String>("title") ?: "",
+                        body = call.argument<String>("body") ?: "",
+                        hour = call.argument<Int>("hour") ?: 0,
+                        minute = call.argument<Int>("minute") ?: 0,
+                        payload = call.argument<String>("payload") ?: "",
+                        notificationType = call.argument<String>("notificationType") ?: "reminder",
+                    )
+                    result.success(null)
+                }
+
+                "cancelReminderPreview" -> {
+                    OverlayAssistantManager.cancelReminderPreview(
+                        context = applicationContext,
+                        id = call.argument<Int>("id") ?: -1,
+                    )
+                    result.success(null)
+                }
+
+                "showGeneratedPreview" -> {
+                    val wasShown = OverlayAssistantManager.showGeneratedPreview(
+                        context = applicationContext,
+                        kind = call.argument<String>("kind") ?: "smart",
+                        title = call.argument<String>("title") ?: "",
+                        body = call.argument<String>("body") ?: "",
+                    )
+                    result.success(wasShown)
                 }
 
                 else -> result.notImplemented()

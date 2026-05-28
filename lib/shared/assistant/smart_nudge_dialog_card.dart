@@ -274,12 +274,23 @@ class _SmartNudgeInsightCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final recommendation = primary;
     final nudgeTitle = recommendation?.title.trim() ?? '';
-    final body = _shortAssistantText(
+    final body = _expandedAssistantText(
       recommendation?.message ?? fallbackMessage,
-      maxChars: 150,
     );
     final priority = recommendation?.priority ?? 'low';
     final priorityColor = _priorityColor(priority);
+    final metadata = recommendation?.metadata ?? const <String, dynamic>{};
+    final whyThisMatters = _metadataText(metadata['ai_why_this_matters']);
+    final actionSteps = _metadataTextList(metadata['ai_action_steps']);
+    final actionLabel = recommendation?.actionLabel.trim() ?? '';
+    final subtitle =
+        nudgeTitle.isNotEmpty && nudgeTitle.toLowerCase() != 'smart nudge'
+        ? nudgeTitle
+        : _metadataText(metadata['pattern_title']).isNotEmpty
+        ? _metadataText(metadata['pattern_title'])
+        : recommendation != null && _isAiEnhancedNudge(recommendation)
+        ? 'AI-enhanced guidance'
+        : 'Deterministic guidance';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -301,20 +312,48 @@ class _SmartNudgeInsightCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 48,
-                height: 48,
+                width: 44,
+                height: 44,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(17),
+                  borderRadius: BorderRadius.circular(15),
                 ),
                 child: _AssistantLottieIcon(
                   emoji: emoji,
-                  size: 38,
+                  size: 36,
                   fallbackFontSize: 22,
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Smart nudge',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    if (subtitle.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.84),
+                          fontSize: 12.5,
+                          height: 1.2,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
@@ -339,34 +378,8 @@ class _SmartNudgeInsightCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          const Text(
-            'Smart nudge',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          if (nudgeTitle.isNotEmpty &&
-              nudgeTitle.toLowerCase() != 'smart nudge')
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                _shortAssistantText(nudgeTitle, maxChars: 52),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.84),
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          const SizedBox(height: 8),
           Text(
             body,
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 14,
@@ -374,6 +387,29 @@ class _SmartNudgeInsightCard extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
+          if (whyThisMatters.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _NudgeDetailLine(
+              icon: Icons.info_outline_rounded,
+              text: whyThisMatters,
+              foregroundColor: Colors.white,
+            ),
+          ],
+          if (actionSteps.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            _NudgeActionSteps(
+              steps: actionSteps,
+              foregroundColor: Colors.white,
+            ),
+          ] else if (actionLabel.isNotEmpty &&
+              actionLabel.toLowerCase() != 'continue') ...[
+            const SizedBox(height: 10),
+            _NudgeDetailLine(
+              icon: Icons.check_circle_outline_rounded,
+              text: actionLabel,
+              foregroundColor: Colors.white,
+            ),
+          ],
           if (isLoading) ...[
             const SizedBox(height: 14),
             LinearProgressIndicator(
@@ -428,6 +464,10 @@ class _NutritionInsightDialogCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = isDark ? const Color(0xFF8BE0BC) : const Color(0xFF178B57);
+    final macroFocus = _humanizeMetadataLabel(
+      _metadataText(insight.metadata['macro_focus']),
+    );
+    final foods = _metadataTextList(insight.metadata['recommended_foods']);
 
     return Container(
       width: double.infinity,
@@ -486,9 +526,7 @@ class _NutritionInsightDialogCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            _shortAssistantText(insight.message, maxChars: 150),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
+            _expandedAssistantText(insight.message),
             style: TextStyle(
               color: pageSecondaryTextColor(context),
               fontSize: 13.5,
@@ -496,6 +534,14 @@ class _NutritionInsightDialogCard extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
+          if (macroFocus.isNotEmpty || foods.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _NutritionMacroDetails(
+              macroFocus: macroFocus,
+              foods: foods,
+              accent: accent,
+            ),
+          ],
           const SizedBox(height: 14),
           _InsightFeedbackButtons(
             status: feedbackStatus,
@@ -506,6 +552,136 @@ class _NutritionInsightDialogCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _NutritionMacroDetails extends StatelessWidget {
+  final String macroFocus;
+  final List<String> foods;
+  final Color accent;
+
+  const _NutritionMacroDetails({
+    required this.macroFocus,
+    required this.foods,
+    required this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: accent.withValues(alpha: 0.22)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (macroFocus.isNotEmpty)
+            Text(
+              macroFocus,
+              style: TextStyle(
+                color: pagePrimaryTextColor(context),
+                fontSize: 12.5,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          if (foods.isNotEmpty) ...[
+            if (macroFocus.isNotEmpty) const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: foods
+                  .map(
+                    (food) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: accent.withValues(alpha: 0.22),
+                        ),
+                      ),
+                      child: Text(
+                        food,
+                        style: TextStyle(
+                          color: pagePrimaryTextColor(context),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _NudgeDetailLine extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final Color foregroundColor;
+
+  const _NudgeDetailLine({
+    required this.icon,
+    required this.text,
+    required this.foregroundColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: foregroundColor.withValues(alpha: 0.86), size: 17),
+        const SizedBox(width: 7),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              color: foregroundColor.withValues(alpha: 0.9),
+              fontSize: 12.5,
+              height: 1.35,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _NudgeActionSteps extends StatelessWidget {
+  final List<String> steps;
+  final Color foregroundColor;
+
+  const _NudgeActionSteps({required this.steps, required this.foregroundColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: steps
+          .map(
+            (step) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: _NudgeDetailLine(
+                icon: Icons.check_circle_outline_rounded,
+                text: step,
+                foregroundColor: foregroundColor,
+              ),
+            ),
+          )
+          .toList(),
     );
   }
 }
@@ -692,4 +868,47 @@ class _InsightFeedbackIconButton extends StatelessWidget {
       ),
     );
   }
+}
+
+String _expandedAssistantText(String value) {
+  return value.replaceAll(RegExp(r'\s+'), ' ').trim();
+}
+
+String _metadataText(dynamic value) {
+  return value?.toString().replaceAll(RegExp(r'\s+'), ' ').trim() ?? '';
+}
+
+List<String> _metadataTextList(dynamic value) {
+  if (value is List) {
+    return value
+        .map(_metadataText)
+        .where((item) => item.isNotEmpty)
+        .take(6)
+        .toList();
+  }
+
+  final text = _metadataText(value);
+  if (text.isEmpty) {
+    return const [];
+  }
+
+  return text
+      .split(',')
+      .map((item) => item.trim())
+      .where((item) => item.isNotEmpty)
+      .take(6)
+      .toList();
+}
+
+String _humanizeMetadataLabel(String value) {
+  if (value.isEmpty) {
+    return '';
+  }
+
+  final normalized = value.replaceAll('_', ' ').trim();
+  if (normalized.isEmpty) {
+    return '';
+  }
+
+  return normalized[0].toUpperCase() + normalized.substring(1);
 }

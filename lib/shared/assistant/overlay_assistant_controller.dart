@@ -33,37 +33,12 @@ class OverlayAssistantController {
     }
   }
 
-  Future<bool> canScheduleExactAlarms() async {
-    if (!Platform.isAndroid) {
-      return false;
-    }
-
-    try {
-      final granted = await _channel.invokeMethod<bool>(
-        'canScheduleExactAlarms',
-      );
-      return granted ?? false;
-    } on PlatformException {
-      return false;
-    } on MissingPluginException {
-      return false;
-    }
-  }
-
   Future<void> openOverlayPermissionSettings() async {
     if (!Platform.isAndroid) {
       return;
     }
 
     await _invokeOverlayMethod('openOverlayPermissionSettings');
-  }
-
-  Future<void> openExactAlarmSettings() async {
-    if (!Platform.isAndroid) {
-      return;
-    }
-
-    await _invokeOverlayMethod('openExactAlarmSettings');
   }
 
   Future<void> startOverlayService() async {
@@ -79,6 +54,15 @@ class OverlayAssistantController {
       return;
     }
 
+    await _invokeOverlayMethod('stopOverlayService');
+  }
+
+  Future<void> disableForLogout() async {
+    if (!Platform.isAndroid) {
+      return;
+    }
+
+    await _invokeOverlayMethod('syncOverlaySettings', {'enabled': false});
     await _invokeOverlayMethod('stopOverlayService');
   }
 
@@ -98,6 +82,54 @@ class OverlayAssistantController {
     await _invokeOverlayMethod('openApp', {'payload': payload});
   }
 
+  Future<void> scheduleReminderPreview({
+    required int id,
+    required String title,
+    required String body,
+    required int hour,
+    required int minute,
+    required String payload,
+    required String notificationType,
+  }) async {
+    if (!Platform.isAndroid) {
+      return;
+    }
+
+    await _invokeOverlayMethod('scheduleReminderPreview', {
+      'id': id,
+      'title': title,
+      'body': body,
+      'hour': hour,
+      'minute': minute,
+      'payload': payload,
+      'notificationType': notificationType,
+    });
+  }
+
+  Future<void> cancelReminderPreview(int id) async {
+    if (!Platform.isAndroid) {
+      return;
+    }
+
+    await _invokeOverlayMethod('cancelReminderPreview', {'id': id});
+  }
+
+  Future<bool> showGeneratedPreview({
+    required String kind,
+    required String title,
+    required String body,
+  }) async {
+    if (!Platform.isAndroid) {
+      return false;
+    }
+
+    return _invokeOverlayBoolMethod('showGeneratedPreview', {
+      'kind': kind,
+      'title': title,
+      'body': body,
+    });
+  }
+
   Future<void> syncSettings(AppPreferencesState prefs) async {
     if (!Platform.isAndroid) {
       return;
@@ -105,8 +137,6 @@ class OverlayAssistantController {
 
     await _invokeOverlayMethod('syncOverlaySettings', {
       'enabled': prefs.assistantOverlayEnabled,
-      'autoShowEnabled': prefs.assistantOverlayAutoShowEnabled,
-      'autoShowTime': prefs.assistantOverlayAutoShowTime,
     });
   }
 
@@ -131,6 +161,20 @@ class OverlayAssistantController {
       return;
     } on MissingPluginException {
       return;
+    }
+  }
+
+  Future<bool> _invokeOverlayBoolMethod(
+    String method, [
+    Object? arguments,
+  ]) async {
+    try {
+      final result = await _channel.invokeMethod<bool>(method, arguments);
+      return result ?? false;
+    } on PlatformException {
+      return false;
+    } on MissingPluginException {
+      return false;
     }
   }
 
@@ -176,53 +220,6 @@ class OverlayAssistantController {
     }
 
     await openOverlayPermissionSettings();
-    return true;
-  }
-
-  Future<bool> ensureExactAlarmPermissionWithPrompt(
-    BuildContext context,
-  ) async {
-    if (!Platform.isAndroid) {
-      return false;
-    }
-
-    if (await canScheduleExactAlarms()) {
-      return true;
-    }
-
-    if (!context.mounted) {
-      return false;
-    }
-
-    final approved = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        final theme = Theme.of(context);
-        return AlertDialog(
-          title: const Text('Allow scheduled assistant'),
-          content: Text(
-            'VitalySync needs Android "Alarms & reminders" access so the assistant can appear at your selected time when the app is closed.',
-            style: theme.textTheme.bodyMedium,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Not now'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Open settings'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (approved != true) {
-      return false;
-    }
-
-    await openExactAlarmSettings();
     return true;
   }
 }

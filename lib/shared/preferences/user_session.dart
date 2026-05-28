@@ -47,6 +47,7 @@ class UserSessionController {
   static final UserSessionController instance = UserSessionController._();
 
   static const String _emailKey = 'email';
+  static const String _lastLoginEmailKey = 'last_login_email';
   static const String _usernameKey = 'username';
   static const String _userIdKey = 'user_id';
   static const String _userTypeKey = 'user_type';
@@ -80,12 +81,16 @@ class UserSessionController {
 
     final dynamic rawUserId = user['user_id'];
     final dynamic rawAge = user['age'];
+    final email = (user['email'] ?? '').toString().trim();
 
     if (rawUserId is int) {
       await prefs.setInt(_userIdKey, rawUserId);
     }
 
-    await prefs.setString(_emailKey, (user['email'] ?? '').toString());
+    await prefs.setString(_emailKey, email);
+    if (email.isNotEmpty) {
+      await prefs.setString(_lastLoginEmailKey, email);
+    }
     await prefs.setString(_usernameKey, (user['username'] ?? '').toString());
 
     final parsedAge = rawAge is int ? rawAge : int.tryParse('${rawAge ?? ''}');
@@ -119,9 +124,12 @@ class UserSessionController {
     }
   }
 
-  Future<void> clearSession() async {
+  Future<void> clearSession({bool keepLastLoginEmail = false}) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_emailKey);
+    if (!keepLastLoginEmail) {
+      await prefs.remove(_lastLoginEmailKey);
+    }
     await prefs.remove(_usernameKey);
     await prefs.remove(_userIdKey);
     await prefs.remove(_userTypeKey);
@@ -130,6 +138,12 @@ class UserSessionController {
     await prefs.remove(_authTokenKey);
     await prefs.remove(_onboardingCompletedKey);
     await prefs.remove(_legacyDemoModeKey);
+  }
+
+  Future<String?> loadLastLoginEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    final email = prefs.getString(_lastLoginEmailKey)?.trim();
+    return email?.isNotEmpty == true ? email : null;
   }
 
   Future<void> reauthenticateWithPassword({required String password}) async {

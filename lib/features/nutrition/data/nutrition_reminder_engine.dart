@@ -1,3 +1,8 @@
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+
+import '../../../shared/config/api_config.dart';
 import '../../../shared/notifications/local_notification_service.dart';
 import '../../../shared/preferences/app_preferences.dart';
 import '../../../shared/preferences/user_session.dart';
@@ -44,6 +49,8 @@ class NutritionReminderEvaluation {
 class NutritionReminderEngine {
   NutritionReminderEngine._();
 
+  static const Duration _assistantInsightCacheMaxAge = Duration(minutes: 45);
+
   static final NutritionReminderEngine instance = NutritionReminderEngine._();
 
   final NutritionInsightStore _store = NutritionInsightStore.instance;
@@ -87,11 +94,46 @@ class NutritionReminderEngine {
     bool forceRefresh = false,
   }) async {
     final now = DateTime.now();
+    final staleCachedInsight = await _store.readAssistantInsightForToday(
+      now: now,
+    );
+
     if (!forceRefresh) {
-      final cached = await _store.readAssistantInsightForToday(now: now);
+      final cached = await _store.readAssistantInsightForToday(
+        now: now,
+        maxAge: _assistantInsightCacheMaxAge,
+        allowStale: false,
+      );
       if (cached != null) {
-        return cached;
+        final status = await _store.readFeedbackStatus(cached.id);
+        if (status != 'dismissed') {
+          return cached;
+        }
       }
+    }
+
+    try {
+      final backendInsight = await _fetchBackendAssistantInsight(now: now);
+      if (backendInsight != null) {
+        final status = await _store.readFeedbackStatus(backendInsight.id);
+        if (status == 'dismissed') {
+          return null;
+        }
+
+        await _store.markAssistantShownToday(now: now);
+        await _store.rememberMessage(backendInsight.message, at: now);
+        await _store.saveAssistantInsightForToday(backendInsight, now: now);
+        return backendInsight;
+      }
+    } catch (_) {
+      if (staleCachedInsight != null) {
+        final status = await _store.readFeedbackStatus(staleCachedInsight.id);
+        if (status != 'dismissed') {
+          return staleCachedInsight;
+        }
+      }
+
+      // Fall back to local deterministic nutrition signals when the API is not reachable.
     }
 
     final evaluation = await evaluate(allowNotification: false);
@@ -149,6 +191,43 @@ class NutritionReminderEngine {
     }
 
     return null;
+  }
+
+  Future<NutritionInsight?> _fetchBackendAssistantInsight({
+    required DateTime now,
+  }) async {
+    final session = await UserSessionController.instance.load();
+    final userId = session.userId;
+    if (userId == null) {
+      return null;
+    }
+
+    final uri = Uri.parse(ApiConfig.nutrition('/assistant-nudge')).replace(
+      queryParameters: {
+        'user_id': userId.toString(),
+        'date': _dateKey(now),
+        'ai': 'true',
+      },
+    );
+    final response = await http
+        .get(uri, headers: await ApiConfig.acceptJsonHeaders())
+        .timeout(const Duration(seconds: 25));
+
+    if (response.statusCode != 200) {
+      throw Exception('Nutrition nudge unavailable');
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map) {
+      return null;
+    }
+
+    final data = Map<String, dynamic>.from(decoded);
+    if ((data['message']?.toString() ?? '').trim().isEmpty) {
+      return null;
+    }
+
+    return NutritionInsight.fromJson(data);
   }
 
   Future<NutritionInsight?> _generateAndStoreInsight(

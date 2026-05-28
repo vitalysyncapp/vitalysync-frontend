@@ -8,6 +8,7 @@ import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
 import '../../../../shared/widgets/reveal_on_build.dart';
 import '../../data/nutrition_api.dart';
+import '../../data/nutrition_meal_suggestion_store.dart';
 import '../../data/nutrition_reminder_engine.dart';
 import '../widgets/log_new_meal_card.dart';
 import '../widgets/macro_balance_card.dart';
@@ -96,12 +97,15 @@ class _NutritionPageState extends State<NutritionPage> {
   DateTime? _lockedMealLastTapAt;
   final Set<String> _unlockedLoggedMealTypes = {};
   List<NutritionReviewItem> _reviewItems = [];
+  List<ManualNutritionInput> _pendingManualMeals = [];
+  List<String> _manualMealSuggestions = [];
   DailyNutritionSummary _dailySummary = DailyNutritionSummary.empty();
 
   @override
   void initState() {
     super.initState();
     _selectedMealType = _recommendedMealType(_dailySummary);
+    _loadManualMealSuggestions();
     _loadDailyNutrition(showErrors: false);
   }
 
@@ -175,13 +179,28 @@ class _NutritionPageState extends State<NutritionPage> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  Future<void> _loadManualMealSuggestions() async {
+    final suggestions = await NutritionMealSuggestionStore.loadMealNames();
+    if (!mounted) return;
+    setState(() {
+      _manualMealSuggestions = suggestions;
+    });
+  }
+
   Future<void> _onAddMeal() async {
+    final mealSuggestions = await NutritionMealSuggestionStore.loadMealNames();
+    if (!mounted) return;
+    setState(() {
+      _manualMealSuggestions = mealSuggestions;
+    });
+
     final result = await showDialog<_ManualLogResult>(
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) => _ManualLogDialog(
         initialMealType: _selectedMealType,
         loggedMealTypes: _dailySummary.logged,
+        mealSuggestions: _manualMealSuggestions,
       ),
     );
 
@@ -196,6 +215,7 @@ class _NutritionPageState extends State<NutritionPage> {
       _selectedMealType = result.mealType;
       _attemptId = null;
       _reviewItems = [];
+      _pendingManualMeals = [];
     });
 
     await _analyzeManualMeals(result.meals);
@@ -273,6 +293,7 @@ class _NutritionPageState extends State<NutritionPage> {
       _isAnalyzing = true;
       _reviewItems = [];
       _attemptId = null;
+      _pendingManualMeals = [];
     });
 
     try {
@@ -314,6 +335,7 @@ class _NutritionPageState extends State<NutritionPage> {
       _isAnalyzing = true;
       _reviewItems = [];
       _attemptId = null;
+      _pendingManualMeals = meals;
     });
 
     try {
@@ -364,12 +386,21 @@ class _NutritionPageState extends State<NutritionPage> {
         logDate: NutritionApi.todayKey(),
         items: _reviewItems,
       );
+      final updatedSuggestions = _pendingManualMeals.isEmpty
+          ? null
+          : await NutritionMealSuggestionStore.saveManualMeals(
+              _pendingManualMeals,
+            );
 
       if (!mounted) return;
       setState(() {
         _selectedImage = null;
         _attemptId = null;
         _reviewItems = [];
+        _pendingManualMeals = [];
+        if (updatedSuggestions != null) {
+          _manualMealSuggestions = updatedSuggestions;
+        }
       });
       await _loadDailyNutrition(showErrors: false, resetMealUnlocks: true);
       unawaited(
@@ -401,6 +432,7 @@ class _NutritionPageState extends State<NutritionPage> {
     setState(() {
       _attemptId = null;
       _reviewItems = [];
+      _pendingManualMeals = [];
     });
   }
 
@@ -439,6 +471,7 @@ class _NutritionPageState extends State<NutritionPage> {
       _selectedMealType = mealType;
       _attemptId = null;
       _reviewItems = [];
+      _pendingManualMeals = [];
     });
   }
 
@@ -462,6 +495,7 @@ class _NutritionPageState extends State<NutritionPage> {
         _selectedMealType = mealType;
         _attemptId = null;
         _reviewItems = [];
+        _pendingManualMeals = [];
       });
       _lockedMealTapCount = 0;
       _lockedMealTapType = null;
@@ -581,7 +615,7 @@ class _NutritionPageState extends State<NutritionPage> {
               pagePadding,
               pagePadding,
               pagePadding,
-              pageBottomContentPadding(context, extra: 84),
+              pageBottomContentPadding(context, extra: 21),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

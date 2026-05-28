@@ -6,6 +6,8 @@ class AssistantExperiencePanel extends StatefulWidget {
   final List<ExerciseRecommendationModel> recommendations;
   final List<AdaptiveNudgeRecommendation> adaptiveNudges;
   final NutritionInsight? nutritionInsight;
+  final bool hasLoadedAdaptiveNudges;
+  final bool hasLoadedNutritionInsight;
   final Future<List<ExerciseRecommendationModel>> Function()
   onRefreshRecommendations;
   final Future<List<AdaptiveNudgeRecommendation>> Function({bool forceRefresh})
@@ -26,6 +28,8 @@ class AssistantExperiencePanel extends StatefulWidget {
     required this.recommendations,
     required this.adaptiveNudges,
     this.nutritionInsight,
+    this.hasLoadedAdaptiveNudges = false,
+    this.hasLoadedNutritionInsight = false,
     required this.onRefreshRecommendations,
     required this.onRefreshAdaptiveNudges,
     required this.onRefreshNutritionInsight,
@@ -81,10 +85,10 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     if (_recommendations.isEmpty) {
       unawaited(_loadRecommendations());
     }
-    if (_adaptiveNudges.isEmpty) {
+    if (_adaptiveNudges.isEmpty && !widget.hasLoadedAdaptiveNudges) {
       unawaited(_loadAdaptiveNudges());
     }
-    if (_nutritionInsight == null) {
+    if (_nutritionInsight == null && !widget.hasLoadedNutritionInsight) {
       unawaited(_loadNutritionInsight());
     }
     unawaited(_loadEnvironment());
@@ -245,6 +249,15 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
 
     if (!mounted) return;
 
+    if (status == 'dismissed') {
+      setState(() {
+        _adaptiveNudges = _adaptiveNudges
+            .where((item) => !_isSameAdaptiveNudge(item, recommendation))
+            .toList();
+      });
+      unawaited(_loadAdaptiveNudges(showLoading: false, forceRefresh: true));
+    }
+
     final label = status == 'dismissed' ? 'Insight hidden.' : 'Saved to likes.';
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(label)));
   }
@@ -271,10 +284,34 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
 
     if (!mounted) return;
 
+    if (status == 'dismissed') {
+      setState(() {
+        if (_nutritionInsight?.id == insight.id) {
+          _nutritionInsight = null;
+        }
+      });
+      unawaited(_loadNutritionInsight(showLoading: false, forceRefresh: true));
+    }
+
     final label = status == 'dismissed'
         ? 'Nutrition insight hidden.'
         : 'Nutrition insight liked.';
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(label)));
+  }
+
+  bool _isSameAdaptiveNudge(
+    AdaptiveNudgeRecommendation left,
+    AdaptiveNudgeRecommendation right,
+  ) {
+    final leftEventId = left.nudgeEventId;
+    final rightEventId = right.nudgeEventId;
+    if (leftEventId != null && rightEventId != null) {
+      return leftEventId == rightEventId;
+    }
+
+    return left.nudgeType == right.nudgeType &&
+        left.title == right.title &&
+        left.message == right.message;
   }
 
   Future<void> _loadHydrationContext() async {
@@ -939,7 +976,10 @@ class _AssistantContextStrip extends StatelessWidget {
     final airText = environmentSnapshot == null
         ? 'Air quality pending'
         : 'AQI ${environmentSnapshot!.airQuality.aqi} ${environmentSnapshot!.airQuality.aqiLabel}';
-    final stepLabel = activityState.isTracking
+    final dailyStepsUnavailable = !activityState.isStepTrackingSupported;
+    final stepLabel = dailyStepsUnavailable
+        ? 'Daily steps unavailable'
+        : activityState.isTracking
         ? 'Live steps'
         : activityState.permissionGranted
         ? 'Steps cached'
@@ -985,8 +1025,10 @@ class _AssistantContextStrip extends StatelessWidget {
           _AssistantContextMetric(
             icon: Icons.directions_walk_rounded,
             label: stepLabel,
-            value: '${numberFormat.format(activityState.log.steps)} steps',
-            isLoading: activityState.isLoading,
+            value: dailyStepsUnavailable
+                ? null
+                : '${numberFormat.format(activityState.log.steps)} steps',
+            isLoading: !dailyStepsUnavailable && activityState.isLoading,
           ),
         ],
       ),
@@ -1006,7 +1048,7 @@ class _AssistantContextStrip extends StatelessWidget {
 class _AssistantContextMetric extends StatelessWidget {
   final IconData icon;
   final String label;
-  final String value;
+  final String? value;
   final bool isLoading;
 
   const _AssistantContextMetric({
@@ -1049,17 +1091,19 @@ class _AssistantContextMetric extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 1),
-              Text(
-                value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: pageSecondaryTextColor(context),
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
+              if (value != null && value!.isNotEmpty) ...[
+                const SizedBox(height: 1),
+                Text(
+                  value!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: pageSecondaryTextColor(context),
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),

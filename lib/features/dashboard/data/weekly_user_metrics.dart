@@ -119,7 +119,7 @@ class WeeklyUserMetrics {
         .toList();
     if (values.isEmpty) return 0;
     final average = values.reduce((a, b) => a + b) / values.length;
-    return (((average + 1) / 3).clamp(0.0, 1.0) * 100).round();
+    return ((average / 5).clamp(0.0, 1.0) * 100).round();
   }
 
   int get hydrationIndex {
@@ -196,7 +196,7 @@ class DailyUserMetric {
       log == null ? null : LogApi.parseInt(log?['mood_index']);
 
   int? get energyLevel =>
-      log == null ? null : LogApi.parseInt(log?['energy_level']);
+      log == null ? null : LogApi.parseEnergyLevel(log?['energy_level']);
 
   int? get breakQualityLevel => LogApi.parseLikert(log?['break_quality_level']);
 

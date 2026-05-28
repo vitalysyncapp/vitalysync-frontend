@@ -11,7 +11,7 @@ class LogWidgets extends StatelessWidget {
   final double sleepHours;
   final int sleepQuality;
   final int moodIndex;
-  final double energyLevel;
+  final int? energyLevel;
   final double hydration;
   final String workloadHoursBand;
   final int? perceivedStressLevel;
@@ -33,7 +33,7 @@ class LogWidgets extends StatelessWidget {
   final ValueChanged<double> onSleepChanged;
   final ValueChanged<int> onSleepQualityChanged;
   final ValueChanged<int> onMoodChanged;
-  final ValueChanged<double> onEnergyChanged;
+  final ValueChanged<int> onEnergyChanged;
   final ValueChanged<double> onHydrationAdd;
   final VoidCallback onHydrationSubtract;
   final VoidCallback onHydrationReset;

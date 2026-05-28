@@ -77,14 +77,32 @@ List<AdaptiveNudgeRecommendation> prioritizeAssistantNudges(
     unique[key] = recommendation;
   }
 
-  final items = unique.values.toList();
-  return [
-    ...items.where(_isAiEnhancedNudge),
-    ...items.where(
-      (item) => !_isAiEnhancedNudge(item) && !_isFallbackNudge(item),
-    ),
-    ...items.where(_isFallbackNudge),
-  ];
+  final visibleItems = unique.values
+      .where(
+        (item) => item.metadata['assistant_feedback_status'] != 'dismissed',
+      )
+      .toList();
+  final items = visibleItems.isEmpty ? unique.values.toList() : visibleItems;
+
+  return items..sort((left, right) {
+    final rightScore = _assistantNudgeRankScore(right);
+    final leftScore = _assistantNudgeRankScore(left);
+    return rightScore.compareTo(leftScore);
+  });
+}
+
+int _assistantNudgeRankScore(AdaptiveNudgeRecommendation recommendation) {
+  var score = 0;
+  if (_isAiEnhancedNudge(recommendation)) {
+    score += 8;
+  }
+  if (!_isFallbackNudge(recommendation)) {
+    score += 4;
+  }
+  if (recommendation.metadata['assistant_feedback_status'] == 'accepted') {
+    score += 1;
+  }
+  return score;
 }
 
 class FloatingSmartNudgeAssistant extends StatefulWidget {
@@ -181,6 +199,10 @@ class _FloatingSmartNudgeAssistantState
   List<ExerciseRecommendationModel> _recommendations = const [];
   List<AdaptiveNudgeRecommendation> _adaptiveNudges = const [];
   NutritionInsight? _nutritionInsight;
+  Future<List<AdaptiveNudgeRecommendation>>? _adaptiveNudgeLoadFuture;
+  Future<NutritionInsight?>? _nutritionInsightLoadFuture;
+  bool _hasLoadedAdaptiveNudges = false;
+  bool _hasLoadedNutritionInsight = false;
   int _lastCompletionEventId = 0;
   bool? _hasPendingWeeklyPulse;
 
@@ -234,6 +256,24 @@ class _FloatingSmartNudgeAssistantState
   Future<List<AdaptiveNudgeRecommendation>> _loadAdaptiveNudges({
     bool forceRefresh = false,
   }) async {
+    if (!forceRefresh && _adaptiveNudgeLoadFuture != null) {
+      return _adaptiveNudgeLoadFuture!;
+    }
+
+    late final Future<List<AdaptiveNudgeRecommendation>> loadFuture;
+    loadFuture = _loadAdaptiveNudgesInternal(forceRefresh: forceRefresh)
+        .whenComplete(() {
+          if (identical(_adaptiveNudgeLoadFuture, loadFuture)) {
+            _adaptiveNudgeLoadFuture = null;
+          }
+        });
+    _adaptiveNudgeLoadFuture = loadFuture;
+    return loadFuture;
+  }
+
+  Future<List<AdaptiveNudgeRecommendation>> _loadAdaptiveNudgesInternal({
+    bool forceRefresh = false,
+  }) async {
     try {
       final response = await AdaptiveNudgeApi.fetchAssistantRecommendations(
         limit: 3,
@@ -248,6 +288,7 @@ class _FloatingSmartNudgeAssistantState
 
       setState(() {
         _adaptiveNudges = recommendations;
+        _hasLoadedAdaptiveNudges = true;
       });
 
       return recommendations;
@@ -257,13 +298,31 @@ class _FloatingSmartNudgeAssistantState
       }
 
       setState(() {
-        _adaptiveNudges = const [];
+        _hasLoadedAdaptiveNudges = true;
       });
-      return const [];
+      return _adaptiveNudges;
     }
   }
 
   Future<NutritionInsight?> _loadNutritionInsight({
+    bool forceRefresh = false,
+  }) async {
+    if (!forceRefresh && _nutritionInsightLoadFuture != null) {
+      return _nutritionInsightLoadFuture!;
+    }
+
+    late final Future<NutritionInsight?> loadFuture;
+    loadFuture = _loadNutritionInsightInternal(forceRefresh: forceRefresh)
+        .whenComplete(() {
+          if (identical(_nutritionInsightLoadFuture, loadFuture)) {
+            _nutritionInsightLoadFuture = null;
+          }
+        });
+    _nutritionInsightLoadFuture = loadFuture;
+    return loadFuture;
+  }
+
+  Future<NutritionInsight?> _loadNutritionInsightInternal({
     bool forceRefresh = false,
   }) async {
     try {
@@ -275,6 +334,7 @@ class _FloatingSmartNudgeAssistantState
 
       setState(() {
         _nutritionInsight = insight;
+        _hasLoadedNutritionInsight = true;
       });
       return insight;
     } catch (_) {
@@ -283,9 +343,9 @@ class _FloatingSmartNudgeAssistantState
       }
 
       setState(() {
-        _nutritionInsight = null;
+        _hasLoadedNutritionInsight = true;
       });
-      return null;
+      return _nutritionInsight;
     }
   }
 
@@ -426,6 +486,8 @@ class _FloatingSmartNudgeAssistantState
                   recommendations: _recommendations,
                   adaptiveNudges: _adaptiveNudges,
                   nutritionInsight: _nutritionInsight,
+                  hasLoadedAdaptiveNudges: _hasLoadedAdaptiveNudges,
+                  hasLoadedNutritionInsight: _hasLoadedNutritionInsight,
                   initialSectionIndex: initialSectionIndex,
                   onRefreshRecommendations: _loadRecommendations,
                   onRefreshAdaptiveNudges: _loadAdaptiveNudges,

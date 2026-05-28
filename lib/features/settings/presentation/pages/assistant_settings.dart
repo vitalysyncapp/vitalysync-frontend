@@ -14,9 +14,7 @@ class AssistantSettings extends StatefulWidget {
 class _AssistantSettingsState extends State<AssistantSettings>
     with WidgetsBindingObserver {
   bool? _overlayPermissionGranted;
-  bool? _exactAlarmPermissionGranted;
   bool _pendingAssistantOverlayEnable = false;
-  bool _pendingAssistantAutoShowEnable = false;
 
   @override
   void initState() {
@@ -37,7 +35,6 @@ class _AssistantSettingsState extends State<AssistantSettings>
       _loadPermissionStatuses().then((_) {
         if (mounted) {
           _completePendingAssistantOverlayEnable();
-          _completePendingAssistantAutoShowEnable();
         }
       });
     }
@@ -46,15 +43,12 @@ class _AssistantSettingsState extends State<AssistantSettings>
   Future<void> _loadPermissionStatuses() async {
     final overlayGranted = await OverlayAssistantController.instance
         .isOverlayPermissionGranted();
-    final exactAlarmGranted = await OverlayAssistantController.instance
-        .canScheduleExactAlarms();
     if (!mounted) {
       return;
     }
 
     setState(() {
       _overlayPermissionGranted = overlayGranted;
-      _exactAlarmPermissionGranted = exactAlarmGranted;
     });
   }
 
@@ -78,41 +72,6 @@ class _AssistantSettingsState extends State<AssistantSettings>
         content: Text(
           'Floating assistant is ready and will appear when you leave VitalySync.',
         ),
-      ),
-    );
-  }
-
-  Future<void> _completePendingAssistantAutoShowEnable() async {
-    if (!_pendingAssistantAutoShowEnable) {
-      return;
-    }
-
-    if (_exactAlarmPermissionGranted != true) {
-      _pendingAssistantAutoShowEnable = false;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Turn on Alarms & reminders access, then try enabling auto appear again.',
-          ),
-        ),
-      );
-      return;
-    }
-
-    _pendingAssistantAutoShowEnable = false;
-    await AppPreferencesController.instance
-        .updateAssistantOverlayAutoShowEnabled(true);
-    await OverlayAssistantController.instance.syncSettings(
-      AppPreferencesController.instance.notifier.value,
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Auto appear is scheduled for your selected time.'),
       ),
     );
   }
@@ -179,81 +138,6 @@ class _AssistantSettingsState extends State<AssistantSettings>
     );
   }
 
-  Future<void> _handleAssistantAutoShowToggle(bool value) async {
-    if (value) {
-      final canScheduleExactAlarms = await OverlayAssistantController.instance
-          .canScheduleExactAlarms();
-      if (!canScheduleExactAlarms) {
-        if (!mounted) {
-          return;
-        }
-
-        _pendingAssistantAutoShowEnable = true;
-        final prompted = await OverlayAssistantController.instance
-            .ensureExactAlarmPermissionWithPrompt(context);
-        if (!prompted && mounted) {
-          _pendingAssistantAutoShowEnable = false;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Auto appear needs Alarms & reminders access to run on schedule.',
-              ),
-            ),
-          );
-        }
-        await _loadPermissionStatuses();
-        return;
-      }
-    } else {
-      _pendingAssistantAutoShowEnable = false;
-    }
-
-    await AppPreferencesController.instance
-        .updateAssistantOverlayAutoShowEnabled(value);
-    await OverlayAssistantController.instance.syncSettings(
-      AppPreferencesController.instance.notifier.value,
-    );
-  }
-
-  Future<void> _pickAssistantOverlayTime(String currentValue) async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: _timeOfDayFromString(currentValue),
-    );
-    if (picked == null || !mounted) {
-      return;
-    }
-
-    await AppPreferencesController.instance.updateAssistantOverlayAutoShowTime(
-      _formatTimeOfDay(picked),
-    );
-    await OverlayAssistantController.instance.syncSettings(
-      AppPreferencesController.instance.notifier.value,
-    );
-  }
-
-  TimeOfDay _timeOfDayFromString(String value) {
-    final parts = value.split(':');
-    final hour = parts.isNotEmpty ? int.tryParse(parts[0]) : null;
-    final minute = parts.length > 1 ? int.tryParse(parts[1]) : null;
-    return TimeOfDay(
-      hour: (hour ?? 0).clamp(0, 23).toInt(),
-      minute: (minute ?? 0).clamp(0, 59).toInt(),
-    );
-  }
-
-  String _formatTimeOfDay(TimeOfDay time) {
-    final hour = time.hour.toString().padLeft(2, '0');
-    final minute = time.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
-  }
-
-  String _displayTime(BuildContext context, String value) {
-    return MaterialLocalizations.of(
-      context,
-    ).formatTimeOfDay(_timeOfDayFromString(value));
-  }
-
   String _assistantOverlaySubtitle(AppPreferencesState prefs) {
     if (!prefs.assistantOverlayEnabled) {
       return 'Show the assistant as a chat-head above other apps on Android';
@@ -264,20 +148,6 @@ class _AssistantSettingsState extends State<AssistantSettings>
     }
 
     return 'Enabled. The assistant can appear when you leave VitalySync';
-  }
-
-  String _assistantAutoShowSubtitle(AppPreferencesState prefs) {
-    if (!prefs.assistantOverlayEnabled) {
-      return 'Enable the floating assistant first';
-    }
-
-    if (_exactAlarmPermissionGranted == false) {
-      return 'Allow Android Alarms & reminders so it can appear at the scheduled time';
-    }
-
-    return prefs.assistantOverlayAutoShowEnabled
-        ? 'Daily outside-app assistant after ${_displayTime(context, prefs.assistantOverlayAutoShowTime)}, including when you unlock later'
-        : 'Automatically surface the assistant outside the app each morning';
   }
 
   @override
@@ -330,38 +200,6 @@ class _AssistantSettingsState extends State<AssistantSettings>
                       onChanged: (value) =>
                           _handleAssistantOverlayToggle(prefs, value),
                     ),
-                    _buildDivider(context),
-                    _buildSwitchTile(
-                      context: context,
-                      icon: Icons.alarm_on_rounded,
-                      iconBg: const Color(0xFFE8EDFF),
-                      iconColor: const Color(0xFF5563F5),
-                      title: 'Auto appear outside app',
-                      subtitle: _assistantAutoShowSubtitle(prefs),
-                      value:
-                          prefs.assistantOverlayEnabled &&
-                          prefs.assistantOverlayAutoShowEnabled,
-                      enabled: prefs.assistantOverlayEnabled,
-                      onChanged: _handleAssistantAutoShowToggle,
-                    ),
-                    _buildDivider(context),
-                    _buildSettingsTile(
-                      context: context,
-                      icon: Icons.schedule_rounded,
-                      iconBg: const Color(0xFFFFF5D8),
-                      iconColor: const Color(0xFFD79B00),
-                      title: 'Auto appear time',
-                      subtitle: _displayTime(
-                        context,
-                        prefs.assistantOverlayAutoShowTime,
-                      ),
-                      enabled:
-                          prefs.assistantOverlayEnabled &&
-                          prefs.assistantOverlayAutoShowEnabled,
-                      onTap: () => _pickAssistantOverlayTime(
-                        prefs.assistantOverlayAutoShowTime,
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -411,74 +249,6 @@ class _AssistantSettingsState extends State<AssistantSettings>
           ),
           ...children,
         ],
-      ),
-    );
-  }
-
-  Widget _buildSettingsTile({
-    required BuildContext context,
-    required IconData icon,
-    required Color iconBg,
-    required Color iconColor,
-    required String title,
-    String? subtitle,
-    bool enabled = true,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(20),
-      onTap: enabled ? onTap : null,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-        child: Row(
-          children: [
-            Container(
-              height: 46,
-              width: 46,
-              decoration: BoxDecoration(
-                color: iconBg,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(icon, color: iconColor, size: 24),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 15.5,
-                      fontWeight: FontWeight.w700,
-                      color: enabled
-                          ? pagePrimaryTextColor(context)
-                          : pageSecondaryTextColor(context),
-                    ),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        color: pageSecondaryTextColor(context),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: enabled
-                  ? const Color(0xFF9CA3AF)
-                  : const Color(0xFFCBD5E1),
-              size: 28,
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -540,16 +310,6 @@ class _AssistantSettingsState extends State<AssistantSettings>
           Switch(value: value, onChanged: enabled ? onChanged : null),
         ],
       ),
-    );
-  }
-
-  Widget _buildDivider(BuildContext context) {
-    return Divider(
-      height: 1,
-      thickness: 1,
-      color: pageBorderColor(context),
-      indent: 18,
-      endIndent: 18,
     );
   }
 }

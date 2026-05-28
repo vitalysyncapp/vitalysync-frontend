@@ -42,6 +42,8 @@ class LogApi {
   static const String _pendingLogsKeyPrefix = 'offline_pending_logs';
   static const String _cachedLogsKeyPrefix = 'cached_daily_logs';
   static const String _syncedStreakKeyPrefix = 'synced_log_streak';
+  static const String _energyScaleMigrationKeyPrefix =
+      'daily_log_energy_scale_v2_migrated';
   static const String _hydrationPrefillKeyPrefix =
       'assistant_hydration_prefill';
   static const String _exercisePrefillKeyPrefix = 'assistant_exercise_prefill';
@@ -175,6 +177,10 @@ class LogApi {
   static int? parseLikert(dynamic value) {
     final parsed = parseInt(value, fallback: 0);
     return parsed >= 1 && parsed <= 5 ? parsed : null;
+  }
+
+  static int? parseEnergyLevel(dynamic value) {
+    return parseLikert(value);
   }
 
   static String? normalizeDateString(dynamic value) {
@@ -903,6 +909,7 @@ class LogApi {
           key.startsWith(_legacyLocalWeeklyPulseKeyPrefix) ||
           key.startsWith(_pendingLogsKeyPrefix) ||
           key.startsWith(_cachedLogsKeyPrefix) ||
+          key.startsWith(_energyScaleMigrationKeyPrefix) ||
           key.startsWith(_hydrationPrefillKeyPrefix) ||
           key.startsWith(_exercisePrefillKeyPrefix) ||
           key.startsWith(_syncedStreakKeyPrefix),
