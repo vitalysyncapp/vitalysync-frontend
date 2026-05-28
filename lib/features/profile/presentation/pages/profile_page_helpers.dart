@@ -24,12 +24,12 @@ String _workIntensityFromLevel(int? level) => level == null
     ? 'Low'
     : 'Medium';
 
-int _workHoursFromIntensity(String intensity) =>
+int _workloadLevelFromIntensity(String intensity) =>
     intensity.toLowerCase() == 'high'
-    ? 10
+    ? 4
     : intensity.toLowerCase() == 'low'
-    ? 6
-    : 8;
+    ? 2
+    : 3;
 
 String _waterGoalFromActivity(String activity) =>
     activity.toLowerCase().contains('active') &&
@@ -116,3 +116,21 @@ Map<String, String?> _parseSleepSchedule(String value) {
 
 int _parseExerciseDays(String value) =>
     int.tryParse(RegExp(r'(\d+)').firstMatch(value)?.group(1) ?? '') ?? 3;
+
+double _parseLiters(String value) {
+  final parsed = double.tryParse(
+    RegExp(r'(\d+(?:\.\d+)?)').firstMatch(value)?.group(1) ?? '',
+  );
+  if (parsed == null) return 2.5;
+
+  return value.toLowerCase().contains('ml') ? parsed / 1000 : parsed;
+}
+
+String _formatLiters(double value) {
+  final rounded = (value * 10).round() / 10;
+  if (rounded == rounded.roundToDouble()) {
+    return '${rounded.round()} L';
+  }
+
+  return '${rounded.toStringAsFixed(1)} L';
+}

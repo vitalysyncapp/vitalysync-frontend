@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../shared/preferences/user_session.dart';
 import '../../../shared/notifications/notification_feed_cache.dart';
+import '../../../shared/goals/user_goals.dart';
 import 'activity_api.dart';
 import 'activity_log.dart';
 
@@ -237,7 +238,10 @@ class ActivityService {
     final session = await UserSessionController.instance.load();
     final userId = session.userId ?? 0;
     final today = todayKey();
-    final preferredGoalSteps = await _preferredGoalStepsForUser(userId);
+    final preferredGoalSteps = await _preferredGoalStepsForUser(
+      userId,
+      refreshRemote: true,
+    );
 
     await _loadCachedActivity(markLoading: false);
 
@@ -612,6 +616,16 @@ class ActivityService {
 
     await _cacheActivity(userId, updatedLog);
     if (userId > 0) {
+      try {
+        await UserGoalsService.updateDailySteps(
+          userId: userId,
+          dailySteps: normalizedGoalSteps,
+        );
+      } catch (_) {
+        // Activity goal updates still work locally and sync through activity logs.
+      }
+    }
+    if (userId > 0) {
       await _queuePendingActivity(session, updatedLog);
     }
 
@@ -705,14 +719,31 @@ class ActivityService {
     return '${_preferredGoalStepsKeyPrefix}_$userId';
   }
 
-  Future<int> _preferredGoalStepsForUser(int userId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedGoalSteps = prefs.getInt(_preferredGoalStepsKey(userId));
-    if (savedGoalSteps == null || savedGoalSteps <= 0) {
-      return ActivityLog.defaultGoalSteps;
+  Future<int> _preferredGoalStepsForUser(
+    int userId, {
+    bool refreshRemote = false,
+  }) async {
+    if (userId > 0 && refreshRemote) {
+      final goals = await UserGoalsService.fetch(userId: userId);
+      await _savePreferredGoalSteps(userId, goals.dailySteps);
+      return goals.dailySteps;
     }
 
-    return savedGoalSteps;
+    final prefs = await SharedPreferences.getInstance();
+    final savedGoalSteps = prefs.getInt(_preferredGoalStepsKey(userId));
+    if (savedGoalSteps != null && savedGoalSteps > 0) {
+      return savedGoalSteps;
+    }
+
+    if (userId > 0) {
+      final cachedGoals = await UserGoalsService.loadCached(userId);
+      if (cachedGoals != null) {
+        await _savePreferredGoalSteps(userId, cachedGoals.dailySteps);
+        return cachedGoals.dailySteps;
+      }
+    }
+
+    return ActivityLog.defaultGoalSteps;
   }
 
   Future<void> _savePreferredGoalSteps(int userId, int goalSteps) async {

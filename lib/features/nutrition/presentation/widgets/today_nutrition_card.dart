@@ -5,6 +5,7 @@ class TodayNutritionCard extends StatelessWidget {
   final double proteinG;
   final double carbsG;
   final double fatG;
+  final int calorieGoal;
 
   const TodayNutritionCard({
     super.key,
@@ -12,11 +13,12 @@ class TodayNutritionCard extends StatelessWidget {
     required this.proteinG,
     required this.carbsG,
     required this.fatG,
+    required this.calorieGoal,
   });
 
   @override
   Widget build(BuildContext context) {
-    const double goal = 2000;
+    final double goal = calorieGoal <= 0 ? 2000 : calorieGoal.toDouble();
     final double progress = (calories / goal).clamp(0, 1).toDouble();
     final screenWidth = MediaQuery.of(context).size.width;
     final isCompact = screenWidth < 380;
@@ -79,7 +81,7 @@ class TodayNutritionCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      'Goal: 2,000',
+                      'Goal: ${_formatInt(goal.round())}',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: isCompact ? 11 : 12,
@@ -130,6 +132,18 @@ class TodayNutritionCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _formatInt(int value) {
+  final text = value.toString();
+  final buffer = StringBuffer();
+  for (var i = 0; i < text.length; i++) {
+    if (i > 0 && (text.length - i) % 3 == 0) {
+      buffer.write(',');
+    }
+    buffer.write(text[i]);
+  }
+  return buffer.toString();
 }
 
 class _MacroMiniStat extends StatelessWidget {

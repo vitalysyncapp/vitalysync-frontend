@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../features/activity/data/activity_service.dart';
 import '../../../../features/onboarding/data/onboarding_api.dart';
 import '../../../../features/onboarding/services/onboarding_service.dart';
+import '../../../../shared/goals/user_goals.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import 'edit_profile_page.dart';
+import 'edit_goals_page.dart';
+import 'edit_wellness_profile_page.dart';
+import 'history_page.dart';
 import 'personal_information_page.dart';
 import '../widgets/wellness_profile_card.dart';
 
@@ -39,6 +44,7 @@ class _ProfilePageState extends State<ProfilePage> {
   static const List<String> _workIntensityOptions = ['Low', 'Medium', 'High'];
 
   bool _isLoading = true, _isSaving = false;
+  bool _isSavingWellness = false, _isSavingGoals = false;
   int? _userId, _age;
   String _username = 'User Name', _email = 'user@email.com';
   String? _gender, _userType;
@@ -53,6 +59,7 @@ class _ProfilePageState extends State<ProfilePage> {
       _initialBurnoutLevel = 'Not set';
   int _initialBurnoutScore = 0;
   int _currentStreak = 0, _longestStreak = 0;
+  UserGoalsSnapshot _goals = UserGoalsSnapshot.defaults();
 
   @override
   void initState() {
@@ -75,6 +82,7 @@ class _ProfilePageState extends State<ProfilePage> {
         initialBurnoutLevel = 'Not set';
     var initialBurnoutScore = 0;
     var userType = _emptyToNull(session.userType);
+    var goals = UserGoalsSnapshot.defaults();
 
     if (session.userId != null) {
       try {
@@ -95,6 +103,12 @@ class _ProfilePageState extends State<ProfilePage> {
         );
         final profileWakeTime = _emptyToNull(
           profile['usual_wake_time']?.toString(),
+        );
+        final preferenceSleepTime = _emptyToNull(
+          preferences['default_sleep_time']?.toString(),
+        );
+        final preferenceWakeTime = _emptyToNull(
+          preferences['default_wake_time']?.toString(),
         );
         final activity =
             _emptyToNull(profile['lifestyle_type']?.toString()) ??
@@ -129,14 +143,27 @@ class _ProfilePageState extends State<ProfilePage> {
             'Not set';
         initialBurnoutScore = _parseIntValue(profile['initial_burnout_score']);
         sleepSchedule = _buildSleepSchedule(
-          sleepTime:
-              profileSleepTime ??
-              _emptyToNull(preferences['default_sleep_time']?.toString()),
-          wakeTime:
-              profileWakeTime ??
-              _emptyToNull(preferences['default_wake_time']?.toString()),
+          sleepTime: profileSleepTime ?? preferenceSleepTime,
+          wakeTime: profileWakeTime ?? preferenceWakeTime,
           fallback: sleepSchedule,
         );
+        goals = await UserGoalsService.fetch(
+          userId: session.userId!,
+          defaults: UserGoalsSnapshot.defaults(
+            wellnessGoal: wellnessGoal,
+            sleepHours: OnboardingService.sleepHoursBetween(
+              profileSleepTime ?? preferenceSleepTime,
+              profileWakeTime ?? preferenceWakeTime,
+              fallback: 8,
+            ),
+            hydrationLiters: _parseLiters(waterGoal),
+            activityDaysPerWeek: _parseExerciseDays(exerciseTarget),
+            dailySteps: ActivityService.instance.notifier.value.log.goalSteps,
+          ),
+        );
+        wellnessGoal = goals.wellnessGoal;
+        waterGoal = _formatLiters(goals.hydrationLiters);
+        exerciseTarget = '${goals.activityDaysPerWeek} days/week';
         await prefs.setString(_sleepScheduleKey, sleepSchedule);
         await prefs.setString(_waterGoalKey, waterGoal);
       } catch (_) {}
@@ -166,6 +193,7 @@ class _ProfilePageState extends State<ProfilePage> {
       _initialBurnoutScore = initialBurnoutScore;
       _currentStreak = prefs.getInt('log_streak') ?? 0;
       _longestStreak = prefs.getInt('longest_log_streak') ?? 0;
+      _goals = goals;
       _isLoading = false;
     });
   }
@@ -227,56 +255,29 @@ class _ProfilePageState extends State<ProfilePage> {
         gender: gender,
         userType: userType,
       );
-      final summary = await OnboardingApi.fetchSummary(_userId!);
-      final existingOnboarding = Map<String, dynamic>.from(
-        summary['onboarding'] as Map? ?? {},
-      );
-      final existingPreferences = Map<String, dynamic>.from(
-        summary['preferences'] as Map? ?? {},
-      );
-      await OnboardingApi.upsertOnboarding(
+      await OnboardingApi.updateWellnessProfile(
         userId: _userId!,
-        onboarding: {
-          'role_type': userType,
-          'activity_level': lifestyleType,
-          'work_hours_per_day': _workHoursFromIntensity(workIntensity),
-          'exercise_days_per_week': _parseExerciseDays(exerciseTarget),
-          'sleep_hours': existingOnboarding['sleep_hours'],
-          'meal_regularness': existingOnboarding['meal_regularness'],
-          'stress_level': existingOnboarding['stress_level'],
-          'mental_drain_level': existingOnboarding['mental_drain_level'],
-          'focus_difficulty_level':
-              existingOnboarding['focus_difficulty_level'],
-          'overwhelm_level': existingOnboarding['overwhelm_level'],
-          'recovery_level': existingOnboarding['recovery_level'],
-          'motivation_level': existingOnboarding['motivation_level'],
-          'skipped': existingOnboarding['skipped'] == true,
+        profile: {
+          'role': userType ?? 'Other',
+          'lifestyle_type': lifestyleType,
+          'usual_sleep_time': scheduleParts['sleep'],
+          'usual_wake_time': scheduleParts['wake'],
+          'workload_level': _workloadLevelFromIntensity(workIntensity),
         },
       );
-      await OnboardingApi.upsertPreferences(
+      final updatedGoals = _goals.copyWith(
+        hydrationLiters: _parseLiters(normalizedWater),
+        activityDaysPerWeek: _parseExerciseDays(normalizedExercise),
+      );
+      final savedGoals = await UserGoalsService.save(
         userId: _userId!,
-        preferences: {
-          'preferred_log_time': existingPreferences['preferred_log_time'],
-          'default_sleep_time': scheduleParts['sleep'],
-          'default_wake_time': scheduleParts['wake'],
-          'default_work_start': existingPreferences['default_work_start'],
-          'default_work_end': existingPreferences['default_work_end'],
-          'prefers_daily_reminder':
-              existingPreferences['prefers_daily_reminder'] == true,
-          'reminder_time': existingPreferences['reminder_time'],
-          'prefers_hydration_reminder':
-              existingPreferences['prefers_hydration_reminder'] == true,
-          'prefers_exercise_reminder':
-              existingPreferences['prefers_exercise_reminder'] == true,
-          'prefers_sleep_reminder':
-              existingPreferences['prefers_sleep_reminder'] == true,
-          'preferred_nudge_style': existingPreferences['preferred_nudge_style'],
-          'primary_goal': existingPreferences['primary_goal'],
-          'busy_days': (summary['busy_days'] as List? ?? const []),
-        },
+        goals: updatedGoals,
       );
       await prefs.setString(_sleepScheduleKey, normalizedSleep);
-      await prefs.setString(_waterGoalKey, normalizedWater);
+      await prefs.setString(
+        _waterGoalKey,
+        _formatLiters(savedGoals.hydrationLiters),
+      );
       if (!mounted) return false;
       setState(() {
         _username = username;
@@ -287,8 +288,10 @@ class _ProfilePageState extends State<ProfilePage> {
         _sleepSchedule = normalizedSleep;
         _lifestyleType = lifestyleType;
         _workIntensity = workIntensity;
-        _waterGoal = normalizedWater;
-        _exerciseTarget = normalizedExercise;
+        _waterGoal = _formatLiters(savedGoals.hydrationLiters);
+        _exerciseTarget = '${savedGoals.activityDaysPerWeek} days/week';
+        _wellnessGoal = savedGoals.wellnessGoal;
+        _goals = savedGoals;
       });
       return true;
     } catch (error) {
@@ -300,6 +303,127 @@ class _ProfilePageState extends State<ProfilePage> {
       return false;
     } finally {
       if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<bool> _saveWellnessProfileChanges({
+    required String role,
+    required String lifestyleType,
+    required String workIntensity,
+    required String sleepSchedule,
+  }) async {
+    if (_userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Wellness profile can only be edited after a session is loaded.',
+          ),
+        ),
+      );
+      return false;
+    }
+
+    final scheduleParts = _parseSleepSchedule(sleepSchedule);
+    if (scheduleParts['sleep'] == null || scheduleParts['wake'] == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Use a valid sleep schedule.')),
+      );
+      return false;
+    }
+
+    setState(() => _isSavingWellness = true);
+    final prefs = await SharedPreferences.getInstance();
+
+    try {
+      final response = await OnboardingApi.updateWellnessProfile(
+        userId: _userId!,
+        profile: {
+          'role': role,
+          'lifestyle_type': lifestyleType,
+          'usual_sleep_time': scheduleParts['sleep'],
+          'usual_wake_time': scheduleParts['wake'],
+          'workload_level': _workloadLevelFromIntensity(workIntensity),
+        },
+      );
+      final profile = Map<String, dynamic>.from(
+        response['profile'] as Map? ?? {},
+      );
+      await OnboardingService.saveDefaultsFromProfile(profile);
+      await UserSessionController.instance.saveSupplementalProfile(
+        age: _age,
+        gender: _gender,
+        userType: role,
+      );
+      await prefs.setString(_sleepScheduleKey, sleepSchedule);
+
+      if (!mounted) return false;
+      setState(() {
+        _userType = role;
+        _lifestyleType = lifestyleType;
+        _workIntensity = workIntensity;
+        _sleepSchedule = sleepSchedule;
+        _usualSleepTime = _formatTimeForDisplay(scheduleParts['sleep']!);
+        _usualWakeTime = _formatTimeForDisplay(scheduleParts['wake']!);
+      });
+      return true;
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Unable to update wellness profile: $error')),
+        );
+      }
+      return false;
+    } finally {
+      if (mounted) setState(() => _isSavingWellness = false);
+    }
+  }
+
+  Future<bool> _saveGoalChanges(UserGoalsSnapshot goals) async {
+    if (_userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Goals can only be edited after a session is loaded.'),
+        ),
+      );
+      return false;
+    }
+
+    setState(() => _isSavingGoals = true);
+    final prefs = await SharedPreferences.getInstance();
+
+    try {
+      final previousStepGoal = _goals.dailySteps;
+      final savedGoals = await UserGoalsService.save(
+        userId: _userId!,
+        goals: goals,
+      );
+
+      if (savedGoals.dailySteps != previousStepGoal) {
+        await ActivityService.instance.updateGoalSteps(savedGoals.dailySteps);
+      }
+
+      await prefs.setString(
+        _waterGoalKey,
+        _formatLiters(savedGoals.hydrationLiters),
+      );
+
+      if (!mounted) return false;
+      setState(() {
+        _goals = savedGoals;
+        _wellnessGoal = savedGoals.wellnessGoal;
+        _waterGoal = _formatLiters(savedGoals.hydrationLiters);
+        _exerciseTarget = '${savedGoals.activityDaysPerWeek} days/week';
+      });
+      return true;
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Unable to update goals: $error')),
+        );
+      }
+      return false;
+    } finally {
+      if (mounted) setState(() => _isSavingGoals = false);
     }
   }
 
@@ -363,6 +487,58 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Future<void> _openEditWellnessProfilePage() async {
+    await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditWellnessProfilePage(
+          initialRole: _dropdownValueOrNull(
+            _userType,
+            _roleOptions,
+            aliases: const {
+              'freelance': 'Freelancer',
+              'self employed': 'Freelancer',
+              'working professional': 'Working Professional',
+              'young professional': 'Working Professional',
+              'others': 'Other',
+            },
+          ),
+          initialLifestyle:
+              _dropdownValueOrNull(_lifestyleType, _lifestyleOptions) ??
+              'Moderately Active',
+          initialWorkIntensity:
+              _dropdownValueOrNull(_workIntensity, _workIntensityOptions) ??
+              'Medium',
+          initialSleepSchedule: _sleepSchedule,
+          onSave:
+              ({
+                required String role,
+                required String lifestyleType,
+                required String workIntensity,
+                required String sleepSchedule,
+              }) {
+                return _saveWellnessProfileChanges(
+                  role: role,
+                  lifestyleType: lifestyleType,
+                  workIntensity: workIntensity,
+                  sleepSchedule: sleepSchedule,
+                );
+              },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openEditGoalsPage() async {
+    await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            EditGoalsPage(initialGoals: _goals, onSave: _saveGoalChanges),
+      ),
+    );
+  }
+
   void _openPersonalInformationPage() {
     Navigator.push(
       context,
@@ -384,6 +560,13 @@ class _ProfilePageState extends State<ProfilePage> {
           burnoutScore: _initialBurnoutScore,
         ),
       ),
+    );
+  }
+
+  void _openHistoryPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const HistoryPage()),
     );
   }
 
@@ -442,27 +625,26 @@ class _ProfilePageState extends State<ProfilePage> {
                       sleepSchedule: _sleepSchedule,
                       isSaving: _isSaving,
                       onOpenDetails: _openPersonalInformationPage,
+                      onOpenHistory: _openHistoryPage,
                       onEditProfile: _openEditProfilePage,
                     ),
                     const SizedBox(height: 18),
                     WellnessProfileCard(
                       lifestyleType: _lifestyleType,
                       currentRole: _userType ?? 'Not set',
-                      wellnessGoal: _wellnessGoal,
                       usualSleepTime: _usualSleepTime,
                       usualWakeTime: _usualWakeTime,
                       workIntensity: _workIntensity,
-                      waterGoal: _waterGoal,
-                      exerciseTarget: _exerciseTarget,
                       burnoutLevel: _initialBurnoutLevel,
                       burnoutScore: _initialBurnoutScore,
+                      isSaving: _isSavingWellness,
+                      onEdit: _openEditWellnessProfilePage,
                     ),
                     const SizedBox(height: 18),
-                    _SavedRoutineCard(
-                      sleepSchedule: _sleepSchedule,
-                      wellnessGoal: _wellnessGoal,
-                      waterGoal: _waterGoal,
-                      exerciseTarget: _exerciseTarget,
+                    MyGoalsCard(
+                      goals: _goals,
+                      isSaving: _isSavingGoals,
+                      onEdit: _openEditGoalsPage,
                     ),
                   ],
                 ),

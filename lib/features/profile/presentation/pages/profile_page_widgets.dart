@@ -166,6 +166,7 @@ class _PersonalInformationCard extends StatelessWidget {
   final String sleepSchedule;
   final bool isSaving;
   final VoidCallback onOpenDetails;
+  final VoidCallback onOpenHistory;
   final VoidCallback onEditProfile;
 
   const _PersonalInformationCard({
@@ -174,6 +175,7 @@ class _PersonalInformationCard extends StatelessWidget {
     required this.sleepSchedule,
     required this.isSaving,
     required this.onOpenDetails,
+    required this.onOpenHistory,
     required this.onEditProfile,
   });
 
@@ -236,6 +238,19 @@ class _PersonalInformationCard extends StatelessWidget {
             subtitle: sleepSchedule,
           ),
           Divider(height: 1, thickness: 1, color: pageBorderColor(context)),
+          _ProfileInfoTile(
+            icon: Icons.history_rounded,
+            iconBg: const Color(0xFFEAF7EE),
+            iconColor: const Color(0xFF1FB489),
+            title: 'History',
+            subtitle: 'Daily logs, burnout, nutrition, and activity',
+            onTap: onOpenHistory,
+            trailing: Icon(
+              Icons.chevron_right_rounded,
+              color: pageSecondaryTextColor(context),
+            ),
+          ),
+          Divider(height: 1, thickness: 1, color: pageBorderColor(context)),
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
             child: SizedBox(
@@ -264,21 +279,22 @@ class _PersonalInformationCard extends StatelessWidget {
   }
 }
 
-class _SavedRoutineCard extends StatelessWidget {
-  final String sleepSchedule;
-  final String wellnessGoal;
-  final String waterGoal;
-  final String exerciseTarget;
+class MyGoalsCard extends StatelessWidget {
+  final UserGoalsSnapshot goals;
+  final bool isSaving;
+  final VoidCallback onEdit;
 
-  const _SavedRoutineCard({
-    required this.sleepSchedule,
-    required this.wellnessGoal,
-    required this.waterGoal,
-    required this.exerciseTarget,
+  const MyGoalsCard({
+    super.key,
+    required this.goals,
+    required this.isSaving,
+    required this.onEdit,
   });
 
   @override
   Widget build(BuildContext context) {
+    final themePrimary = Theme.of(context).colorScheme.primary;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -290,36 +306,179 @@ class _SavedRoutineCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Saved Routine',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: pagePrimaryTextColor(context),
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF16A34A), Color(0xFF0891B2)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: const Icon(
+                  Icons.track_changes_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'My Goals',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: pagePrimaryTextColor(context),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Targets shared with Home and Nutrition',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: pageSecondaryTextColor(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _GoalDataRow(
+            icon: Icons.flag_outlined,
+            label: 'Wellness Goal',
+            value: goals.wellnessGoal,
+          ),
+          _GoalDataRow(
+            icon: Icons.bedtime_outlined,
+            label: 'Sleep Goal',
+            value: goals.sleepLabel,
+          ),
+          _GoalDataRow(
+            icon: Icons.water_drop_outlined,
+            label: 'Hydration Goal',
+            value: goals.hydrationLabel,
+          ),
+          _GoalDataRow(
+            icon: Icons.fitness_center_outlined,
+            label: 'Activity Goal',
+            value: goals.activityLabel,
+          ),
+          _GoalDataRow(
+            icon: Icons.directions_walk_rounded,
+            label: 'Daily Steps',
+            value: goals.dailyStepsLabel,
+          ),
+          _GoalDataRow(
+            icon: Icons.local_dining_outlined,
+            label: 'Nutrition Goal',
+            value: goals.nutritionLabel,
+          ),
+          const SizedBox(height: 4),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: isSaving ? null : onEdit,
+              icon: const Icon(Icons.edit_outlined),
+              label: const Text(
+                'Edit Goals',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: themePrimary,
+                side: BorderSide(color: pageBorderColor(context)),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 12),
-          _RoutineLine('Sleep: $sleepSchedule'),
-          const SizedBox(height: 8),
-          _RoutineLine('Wellness goal: $wellnessGoal'),
-          const SizedBox(height: 8),
-          _RoutineLine('Water goal: $waterGoal'),
-          const SizedBox(height: 8),
-          _RoutineLine('Exercise target: $exerciseTarget'),
         ],
       ),
     );
   }
 }
 
-class _RoutineLine extends StatelessWidget {
-  final String text;
+class _GoalDataRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
 
-  const _RoutineLine(this.text);
+  const _GoalDataRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Text(text, style: TextStyle(color: pageSecondaryTextColor(context)));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final themePrimary = Theme.of(context).colorScheme.primary;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.045)
+            : const Color(0xFFF8FAFF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: pageBorderColor(context)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: themePrimary.withValues(alpha: isDark ? 0.16 : 0.1),
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: Icon(icon, size: 20, color: themePrimary),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: pageSecondaryTextColor(context),
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  value,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w800,
+                    color: pagePrimaryTextColor(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

@@ -5,27 +5,25 @@ import '../../../../shared/theme/app_page_style.dart';
 class WellnessProfileCard extends StatelessWidget {
   final String lifestyleType;
   final String currentRole;
-  final String wellnessGoal;
   final String usualSleepTime;
   final String usualWakeTime;
   final String workIntensity;
-  final String waterGoal;
-  final String exerciseTarget;
   final String burnoutLevel;
   final int burnoutScore;
+  final bool isSaving;
+  final VoidCallback onEdit;
 
   const WellnessProfileCard({
     super.key,
     required this.lifestyleType,
     required this.currentRole,
-    required this.wellnessGoal,
     required this.usualSleepTime,
     required this.usualWakeTime,
     required this.workIntensity,
-    required this.waterGoal,
-    required this.exerciseTarget,
     required this.burnoutLevel,
     required this.burnoutScore,
+    required this.isSaving,
+    required this.onEdit,
   });
 
   @override
@@ -114,12 +112,6 @@ class WellnessProfileCard extends StatelessWidget {
             value: currentRole,
           ),
           _rowItem(
-            emoji: '\u{1F3AF}',
-            icon: Icons.flag_outlined,
-            label: 'Wellness Goal',
-            value: wellnessGoal,
-          ),
-          _rowItem(
             emoji: '\u{1F319}',
             icon: Icons.bedtime_outlined,
             label: 'Usual Sleep Time',
@@ -135,18 +127,6 @@ class WellnessProfileCard extends StatelessWidget {
             emoji: '\u26A1',
             label: 'Work Intensity',
             value: workIntensity,
-          ),
-          _rowItem(
-            emoji: '\u{1F4A7}',
-            icon: Icons.water_drop_outlined,
-            label: 'Daily Water Goal',
-            value: waterGoal,
-          ),
-          _rowItem(
-            emoji: '\u{1F3CB}\uFE0F',
-            icon: Icons.fitness_center_outlined,
-            label: 'Exercise Target',
-            value: exerciseTarget,
           ),
           _rowItem(
             emoji: '\u{1F525}',
@@ -166,6 +146,26 @@ class WellnessProfileCard extends StatelessWidget {
             child: Text(
               'Your baseline helps VitalySync compare your daily logs with your usual routine.',
               style: TextStyle(height: 1.4, fontSize: 13, color: secondary),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: isSaving ? null : onEdit,
+              icon: const Icon(Icons.edit_outlined),
+              label: const Text(
+                'Edit Wellness Profile',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: themePrimary,
+                side: BorderSide(color: pageBorderColor(context)),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
             ),
           ),
         ],

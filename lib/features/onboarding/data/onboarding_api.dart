@@ -112,4 +112,22 @@ class OnboardingApi {
 
     return data;
   }
+
+  static Future<Map<String, dynamic>> updateWellnessProfile({
+    required int userId,
+    required Map<String, dynamic> profile,
+  }) async {
+    final response = await http.put(
+      Uri.parse(ApiConfig.onboarding('/$userId/wellness-profile')),
+      headers: await ApiConfig.jsonHeaders(),
+      body: jsonEncode(profile),
+    );
+
+    final data = _decodeMap(response);
+    if (response.statusCode != 200) {
+      throw Exception(data['message'] ?? 'Failed to save wellness profile');
+    }
+
+    return data;
+  }
 }

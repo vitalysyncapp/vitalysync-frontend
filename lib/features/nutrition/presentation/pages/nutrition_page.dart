@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../app/main_navigation.dart';
+import '../../../../shared/goals/user_goals.dart';
+import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
 import '../../../../shared/widgets/reveal_on_build.dart';
@@ -100,11 +102,14 @@ class _NutritionPageState extends State<NutritionPage> {
   List<ManualNutritionInput> _pendingManualMeals = [];
   List<String> _manualMealSuggestions = [];
   DailyNutritionSummary _dailySummary = DailyNutritionSummary.empty();
+  int _nutritionCalorieGoal = 2000;
 
   @override
   void initState() {
     super.initState();
     _selectedMealType = _recommendedMealType(_dailySummary);
+    UserGoalsService.refreshSignal.addListener(_handleGoalsChanged);
+    _loadNutritionGoal();
     _loadManualMealSuggestions();
     _loadDailyNutrition(showErrors: false);
   }
@@ -130,8 +135,24 @@ class _NutritionPageState extends State<NutritionPage> {
 
   @override
   void dispose() {
+    UserGoalsService.refreshSignal.removeListener(_handleGoalsChanged);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _handleGoalsChanged() {
+    _loadNutritionGoal();
+  }
+
+  Future<void> _loadNutritionGoal() async {
+    final session = await UserSessionController.instance.load();
+    final userId = session.userId ?? 0;
+    final goals = await UserGoalsService.fetch(userId: userId);
+
+    if (!mounted) return;
+    setState(() {
+      _nutritionCalorieGoal = goals.nutritionCalories;
+    });
   }
 
   Future<void> _pickFromCamera() async {
@@ -629,6 +650,7 @@ class _NutritionPageState extends State<NutritionPage> {
                     proteinG: _dailySummary.totalProteinG,
                     carbsG: _dailySummary.totalCarbsG,
                     fatG: _dailySummary.totalFatG,
+                    calorieGoal: _nutritionCalorieGoal,
                   ),
                 ),
                 SizedBox(height: sectionSpacing),

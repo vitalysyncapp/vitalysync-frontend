@@ -43,6 +43,8 @@ class ApiConfig {
     return '$baseUrl/api/exercise-goals$path';
   }
 
+  static String goals(String path) => '$baseUrl/api/goals$path';
+
   static Future<Map<String, String>> jsonHeaders() async {
     return {'Content-Type': 'application/json', ...await authHeaders()};
   }

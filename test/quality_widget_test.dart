@@ -6,6 +6,9 @@ import 'package:vitalysync/features/log/presentation/widgets/log_widgets.dart';
 import 'package:vitalysync/features/notifications/presentation/pages/notification_page.dart';
 import 'package:vitalysync/features/nutrition/presentation/widgets/today_nutrition_card.dart';
 import 'package:vitalysync/features/onboarding/presentation/pages/onboarding_page.dart';
+import 'package:vitalysync/features/profile/presentation/pages/profile_page.dart';
+import 'package:vitalysync/features/profile/presentation/widgets/wellness_profile_card.dart';
+import 'package:vitalysync/shared/goals/user_goals.dart';
 import 'package:vitalysync/shared/notifications/notification_feed_service.dart';
 
 import 'test_helpers.dart';
@@ -98,6 +101,7 @@ void main() {
         proteinG: 75,
         carbsG: 180,
         fatG: 42,
+        calorieGoal: 2200,
       ),
     );
 
@@ -106,6 +110,57 @@ void main() {
     expect(find.text('Protein'), findsOneWidget);
     expect(find.text('Carbs'), findsOneWidget);
     expect(find.text('Fats'), findsOneWidget);
+    expect(find.text('Goal: 2,200'), findsOneWidget);
+  });
+
+  testWidgets('profile wellness and goals sections are separated', (
+    tester,
+  ) async {
+    await pumpTestApp(
+      tester,
+      SingleChildScrollView(
+        child: Column(
+          children: [
+            WellnessProfileCard(
+              lifestyleType: 'Moderately Active',
+              currentRole: 'Student',
+              usualSleepTime: '10:30 PM',
+              usualWakeTime: '6:30 AM',
+              workIntensity: 'Medium',
+              burnoutLevel: 'Low',
+              burnoutScore: 24,
+              isSaving: false,
+              onEdit: () {},
+            ),
+            MyGoalsCard(
+              goals: UserGoalsSnapshot.defaults(
+                wellnessGoal: 'Improve sleep',
+                sleepHours: 8,
+                hydrationLiters: 2.5,
+                activityDaysPerWeek: 4,
+                dailySteps: 7000,
+                nutritionCalories: 2200,
+              ),
+              isSaving: false,
+              onEdit: () {},
+            ),
+          ],
+        ),
+      ),
+    );
+
+    expect(find.text('Wellness Profile'), findsOneWidget);
+    expect(find.text('Edit Wellness Profile'), findsOneWidget);
+    expect(find.text('Daily Water Goal'), findsNothing);
+    expect(find.text('Exercise Target'), findsNothing);
+
+    expect(find.text('My Goals'), findsOneWidget);
+    expect(find.text('Wellness Goal'), findsOneWidget);
+    expect(find.text('Sleep Goal'), findsOneWidget);
+    expect(find.text('Hydration Goal'), findsOneWidget);
+    expect(find.text('Activity Goal'), findsOneWidget);
+    expect(find.text('Daily Steps'), findsOneWidget);
+    expect(find.text('Nutrition Goal'), findsOneWidget);
   });
 
   testWidgets('notification card renders report metrics and priority', (
@@ -131,8 +186,9 @@ void main() {
       ),
     );
 
-    expect(find.text('Daily wellness report'), findsOneWidget);
-    expect(find.text('Sleep 7h'), findsOneWidget);
+    expect(find.text('Daily wellness report'), findsWidgets);
+    expect(find.text('Sleep'), findsOneWidget);
+    expect(find.text('7h'), findsOneWidget);
     expect(find.text('MEDIUM'), findsOneWidget);
   });
 }
