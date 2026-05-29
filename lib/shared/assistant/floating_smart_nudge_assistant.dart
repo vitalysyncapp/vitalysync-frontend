@@ -34,6 +34,8 @@ const _assistantExerciseSectionIndex = 1;
 
 enum _AssistantBubbleKind { smartNudge, nutrition, exercise }
 
+enum _AssistantDockEdge { left, right }
+
 String _shortAssistantText(String value, {int maxChars = 112}) {
   final clean = value.replaceAll(RegExp(r'\s+'), ' ').trim();
   if (clean.isEmpty) {
@@ -194,6 +196,7 @@ class _FloatingSmartNudgeAssistantState
   bool _isDragging = false;
   bool _isDialogOpen = false;
   bool _hasCustomPosition = false;
+  _AssistantDockEdge _dockEdge = _AssistantDockEdge.right;
   Offset _buttonOffset = Offset.zero;
   Timer? _bubbleSwitchTimer;
   List<ExerciseRecommendationModel> _recommendations = const [];
@@ -631,9 +634,9 @@ class _FloatingSmartNudgeAssistantState
     final isCompact = bounds.width < 390;
 
     return EdgeInsets.only(
-      left: safePadding.left + (isCompact ? 12 : 18),
+      left: safePadding.left,
       top: safePadding.top + 12,
-      right: safePadding.right + (isCompact ? 12 : 18),
+      right: safePadding.right,
       bottom: safePadding.bottom + (isCompact ? 104 : 112),
     );
   }
@@ -661,12 +664,45 @@ class _FloatingSmartNudgeAssistantState
     );
   }
 
+  double _dockedButtonX(
+    _AssistantDockEdge edge,
+    Size bounds,
+    EdgeInsets padding,
+  ) {
+    final maxX = max(
+      padding.left,
+      bounds.width - padding.right - widget.buttonSize,
+    );
+
+    return edge == _AssistantDockEdge.left ? padding.left : maxX;
+  }
+
+  _AssistantDockEdge _nearestDockEdge(Offset offset, Size bounds) {
+    return offset.dx + (widget.buttonSize / 2) < bounds.width / 2
+        ? _AssistantDockEdge.left
+        : _AssistantDockEdge.right;
+  }
+
+  Offset _snapButtonOffsetToEdge(
+    Offset offset,
+    Size bounds,
+    EdgeInsets padding,
+    _AssistantDockEdge edge,
+  ) {
+    final clampedOffset = _clampButtonOffset(offset, bounds, padding);
+    return Offset(_dockedButtonX(edge, bounds, padding), clampedOffset.dy);
+  }
+
   Offset _effectiveButtonOffset(Size bounds, EdgeInsets padding) {
     if (!_hasCustomPosition) {
       return _defaultButtonOffset(bounds, padding);
     }
 
-    return _clampButtonOffset(_buttonOffset, bounds, padding);
+    if (_isDragging) {
+      return _clampButtonOffset(_buttonOffset, bounds, padding);
+    }
+
+    return _snapButtonOffsetToEdge(_buttonOffset, bounds, padding, _dockEdge);
   }
 
   double _bubbleLeft(
@@ -688,11 +724,12 @@ class _FloatingSmartNudgeAssistantState
 
   void _handlePanStart(Size bounds, EdgeInsets padding) {
     _bubbleSwitchTimer?.cancel();
+    final currentOffset = _effectiveButtonOffset(bounds, padding);
 
     setState(() {
       _isDragging = true;
       _hasCustomPosition = true;
-      _buttonOffset = _effectiveButtonOffset(bounds, padding);
+      _buttonOffset = currentOffset;
     });
   }
 
@@ -711,9 +748,17 @@ class _FloatingSmartNudgeAssistantState
   }
 
   void _handlePanEnd(Size bounds, EdgeInsets padding) {
+    final dockEdge = _nearestDockEdge(_buttonOffset, bounds);
+
     setState(() {
       _isDragging = false;
-      _buttonOffset = _clampButtonOffset(_buttonOffset, bounds, padding);
+      _dockEdge = dockEdge;
+      _buttonOffset = _snapButtonOffsetToEdge(
+        _buttonOffset,
+        bounds,
+        padding,
+        dockEdge,
+      );
     });
 
     if (_isBubbleVisible) {

@@ -219,34 +219,13 @@ class _ProfilePageState extends State<ProfilePage> {
     required int? age,
     required String? gender,
     required String? userType,
-    required String lifestyleType,
-    required String workIntensity,
-    required String sleepSchedule,
-    required String waterGoal,
-    required String exerciseTarget,
   }) async {
     if (_userId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Profile can only be edited after a session is loaded.',
-          ),
-        ),
-      );
       return false;
     }
     setState(() => _isSaving = true);
-    final prefs = await SharedPreferences.getInstance();
 
     try {
-      final scheduleParts = _parseSleepSchedule(sleepSchedule);
-      final normalizedSleep = _fallbackValue(
-        sleepSchedule,
-        '10:30 PM - 6:30 AM',
-      );
-      final normalizedWater = _fallbackValue(waterGoal, '2.5 L');
-      final normalizedExercise =
-          '${_parseExerciseDays(exerciseTarget)} days/week';
       await UserSessionController.instance.updateProfile(
         userId: _userId!,
         username: username,
@@ -255,29 +234,6 @@ class _ProfilePageState extends State<ProfilePage> {
         gender: gender,
         userType: userType,
       );
-      await OnboardingApi.updateWellnessProfile(
-        userId: _userId!,
-        profile: {
-          'role': userType ?? 'Other',
-          'lifestyle_type': lifestyleType,
-          'usual_sleep_time': scheduleParts['sleep'],
-          'usual_wake_time': scheduleParts['wake'],
-          'workload_level': _workloadLevelFromIntensity(workIntensity),
-        },
-      );
-      final updatedGoals = _goals.copyWith(
-        hydrationLiters: _parseLiters(normalizedWater),
-        activityDaysPerWeek: _parseExerciseDays(normalizedExercise),
-      );
-      final savedGoals = await UserGoalsService.save(
-        userId: _userId!,
-        goals: updatedGoals,
-      );
-      await prefs.setString(_sleepScheduleKey, normalizedSleep);
-      await prefs.setString(
-        _waterGoalKey,
-        _formatLiters(savedGoals.hydrationLiters),
-      );
       if (!mounted) return false;
       setState(() {
         _username = username;
@@ -285,21 +241,9 @@ class _ProfilePageState extends State<ProfilePage> {
         _age = age;
         _gender = _emptyToNull(gender);
         _userType = _emptyToNull(userType);
-        _sleepSchedule = normalizedSleep;
-        _lifestyleType = lifestyleType;
-        _workIntensity = workIntensity;
-        _waterGoal = _formatLiters(savedGoals.hydrationLiters);
-        _exerciseTarget = '${savedGoals.activityDaysPerWeek} days/week';
-        _wellnessGoal = savedGoals.wellnessGoal;
-        _goals = savedGoals;
       });
       return true;
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Unable to update profile: $error')),
-        );
-      }
+    } catch (_) {
       return false;
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -313,21 +257,11 @@ class _ProfilePageState extends State<ProfilePage> {
     required String sleepSchedule,
   }) async {
     if (_userId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Wellness profile can only be edited after a session is loaded.',
-          ),
-        ),
-      );
       return false;
     }
 
     final scheduleParts = _parseSleepSchedule(sleepSchedule);
     if (scheduleParts['sleep'] == null || scheduleParts['wake'] == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Use a valid sleep schedule.')),
-      );
       return false;
     }
 
@@ -366,12 +300,7 @@ class _ProfilePageState extends State<ProfilePage> {
         _usualWakeTime = _formatTimeForDisplay(scheduleParts['wake']!);
       });
       return true;
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Unable to update wellness profile: $error')),
-        );
-      }
+    } catch (_) {
       return false;
     } finally {
       if (mounted) setState(() => _isSavingWellness = false);
@@ -380,11 +309,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<bool> _saveGoalChanges(UserGoalsSnapshot goals) async {
     if (_userId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Goals can only be edited after a session is loaded.'),
-        ),
-      );
       return false;
     }
 
@@ -415,12 +339,7 @@ class _ProfilePageState extends State<ProfilePage> {
         _exerciseTarget = '${savedGoals.activityDaysPerWeek} days/week';
       });
       return true;
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Unable to update goals: $error')),
-        );
-      }
+    } catch (_) {
       return false;
     } finally {
       if (mounted) setState(() => _isSavingGoals = false);
@@ -447,15 +366,6 @@ class _ProfilePageState extends State<ProfilePage> {
               'others': 'Other',
             },
           ),
-          initialLifestyle:
-              _dropdownValueOrNull(_lifestyleType, _lifestyleOptions) ??
-              'Moderately Active',
-          initialWorkIntensity:
-              _dropdownValueOrNull(_workIntensity, _workIntensityOptions) ??
-              'Medium',
-          initialSleepSchedule: _sleepSchedule,
-          initialWaterGoal: _waterGoal,
-          initialExerciseTarget: _exerciseTarget,
           onSave:
               ({
                 required String username,
@@ -463,11 +373,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 required int? age,
                 required String? gender,
                 required String? userType,
-                required String lifestyleType,
-                required String workIntensity,
-                required String sleepSchedule,
-                required String waterGoal,
-                required String exerciseTarget,
               }) {
                 return _saveProfileChanges(
                   username: username,
@@ -475,11 +380,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   age: age,
                   gender: gender,
                   userType: userType,
-                  lifestyleType: lifestyleType,
-                  workIntensity: workIntensity,
-                  sleepSchedule: sleepSchedule,
-                  waterGoal: waterGoal,
-                  exerciseTarget: exerciseTarget,
                 );
               },
         ),

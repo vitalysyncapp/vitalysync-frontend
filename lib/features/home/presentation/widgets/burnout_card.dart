@@ -1,10 +1,21 @@
 import 'package:flutter/material.dart';
 
+import '../../../dashboard/data/burnout_score_api.dart';
+import 'burnout_info_dialog.dart';
+
 class BurnoutCard extends StatelessWidget {
   final int score;
   final String status;
+  final BurnoutScoreSnapshot? latestScore;
+  final BurnoutPatternSummary? patternSummary;
 
-  const BurnoutCard({super.key, required this.score, required this.status});
+  const BurnoutCard({
+    super.key,
+    required this.score,
+    required this.status,
+    this.latestScore,
+    this.patternSummary,
+  });
 
   // Base gradient colors
   List<Color> _baseGradientColors() {
@@ -24,7 +35,11 @@ class BurnoutCard extends StatelessWidget {
   // Adjust gradient and glow for dark mode
   List<Color> getGradientColors(bool isDark) {
     final colors = _baseGradientColors();
-    if (isDark) return colors.map((c) => c.withValues(alpha: 0.85)).toList();
+    if (isDark) {
+      return colors
+          .map((color) => Color.lerp(const Color(0xFF071827), color, 0.72)!)
+          .toList();
+    }
     return colors;
   }
 
@@ -41,6 +56,24 @@ class BurnoutCard extends StatelessWidget {
     if (score > 80) return Colors.redAccent.withValues(alpha: 0.6);
     if (score > 60) return Colors.orangeAccent.withValues(alpha: 0.5);
     return Colors.transparent;
+  }
+
+  void _showInfoDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return BurnoutInfoDialog(
+          score: score,
+          status: status,
+          latestScore: latestScore,
+          patternSummary: patternSummary,
+          accentColors: getGradientColors(isDark),
+        );
+      },
+    );
   }
 
   @override
@@ -62,11 +95,16 @@ class BurnoutCard extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.12)
+              : Colors.white.withValues(alpha: 0.18),
+        ),
         boxShadow: glowColor != Colors.transparent
             ? [
                 BoxShadow(
-                  color: glowColor,
-                  blurRadius: 14,
+                  color: isDark ? glowColor.withValues(alpha: 0.42) : glowColor,
+                  blurRadius: isDark ? 18 : 14,
                   spreadRadius: 1,
                   offset: const Offset(0, 0),
                 ),
@@ -84,12 +122,37 @@ class BurnoutCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Burnout Risk Score',
-            style: TextStyle(
-              color: textColor.withValues(alpha: 0.7),
-              fontSize: 14,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Burnout Risk Score',
+                  style: TextStyle(
+                    color: textColor.withValues(alpha: 0.7),
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 30,
+                height: 30,
+                child: DecoratedBox(
+                  decoration: const BoxDecoration(
+                    color: Colors.white24,
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    tooltip: 'About burnout score',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    iconSize: 15,
+                    color: textColor,
+                    onPressed: () => _showInfoDialog(context),
+                    icon: const Icon(Icons.question_mark_rounded),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Row(

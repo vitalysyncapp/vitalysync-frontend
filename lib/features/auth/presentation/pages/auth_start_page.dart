@@ -16,6 +16,7 @@ class AuthStartPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return AuthScaffold(
       illustrationAsset: authHealthyLifestyleAsset,
+      topOverlayAsset: authMeditationAsset,
       bottomOverlayAssets: const [authHealthyLifestyleAsset, authWorkoutAsset],
       child: AuthGlassPanel(
         padding: const EdgeInsets.fromLTRB(24, 26, 24, 24),

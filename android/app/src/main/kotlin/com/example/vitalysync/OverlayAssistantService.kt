@@ -10,6 +10,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.Rect
+import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
@@ -42,6 +43,11 @@ class OverlayAssistantService : Service() {
         private const val nativePrefsName = "vitalysync_overlay"
         private const val keyBubbleX = "bubble_x"
         private const val keyBubbleY = "bubble_y"
+        private const val keyBubbleDockSide = "bubble_dock_side"
+        private const val bubbleWindowSizeDp = 88
+        private const val bubbleVisualSizeDp = 58
+        private const val dockSideLeft = "left"
+        private const val dockSideRight = "right"
     }
 
     private lateinit var windowManager: WindowManager
@@ -312,7 +318,7 @@ class OverlayAssistantService : Service() {
         val root = rootView ?: return
         flutterEngine?.lifecycleChannel?.appIsResumed()
         val metrics = resources.displayMetrics
-        val bubbleSize = dpToPx(88)
+        val bubbleSize = dpToPx(bubbleWindowSizeDp)
         val params = windowLayoutParams ?: WindowManager.LayoutParams(
             bubbleSize,
             bubbleSize,
@@ -328,9 +334,10 @@ class OverlayAssistantService : Service() {
         params.width = bubbleSize
         params.height = bubbleSize
 
-        val savedX = overlayPrefs().getInt(keyBubbleX, metrics.widthPixels - bubbleSize - dpToPx(18))
-        val savedY = overlayPrefs().getInt(keyBubbleY, metrics.heightPixels - bubbleSize - dpToPx(180))
-        params.x = savedX
+        val prefs = overlayPrefs()
+        val savedX = prefs.getInt(keyBubbleX, metrics.widthPixels - bubbleSize - dpToPx(18))
+        val savedY = prefs.getInt(keyBubbleY, metrics.heightPixels - bubbleSize - dpToPx(180))
+        params.x = dockedBubbleX(resolveBubbleDockSide(savedX), params)
         params.y = savedY
         clampBubblePosition(params)
         windowLayoutParams = params
@@ -550,29 +557,82 @@ class OverlayAssistantService : Service() {
 
     private fun clampBubblePosition(params: WindowManager.LayoutParams) {
         val metrics = resources.displayMetrics
-        val margin = dpToPx(8)
-        val maxX = (metrics.widthPixels - params.width - margin).coerceAtLeast(margin)
-        val maxY = (metrics.heightPixels - params.height - dpToPx(120)).coerceAtLeast(margin)
-        params.x = params.x.coerceIn(margin, maxX)
-        params.y = params.y.coerceIn(margin, maxY)
+        val verticalMargin = dpToPx(8)
+        val minX = bubbleMinDockX(params)
+        val maxX = bubbleMaxDockX(params).coerceAtLeast(minX)
+        val maxY = (metrics.heightPixels - params.height - dpToPx(120)).coerceAtLeast(verticalMargin)
+        params.x = params.x.coerceIn(minX, maxX)
+        params.y = params.y.coerceIn(verticalMargin, maxY)
     }
 
     private fun snapBubbleToEdge(params: WindowManager.LayoutParams) {
         val metrics = resources.displayMetrics
-        val margin = dpToPx(8)
         val middle = metrics.widthPixels / 2
-        params.x = if (params.x + (params.width / 2) < middle) {
-            margin
+        val dockSide = if (params.x + (params.width / 2) < middle) {
+            dockSideLeft
         } else {
-            (metrics.widthPixels - params.width - margin).coerceAtLeast(margin)
+            dockSideRight
+        }
+        params.x = if (dockSide == dockSideLeft) {
+            bubbleMinDockX(params)
+        } else {
+            bubbleMaxDockX(params)
         }
         clampBubblePosition(params)
+    }
+
+    private fun resolveBubbleDockSide(savedX: Int): String {
+        val savedSide = overlayPrefs().getString(keyBubbleDockSide, null)
+        if (savedSide == dockSideLeft || savedSide == dockSideRight) {
+            return savedSide
+        }
+
+        val metrics = resources.displayMetrics
+        return if (savedX + (dpToPx(bubbleWindowSizeDp) / 2) < metrics.widthPixels / 2) {
+            dockSideLeft
+        } else {
+            dockSideRight
+        }
+    }
+
+    private fun dockedBubbleX(
+        dockSide: String,
+        params: WindowManager.LayoutParams,
+    ): Int {
+        return if (dockSide == dockSideLeft) {
+            bubbleMinDockX(params)
+        } else {
+            bubbleMaxDockX(params)
+        }
+    }
+
+    private fun bubbleHorizontalVisualInset(params: WindowManager.LayoutParams): Int {
+        return ((params.width - dpToPx(bubbleVisualSizeDp)) / 2).coerceAtLeast(0)
+    }
+
+    private fun bubbleMinDockX(params: WindowManager.LayoutParams): Int {
+        return -bubbleHorizontalVisualInset(params)
+    }
+
+    private fun bubbleMaxDockX(params: WindowManager.LayoutParams): Int {
+        val metrics = resources.displayMetrics
+        return metrics.widthPixels - params.width + bubbleHorizontalVisualInset(params)
+    }
+
+    private fun currentBubbleDockSide(params: WindowManager.LayoutParams): String {
+        val metrics = resources.displayMetrics
+        return if (params.x + (params.width / 2) < metrics.widthPixels / 2) {
+            dockSideLeft
+        } else {
+            dockSideRight
+        }
     }
 
     private fun persistBubblePosition(params: WindowManager.LayoutParams) {
         overlayPrefs().edit()
             .putInt(keyBubbleX, params.x)
             .putInt(keyBubbleY, params.y)
+            .putString(keyBubbleDockSide, currentBubbleDockSide(params))
             .apply()
     }
 
@@ -588,7 +648,10 @@ class OverlayAssistantService : Service() {
             gravity = Gravity.CENTER
             textSize = 24f
             setTextColor(Color.WHITE)
-            setBackgroundColor(Color.argb(215, 205, 56, 69))
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(Color.argb(215, 205, 56, 69))
+            }
             alpha = 0.92f
         }
 

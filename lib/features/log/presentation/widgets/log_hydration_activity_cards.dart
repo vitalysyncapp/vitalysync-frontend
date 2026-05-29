@@ -126,130 +126,154 @@ extension _LogHydrationActivityCards on LogWidgets {
 
   Widget _buildSymptomsCard() {
     return _buildCard(
-      child: Column(
-        children: [
-          _sectionHeader(
-            icon: Icons.monitor_heart_outlined,
-            iconBg: const Color(0xFFFFE1E1),
-            iconColor: const Color(0xFFEF4444),
-            title: "Symptoms",
-            subtitle: "Any symptoms today?",
-          ),
-          const SizedBox(height: 7),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: symptoms.map((symptom) {
-              final selected = selectedSymptoms.contains(symptom);
-              return GestureDetector(
-                onTap: () => onSymptomToggle(symptom),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: selected ? const Color(0xFFFFF1F2) : Colors.white,
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: selected
-                          ? const Color(0xFFEF4444)
-                          : const Color(0xFFD1D5DB),
-                      width: selected ? 1.6 : 1.3,
-                    ),
-                    boxShadow: selected
-                        ? [
-                            BoxShadow(
-                              color: const Color(
+      child: Builder(
+        builder: (context) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+
+          return Column(
+            children: [
+              _sectionHeader(
+                icon: Icons.monitor_heart_outlined,
+                iconBg: const Color(0xFFFFE1E1),
+                iconColor: const Color(0xFFEF4444),
+                title: "Symptoms",
+                subtitle: "Any symptoms today?",
+              ),
+              const SizedBox(height: 7),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: symptoms.map((symptom) {
+                  final selected = selectedSymptoms.contains(symptom);
+                  return GestureDetector(
+                    onTap: () => onSymptomToggle(symptom),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? const Color(
                                 0xFFEF4444,
-                              ).withValues(alpha: 0.15),
-                              blurRadius: 8,
-                              spreadRadius: 1,
-                              offset: const Offset(0, 2),
-                            ),
-                          ]
-                        : [],
-                  ),
-                  child: Text(
-                    symptom,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                      color: selected
-                          ? const Color(0xFFB91C1C)
-                          : const Color(0xFF334155),
+                              ).withValues(alpha: isDark ? 0.16 : 0.08)
+                            : pageSubtleSurfaceColor(context),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: selected
+                              ? const Color(0xFFEF4444)
+                              : pageBorderColor(context),
+                          width: selected ? 1.6 : 1.3,
+                        ),
+                        boxShadow: selected
+                            ? [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFFEF4444,
+                                  ).withValues(alpha: 0.15),
+                                  blurRadius: 8,
+                                  spreadRadius: 1,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : [],
+                      ),
+                      child: Text(
+                        symptom,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: selected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                          color: selected
+                              ? const Color(0xFFFF6B6B)
+                              : pagePrimaryTextColor(context),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
+                  );
+                }).toList(),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
   Widget _buildHabitsCard() {
     return _buildCard(
-      child: Column(
-        children: [
-          _sectionHeader(
-            icon: Icons.spa_outlined,
-            iconBg: const Color(0xFFE7F8EF),
-            iconColor: const Color(0xFF16A34A),
-            title: "Recovery Habits",
-            subtitle: "Pick what helped you rest or feel supported today.",
-          ),
-          const SizedBox(height: 7),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: habits.map((habit) {
-              final selected = selectedHabits.contains(habit);
-              return GestureDetector(
-                onTap: () => onHabitToggle(habit),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: selected ? const Color(0xFFECFDF5) : Colors.white,
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: selected
-                          ? const Color(0xFF16A34A)
-                          : const Color(0xFFD1D5DB),
-                      width: selected ? 1.6 : 1.3,
-                    ),
-                    boxShadow: selected
-                        ? [
-                            BoxShadow(
-                              color: const Color(
+      child: Builder(
+        builder: (context) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+
+          return Column(
+            children: [
+              _sectionHeader(
+                icon: Icons.spa_outlined,
+                iconBg: const Color(0xFFE7F8EF),
+                iconColor: const Color(0xFF16A34A),
+                title: "Recovery Habits",
+                subtitle: "Pick what helped you rest or feel supported today.",
+              ),
+              const SizedBox(height: 7),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: habits.map((habit) {
+                  final selected = selectedHabits.contains(habit);
+                  return GestureDetector(
+                    onTap: () => onHabitToggle(habit),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? const Color(
                                 0xFF16A34A,
-                              ).withValues(alpha: 0.15),
-                              blurRadius: 8,
-                              spreadRadius: 1,
-                              offset: const Offset(0, 2),
-                            ),
-                          ]
-                        : [],
-                  ),
-                  child: Text(
-                    habit,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                      color: selected
-                          ? const Color(0xFF166534)
-                          : const Color(0xFF334155),
+                              ).withValues(alpha: isDark ? 0.16 : 0.08)
+                            : pageSubtleSurfaceColor(context),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: selected
+                              ? const Color(0xFF16A34A)
+                              : pageBorderColor(context),
+                          width: selected ? 1.6 : 1.3,
+                        ),
+                        boxShadow: selected
+                            ? [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFF16A34A,
+                                  ).withValues(alpha: 0.15),
+                                  blurRadius: 8,
+                                  spreadRadius: 1,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : [],
+                      ),
+                      child: Text(
+                        habit,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: selected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                          color: selected
+                              ? const Color(0xFF4ADE80)
+                              : pagePrimaryTextColor(context),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
+                  );
+                }).toList(),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

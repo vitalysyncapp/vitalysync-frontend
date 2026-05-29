@@ -285,12 +285,14 @@ class _OptionTile extends StatelessWidget {
   final String label;
   final IconData icon;
   final bool selected;
+  final bool multiSelect;
   final VoidCallback onTap;
 
   const _OptionTile({
     required this.label,
     required this.icon,
     required this.selected,
+    this.multiSelect = false,
     required this.onTap,
   });
 
@@ -353,7 +355,11 @@ class _OptionTile extends StatelessWidget {
                 duration: const Duration(milliseconds: 160),
                 child: Icon(
                   selected
-                      ? Icons.check_circle_rounded
+                      ? multiSelect
+                            ? Icons.check_box_rounded
+                            : Icons.check_circle_rounded
+                      : multiSelect
+                      ? Icons.check_box_outline_blank_rounded
                       : Icons.radio_button_unchecked_rounded,
                   key: ValueKey(selected),
                   color: selected

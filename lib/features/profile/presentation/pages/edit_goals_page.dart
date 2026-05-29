@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/goals/user_goals.dart';
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/validation_dialog.dart';
 
 typedef EditGoalsSaveCallback = Future<bool> Function(UserGoalsSnapshot goals);
 
@@ -21,7 +22,7 @@ class EditGoalsPage extends StatefulWidget {
 
 class _EditGoalsPageState extends State<EditGoalsPage> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _wellnessController;
+  late final List<String> _wellnessGoals;
   late final TextEditingController _sleepController;
   late final TextEditingController _hydrationController;
   late final TextEditingController _activityController;
@@ -33,7 +34,7 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
   void initState() {
     super.initState();
     final goals = widget.initialGoals;
-    _wellnessController = TextEditingController(text: goals.wellnessGoal);
+    _wellnessGoals = List<String>.from(goals.wellnessGoals);
     _sleepController = TextEditingController(
       text: _formatNumber(goals.sleepHours),
     );
@@ -51,7 +52,6 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
 
   @override
   void dispose() {
-    _wellnessController.dispose();
     _sleepController.dispose();
     _hydrationController.dispose();
     _activityController.dispose();
@@ -61,12 +61,28 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
   }
 
   Future<void> _handleSave() async {
+    if (_wellnessGoals.isEmpty) {
+      await ValidationDialog.show(
+        context,
+        title: 'Check your goals',
+        message: 'Choose at least one wellness goal before saving.',
+        type: ValidationDialogType.error,
+      );
+      return;
+    }
+
     if (_formKey.currentState?.validate() != true) {
+      await ValidationDialog.show(
+        context,
+        title: 'Check your goals',
+        message: 'Fix the highlighted fields before saving changes.',
+        type: ValidationDialogType.error,
+      );
       return;
     }
 
     final goals = UserGoalsSnapshot.defaults(
-      wellnessGoal: _wellnessController.text.trim(),
+      wellnessGoals: _wellnessGoals,
       sleepHours: double.parse(_sleepController.text.trim()),
       hydrationLiters: double.parse(_hydrationController.text.trim()),
       activityDaysPerWeek: int.parse(_activityController.text.trim()),
@@ -80,17 +96,26 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
       if (!mounted) return;
 
       if (didSave) {
-        ScaffoldMessenger.of(
+        setState(() => _isSubmitting = false);
+        await ValidationDialog.show(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Goals updated.')));
-        Navigator.of(context).pop(true);
+          title: 'Goals updated',
+          message: 'Your wellness goals were saved successfully.',
+          type: ValidationDialogType.success,
+        );
+        if (mounted && Navigator.of(context).canPop()) {
+          Navigator.of(context).pop(true);
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Unable to update goals.')),
+        await ValidationDialog.show(
+          context,
+          title: 'Unable to save',
+          message: 'Please check your goals and try again.',
+          type: ValidationDialogType.error,
         );
       }
     } finally {
-      if (mounted) {
+      if (mounted && _isSubmitting) {
         setState(() => _isSubmitting = false);
       }
     }
@@ -133,15 +158,7 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
             key: _formKey,
             child: _GoalsEditorCard(
               children: [
-                _buildTextField(
-                  controller: _wellnessController,
-                  label: 'Wellness Goal',
-                  icon: Icons.flag_outlined,
-                  validator: (value) {
-                    final text = value?.trim() ?? '';
-                    return text.isEmpty ? 'Enter a wellness goal' : null;
-                  },
-                ),
+                _buildWellnessGoalPicker(),
                 _buildNumberField(
                   controller: _sleepController,
                   label: 'Sleep Goal',
@@ -239,6 +256,60 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
     );
   }
 
+  Widget _buildWellnessGoalPicker() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        children: [
+          for (final goal in kWellnessGoalOptions)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _GoalChoiceTile(
+                label: goal,
+                icon: _iconForWellnessGoal(goal),
+                selected: _wellnessGoals.contains(goal),
+                onTap: () => _toggleWellnessGoal(goal),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _toggleWellnessGoal(String goal) {
+    setState(() {
+      if (_wellnessGoals.contains(goal)) {
+        _wellnessGoals.remove(goal);
+      } else {
+        _wellnessGoals.add(goal);
+      }
+      _wellnessGoals.sort(
+        (a, b) => kWellnessGoalOptions
+            .indexOf(a)
+            .compareTo(kWellnessGoalOptions.indexOf(b)),
+      );
+    });
+  }
+
+  IconData _iconForWellnessGoal(String goal) {
+    switch (goal) {
+      case 'Reduce stress':
+        return Icons.spa_outlined;
+      case 'Improve sleep':
+        return Icons.bedtime_outlined;
+      case 'Be more active':
+        return Icons.directions_bike_rounded;
+      case 'Improve focus':
+        return Icons.center_focus_strong_rounded;
+      case 'Build healthier habits':
+        return Icons.eco_outlined;
+      case 'Manage burnout':
+        return Icons.local_fire_department_outlined;
+      default:
+        return Icons.flag_outlined;
+    }
+  }
+
   Widget _buildNumberField({
     required TextEditingController controller,
     required String label,
@@ -293,6 +364,83 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
+      ),
+    );
+  }
+}
+
+class _GoalChoiceTile extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _GoalChoiceTile({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected
+              ? primary.withValues(alpha: 0.12)
+              : isDark
+              ? Colors.white.withValues(alpha: 0.05)
+              : const Color(0xFFF8FAFF),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected ? primary : pageBorderColor(context),
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: selected
+                    ? primary
+                    : primary.withValues(alpha: isDark ? 0.16 : 0.1),
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: selected ? Colors.white : primary,
+              ),
+            ),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: pagePrimaryTextColor(context),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Icon(
+              selected
+                  ? Icons.check_box_rounded
+                  : Icons.check_box_outline_blank_rounded,
+              color: selected ? primary : pageSecondaryTextColor(context),
+            ),
+          ],
+        ),
       ),
     );
   }

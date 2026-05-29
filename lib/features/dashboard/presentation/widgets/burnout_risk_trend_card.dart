@@ -358,18 +358,10 @@ class BurnoutRiskTrendCard extends StatelessWidget {
   }
 
   BoxDecoration _cardDecoration(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return BoxDecoration(
       color: pageSurfaceColor(context),
       borderRadius: BorderRadius.circular(18),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.06),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
-        ),
-      ],
+      boxShadow: pageCardShadow(context),
       border: Border.all(color: pageBorderColor(context)),
     );
   }

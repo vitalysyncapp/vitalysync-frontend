@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/theme/app_page_style.dart';
+
 class InfoCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -25,30 +27,16 @@ class InfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // Card background color adapts to theme
-    final cardBackground = isDark ? Colors.grey[850] : Colors.white;
-
-    // Shadow for depth
-    final boxShadow = [
-      BoxShadow(
-        color: isDark
-            ? Colors.black.withValues(alpha: 0.5)
-            : Colors.grey.withValues(alpha: 0.2),
-        blurRadius: 8,
-        offset: const Offset(0, 4),
-      ),
-    ];
-
-    final textColor = isDark ? Colors.white : Colors.black87;
-    final subtitleColor = isDark ? Colors.white70 : Colors.grey[600];
+    final textColor = pagePrimaryTextColor(context);
+    final subtitleColor = pageSecondaryTextColor(context);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
       decoration: BoxDecoration(
-        color: cardBackground,
+        color: pageSurfaceColor(context),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: boxShadow,
+        border: Border.all(color: pageBorderColor(context)),
+        boxShadow: pageCardShadow(context),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -105,7 +93,9 @@ class InfoCard extends StatelessWidget {
                 color: (statusColor ?? color).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(
-                  color: (statusColor ?? color).withValues(alpha: 0.22),
+                  color: (statusColor ?? color).withValues(
+                    alpha: isDark ? 0.34 : 0.22,
+                  ),
                 ),
               ),
               child: Text(

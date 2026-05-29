@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -16,8 +16,11 @@ class OverlayAssistantController {
     'vitalysync/assistant_overlay',
   );
 
+  bool get _isAndroid =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
   Future<bool> isOverlayPermissionGranted() async {
-    if (!Platform.isAndroid) {
+    if (!_isAndroid) {
       return false;
     }
 
@@ -34,7 +37,7 @@ class OverlayAssistantController {
   }
 
   Future<void> openOverlayPermissionSettings() async {
-    if (!Platform.isAndroid) {
+    if (!_isAndroid) {
       return;
     }
 
@@ -42,7 +45,7 @@ class OverlayAssistantController {
   }
 
   Future<void> startOverlayService() async {
-    if (!Platform.isAndroid) {
+    if (!_isAndroid) {
       return;
     }
 
@@ -50,7 +53,7 @@ class OverlayAssistantController {
   }
 
   Future<void> stopOverlayService() async {
-    if (!Platform.isAndroid) {
+    if (!_isAndroid) {
       return;
     }
 
@@ -58,7 +61,7 @@ class OverlayAssistantController {
   }
 
   Future<void> disableForLogout() async {
-    if (!Platform.isAndroid) {
+    if (!_isAndroid) {
       return;
     }
 
@@ -67,7 +70,7 @@ class OverlayAssistantController {
   }
 
   Future<void> collapseOverlay() async {
-    if (!Platform.isAndroid) {
+    if (!_isAndroid) {
       return;
     }
 
@@ -75,7 +78,7 @@ class OverlayAssistantController {
   }
 
   Future<void> openApp({String payload = ''}) async {
-    if (!Platform.isAndroid) {
+    if (!_isAndroid) {
       return;
     }
 
@@ -91,7 +94,7 @@ class OverlayAssistantController {
     required String payload,
     required String notificationType,
   }) async {
-    if (!Platform.isAndroid) {
+    if (!_isAndroid) {
       return;
     }
 
@@ -107,7 +110,7 @@ class OverlayAssistantController {
   }
 
   Future<void> cancelReminderPreview(int id) async {
-    if (!Platform.isAndroid) {
+    if (!_isAndroid) {
       return;
     }
 
@@ -119,7 +122,7 @@ class OverlayAssistantController {
     required String title,
     required String body,
   }) async {
-    if (!Platform.isAndroid) {
+    if (!_isAndroid) {
       return false;
     }
 
@@ -131,7 +134,7 @@ class OverlayAssistantController {
   }
 
   Future<void> syncSettings(AppPreferencesState prefs) async {
-    if (!Platform.isAndroid) {
+    if (!_isAndroid) {
       return;
     }
 
@@ -144,7 +147,7 @@ class OverlayAssistantController {
     required bool isForeground,
     required AppPreferencesState prefs,
   }) async {
-    if (!Platform.isAndroid) {
+    if (!_isAndroid) {
       return;
     }
 
@@ -179,7 +182,7 @@ class OverlayAssistantController {
   }
 
   Future<bool> ensurePermissionWithPrompt(BuildContext context) async {
-    if (!Platform.isAndroid) {
+    if (!_isAndroid) {
       return false;
     }
 

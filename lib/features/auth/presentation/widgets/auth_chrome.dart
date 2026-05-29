@@ -9,12 +9,14 @@ import '../../../../shared/theme/animated_gradient_background.dart';
 import '../../../../shared/theme/app_page_style.dart';
 
 const authHealthyLifestyleAsset = 'assets/images/auth_healthy_lifestyle.svg';
+const authMeditationAsset = 'assets/images/auth_meditation.svg';
 const authWorkoutAsset = 'assets/images/auth_workout.svg';
 const authWorkStressAsset = 'assets/images/auth_work_stress.svg';
 
 class AuthScaffold extends StatelessWidget {
   final Widget child;
   final String illustrationAsset;
+  final String? topOverlayAsset;
   final List<String>? bottomOverlayAssets;
   final EdgeInsetsGeometry padding;
   final bool centerContent;
@@ -23,6 +25,7 @@ class AuthScaffold extends StatelessWidget {
     super.key,
     required this.child,
     required this.illustrationAsset,
+    this.topOverlayAsset,
     this.bottomOverlayAssets,
     this.padding = const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
     this.centerContent = true,
@@ -38,6 +41,7 @@ class AuthScaffold extends StatelessWidget {
           children: [
             _BackgroundHealthMotif(
               illustrationAsset: illustrationAsset,
+              topOverlayAsset: topOverlayAsset,
               bottomOverlayAssets: bottomOverlayAssets,
             ),
             SafeArea(
@@ -70,10 +74,12 @@ class AuthScaffold extends StatelessWidget {
 
 class _BackgroundHealthMotif extends StatefulWidget {
   final String illustrationAsset;
+  final String? topOverlayAsset;
   final List<String>? bottomOverlayAssets;
 
   const _BackgroundHealthMotif({
     required this.illustrationAsset,
+    required this.topOverlayAsset,
     required this.bottomOverlayAssets,
   });
 
@@ -119,6 +125,7 @@ class _BackgroundHealthMotifState extends State<_BackgroundHealthMotif>
           if (bottomAssets != null && bottomAssets.isNotEmpty) {
             return _BottomSvgOverlay(
               assets: bottomAssets,
+              topAsset: widget.topOverlayAsset,
               lift: lift,
               opacity: isDark ? 0.20 : 0.34,
               primaryColor: primary,
@@ -183,12 +190,14 @@ class _BackgroundHealthMotifState extends State<_BackgroundHealthMotif>
 
 class _BottomSvgOverlay extends StatelessWidget {
   final List<String> assets;
+  final String? topAsset;
   final double lift;
   final double opacity;
   final Color primaryColor;
 
   const _BottomSvgOverlay({
     required this.assets,
+    required this.topAsset,
     required this.lift,
     required this.opacity,
     required this.primaryColor,
@@ -199,15 +208,31 @@ class _BottomSvgOverlay extends StatelessWidget {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final primaryAsset = assets.first;
     final secondaryAsset = assets.length > 1 ? assets[1] : assets.first;
-    final primaryWidth = screenWidth < 380 ? 255.0 : 330.0;
-    final secondaryWidth = screenWidth < 380 ? 205.0 : 265.0;
+    final isCompact = screenWidth < 380;
+    final primaryWidth = isCompact ? 230.0 : 294.0;
+    final secondaryWidth = isCompact ? 190.0 : 244.0;
+    final topWidth = isCompact ? 178.0 : 232.0;
 
     return Stack(
       fit: StackFit.expand,
       children: [
+        if (topAsset != null)
+          Positioned(
+            top: 20 + (lift * 0.24),
+            right: isCompact ? 8 : 18,
+            child: Opacity(
+              opacity: opacity * 0.82,
+              child: SvgPicture.asset(
+                topAsset!,
+                width: topWidth,
+                fit: BoxFit.contain,
+                excludeFromSemantics: true,
+              ),
+            ),
+          ),
         Positioned(
-          left: -68,
-          bottom: -34 + (lift * 0.35),
+          left: isCompact ? 10 : 18,
+          bottom: 18 + (lift * 0.35),
           child: Opacity(
             opacity: opacity,
             child: SvgPicture.asset(
@@ -219,8 +244,8 @@ class _BottomSvgOverlay extends StatelessWidget {
           ),
         ),
         Positioned(
-          right: -54,
-          bottom: 6 - (lift * 0.28),
+          right: isCompact ? 10 : 18,
+          bottom: 28 - (lift * 0.28),
           child: Opacity(
             opacity: opacity * 0.86,
             child: SvgPicture.asset(
@@ -232,8 +257,8 @@ class _BottomSvgOverlay extends StatelessWidget {
           ),
         ),
         Positioned(
-          left: 28,
-          bottom: 188 - (lift * 0.4),
+          left: isCompact ? 22 : 30,
+          bottom: (isCompact ? 162 : 198) - (lift * 0.4),
           child: _FloatingHealthIcon(
             icon: Icons.favorite_rounded,
             color: const Color(0xFFFF6B8A),
@@ -241,8 +266,8 @@ class _BottomSvgOverlay extends StatelessWidget {
           ),
         ),
         Positioned(
-          right: 34,
-          bottom: 212 + (lift * 0.32),
+          right: isCompact ? 26 : 38,
+          bottom: (isCompact ? 178 : 220) + (lift * 0.32),
           child: _FloatingHealthIcon(
             icon: Icons.spa_rounded,
             color: primaryColor,

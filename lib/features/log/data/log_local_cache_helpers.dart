@@ -3,6 +3,7 @@ part of 'log_api.dart';
 Future<Map<String, dynamic>> _buildOfflineUserLogResponse(
   int userId, {
   bool forToday = false,
+  String liveDataIssue = LogApi.liveDataIssueUnavailable,
 }) async {
   final logs = await _readMergedUserLogs(userId);
   final streak = await _refreshOptimisticStreak(userId);
@@ -25,6 +26,7 @@ Future<Map<String, dynamic>> _buildOfflineUserLogResponse(
     'log': log,
     'streak': streak,
     'is_offline': true,
+    'live_data_issue': liveDataIssue,
     'pending_sync_count': pendingCount,
   };
 }

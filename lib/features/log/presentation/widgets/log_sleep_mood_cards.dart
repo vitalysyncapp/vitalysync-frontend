@@ -71,6 +71,7 @@ extension _LogSleepMoodCards on LogWidgets {
           const SizedBox(height: 12),
           LayoutBuilder(
             builder: (context, constraints) {
+              final isDark = Theme.of(context).brightness == Brightness.dark;
               const spacing = 8.0;
               final threeItemWidth = (constraints.maxWidth - (spacing * 2)) / 3;
               final itemWidth = threeItemWidth <= 0
@@ -95,12 +96,16 @@ extension _LogSleepMoodCards on LogWidgets {
                       horizontal: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: selected
+                          ? const Color(
+                              0xFF4B3FF2,
+                            ).withValues(alpha: isDark ? 0.18 : 0.08)
+                          : pageSubtleSurfaceColor(context),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: selected
                             ? const Color(0xFF4B3FF2)
-                            : const Color(0xFFD1D5DB),
+                            : pageBorderColor(context),
                         width: selected ? 2 : 1.3,
                       ),
                       boxShadow: selected
@@ -205,7 +210,7 @@ extension _LogSleepMoodCards on LogWidgets {
                                 : FontWeight.w500,
                             color: selected
                                 ? const Color(0xFF4B3FF2)
-                                : const Color(0xFF334155),
+                                : pagePrimaryTextColor(context),
                           ),
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
@@ -255,52 +260,62 @@ extension _LogSleepMoodCards on LogWidgets {
 
   Widget _buildMoodCard() {
     return _buildCard(
-      child: Column(
-        children: [
-          _sectionHeader(
-            icon: Icons.sentiment_satisfied_alt,
-            iconBg: const Color(0xFFFFF4CC),
-            iconColor: const Color(0xFFE0A100),
-            title: "Mood",
-            subtitle: "How are you feeling today?",
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(moods.length, (index) {
-              final selected = moodIndex == index;
-              return Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    right: index == moods.length - 1 ? 0 : 8,
-                  ),
-                  child: GestureDetector(
-                    onTap: () => onMoodChanged(index),
-                    child: Container(
-                      height: 70,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: selected
-                              ? const Color(0xFFF4B400)
-                              : const Color(0xFFD1D5DB),
-                          width: selected ? 2 : 1.3,
-                        ),
+      child: Builder(
+        builder: (context) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+
+          return Column(
+            children: [
+              _sectionHeader(
+                icon: Icons.sentiment_satisfied_alt,
+                iconBg: const Color(0xFFFFF4CC),
+                iconColor: const Color(0xFFE0A100),
+                title: "Mood",
+                subtitle: "How are you feeling today?",
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: List.generate(moods.length, (index) {
+                  final selected = moodIndex == index;
+                  return Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        right: index == moods.length - 1 ? 0 : 8,
                       ),
-                      child: Center(
-                        child: Text(
-                          moods[index],
-                          style: const TextStyle(fontSize: 28),
+                      child: GestureDetector(
+                        onTap: () => onMoodChanged(index),
+                        child: Container(
+                          height: 70,
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? const Color(
+                                    0xFFF4B400,
+                                  ).withValues(alpha: isDark ? 0.18 : 0.08)
+                                : pageSubtleSurfaceColor(context),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: selected
+                                  ? const Color(0xFFF4B400)
+                                  : pageBorderColor(context),
+                              width: selected ? 2 : 1.3,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              moods[index],
+                              style: const TextStyle(fontSize: 28),
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ),
-              );
-            }),
-          ),
-        ],
+                  );
+                }),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -346,12 +361,14 @@ extension _LogSleepMoodCards on LogWidgets {
                                 end: Alignment.bottomRight,
                               )
                             : null,
-                        color: selected ? null : const Color(0xFFFFF7ED),
+                        color: selected
+                            ? null
+                            : pageSubtleSurfaceColor(context),
                         borderRadius: BorderRadius.circular(13),
                         border: Border.all(
                           color: selected
                               ? const Color(0xFFFF8A1F)
-                              : const Color(0xFFFED7AA),
+                              : pageBorderColor(context),
                           width: selected ? 1.7 : 1.1,
                         ),
                         boxShadow: selected
@@ -374,7 +391,7 @@ extension _LogSleepMoodCards on LogWidgets {
                             style: TextStyle(
                               color: selected
                                   ? Colors.white
-                                  : const Color(0xFFC2410C),
+                                  : pagePrimaryTextColor(context),
                               fontSize: 17,
                               fontWeight: FontWeight.w900,
                             ),
@@ -388,7 +405,7 @@ extension _LogSleepMoodCards on LogWidgets {
                               style: TextStyle(
                                 color: selected
                                     ? Colors.white
-                                    : const Color(0xFFC2410C),
+                                    : pagePrimaryTextColor(context),
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
                               ),
@@ -407,8 +424,10 @@ extension _LogSleepMoodCards on LogWidgets {
             selectedLevel == null
                 ? 'Choose a 1-5 energy level to complete today\'s check-in.'
                 : 'Energy logged as ${energyLabels[selectedLevel - 1].toLowerCase()}.',
-            style: const TextStyle(
-              color: Color(0xFFC2410C),
+            style: TextStyle(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFFFBBF24)
+                  : const Color(0xFFC2410C),
               fontSize: 12,
               height: 1.35,
               fontWeight: FontWeight.w700,

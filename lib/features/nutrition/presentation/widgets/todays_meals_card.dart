@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/theme/app_page_style.dart';
 import '../../data/nutrition_api.dart';
 import 'white_card.dart';
 
@@ -25,12 +26,12 @@ class TodaysMealsCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 "Today's Meals",
                 style: TextStyle(
                   fontSize: 15.5,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
+                  color: pagePrimaryTextColor(context),
                 ),
               ),
               Material(
@@ -44,9 +45,13 @@ class TodaysMealsCard extends StatelessWidget {
                       vertical: isCompact ? 5 : 6,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? const Color(0xFF2563EB).withValues(alpha: 0.14)
+                          : const Color(0xFFEFF6FF),
                       borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: const Color(0xFFBFDBFE)),
+                      border: Border.all(
+                        color: const Color(0xFF2563EB).withValues(alpha: 0.34),
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -78,7 +83,7 @@ class TodaysMealsCard extends StatelessWidget {
               'No meals logged yet today.',
               style: TextStyle(
                 fontSize: isCompact ? 12 : 13,
-                color: const Color(0xFF64748B),
+                color: pageSecondaryTextColor(context),
               ),
             )
           else
@@ -136,9 +141,9 @@ class MealItemCard extends StatelessWidget {
       width: double.infinity,
       padding: EdgeInsets.all(isCompact ? 11 : 13),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: pageSubtleSurfaceColor(context),
         borderRadius: BorderRadius.circular(isCompact ? 12 : 14),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: pageBorderColor(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,7 +156,7 @@ class MealItemCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: isCompact ? 13.5 : 15,
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF0F172A),
+                    color: pagePrimaryTextColor(context),
                   ),
                 ),
               ),
@@ -160,7 +165,7 @@ class MealItemCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: isCompact ? 13.5 : 15,
                   fontWeight: FontWeight.w800,
-                  color: const Color(0xFF0F172A),
+                  color: pagePrimaryTextColor(context),
                 ),
               ),
             ],
@@ -172,7 +177,7 @@ class MealItemCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: isCompact ? 12 : 13,
-              color: const Color(0xFF334155),
+              color: pageSecondaryTextColor(context),
               height: 1.4,
             ),
           ),

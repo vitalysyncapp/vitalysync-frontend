@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../../../app/main_navigation.dart';
+import '../../../../shared/goals/user_goals.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/animated_gradient_background.dart';
 import '../../../../shared/theme/app_page_style.dart';
@@ -45,14 +46,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
     'Moderately Active',
     'Active',
     'Very Active',
-  ];
-  static const _wellnessGoals = [
-    'Reduce stress',
-    'Improve sleep',
-    'Be more active',
-    'Improve focus',
-    'Build healthier habits',
-    'Manage burnout',
   ];
   static const _exerciseGoalOptions = [
     '0 days',
@@ -193,7 +186,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   String? _role;
   String? _lifestyleType;
-  String? _wellnessGoal;
+  final List<String> _wellnessGoals = [];
   TimeOfDay? _usualSleepTime;
   TimeOfDay? _usualWakeTime;
   String? _exerciseGoalDays;
@@ -235,17 +228,17 @@ class _OnboardingPageState extends State<OnboardingPage> {
       ),
       _OnboardingStep(
         sectionTitle: '\u{1F464} About You',
-        title: 'What is your main wellness goal?',
-        isComplete: () => _wellnessGoal != null,
-        builder: (context) => _buildChoicePage(
+        title: 'Which wellness goals matter most to you?',
+        isComplete: () => _wellnessGoals.isNotEmpty,
+        builder: (context) => _buildMultiChoicePage(
           context,
           question: const OnboardingQuestion(
-            title: 'What is your main wellness goal?',
+            title: 'Which wellness goals matter most to you?',
             field: 'wellness_goal',
-            options: _wellnessGoals,
+            options: kWellnessGoalOptions,
           ),
-          value: _wellnessGoal,
-          onChanged: (value) => setState(() => _wellnessGoal = value),
+          values: _wellnessGoals,
+          onChanged: _toggleWellnessGoal,
         ),
       ),
       _OnboardingStep(
@@ -358,7 +351,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
     final profile = {
       'role': _role,
       'lifestyle_type': _lifestyleType,
-      'wellness_goal': _wellnessGoal,
+      'wellness_goal': _wellnessGoals.join(', '),
+      'wellness_goals': _wellnessGoals,
       'usual_sleep_time': _formatTimeForApi(_usualSleepTime!),
       'usual_wake_time': _formatTimeForApi(_usualWakeTime!),
       'exercise_goal_days': _exerciseGoalDays,
@@ -445,6 +439,21 @@ class _OnboardingPageState extends State<OnboardingPage> {
     }
 
     _goToStep(_currentStep + 1);
+  }
+
+  void _toggleWellnessGoal(String goal) {
+    setState(() {
+      if (_wellnessGoals.contains(goal)) {
+        _wellnessGoals.remove(goal);
+      } else {
+        _wellnessGoals.add(goal);
+      }
+      _wellnessGoals.sort(
+        (a, b) => kWellnessGoalOptions
+            .indexOf(a)
+            .compareTo(kWellnessGoalOptions.indexOf(b)),
+      );
+    });
   }
 
   String _formatTimeForApi(TimeOfDay time) {
@@ -682,6 +691,49 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     label: option,
                     icon: _iconForOption(option),
                     selected: value == option,
+                    onTap: () => onChanged(option),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMultiChoicePage(
+    BuildContext context, {
+    required OnboardingQuestion question,
+    required List<String> values,
+    required ValueChanged<String> onChanged,
+  }) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+      children: [
+        OnboardingCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _PromptBadge(
+                icon: _iconForQuestion(question.field),
+                label: question.field.replaceAll('_', ' '),
+              ),
+              const SizedBox(height: 14),
+              _QuestionTitle(question.title),
+              if (question.helperText != null) ...[
+                const SizedBox(height: 8),
+                _HelperText(question.helperText!),
+              ],
+              const SizedBox(height: 22),
+              ...question.options.map(
+                (option) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _OptionTile(
+                    label: option,
+                    icon: _iconForOption(option),
+                    selected: values.contains(option),
+                    multiSelect: true,
                     onTap: () => onChanged(option),
                   ),
                 ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/validation_dialog.dart';
 
 typedef EditWellnessProfileSaveCallback =
     Future<bool> Function({
@@ -72,6 +73,12 @@ class _EditWellnessProfilePageState extends State<EditWellnessProfilePage> {
 
   Future<void> _handleSave() async {
     if (_formKey.currentState?.validate() != true) {
+      await ValidationDialog.show(
+        context,
+        title: 'Check wellness details',
+        message: 'Fix the highlighted fields before saving changes.',
+        type: ValidationDialogType.error,
+      );
       return;
     }
 
@@ -87,17 +94,26 @@ class _EditWellnessProfilePageState extends State<EditWellnessProfilePage> {
       if (!mounted) return;
 
       if (didSave) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Wellness profile updated.')),
+        setState(() => _isSubmitting = false);
+        await ValidationDialog.show(
+          context,
+          title: 'Wellness updated',
+          message: 'Your wellness profile was saved successfully.',
+          type: ValidationDialogType.success,
         );
-        Navigator.of(context).pop(true);
+        if (mounted && Navigator.of(context).canPop()) {
+          Navigator.of(context).pop(true);
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Unable to update wellness profile.')),
+        await ValidationDialog.show(
+          context,
+          title: 'Unable to save',
+          message: 'Please check your wellness details and try again.',
+          type: ValidationDialogType.error,
         );
       }
     } finally {
-      if (mounted) {
+      if (mounted && _isSubmitting) {
         setState(() => _isSubmitting = false);
       }
     }

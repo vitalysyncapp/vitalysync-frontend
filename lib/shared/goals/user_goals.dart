@@ -7,8 +7,18 @@ import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 import '../offline/offline_cache_store.dart';
 
+const List<String> kWellnessGoalOptions = [
+  'Reduce stress',
+  'Improve sleep',
+  'Be more active',
+  'Improve focus',
+  'Build healthier habits',
+  'Manage burnout',
+];
+
 class UserGoalsSnapshot {
   final String wellnessGoal;
+  final List<String> wellnessGoals;
   final double sleepHours;
   final double hydrationLiters;
   final int activityDaysPerWeek;
@@ -17,6 +27,7 @@ class UserGoalsSnapshot {
 
   const UserGoalsSnapshot({
     required this.wellnessGoal,
+    required this.wellnessGoals,
     required this.sleepHours,
     required this.hydrationLiters,
     required this.activityDaysPerWeek,
@@ -26,14 +37,23 @@ class UserGoalsSnapshot {
 
   factory UserGoalsSnapshot.defaults({
     String wellnessGoal = 'Not set',
+    List<String>? wellnessGoals,
     double sleepHours = 8,
     double hydrationLiters = 2.5,
     int activityDaysPerWeek = 3,
     int dailySteps = 5000,
     int nutritionCalories = 2000,
   }) {
+    final selectedWellnessGoals = _normalizeWellnessGoals(
+      wellnessGoals ?? _wellnessGoalsFromText(wellnessGoal),
+    );
+    final wellnessGoalText = selectedWellnessGoals.isEmpty
+        ? _nonEmpty(wellnessGoal) ?? 'Not set'
+        : selectedWellnessGoals.join(', ');
+
     return UserGoalsSnapshot(
-      wellnessGoal: _nonEmpty(wellnessGoal) ?? 'Not set',
+      wellnessGoal: wellnessGoalText,
+      wellnessGoals: List.unmodifiable(selectedWellnessGoals),
       sleepHours: sleepHours.clamp(1, 24).toDouble(),
       hydrationLiters: hydrationLiters.clamp(0.25, 20).toDouble(),
       activityDaysPerWeek: activityDaysPerWeek.clamp(0, 7).toInt(),
@@ -50,9 +70,15 @@ class UserGoalsSnapshot {
     final rawGoals = json['goals'] is Map
         ? Map<String, dynamic>.from(json['goals'] as Map)
         : const <String, dynamic>{};
+    final rawWellnessGoal = rawGoals['wellness'];
+    final wellnessGoalText = _goalText(rawWellnessGoal);
+    final wellnessGoals = _goalWellnessGoals(rawWellnessGoal);
 
     return UserGoalsSnapshot.defaults(
-      wellnessGoal: _goalText(rawGoals['wellness']) ?? defaults.wellnessGoal,
+      wellnessGoal: wellnessGoalText ?? defaults.wellnessGoal,
+      wellnessGoals: wellnessGoals.isEmpty
+          ? defaults.wellnessGoals
+          : wellnessGoals,
       sleepHours: _goalDouble(rawGoals['sleep_hours']) ?? defaults.sleepHours,
       hydrationLiters:
           _goalDouble(rawGoals['hydration_liters']) ?? defaults.hydrationLiters,
@@ -68,6 +94,7 @@ class UserGoalsSnapshot {
 
   UserGoalsSnapshot copyWith({
     String? wellnessGoal,
+    List<String>? wellnessGoals,
     double? sleepHours,
     double? hydrationLiters,
     int? activityDaysPerWeek,
@@ -76,6 +103,7 @@ class UserGoalsSnapshot {
   }) {
     return UserGoalsSnapshot.defaults(
       wellnessGoal: wellnessGoal ?? this.wellnessGoal,
+      wellnessGoals: wellnessGoals ?? this.wellnessGoals,
       sleepHours: sleepHours ?? this.sleepHours,
       hydrationLiters: hydrationLiters ?? this.hydrationLiters,
       activityDaysPerWeek: activityDaysPerWeek ?? this.activityDaysPerWeek,
@@ -86,7 +114,11 @@ class UserGoalsSnapshot {
 
   Map<String, dynamic> toApiGoals() {
     return {
-      'wellness': {'target_text': wellnessGoal, 'source': 'profile'},
+      'wellness': {
+        'target_text': wellnessGoal,
+        'source': 'profile',
+        'metadata': {'selected_goals': wellnessGoals},
+      },
       'sleep_hours': {
         'target_value': sleepHours,
         'unit': 'hours',
@@ -270,6 +302,52 @@ String? _goalText(dynamic rawGoal) {
   final goal = Map<String, dynamic>.from(rawGoal);
   return _nonEmpty(goal['target_text']?.toString()) ??
       _nonEmpty(goal['display_value']?.toString());
+}
+
+List<String> _goalWellnessGoals(dynamic rawGoal) {
+  if (rawGoal is! Map) {
+    return const <String>[];
+  }
+
+  final goal = Map<String, dynamic>.from(rawGoal);
+  final metadata = goal['metadata'] is Map
+      ? Map<String, dynamic>.from(goal['metadata'] as Map)
+      : const <String, dynamic>{};
+  final rawSelected = metadata['selected_goals'] ?? goal['selected_goals'];
+
+  if (rawSelected is List) {
+    return _normalizeWellnessGoals(
+      rawSelected.map((value) => value.toString()),
+    );
+  }
+
+  return _wellnessGoalsFromText(_goalText(goal) ?? '');
+}
+
+List<String> _normalizeWellnessGoals(Iterable<String> goals) {
+  final selected = <String>[];
+  for (final option in kWellnessGoalOptions) {
+    if (goals.any(
+      (goal) => goal.trim().toLowerCase() == option.toLowerCase(),
+    )) {
+      selected.add(option);
+    }
+  }
+
+  return selected;
+}
+
+List<String> _wellnessGoalsFromText(String value) {
+  final normalized = value.trim();
+  if (normalized.isEmpty || normalized == 'Not set') {
+    return const <String>[];
+  }
+
+  final parts = normalized
+      .split(',')
+      .map((part) => part.trim())
+      .where((part) => part.isNotEmpty);
+  return _normalizeWellnessGoals(parts);
 }
 
 double? _goalDouble(dynamic rawGoal) {

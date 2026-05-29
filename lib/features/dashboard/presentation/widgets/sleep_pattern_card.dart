@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../shared/theme/app_page_style.dart';
 import '../../data/weekly_user_metrics.dart';
 
 class SleepPatternCard extends StatefulWidget {
@@ -30,16 +31,16 @@ class _SleepPatternCardState extends State<SleepPatternCard> {
 
         return Container(
           padding: const EdgeInsets.all(14),
-          decoration: _cardDecoration(),
+          decoration: _cardDecoration(context),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Sleep Pattern',
                 style: TextStyle(
                   fontSize: 15.5,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF0B1F44),
+                  color: pagePrimaryTextColor(context),
                 ),
               ),
               const SizedBox(height: 12),
@@ -49,18 +50,21 @@ class _SleepPatternCardState extends State<SleepPatternCard> {
                   child: Center(child: CircularProgressIndicator()),
                 )
               else
-                SizedBox(height: 200, child: BarChart(_chartData(days))),
+                SizedBox(
+                  height: 200,
+                  child: BarChart(_chartData(context, days)),
+                ),
               const SizedBox(height: 12),
-              Divider(color: Colors.grey.withValues(alpha: 0.25)),
+              Divider(color: pageBorderColor(context)),
               const SizedBox(height: 9),
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Recommended: 7-9 hours',
                       style: TextStyle(
                         fontSize: 12.5,
-                        color: Color(0xFF4F5D75),
+                        color: pageSecondaryTextColor(context),
                       ),
                     ),
                   ),
@@ -83,7 +87,7 @@ class _SleepPatternCardState extends State<SleepPatternCard> {
     );
   }
 
-  BarChartData _chartData(List<DailyUserMetric> days) {
+  BarChartData _chartData(BuildContext context, List<DailyUserMetric> days) {
     final chartDays = days.isEmpty
         ? List<DailyUserMetric>.generate(
             7,
@@ -106,14 +110,14 @@ class _SleepPatternCardState extends State<SleepPatternCard> {
         drawVerticalLine: false,
         horizontalInterval: 2,
         getDrawingHorizontalLine: (value) => FlLine(
-          color: Colors.grey.withValues(alpha: 0.16),
+          color: pageBorderColor(context).withValues(alpha: 0.72),
           strokeWidth: 1,
           dashArray: [4, 4],
         ),
       ),
       borderData: FlBorderData(
         show: true,
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.12)),
+        border: Border.all(color: pageBorderColor(context)),
       ),
       titlesData: FlTitlesData(
         topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -127,7 +131,10 @@ class _SleepPatternCardState extends State<SleepPatternCard> {
             reservedSize: 28,
             getTitlesWidget: (value, meta) => Text(
               value.toInt().toString(),
-              style: const TextStyle(color: Color(0xFF8A94A6), fontSize: 10.5),
+              style: TextStyle(
+                color: pageSecondaryTextColor(context),
+                fontSize: 10.5,
+              ),
             ),
           ),
         ),
@@ -143,8 +150,8 @@ class _SleepPatternCardState extends State<SleepPatternCard> {
                 padding: const EdgeInsets.only(top: 6),
                 child: Text(
                   chartDays[index].dayLabel,
-                  style: const TextStyle(
-                    color: Color(0xFF8A94A6),
+                  style: TextStyle(
+                    color: pageSecondaryTextColor(context),
                     fontSize: 11,
                   ),
                 ),
@@ -160,8 +167,8 @@ class _SleepPatternCardState extends State<SleepPatternCard> {
             final day = chartDays[group.x.toInt()];
             return BarTooltipItem(
               '${day.dayLabel}\n${rod.toY.toStringAsFixed(1)} hours',
-              const TextStyle(
-                color: Colors.black87,
+              TextStyle(
+                color: pagePrimaryTextColor(context),
                 fontWeight: FontWeight.w600,
                 fontSize: 11.5,
                 height: 1.4,
@@ -189,18 +196,12 @@ class _SleepPatternCardState extends State<SleepPatternCard> {
     );
   }
 
-  BoxDecoration _cardDecoration() {
+  BoxDecoration _cardDecoration(BuildContext context) {
     return BoxDecoration(
-      color: Colors.white.withValues(alpha: 0.94),
+      color: pageSurfaceColor(context),
       borderRadius: BorderRadius.circular(18),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.06),
-          blurRadius: 8,
-          offset: const Offset(0, 3),
-        ),
-      ],
-      border: Border.all(color: Colors.grey.withValues(alpha: 0.10)),
+      boxShadow: pageCardShadow(context),
+      border: Border.all(color: pageBorderColor(context)),
     );
   }
 }

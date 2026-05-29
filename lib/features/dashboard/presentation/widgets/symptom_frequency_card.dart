@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/theme/app_page_style.dart';
 import '../../data/weekly_user_metrics.dart';
 
 class SymptomFrequencyCard extends StatefulWidget {
@@ -30,16 +31,16 @@ class _SymptomFrequencyCardState extends State<SymptomFrequencyCard> {
 
         return Container(
           padding: const EdgeInsets.all(14),
-          decoration: _cardDecoration(),
+          decoration: _cardDecoration(context),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Symptom Frequency',
                 style: TextStyle(
                   fontSize: 15.5,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF0B1F44),
+                  color: pagePrimaryTextColor(context),
                 ),
               ),
               const SizedBox(height: 12),
@@ -49,16 +50,20 @@ class _SymptomFrequencyCardState extends State<SymptomFrequencyCard> {
                   child: Center(child: CircularProgressIndicator()),
                 )
               else if (visibleRows.isEmpty)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),
                   child: Text(
                     'No symptoms logged this week.',
-                    style: TextStyle(color: Color(0xFF4F5D75), fontSize: 12.5),
+                    style: TextStyle(
+                      color: pageSecondaryTextColor(context),
+                      fontSize: 12.5,
+                    ),
                   ),
                 )
               else
                 ...visibleRows.map(
                   (entry) => _symptomRow(
+                    context: context,
                     label: entry.key,
                     days: '${entry.value} ${entry.value == 1 ? 'day' : 'days'}',
                     progress: (entry.value / 7).clamp(0.0, 1.0),
@@ -73,6 +78,7 @@ class _SymptomFrequencyCardState extends State<SymptomFrequencyCard> {
   }
 
   Widget _symptomRow({
+    required BuildContext context,
     required String label,
     required String days,
     required double progress,
@@ -89,18 +95,18 @@ class _SymptomFrequencyCardState extends State<SymptomFrequencyCard> {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF24324A),
+                    color: pagePrimaryTextColor(context),
                   ),
                 ),
               ),
               Text(
                 days,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF0B1F44),
+                  color: pagePrimaryTextColor(context),
                 ),
               ),
             ],
@@ -111,7 +117,7 @@ class _SymptomFrequencyCardState extends State<SymptomFrequencyCard> {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 8,
-              backgroundColor: const Color(0xFFE5E7EB),
+              backgroundColor: pageBorderColor(context),
               valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
           ),
@@ -126,18 +132,12 @@ class _SymptomFrequencyCardState extends State<SymptomFrequencyCard> {
     return const Color(0xFFE6A800);
   }
 
-  BoxDecoration _cardDecoration() {
+  BoxDecoration _cardDecoration(BuildContext context) {
     return BoxDecoration(
-      color: Colors.white.withValues(alpha: 0.94),
+      color: pageSurfaceColor(context),
       borderRadius: BorderRadius.circular(18),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.06),
-          blurRadius: 8,
-          offset: const Offset(0, 3),
-        ),
-      ],
-      border: Border.all(color: Colors.grey.withValues(alpha: 0.10)),
+      boxShadow: pageCardShadow(context),
+      border: Border.all(color: pageBorderColor(context)),
     );
   }
 }

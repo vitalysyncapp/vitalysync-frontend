@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/theme/app_page_style.dart';
 import 'white_card.dart';
 
 class MacroBalanceCard extends StatelessWidget {
@@ -28,7 +29,7 @@ class MacroBalanceCard extends StatelessWidget {
             style: TextStyle(
               fontSize: isCompact ? 15.5 : 16.5,
               fontWeight: FontWeight.w800,
-              color: const Color(0xFF0F172A),
+              color: pagePrimaryTextColor(context),
             ),
           ),
           SizedBox(height: isCompact ? 11 : 14),
@@ -94,7 +95,7 @@ class MacroProgressRow extends StatelessWidget {
                 label,
                 style: TextStyle(
                   fontSize: isCompact ? 12.5 : 14,
-                  color: const Color(0xFF334155),
+                  color: pageSecondaryTextColor(context),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -103,7 +104,7 @@ class MacroProgressRow extends StatelessWidget {
               '$current / $goal',
               style: TextStyle(
                 fontSize: isCompact ? 12.5 : 14,
-                color: const Color(0xFF0F172A),
+                color: pagePrimaryTextColor(context),
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -115,7 +116,7 @@ class MacroProgressRow extends StatelessWidget {
           child: LinearProgressIndicator(
             value: progress,
             minHeight: isCompact ? 7 : 8,
-            backgroundColor: const Color(0xFFE5E7EB),
+            backgroundColor: pageBorderColor(context),
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),

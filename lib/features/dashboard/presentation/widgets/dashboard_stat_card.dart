@@ -22,21 +22,13 @@ class DashboardStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(13),
         decoration: BoxDecoration(
           color: pageSurfaceColor(context),
           borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          boxShadow: pageCardShadow(context),
           border: Border.all(color: pageBorderColor(context)),
         ),
         child: Column(

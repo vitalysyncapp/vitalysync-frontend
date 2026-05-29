@@ -14,6 +14,7 @@ class BurnoutScoreSnapshot {
   final double confidenceScore;
   final double completenessScore;
   final List<String> missingFields;
+  final List<BurnoutContributingFactor> contributingFactors;
 
   const BurnoutScoreSnapshot({
     required this.scoreDate,
@@ -22,6 +23,7 @@ class BurnoutScoreSnapshot {
     required this.confidenceScore,
     required this.completenessScore,
     required this.missingFields,
+    required this.contributingFactors,
   });
 
   factory BurnoutScoreSnapshot.fromJson(Map<String, dynamic> json) {
@@ -34,6 +36,38 @@ class BurnoutScoreSnapshot {
       missingFields: (json['missing_fields'] as List<dynamic>? ?? const [])
           .map((item) => item.toString())
           .toList(),
+      contributingFactors:
+          (json['contributing_factors'] as List<dynamic>? ?? const [])
+              .whereType<Map>()
+              .map(
+                (item) => BurnoutContributingFactor.fromJson(
+                  Map<String, dynamic>.from(item),
+                ),
+              )
+              .toList(),
+    );
+  }
+}
+
+class BurnoutContributingFactor {
+  final String key;
+  final String label;
+  final double score;
+  final String direction;
+
+  const BurnoutContributingFactor({
+    required this.key,
+    required this.label,
+    required this.score,
+    required this.direction,
+  });
+
+  factory BurnoutContributingFactor.fromJson(Map<String, dynamic> json) {
+    return BurnoutContributingFactor(
+      key: json['key']?.toString() ?? '',
+      label: json['label']?.toString() ?? '',
+      score: _parseDouble(json['score']),
+      direction: json['direction']?.toString() ?? '',
     );
   }
 }
@@ -292,10 +326,7 @@ class BurnoutScoreApi {
           .post(
             Uri.parse(ApiConfig.burnout('/scores/recalculate')),
             headers: await ApiConfig.jsonHeaders(),
-            body: jsonEncode({
-              'user_id': userId,
-              'score_date': _todayKey(),
-            }),
+            body: jsonEncode({'user_id': userId, 'score_date': _todayKey()}),
           )
           .timeout(_requestTimeout);
 

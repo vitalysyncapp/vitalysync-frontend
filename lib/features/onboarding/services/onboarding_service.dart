@@ -4,6 +4,7 @@ class OnboardingDefaults {
   final String? role;
   final String? lifestyleType;
   final String? wellnessGoal;
+  final List<String> wellnessGoals;
   final String? usualSleepTime;
   final String? usualWakeTime;
   final String? exerciseGoalDays;
@@ -15,6 +16,7 @@ class OnboardingDefaults {
     this.role,
     this.lifestyleType,
     this.wellnessGoal,
+    this.wellnessGoals = const <String>[],
     this.usualSleepTime,
     this.usualWakeTime,
     this.exerciseGoalDays,
@@ -45,6 +47,7 @@ class OnboardingService {
   static const String roleKey = 'onboarding_role';
   static const String lifestyleTypeKey = 'onboarding_lifestyle_type';
   static const String wellnessGoalKey = 'onboarding_wellness_goal';
+  static const String wellnessGoalsKey = 'onboarding_wellness_goals';
   static const String usualSleepTimeKey = 'onboarding_usual_sleep_time';
   static const String usualWakeTimeKey = 'onboarding_usual_wake_time';
   static const String exerciseGoalDaysKey = 'onboarding_exercise_goal_days';
@@ -81,6 +84,14 @@ class OnboardingService {
       profile['lifestyle_type'],
     );
     await _setStringOrRemove(prefs, wellnessGoalKey, profile['wellness_goal']);
+    final wellnessGoals = _normalizeStringList(profile['wellness_goals']);
+    await _setStringListOrRemove(
+      prefs,
+      wellnessGoalsKey,
+      wellnessGoals.isEmpty
+          ? _normalizeStringList(profile['wellness_goal'])
+          : wellnessGoals,
+    );
     await _setStringOrRemove(
       prefs,
       usualSleepTimeKey,
@@ -116,6 +127,7 @@ class OnboardingService {
       role: prefs.getString(roleKey),
       lifestyleType: prefs.getString(lifestyleTypeKey),
       wellnessGoal: prefs.getString(wellnessGoalKey),
+      wellnessGoals: prefs.getStringList(wellnessGoalsKey) ?? const <String>[],
       usualSleepTime: prefs.getString(usualSleepTimeKey),
       usualWakeTime: prefs.getString(usualWakeTimeKey),
       exerciseGoalDays: prefs.getString(exerciseGoalDaysKey),
@@ -131,6 +143,7 @@ class OnboardingService {
       roleKey,
       lifestyleTypeKey,
       wellnessGoalKey,
+      wellnessGoalsKey,
       usualSleepTimeKey,
       usualWakeTimeKey,
       exerciseGoalDaysKey,
@@ -174,6 +187,19 @@ class OnboardingService {
     }
 
     await prefs.setString(key, normalized);
+  }
+
+  static Future<void> _setStringListOrRemove(
+    SharedPreferences prefs,
+    String key,
+    List<String> values,
+  ) async {
+    if (values.isEmpty) {
+      await prefs.remove(key);
+      return;
+    }
+
+    await prefs.setStringList(key, values);
   }
 
   static Future<void> _setIntOrRemove(
@@ -231,5 +257,25 @@ class OnboardingService {
     return RegExp(r'^([01]\d|2[0-3]):[0-5]\d$').hasMatch(normalized)
         ? normalized
         : null;
+  }
+
+  static List<String> _normalizeStringList(dynamic value) {
+    if (value is List) {
+      return value
+          .map((item) => item.toString().trim())
+          .where((item) => item.isNotEmpty)
+          .toList();
+    }
+
+    final text = value?.toString().trim() ?? '';
+    if (text.isEmpty) {
+      return const <String>[];
+    }
+
+    return text
+        .split(',')
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList();
   }
 }

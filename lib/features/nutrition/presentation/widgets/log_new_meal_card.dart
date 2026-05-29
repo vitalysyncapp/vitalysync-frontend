@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import '../../../../shared/theme/app_page_style.dart';
 import 'white_card.dart';
 
 class LogNewMealCard extends StatelessWidget {
@@ -37,12 +38,12 @@ class LogNewMealCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Log New Meal',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF0F172A),
+              color: pagePrimaryTextColor(context),
             ),
           ),
           SizedBox(height: isCompact ? 7 : 8),
@@ -63,9 +64,18 @@ class LogNewMealCard extends StatelessWidget {
                 horizontal: isCompact ? 10 : 12,
               ),
               decoration: BoxDecoration(
-                color: const Color(0xFFF3F7FF),
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF2563EB).withValues(alpha: 0.12)
+                    : const Color(0xFFF3F7FF),
                 borderRadius: BorderRadius.circular(isCompact ? 13 : 15),
-                border: Border.all(color: const Color(0xFF82B5FF), width: 1.4),
+                border: Border.all(
+                  color: const Color(0xFF82B5FF).withValues(
+                    alpha: Theme.of(context).brightness == Brightness.dark
+                        ? 0.38
+                        : 1,
+                  ),
+                  width: 1.4,
+                ),
               ),
               child: Column(
                 children: [
@@ -130,9 +140,9 @@ class LogNewMealCard extends StatelessWidget {
                 horizontal: isCompact ? 10 : 12,
               ),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: pageSubtleSurfaceColor(context),
                 borderRadius: BorderRadius.circular(isCompact ? 12 : 13),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
+                border: Border.all(color: pageBorderColor(context)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -148,7 +158,7 @@ class LogNewMealCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: isCompact ? 11.5 : 12.5,
                       fontWeight: FontWeight.w500,
-                      color: const Color(0xFF334155),
+                      color: pagePrimaryTextColor(context),
                     ),
                   ),
                 ],
@@ -208,6 +218,7 @@ class MealTypeChoices extends StatelessWidget {
       runSpacing: 5,
       children: nutritionMealTypeChoices.map((choice) {
         final isSelected = selectedMealType == choice.value;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return ChoiceChip(
           label: Text(choice.label),
           selected: isSelected,
@@ -220,15 +231,25 @@ class MealTypeChoices extends StatelessWidget {
 
             onLockedMealTypeTap?.call(choice.value);
           },
-          selectedColor: const Color(0xFFDCFCE7),
+          backgroundColor: isDark
+              ? Colors.white.withValues(alpha: 0.05)
+              : const Color(0xFFF8FAFC),
+          selectedColor: isDark
+              ? const Color(0xFF16A34A).withValues(alpha: 0.2)
+              : const Color(0xFFDCFCE7),
+          side: BorderSide(
+            color: isSelected
+                ? const Color(0xFF16A34A).withValues(alpha: isDark ? 0.42 : 1)
+                : pageBorderColor(context),
+          ),
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.compact,
           labelPadding: const EdgeInsets.symmetric(horizontal: 5),
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
           labelStyle: TextStyle(
             color: isSelected
-                ? const Color(0xFF15803D)
-                : const Color(0xFF475569),
+                ? (isDark ? const Color(0xFF4ADE80) : const Color(0xFF15803D))
+                : pageSecondaryTextColor(context),
             fontSize: 11.5,
             fontWeight: FontWeight.w700,
           ),

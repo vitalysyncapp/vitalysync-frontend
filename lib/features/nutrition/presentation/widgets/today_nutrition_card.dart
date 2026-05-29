@@ -22,16 +22,28 @@ class TodayNutritionCard extends StatelessWidget {
     final double progress = (calories / goal).clamp(0, 1).toDouble();
     final screenWidth = MediaQuery.of(context).size.width;
     final isCompact = screenWidth < 380;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(isCompact ? 9 : 11),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 8, 137, 184),
+        gradient: LinearGradient(
+          colors: isDark
+              ? const [Color(0xFF075985), Color(0xFF115E59)]
+              : const [Color.fromARGB(255, 8, 137, 184), Color(0xFF1FB489)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(isCompact ? 14 : 16),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: isDark ? 0.12 : 0.16),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.green.withValues(alpha: 0.18),
+            color: (isDark ? Colors.black : Colors.green).withValues(
+              alpha: isDark ? 0.26 : 0.18,
+            ),
             blurRadius: isCompact ? 6 : 8,
             offset: Offset(0, isCompact ? 2 : 3),
           ),

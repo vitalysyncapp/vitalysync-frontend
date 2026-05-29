@@ -1,258 +1,320 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
 
-class VersionPage extends StatefulWidget {
+class VersionPage extends StatelessWidget {
   const VersionPage({super.key});
 
-  @override
-  State<VersionPage> createState() => _VersionPageState();
-}
-
-class _VersionPageState extends State<VersionPage>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 14),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  String _formattedDate() {
-    const months = <String>[
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-
-    final now = DateTime.now();
-    return '${months[now.month - 1]} ${now.day}, ${now.year}';
-  }
+  static const String _appVersion = '1.0.0';
+  static const String _buildNumber = '1';
+  static const String _updatedDate = 'May 28, 2026';
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = pagePrimaryTextColor(context);
-    final secondary = pageSecondaryTextColor(context);
-
-    return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF08111E)
-          : const Color(0xFFF5FAFF),
-      appBar: AppBar(
-        elevation: 0,
+    return Container(
+      decoration: buildPageDecoration(context),
+      child: Scaffold(
         backgroundColor: Colors.transparent,
-        foregroundColor: primary,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Navigator.pop(context),
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          foregroundColor: pagePrimaryTextColor(context),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Text(
+            'Version',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: pagePrimaryTextColor(context),
+            ),
+          ),
         ),
-        title: Text(
-          'Version',
-          style: TextStyle(fontWeight: FontWeight.bold, color: primary),
-        ),
-      ),
-      body: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, _) {
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              _AnimatedBackdrop(progress: _controller.value, isDark: isDark),
-              SafeArea(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    24,
-                    24,
-                    24,
-                    pageBottomContentPadding(context, extra: 24),
-                  ),
-                  child: Center(
-                    child: Container(
-                      width: double.infinity,
-                      constraints: const BoxConstraints(maxWidth: 560),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 28,
-                        vertical: 36,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.08)
-                            : Colors.white.withValues(alpha: 0.72),
-                        borderRadius: BorderRadius.circular(30),
-                        border: Border.all(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.12)
-                              : const Color(0xFFDBEAFE),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(
-                              alpha: isDark ? 0.22 : 0.08,
-                            ),
-                            blurRadius: 24,
-                            offset: const Offset(0, 14),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Version 1.0',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 40,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.6,
-                              color: primary,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          Text(
-                            _formattedDate(),
-                            style: TextStyle(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w600,
-                              color: secondary,
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-                          Text(
-                            'Developer: VitalySync Team',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: primary.withValues(alpha: 0.88),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          Text(
-                            'Release Notes: \n- App is still in early stage of development, but you can explore the home screen and settings. More features coming soon!',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(height: 1.45, color: secondary),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+        body: SafeArea(
+          child: ListView(
+            padding: EdgeInsets.fromLTRB(
+              16,
+              8,
+              16,
+              pageBottomContentPadding(context),
+            ),
+            children: const [
+              _VersionHeroCard(),
+              SizedBox(height: 16),
+              _DetailsCard(),
+              SizedBox(height: 16),
+              _ReleaseNotesCard(),
             ],
-          );
-        },
+          ),
+        ),
       ),
     );
   }
 }
 
-class _AnimatedBackdrop extends StatelessWidget {
-  final double progress;
-  final bool isDark;
-
-  const _AnimatedBackdrop({required this.progress, required this.isDark});
+class _VersionHeroCard extends StatelessWidget {
+  const _VersionHeroCard();
 
   @override
   Widget build(BuildContext context) {
-    final background = isDark
-        ? const [Color(0xFF07101D), Color(0xFF0F1C2F), Color(0xFF0A1626)]
-        : const [Color(0xFFE6F4FF), Color(0xFFFDFEFF), Color(0xFFDFF1FF)];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: background,
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? const [Color(0xFF163447), Color(0xFF17322E)]
+              : const [Color(0xFFEAF7FF), Color(0xFFEAFBF3)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: pageBorderColor(context)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 82,
+            height: 82,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: isDark ? 0.08 : 0.78),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: pageBorderColor(context)),
+            ),
+            child: Image.asset(
+              'assets/images/logo.png',
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => Icon(
+                Icons.spa_rounded,
+                color: Theme.of(context).colorScheme.primary,
+                size: 40,
+              ),
             ),
           ),
-        ),
-        _MovingOrb(
-          alignment: Alignment(
-            math.sin(progress * math.pi * 2) * 0.75,
-            -0.6 + math.cos(progress * math.pi * 2) * 0.22,
+          const SizedBox(height: 18),
+          Text(
+            'VitalySync',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              color: pagePrimaryTextColor(context),
+            ),
           ),
-          size: 240,
-          color: isDark
-              ? const Color(0xFF3B82F6).withValues(alpha: 0.22)
-              : const Color(0xFF60A5FA).withValues(alpha: 0.26),
-        ),
-        _MovingOrb(
-          alignment: Alignment(
-            0.7 + math.cos(progress * math.pi * 2) * 0.18,
-            math.sin(progress * math.pi * 2) * 0.55,
+          const SizedBox(height: 6),
+          Text(
+            'Version ${VersionPage._appVersion}',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
-          size: 300,
-          color: isDark
-              ? const Color(0xFF22D3EE).withValues(alpha: 0.16)
-              : const Color(0xFF22C55E).withValues(alpha: 0.16),
-        ),
-        _MovingOrb(
-          alignment: Alignment(
-            -0.7 + math.sin(progress * math.pi * 2 + 1.4) * 0.2,
-            0.7 + math.cos(progress * math.pi * 2 + 0.8) * 0.16,
+          const SizedBox(height: 8),
+          Text(
+            'Build ${VersionPage._buildNumber} - Updated ${VersionPage._updatedDate}',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              height: 1.4,
+              fontWeight: FontWeight.w600,
+              color: pageSecondaryTextColor(context),
+            ),
           ),
-          size: 220,
-          color: isDark
-              ? const Color(0xFFF59E0B).withValues(alpha: 0.12)
-              : const Color(0xFF38BDF8).withValues(alpha: 0.18),
+        ],
+      ),
+    );
+  }
+}
+
+class _DetailsCard extends StatelessWidget {
+  const _DetailsCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return _VersionSection(
+      title: 'Build Details',
+      children: const [
+        _DetailRow(
+          icon: Icons.verified_outlined,
+          label: 'App version',
+          value: VersionPage._appVersion,
+        ),
+        _DetailRow(
+          icon: Icons.tag_rounded,
+          label: 'Build number',
+          value: VersionPage._buildNumber,
+        ),
+        _DetailRow(
+          icon: Icons.school_outlined,
+          label: 'Project status',
+          value: 'Academic preview',
+        ),
+        _DetailRow(
+          icon: Icons.groups_outlined,
+          label: 'Developer',
+          value: 'VitalySync Team',
         ),
       ],
     );
   }
 }
 
-class _MovingOrb extends StatelessWidget {
-  final Alignment alignment;
-  final double size;
-  final Color color;
+class _ReleaseNotesCard extends StatelessWidget {
+  const _ReleaseNotesCard();
 
-  const _MovingOrb({
-    required this.alignment,
-    required this.size,
-    required this.color,
+  @override
+  Widget build(BuildContext context) {
+    return _VersionSection(
+      title: 'Latest Updates',
+      children: const [
+        _ReleaseNote(text: 'Refined Settings layout and section hierarchy.'),
+        _ReleaseNote(text: 'Improved Help & Support contact presentation.'),
+        _ReleaseNote(
+          text: 'Polished Terms, Privacy, About, and Version pages.',
+        ),
+      ],
+    );
+  }
+}
+
+class _VersionSection extends StatelessWidget {
+  final String title;
+  final List<Widget> children;
+
+  const _VersionSection({required this.title, required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: pageSurfaceColor(context),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: pageBorderColor(context)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: Theme.of(context).brightness == Brightness.dark
+                  ? 0.16
+                  : 0.04,
+            ),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: pagePrimaryTextColor(context),
+              ),
+            ),
+          ),
+          ...children,
+        ],
+      ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _DetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: alignment,
-      child: IgnorePointer(
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              colors: [color, color.withValues(alpha: 0.0)],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: Theme.of(context).colorScheme.primary, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: pageSecondaryTextColor(context),
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: pagePrimaryTextColor(context),
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReleaseNote extends StatelessWidget {
+  final String text;
+
+  const _ReleaseNote({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.check_circle_rounded,
+            color: Theme.of(context).colorScheme.primary,
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                height: 1.4,
+                fontWeight: FontWeight.w600,
+                color: pageSecondaryTextColor(context),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

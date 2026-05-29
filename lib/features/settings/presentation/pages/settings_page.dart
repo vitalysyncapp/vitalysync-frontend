@@ -235,6 +235,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 child: Column(
                   children: [
+                    _buildHeaderCard(context: context, prefs: prefs),
+                    const SizedBox(height: 16),
                     _buildSectionCard(
                       context: context,
                       title: "Floating Assistant",
@@ -388,15 +390,15 @@ class _SettingsPageState extends State<SettingsPage> {
                     const SizedBox(height: 16),
                     _buildSectionCard(
                       context: context,
-                      title: "",
+                      title: "Support & App Info",
                       children: [
                         _buildSettingsTile(
                           context: context,
                           icon: Icons.help_outline_rounded,
-                          iconBg: const Color(0xFFF1F3F5),
-                          iconColor: const Color(0xFF4B5563),
+                          iconBg: const Color(0xFFEFF6FF),
+                          iconColor: const Color(0xFF2563EB),
                           title: "Help & Support",
-                          subtitle: null,
+                          subtitle: "Contact channels and support details",
                           onTap: () {
                             Navigator.push(
                               context,
@@ -410,10 +412,10 @@ class _SettingsPageState extends State<SettingsPage> {
                         _buildSettingsTile(
                           context: context,
                           icon: Icons.article_outlined,
-                          iconBg: const Color(0xFFF1F3F5),
-                          iconColor: const Color(0xFF4B5563),
+                          iconBg: const Color(0xFFF0FDFA),
+                          iconColor: const Color(0xFF0F766E),
                           title: "Terms & Privacy Policy",
-                          subtitle: null,
+                          subtitle: "Review app terms and data practices",
                           onTap: () {
                             Navigator.push(
                               context,
@@ -427,10 +429,10 @@ class _SettingsPageState extends State<SettingsPage> {
                         _buildSettingsTile(
                           context: context,
                           icon: Icons.info_outline_rounded,
-                          iconBg: const Color(0xFFF1F3F5),
-                          iconColor: const Color(0xFF4B5563),
+                          iconBg: const Color(0xFFF5F3FF),
+                          iconColor: const Color(0xFF7C3AED),
                           title: "About",
-                          subtitle: null,
+                          subtitle: "Project overview and team credits",
                           onTap: () {
                             Navigator.push(
                               context,
@@ -444,10 +446,10 @@ class _SettingsPageState extends State<SettingsPage> {
                         _buildSettingsTile(
                           context: context,
                           icon: Icons.verified_outlined,
-                          iconBg: const Color(0xFFF1F3F5),
-                          iconColor: const Color(0xFF4B5563),
+                          iconBg: const Color(0xFFFFF7ED),
+                          iconColor: const Color(0xFFEA580C),
                           title: "Version",
-                          subtitle: null,
+                          subtitle: "Current build and release notes",
                           onTap: () {
                             Navigator.push(
                               context,
@@ -469,11 +471,153 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  Widget _buildHeaderCard({
+    required BuildContext context,
+    required AppPreferencesState prefs,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final notificationsLabel = prefs.notificationsEnabled ? 'On' : 'Off';
+    final accountLabel = _session.isLoggedIn ? 'Signed in' : 'Local mode';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: pageSurfaceColor(context),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: pageBorderColor(context)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                height: 58,
+                width: 58,
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: isDark
+                        ? const [Color(0xFF1B4D5C), Color(0xFF1EAD83)]
+                        : const [Color(0xFFDDF8EE), Color(0xFFEAF5FF)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: pageBorderColor(context)),
+                ),
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => Icon(
+                    Icons.spa_rounded,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 30,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Settings Center',
+                      style: TextStyle(
+                        fontSize: 21,
+                        fontWeight: FontWeight.w800,
+                        color: pagePrimaryTextColor(context),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Personalize your VitalySync experience from one place.',
+                      style: TextStyle(
+                        height: 1.35,
+                        color: pageSecondaryTextColor(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _buildStatusPill(
+                context: context,
+                icon: Icons.palette_outlined,
+                label: prefs.themeMode == ThemeMode.dark ? 'Dark' : 'Light',
+              ),
+              _buildStatusPill(
+                context: context,
+                icon: Icons.notifications_active_outlined,
+                label: 'Notifications $notificationsLabel',
+              ),
+              _buildStatusPill(
+                context: context,
+                icon: Icons.account_circle_outlined,
+                label: accountLabel,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusPill({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : const Color(0xFFF6FBFF),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: pageBorderColor(context)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 7),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+              color: pagePrimaryTextColor(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSectionCard({
     required BuildContext context,
     required String title,
     required List<Widget> children,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -482,13 +626,9 @@ class _SettingsPageState extends State<SettingsPage> {
         border: Border.all(color: pageBorderColor(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(
-              alpha: Theme.of(context).brightness == Brightness.dark
-                  ? 0.18
-                  : 0.04,
-            ),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: isDark ? 0.16 : 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -523,6 +663,8 @@ class _SettingsPageState extends State<SettingsPage> {
     bool enabled = true,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return InkWell(
       borderRadius: BorderRadius.circular(20),
       onTap: enabled ? onTap : null,
@@ -534,8 +676,11 @@ class _SettingsPageState extends State<SettingsPage> {
               height: 46,
               width: 46,
               decoration: BoxDecoration(
-                color: iconBg,
+                color: isDark ? iconBg.withValues(alpha: 0.16) : iconBg,
                 borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: iconColor.withValues(alpha: isDark ? 0.18 : 0.08),
+                ),
               ),
               child: Icon(icon, color: iconColor, size: 24),
             ),
@@ -560,6 +705,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       subtitle,
                       style: TextStyle(
                         fontSize: 13.5,
+                        height: 1.35,
                         color: pageSecondaryTextColor(context),
                         fontWeight: FontWeight.w500,
                       ),

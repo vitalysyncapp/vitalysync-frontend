@@ -13,6 +13,13 @@ Auth illustration asset notes
   License summary: free for personal, academic, and commercial use without
   attribution; do not resell/repackage illustrations or duplicate Scale.
 
+- auth_meditation.svg
+  Source: Scale by Flexiple, "Meditation illustration"
+  URL: https://scale.flexiple.com/illustrations/meditation-at-home-multi/
+  Asset URL: https://scale.flexiple.com/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBbHdQIiwiZXhwIjpudWxsLCJwdXIiOiJibG9iX2lkIn19--c6d08e34fc6983226a7a8f7ca1b3e50f5b6f52b2/29.Meditation-20(mask-multicolor)-02.svg/
+  License summary: free for personal, academic, and commercial use without
+  attribution; do not resell/repackage illustrations or duplicate Scale.
+
 - auth_work_stress.svg
   Source: Scale by Flexiple, "Work stress illustration"
   URL: https://scale.flexiple.com/illustrations/work-stress-multi/

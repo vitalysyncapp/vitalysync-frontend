@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../profile/presentation/pages/history_page.dart';
 import '../../data/weekly_user_metrics.dart';
 
 class WeeklyPerformanceCard extends StatefulWidget {
@@ -90,6 +91,36 @@ class _WeeklyPerformanceCardState extends State<WeeklyPerformanceCard> {
                         color: Colors.white,
                         fontSize: 12.5,
                         height: 1.35,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const HistoryPage(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.history_rounded, size: 18),
+                        label: const Text(
+                          'View History',
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: BorderSide(
+                            color: Colors.white.withValues(alpha: 0.36),
+                          ),
+                          backgroundColor: Colors.white.withValues(alpha: 0.12),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
                       ),
                     ),
                   ],

@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
@@ -9,6 +10,16 @@ import '../../../../shared/widgets/reveal_on_build.dart';
 import '../../../onboarding/services/onboarding_service.dart';
 import '../../data/log_api.dart';
 import '../widgets/log_widgets.dart';
+
+const _streakFireAnimationPath = 'assets/animations/streak_fire.json';
+const _healthyHeartAnimationPath = 'assets/animations/healthy_heart.json';
+const _wellnessConfettiColors = [
+  Color(0xFF1FB489),
+  Color(0xFF56CCF2),
+  Color(0xFFFACC15),
+  Color(0xFFFF8A4C),
+  Color(0xFFE879F9),
+];
 
 class LogPage extends StatefulWidget {
   const LogPage({super.key});
@@ -418,7 +429,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                                 12,
                                 10,
                                 12,
-                                pageBottomContentPadding(context, extra: 21),
+                                pageBottomContentPadding(context, extra: 10.5),
                               ),
                               child: Column(
                                 children: [
@@ -518,22 +529,64 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                               ),
                             ),
                     ),
-                    Align(
-                      alignment: Alignment.topCenter,
-                      child: ConfettiWidget(
-                        confettiController: _confettiController,
-                        blastDirection: pi / 2,
-                        emissionFrequency: 0.05,
-                        numberOfParticles: 20,
-                        maxBlastForce: 20,
-                        minBlastForce: 8,
-                        gravity: 0.22,
-                        shouldLoop: false,
-                      ),
-                    ),
+                    _buildConfettiOverlay(),
                   ],
                 ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildConfettiOverlay() {
+    return IgnorePointer(
+      child: Stack(
+        children: [
+          Align(
+            alignment: Alignment.topCenter,
+            child: ConfettiWidget(
+              confettiController: _confettiController,
+              blastDirectionality: BlastDirectionality.explosive,
+              emissionFrequency: 0.045,
+              numberOfParticles: 18,
+              maxBlastForce: 22,
+              minBlastForce: 7,
+              gravity: 0.2,
+              colors: _wellnessConfettiColors,
+              createParticlePath: _drawHeartParticle,
+              shouldLoop: false,
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ConfettiWidget(
+              confettiController: _confettiController,
+              blastDirection: 0,
+              emissionFrequency: 0.026,
+              numberOfParticles: 8,
+              maxBlastForce: 16,
+              minBlastForce: 5,
+              gravity: 0.16,
+              colors: _wellnessConfettiColors,
+              createParticlePath: _drawLeafParticle,
+              shouldLoop: false,
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: ConfettiWidget(
+              confettiController: _confettiController,
+              blastDirection: pi,
+              emissionFrequency: 0.026,
+              numberOfParticles: 8,
+              maxBlastForce: 16,
+              minBlastForce: 5,
+              gravity: 0.16,
+              colors: _wellnessConfettiColors,
+              createParticlePath: _drawLeafParticle,
+              shouldLoop: false,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -582,34 +635,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            TweenAnimationBuilder<double>(
-              tween: Tween<double>(begin: 0.85, end: 1),
-              duration: const Duration(milliseconds: 450),
-              curve: Curves.easeOutBack,
-              builder: (context, scale, child) {
-                return Transform.scale(scale: scale, child: child);
-              },
-              child: Container(
-                width: 88,
-                height: 88,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE0F2FE),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF38BDF8).withValues(alpha: 0.22),
-                      blurRadius: 14,
-                      spreadRadius: 1,
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.check_circle_rounded,
-                  size: 52,
-                  color: Color(0xFF0284C7),
-                ),
-              ),
-            ),
+            _buildSuccessAnimation(),
             const SizedBox(height: 18),
             Text(
               lastSaveWasOffline ? 'Check-in Saved Offline' : 'Check-in Saved!',
@@ -626,12 +652,14 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                   ? 'Your daily wellness log is saved on this device. It will sync automatically when internet access is available again.'
                   : 'Your daily wellness log has been recorded. Come back tomorrow for your next check-in, or redo today\'s entry if you need to update it.',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF64748B),
+                color: pageSecondaryTextColor(context),
                 height: 1.4,
               ),
             ),
+            const SizedBox(height: 14),
+            _buildSuccessStreakBadge(),
             if (hasPendingSync) ...[
               const SizedBox(height: 12),
               _buildPendingSyncBanner(),
@@ -650,16 +678,118 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                 ),
                 child: const Text(
                   'Redo Today\'s Log',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF334155),
-                  ),
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                 ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSuccessAnimation() {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0.85, end: 1),
+      duration: const Duration(milliseconds: 450),
+      curve: Curves.easeOutBack,
+      builder: (context, scale, child) {
+        return Transform.scale(scale: scale, child: child);
+      },
+      child: SizedBox(
+        width: 104,
+        height: 104,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
+              width: 92,
+              height: 92,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE0F2FE),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF38BDF8).withValues(alpha: 0.22),
+                    blurRadius: 14,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: Lottie.asset(
+                _healthyHeartAnimationPath,
+                width: 86,
+                height: 86,
+                fit: BoxFit.contain,
+                repeat: true,
+                animate: true,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(
+                    Icons.favorite_rounded,
+                    size: 48,
+                    color: Color(0xFF1FB489),
+                  );
+                },
+              ),
+            ),
+            Positioned(
+              right: 4,
+              bottom: 6,
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1FB489),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 3),
+                ),
+                child: const Icon(
+                  Icons.check_rounded,
+                  size: 19,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSuccessStreakBadge() {
+    final streakText = currentStreak == 1
+        ? '1 day streak'
+        : '$currentStreak day streak';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFFFF8A1F).withValues(alpha: 0.12)
+            : const Color(0xFFFFF7ED),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFFF8A1F).withValues(alpha: 0.34),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _buildFireAnimation(size: 46),
+          const SizedBox(height: 3),
+          Text(
+            streakText,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFFFBBF24)
+                  : const Color(0xFF7C2D12),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -759,31 +889,51 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFF7ED),
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFFFF8A1F).withValues(alpha: 0.12)
+                  : const Color(0xFFFFF7ED),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFFED7AA)),
+              border: Border.all(
+                color: const Color(0xFFFF8A1F).withValues(alpha: 0.34),
+              ),
             ),
             child: Row(
               children: [
                 Text(
                   '$currentStreak',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF9A3412),
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? const Color(0xFFFBBF24)
+                        : const Color(0xFF9A3412),
                   ),
                 ),
                 const SizedBox(width: 6),
-                const Icon(
-                  Icons.local_fire_department_rounded,
-                  size: 16,
-                  color: Color(0xFFFF6B35),
-                ),
+                _buildFireAnimation(size: 20),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFireAnimation({required double size}) {
+    return Lottie.asset(
+      _streakFireAnimationPath,
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
+      repeat: true,
+      animate: true,
+      errorBuilder: (context, error, stackTrace) {
+        return Icon(
+          Icons.local_fire_department_rounded,
+          size: size * 0.86,
+          color: const Color(0xFFFF6B35),
+        );
+      },
     );
   }
 
@@ -814,4 +964,67 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       ),
     );
   }
+}
+
+Path _drawHeartParticle(Size size) {
+  final width = size.width;
+  final height = size.height;
+  final path = Path();
+
+  path.moveTo(width * 0.5, height * 0.92);
+  path.cubicTo(
+    width * 0.1,
+    height * 0.62,
+    0,
+    height * 0.34,
+    width * 0.18,
+    height * 0.16,
+  );
+  path.cubicTo(
+    width * 0.32,
+    height * 0.02,
+    width * 0.47,
+    height * 0.08,
+    width * 0.5,
+    height * 0.25,
+  );
+  path.cubicTo(
+    width * 0.53,
+    height * 0.08,
+    width * 0.68,
+    height * 0.02,
+    width * 0.82,
+    height * 0.16,
+  );
+  path.cubicTo(
+    width,
+    height * 0.34,
+    width * 0.9,
+    height * 0.62,
+    width * 0.5,
+    height * 0.92,
+  );
+  path.close();
+
+  return path;
+}
+
+Path _drawLeafParticle(Size size) {
+  final width = size.width;
+  final height = size.height;
+  final path = Path();
+
+  path.moveTo(width * 0.5, 0);
+  path.cubicTo(
+    width,
+    height * 0.2,
+    width * 0.9,
+    height * 0.78,
+    width * 0.5,
+    height,
+  );
+  path.cubicTo(width * 0.1, height * 0.78, 0, height * 0.2, width * 0.5, 0);
+  path.close();
+
+  return path;
 }

@@ -5,11 +5,6 @@ String? _emptyToNull(String? value) {
   return trimmed.isEmpty ? null : trimmed;
 }
 
-String _fallbackValue(String value, String fallback) {
-  final trimmed = value.trim();
-  return trimmed.isEmpty ? fallback : trimmed;
-}
-
 String _workIntensityFromHours(int hours) => hours >= 10
     ? 'High'
     : hours >= 7

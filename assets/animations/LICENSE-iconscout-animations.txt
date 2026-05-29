@@ -1,0 +1,13 @@
+IconScout Lottie animation attributions
+
+streak_fire.json
+- Title: Free Fire Animation
+- Source: https://iconscout.com/free-lottie-animation/free-fire-animation_12152388
+- Creator listed by source: Google Inc.
+- License listed by source: Creative Commons 4 Attribution License
+
+healthy_heart.json
+- Title: Free Heart Animation
+- Source: https://iconscout.com/free-lottie-animation/free-heart-animation_5605178
+- Creator listed by source: Gege Prima pratama
+- License listed by source: Digital License

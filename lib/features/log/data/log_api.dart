@@ -50,6 +50,8 @@ class LogApi {
   static const String _weeklyPulseStatusCache = 'weekly_pulse_status';
   static const String _weeklyPulsePendingCache = 'weekly_pulse_pending';
   static const Duration _requestTimeout = Duration(seconds: 8);
+  static const String liveDataIssueOffline = 'offline';
+  static const String liveDataIssueUnavailable = 'unavailable';
 
   static const List<String> exerciseOptions = [
     'Walking',
@@ -313,9 +315,17 @@ class LogApi {
         throw Exception(error.message);
       }
 
-      return _buildOfflineUserLogResponse(userId, forToday: true);
-    } catch (_) {
-      return _buildOfflineUserLogResponse(userId, forToday: true);
+      return _buildOfflineUserLogResponse(
+        userId,
+        forToday: true,
+        liveDataIssue: _liveDataIssueForError(error),
+      );
+    } catch (error) {
+      return _buildOfflineUserLogResponse(
+        userId,
+        forToday: true,
+        liveDataIssue: _liveDataIssueForError(error),
+      );
     }
   }
 
@@ -364,9 +374,15 @@ class LogApi {
         throw Exception(error.message);
       }
 
-      return _buildOfflineUserLogResponse(userId);
-    } catch (_) {
-      return _buildOfflineUserLogResponse(userId);
+      return _buildOfflineUserLogResponse(
+        userId,
+        liveDataIssue: _liveDataIssueForError(error),
+      );
+    } catch (error) {
+      return _buildOfflineUserLogResponse(
+        userId,
+        liveDataIssue: _liveDataIssueForError(error),
+      );
     }
   }
 
@@ -974,6 +990,25 @@ class LogApi {
     }
     return syncedCount;
   }
+}
+
+String _liveDataIssueForError(Object error) {
+  if (error is _LogApiException) {
+    return LogApi.liveDataIssueUnavailable;
+  }
+
+  final message = error.toString().toLowerCase();
+  final looksOffline =
+      message.contains('failed host lookup') ||
+      message.contains('host is unreachable') ||
+      message.contains('network is unreachable') ||
+      message.contains('no address associated') ||
+      message.contains('temporary failure in name resolution') ||
+      message.contains('nodename nor servname');
+
+  return looksOffline
+      ? LogApi.liveDataIssueOffline
+      : LogApi.liveDataIssueUnavailable;
 }
 
 class _LogApiException implements Exception {

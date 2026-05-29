@@ -12,6 +12,7 @@ import '../../../../features/onboarding/data/onboarding_api.dart';
 import '../../../../shared/config/api_config.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/validation_dialog.dart';
 import '../widgets/auth_chrome.dart';
 import 'sign_up_page.dart';
 
@@ -66,6 +67,10 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> login() async {
+    if (isLoading) {
+      return;
+    }
+
     setState(() => isLoading = true);
 
     try {
@@ -84,10 +89,10 @@ class _LoginPageState extends State<LoginPage> {
 
         if (authToken == null || authToken.isEmpty) {
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Login failed: session token was missing.'),
-            ),
+          await ValidationDialog.show(
+            context,
+            message: 'Login failed: session token was missing.',
+            type: ValidationDialogType.error,
           );
           return;
         }
@@ -114,6 +119,14 @@ class _LoginPageState extends State<LoginPage> {
         }
 
         if (!mounted) return;
+        setState(() => isLoading = false);
+        await ValidationDialog.show(
+          context,
+          message: 'Signed in successfully.',
+          type: ValidationDialogType.success,
+        );
+
+        if (!mounted) return;
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
@@ -125,21 +138,22 @@ class _LoginPageState extends State<LoginPage> {
         );
       } else {
         if (!mounted) return;
-        ScaffoldMessenger.of(
+        await ValidationDialog.show(
           context,
-        ).showSnackBar(SnackBar(content: Text(_loginFailureMessage(response))));
+          message: _loginFailureMessage(response),
+          type: ValidationDialogType.error,
+        );
       }
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
+      await ValidationDialog.show(
+        context,
+        message:
             'Unable to reach the server right now. Please check your connection and try again.',
-          ),
-        ),
+        type: ValidationDialogType.connection,
       );
     } finally {
-      if (mounted) {
+      if (mounted && isLoading) {
         setState(() => isLoading = false);
       }
     }

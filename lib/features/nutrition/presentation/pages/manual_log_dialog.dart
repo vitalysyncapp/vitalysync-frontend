@@ -185,7 +185,10 @@ class _ManualLogDialogState extends State<_ManualLogDialog> {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(isCompact ? 20 : 24),
           child: Container(
-            color: Colors.white,
+            decoration: BoxDecoration(
+              color: pageSurfaceColor(context),
+              border: Border.all(color: pageBorderColor(context)),
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -207,7 +210,7 @@ class _ManualLogDialogState extends State<_ManualLogDialog> {
                               style: TextStyle(
                                 fontSize: isCompact ? 18 : 20,
                                 fontWeight: FontWeight.w800,
-                                color: const Color(0xFF0F172A),
+                                color: pagePrimaryTextColor(context),
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -215,7 +218,7 @@ class _ManualLogDialogState extends State<_ManualLogDialog> {
                               'Estimate nutrition from typed meal details.',
                               style: TextStyle(
                                 fontSize: isCompact ? 12 : 13,
-                                color: const Color(0xFF64748B),
+                                color: pageSecondaryTextColor(context),
                               ),
                             ),
                             const SizedBox(height: 6),
@@ -387,9 +390,9 @@ class _ManualMealForm extends StatelessWidget {
       margin: EdgeInsets.only(bottom: isCompact ? 12 : 14),
       padding: EdgeInsets.all(isCompact ? 12 : 14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: pageSubtleSurfaceColor(context),
         borderRadius: BorderRadius.circular(isCompact ? 16 : 18),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: pageBorderColor(context)),
       ),
       child: Column(
         children: [
@@ -401,7 +404,7 @@ class _ManualMealForm extends StatelessWidget {
                   style: TextStyle(
                     fontSize: isCompact ? 14 : 15,
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF0F172A),
+                    color: pagePrimaryTextColor(context),
                   ),
                 ),
               ),
@@ -429,32 +432,32 @@ class _ManualMealForm extends StatelessWidget {
           TextField(
             controller: draft.quantityController,
             textInputAction: TextInputAction.next,
-            decoration: _inputDecoration('Quantity'),
+            decoration: _inputDecoration(context, 'Quantity'),
           ),
           SizedBox(height: isCompact ? 8 : 10),
           TextField(
             controller: draft.notesController,
             minLines: 2,
             maxLines: 4,
-            decoration: _inputDecoration('Optional Notes'),
+            decoration: _inputDecoration(context, 'Optional Notes'),
           ),
         ],
       ),
     );
   }
 
-  InputDecoration _inputDecoration(String label) {
+  InputDecoration _inputDecoration(BuildContext context, String label) {
     return InputDecoration(
       labelText: label,
       filled: true,
-      fillColor: Colors.white,
+      fillColor: pageSubtleSurfaceColor(context),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(isCompact ? 12 : 14),
-        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+        borderSide: BorderSide(color: pageBorderColor(context)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(isCompact ? 12 : 14),
-        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+        borderSide: BorderSide(color: pageBorderColor(context)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(isCompact ? 12 : 14),
@@ -511,7 +514,7 @@ class _MealNameAutocompleteField extends StatelessWidget {
               controller: fieldController,
               focusNode: fieldFocusNode,
               textInputAction: textInputAction,
-              decoration: _inputDecoration('Meal Name'),
+              decoration: _inputDecoration(context, 'Meal Name'),
             );
           },
       optionsViewBuilder: (context, onSelected, options) {
@@ -523,7 +526,7 @@ class _MealNameAutocompleteField extends StatelessWidget {
           child: Material(
             elevation: 8,
             borderRadius: BorderRadius.circular(isCompact ? 12 : 14),
-            color: Colors.white,
+            color: pageSurfaceColor(context),
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 maxWidth: optionWidth.clamp(240, 480).toDouble(),
@@ -533,10 +536,10 @@ class _MealNameAutocompleteField extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 shrinkWrap: true,
                 itemCount: options.length,
-                separatorBuilder: (_, _) => const Divider(
+                separatorBuilder: (_, _) => Divider(
                   height: 1,
                   thickness: 1,
-                  color: Color(0xFFE5E7EB),
+                  color: pageBorderColor(context),
                 ),
                 itemBuilder: (context, index) {
                   final option = options.elementAt(index);
@@ -560,8 +563,8 @@ class _MealNameAutocompleteField extends StatelessWidget {
                               option,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFF0F172A),
+                              style: TextStyle(
+                                color: pagePrimaryTextColor(context),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -579,18 +582,18 @@ class _MealNameAutocompleteField extends StatelessWidget {
     );
   }
 
-  InputDecoration _inputDecoration(String label) {
+  InputDecoration _inputDecoration(BuildContext context, String label) {
     return InputDecoration(
       labelText: label,
       filled: true,
-      fillColor: Colors.white,
+      fillColor: pageSubtleSurfaceColor(context),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(isCompact ? 12 : 14),
-        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+        borderSide: BorderSide(color: pageBorderColor(context)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(isCompact ? 12 : 14),
-        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+        borderSide: BorderSide(color: pageBorderColor(context)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(isCompact ? 12 : 14),
@@ -620,9 +623,9 @@ class _ReviewItemEditor extends StatelessWidget {
       margin: EdgeInsets.only(bottom: isCompact ? 10 : 14),
       padding: EdgeInsets.all(isCompact ? 12 : 14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: pageSubtleSurfaceColor(context),
         borderRadius: BorderRadius.circular(isCompact ? 14 : 16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: pageBorderColor(context)),
       ),
       child: Column(
         children: [

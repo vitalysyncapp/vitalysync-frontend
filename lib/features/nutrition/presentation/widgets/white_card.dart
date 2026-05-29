@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/theme/app_page_style.dart';
+
 class WhiteCard extends StatelessWidget {
   final Widget child;
 
@@ -14,16 +16,10 @@ class WhiteCard extends StatelessWidget {
       width: double.infinity,
       padding: EdgeInsets.all(isCompact ? 12 : 14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.92),
+        color: pageSurfaceColor(context),
         borderRadius: BorderRadius.circular(isCompact ? 16 : 18),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: isCompact ? 8 : 10,
-            offset: Offset(0, isCompact ? 3 : 4),
-          ),
-        ],
+        border: Border.all(color: pageBorderColor(context)),
+        boxShadow: pageCardShadow(context),
       ),
       child: child,
     );

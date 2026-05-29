@@ -548,7 +548,7 @@ class _NutritionPageState extends State<NutritionPage> {
             style: TextStyle(
               fontSize: isCompact ? 15.5 : 16.5,
               fontWeight: FontWeight.w800,
-              color: const Color(0xFF0F172A),
+              color: pagePrimaryTextColor(context),
             ),
           ),
           SizedBox(height: isCompact ? 9 : 11),
@@ -636,7 +636,7 @@ class _NutritionPageState extends State<NutritionPage> {
               pagePadding,
               pagePadding,
               pagePadding,
-              pageBottomContentPadding(context, extra: 21),
+              pageBottomContentPadding(context, extra: 10.5),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

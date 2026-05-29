@@ -4,10 +4,12 @@ import '../theme/app_page_style.dart';
 
 class TermsPrivacyWidget extends StatelessWidget {
   final EdgeInsetsGeometry padding;
+  final double maxWidth;
 
   const TermsPrivacyWidget({
     super.key,
     this.padding = const EdgeInsets.all(16),
+    this.maxWidth = 720,
   });
 
   @override
@@ -16,74 +18,119 @@ class TermsPrivacyWidget extends StatelessWidget {
       decoration: buildPageDecoration(context),
       child: SingleChildScrollView(
         padding: padding,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _header(context),
-            const SizedBox(height: 20),
-            _introCard(context),
-            const SizedBox(height: 16),
-            _policyCard(
-              context: context,
-              title: 'Terms and Conditions',
-              icon: Icons.gavel_rounded,
-              color: const Color(0xFF2F66F3),
-              children: _termsContent(context),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _header(context),
+                const SizedBox(height: 16),
+                _introCard(context),
+                const SizedBox(height: 16),
+                _policyCard(
+                  context: context,
+                  title: 'Terms and Conditions',
+                  icon: Icons.gavel_rounded,
+                  color: const Color(0xFF2F66F3),
+                  children: _termsContent(context),
+                ),
+                const SizedBox(height: 16),
+                _policyCard(
+                  context: context,
+                  title: 'Privacy Policy',
+                  icon: Icons.privacy_tip_rounded,
+                  color: const Color(0xFF14B8A6),
+                  children: _privacyContent(context),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            _policyCard(
-              context: context,
-              title: 'Privacy Policy',
-              icon: Icons.privacy_tip_rounded,
-              color: const Color(0xFF14B8A6),
-              children: _privacyContent(context),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 
   Widget _header(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFE8F0FF),
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: const Icon(
-            Icons.shield_rounded,
-            color: Color(0xFF2F66F3),
-            size: 26,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            'Terms & Privacy Policy',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: pagePrimaryTextColor(context),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return _card(
+      context: context,
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF2F66F3).withValues(alpha: 0.2)
+                  : const Color(0xFFE8F0FF),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: const Color(0xFF2F66F3).withValues(alpha: 0.16),
+              ),
+            ),
+            child: const Icon(
+              Icons.shield_rounded,
+              color: Color(0xFF2F66F3),
+              size: 27,
             ),
           ),
-        ),
-      ],
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Terms & Privacy Policy',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: pagePrimaryTextColor(context),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Clear terms, privacy commitments, and data-use notes for VitalySync.',
+                  style: TextStyle(
+                    height: 1.45,
+                    color: pageSecondaryTextColor(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _introCard(BuildContext context) {
     return _card(
       context: context,
-      child: Text(
-        'This section contains the Terms and Conditions and Privacy Policy of VitalySync.',
-        style: TextStyle(
-          fontSize: 14.5,
-          height: 1.6,
-          color: pageSecondaryTextColor(context),
-        ),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.info_outline_rounded,
+            color: Theme.of(context).colorScheme.primary,
+            size: 22,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'VitalySync is a wellness support tool for awareness and routine tracking. It is not a medical diagnosis or treatment service.',
+              style: TextStyle(
+                fontSize: 14.5,
+                height: 1.55,
+                color: pageSecondaryTextColor(context),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -99,11 +146,26 @@ class TermsPrivacyWidget extends StatelessWidget {
       context: context,
       borderColor: color.withValues(alpha: 0.15),
       child: Theme(
-        data: ThemeData().copyWith(dividerColor: Colors.transparent),
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           initiallyExpanded: true,
           tilePadding: EdgeInsets.zero,
-          leading: Icon(icon, color: color),
+          childrenPadding: const EdgeInsets.only(top: 4),
+          expandedCrossAxisAlignment: CrossAxisAlignment.start,
+          expandedAlignment: Alignment.centerLeft,
+          leading: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: color.withValues(
+                alpha: Theme.of(context).brightness == Brightness.dark
+                    ? 0.18
+                    : 0.12,
+              ),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: color, size: 21),
+          ),
           title: Text(
             title,
             style: TextStyle(
@@ -272,15 +334,22 @@ class TermsPrivacyWidget extends StatelessWidget {
     String? footer,
   }) {
     final bodyColor = pageSecondaryTextColor(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      margin: const EdgeInsets.only(top: 12),
-      padding: const EdgeInsets.all(14),
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark
+        color: isDark
             ? Colors.white.withValues(alpha: 0.04)
             : const Color(0xFFF8FBFF),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.06)
+              : const Color(0xFFE5F0F8),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,11 +370,19 @@ class TermsPrivacyWidget extends StatelessWidget {
           if (bullets != null)
             ...bullets.map(
               (item) => Padding(
-                padding: const EdgeInsets.only(top: 6),
+                padding: const EdgeInsets.only(top: 7),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('\u2022 ', style: TextStyle(color: bodyColor)),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 1),
+                      child: Icon(
+                        Icons.check_circle_rounded,
+                        size: 15,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         item,
@@ -329,10 +406,11 @@ class TermsPrivacyWidget extends StatelessWidget {
     required BuildContext context,
     required Widget child,
     Color? borderColor,
+    EdgeInsetsGeometry padding = const EdgeInsets.all(18),
   }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: padding,
       decoration: BoxDecoration(
         color: pageSurfaceColor(context),
         borderRadius: BorderRadius.circular(22),

@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../shared/theme/app_page_style.dart';
 import '../../data/weekly_user_metrics.dart';
 
 class WellnessIndexCard extends StatefulWidget {
@@ -36,16 +37,16 @@ class _WellnessIndexCardState extends State<WellnessIndexCard> {
 
         return Container(
           padding: const EdgeInsets.all(14),
-          decoration: _cardDecoration(),
+          decoration: _cardDecoration(context),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Wellness Index',
                 style: TextStyle(
                   fontSize: 15.5,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF0B1F44),
+                  color: pagePrimaryTextColor(context),
                 ),
               ),
               const SizedBox(height: 12),
@@ -55,7 +56,10 @@ class _WellnessIndexCardState extends State<WellnessIndexCard> {
                   child: Center(child: CircularProgressIndicator()),
                 )
               else
-                SizedBox(height: 230, child: RadarChart(_chartData(entries))),
+                SizedBox(
+                  height: 230,
+                  child: RadarChart(_chartData(context, entries)),
+                ),
             ],
           ),
         );
@@ -63,18 +67,26 @@ class _WellnessIndexCardState extends State<WellnessIndexCard> {
     );
   }
 
-  RadarChartData _chartData(List<int> entries) {
+  RadarChartData _chartData(BuildContext context, List<int> entries) {
     return RadarChartData(
       radarShape: RadarShape.polygon,
       radarBorderData: const BorderSide(color: Colors.transparent),
-      gridBorderData: BorderSide(color: Colors.grey.withValues(alpha: 0.20)),
-      tickBorderData: BorderSide(color: Colors.grey.withValues(alpha: 0.15)),
-      ticksTextStyle: const TextStyle(color: Color(0xFF9AA5B1), fontSize: 10),
+      gridBorderData: BorderSide(color: pageBorderColor(context)),
+      tickBorderData: BorderSide(
+        color: pageBorderColor(context).withValues(alpha: 0.7),
+      ),
+      ticksTextStyle: TextStyle(
+        color: pageSecondaryTextColor(context),
+        fontSize: 10,
+      ),
       getTitle: (index, angle) {
         const titles = ['Sleep', 'Mood', 'Energy', 'Water', 'Move', 'Recover'];
         return RadarChartTitle(text: titles[index], angle: 0);
       },
-      titleTextStyle: const TextStyle(color: Color(0xFF4F5D75), fontSize: 11.5),
+      titleTextStyle: TextStyle(
+        color: pageSecondaryTextColor(context),
+        fontSize: 11.5,
+      ),
       titlePositionPercentageOffset: 0.16,
       dataSets: [
         RadarDataSet(
@@ -92,18 +104,12 @@ class _WellnessIndexCardState extends State<WellnessIndexCard> {
     );
   }
 
-  BoxDecoration _cardDecoration() {
+  BoxDecoration _cardDecoration(BuildContext context) {
     return BoxDecoration(
-      color: Colors.white.withValues(alpha: 0.94),
+      color: pageSurfaceColor(context),
       borderRadius: BorderRadius.circular(18),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.06),
-          blurRadius: 8,
-          offset: const Offset(0, 3),
-        ),
-      ],
-      border: Border.all(color: Colors.grey.withValues(alpha: 0.10)),
+      boxShadow: pageCardShadow(context),
+      border: Border.all(color: pageBorderColor(context)),
     );
   }
 }

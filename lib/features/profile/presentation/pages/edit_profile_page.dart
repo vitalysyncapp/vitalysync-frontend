@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/validation_dialog.dart';
 
 typedef EditProfileSaveCallback =
     Future<bool> Function({
@@ -9,11 +10,6 @@ typedef EditProfileSaveCallback =
       required int? age,
       required String? gender,
       required String? userType,
-      required String lifestyleType,
-      required String workIntensity,
-      required String sleepSchedule,
-      required String waterGoal,
-      required String exerciseTarget,
     });
 
 class EditProfilePage extends StatefulWidget {
@@ -24,11 +20,6 @@ class EditProfilePage extends StatefulWidget {
     required this.initialAge,
     required this.initialGender,
     required this.initialUserType,
-    required this.initialLifestyle,
-    required this.initialWorkIntensity,
-    required this.initialSleepSchedule,
-    required this.initialWaterGoal,
-    required this.initialExerciseTarget,
     required this.onSave,
   });
 
@@ -37,11 +28,6 @@ class EditProfilePage extends StatefulWidget {
   final int? initialAge;
   final String? initialGender;
   final String? initialUserType;
-  final String initialLifestyle;
-  final String initialWorkIntensity;
-  final String initialSleepSchedule;
-  final String initialWaterGoal;
-  final String initialExerciseTarget;
   final EditProfileSaveCallback onSave;
 
   @override
@@ -57,27 +43,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
     'Unemployed',
     'Other',
   ];
-  static const List<String> _lifestyleOptions = [
-    'Sedentary',
-    'Lightly Active',
-    'Moderately Active',
-    'Active',
-    'Very Active',
-  ];
-  static const List<String> _workIntensityOptions = ['Low', 'Medium', 'High'];
-
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _usernameController;
   late final TextEditingController _emailController;
   late final TextEditingController _ageController;
-  late final TextEditingController _sleepController;
-  late final TextEditingController _waterGoalController;
-  late final TextEditingController _exerciseTargetController;
 
   late String? _selectedGender;
   late String? _selectedUserType;
-  late String _selectedLifestyle;
-  late String _selectedIntensity;
   bool _isSubmitting = false;
 
   @override
@@ -88,15 +60,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _ageController = TextEditingController(
       text: widget.initialAge?.toString() ?? '',
     );
-    _sleepController = TextEditingController(text: widget.initialSleepSchedule);
-    _waterGoalController = TextEditingController(text: widget.initialWaterGoal);
-    _exerciseTargetController = TextEditingController(
-      text: widget.initialExerciseTarget,
-    );
     _selectedGender = widget.initialGender;
     _selectedUserType = widget.initialUserType;
-    _selectedLifestyle = widget.initialLifestyle;
-    _selectedIntensity = widget.initialWorkIntensity;
   }
 
   @override
@@ -104,96 +69,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _usernameController.dispose();
     _emailController.dispose();
     _ageController.dispose();
-    _sleepController.dispose();
-    _waterGoalController.dispose();
-    _exerciseTargetController.dispose();
     super.dispose();
   }
 
-  Future<void> _showCenterNotice({
-    required IconData icon,
-    required String title,
-    required String message,
-    required Color color,
-  }) async {
-    if (!mounted) return;
-
-    await showDialog<void>(
-      context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.12),
-      builder: (dialogContext) {
-        Future<void>.delayed(const Duration(seconds: 2), () {
-          if (dialogContext.mounted && Navigator.of(dialogContext).canPop()) {
-            Navigator.of(dialogContext).pop();
-          }
-        });
-
-        return Center(
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              width: 280,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: pageSurfaceColor(context).withValues(alpha: 0.94),
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: pageBorderColor(context)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.16),
-                    blurRadius: 24,
-                    offset: const Offset(0, 12),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Icon(icon, color: color, size: 26),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: pagePrimaryTextColor(context),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    message,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      height: 1.35,
-                      color: pageSecondaryTextColor(context),
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  bool _validateSelections() {
+  Future<bool> _validateSelections() async {
     if (_selectedGender == null || _selectedUserType == null) {
-      _showCenterNotice(
-        icon: Icons.info_outline_rounded,
+      await ValidationDialog.show(
+        context,
         title: 'Missing profile details',
         message: 'Please select both gender and current role before saving.',
-        color: const Color(0xFFF59E0B),
+        type: ValidationDialogType.warning,
       );
       return false;
     }
@@ -203,15 +88,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   Future<void> _handleSave() async {
     final formIsValid = _formKey.currentState?.validate() ?? false;
-    if (!formIsValid || !_validateSelections()) {
-      if (formIsValid == false) {
-        await _showCenterNotice(
-          icon: Icons.error_outline_rounded,
-          title: 'Check your entries',
-          message: 'Fix the highlighted fields before saving changes.',
-          color: const Color(0xFFEF4444),
-        );
-      }
+    if (!formIsValid) {
+      await ValidationDialog.show(
+        context,
+        title: 'Check your entries',
+        message: 'Fix the highlighted fields before saving changes.',
+        type: ValidationDialogType.error,
+      );
+      return;
+    }
+
+    if (!await _validateSelections()) {
       return;
     }
 
@@ -223,36 +110,31 @@ class _EditProfilePageState extends State<EditProfilePage> {
         age: int.tryParse(_ageController.text.trim()),
         gender: _selectedGender,
         userType: _selectedUserType,
-        lifestyleType: _selectedLifestyle,
-        workIntensity: _selectedIntensity,
-        sleepSchedule: _sleepController.text.trim(),
-        waterGoal: _waterGoalController.text.trim(),
-        exerciseTarget: _exerciseTargetController.text.trim(),
       );
 
       if (!mounted) return;
 
       if (didSave) {
-        await _showCenterNotice(
-          icon: Icons.check_circle_outline_rounded,
+        setState(() => _isSubmitting = false);
+        await ValidationDialog.show(
+          context,
           title: 'Profile updated',
           message: 'Your changes were saved successfully.',
-          color: const Color(0xFF16A34A),
+          type: ValidationDialogType.success,
         );
-        await Future<void>.delayed(const Duration(milliseconds: 850));
         if (mounted && Navigator.of(context).canPop()) {
           Navigator.of(context).pop(true);
         }
       } else {
-        await _showCenterNotice(
-          icon: Icons.error_outline_rounded,
+        await ValidationDialog.show(
+          context,
           title: 'Unable to save',
           message: 'Please check your details and try again.',
-          color: const Color(0xFFEF4444),
+          type: ValidationDialogType.error,
         );
       }
     } finally {
-      if (mounted) {
+      if (mounted && _isSubmitting) {
         setState(() => _isSubmitting = false);
       }
     }
@@ -360,81 +242,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       items: _roleOptions,
                       onChanged: (value) =>
                           setState(() => _selectedUserType = value),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _SectionCard(
-                  emoji: '\u{1F33F}',
-                  icon: Icons.spa_outlined,
-                  title: 'Wellness Baseline',
-                  children: [
-                    _buildDropdownField(
-                      label: 'Lifestyle Type',
-                      icon: Icons.directions_walk_rounded,
-                      value: _selectedLifestyle,
-                      items: _lifestyleOptions,
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() => _selectedLifestyle = value);
-                        }
-                      },
-                    ),
-                    _buildDropdownField(
-                      label: 'Work Intensity',
-                      icon: Icons.speed_outlined,
-                      value: _selectedIntensity,
-                      items: _workIntensityOptions,
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() => _selectedIntensity = value);
-                        }
-                      },
-                    ),
-                    _buildTextField(
-                      controller: _sleepController,
-                      label: 'Sleep Schedule',
-                      icon: Icons.bedtime_outlined,
-                      validator: (value) {
-                        final text = value?.trim() ?? '';
-                        if (text.isEmpty) return 'Enter a sleep schedule';
-                        if (!RegExp(
-                          r'^\d{1,2}:\d{2}\s*(AM|PM)\s*-\s*\d{1,2}:\d{2}\s*(AM|PM)$',
-                          caseSensitive: false,
-                        ).hasMatch(text)) {
-                          return 'Use format like 10:30 PM - 6:30 AM';
-                        }
-                        return null;
-                      },
-                    ),
-                    _buildTextField(
-                      controller: _waterGoalController,
-                      label: 'Daily Water Goal',
-                      icon: Icons.water_drop_outlined,
-                      validator: (value) {
-                        final text = value?.trim() ?? '';
-                        if (text.isEmpty) return 'Enter a water goal';
-                        if (!RegExp(
-                          r'^\d+(\.\d+)?\s*(L|ml)$',
-                          caseSensitive: false,
-                        ).hasMatch(text)) {
-                          return 'Use format like 2.5 L or 2500 ml';
-                        }
-                        return null;
-                      },
-                    ),
-                    _buildTextField(
-                      controller: _exerciseTargetController,
-                      label: 'Exercise Target',
-                      icon: Icons.fitness_center_outlined,
-                      validator: (value) {
-                        final text = value?.trim() ?? '';
-                        if (text.isEmpty) return 'Enter an exercise target';
-                        if (!RegExp(r'\d+').hasMatch(text)) {
-                          return 'Include a target number of days';
-                        }
-                        return null;
-                      },
                     ),
                   ],
                 ),

@@ -32,10 +32,28 @@ Color pageSurfaceColor(BuildContext context) {
       : Colors.white.withValues(alpha: 0.84);
 }
 
+Color pageSubtleSurfaceColor(BuildContext context) {
+  return Theme.of(context).brightness == Brightness.dark
+      ? Colors.white.withValues(alpha: 0.055)
+      : const Color(0xFFF8FAFC);
+}
+
 Color pageBorderColor(BuildContext context) {
   return Theme.of(context).brightness == Brightness.dark
       ? Colors.white.withValues(alpha: 0.1)
       : const Color(0xFFD4E9E2).withValues(alpha: 0.8);
+}
+
+List<BoxShadow> pageCardShadow(BuildContext context) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
+  return [
+    BoxShadow(
+      color: Colors.black.withValues(alpha: isDark ? 0.24 : 0.06),
+      blurRadius: isDark ? 14 : 10,
+      offset: const Offset(0, 5),
+    ),
+  ];
 }
 
 double pageBottomContentPadding(BuildContext context, {double extra = 36}) {

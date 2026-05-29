@@ -20,6 +20,8 @@ import '../widgets/info_card.dart';
 import '../widgets/quick_actions.dart';
 import '../widgets/weekly_analytics.dart';
 
+enum _HomeLiveDataIssue { offline, unavailable }
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -41,9 +43,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Color _hydrationLevelColor = Colors.green;
   int _burnoutScore = 40;
   String _burnoutStatus = 'Baseline pending';
+  BurnoutScoreSnapshot? _latestBurnoutScore;
+  BurnoutPatternSummary? _burnoutPatternSummary;
   bool _isLoadingSummary = true;
   bool _isLoadingEnvironment = true;
-  bool _isOfflineSummary = false;
+  _HomeLiveDataIssue? _summaryIssue;
   bool _isUsingCachedEnvironment = false;
   String? _environmentError;
   EnvironmentSnapshot? _environmentSnapshot;
@@ -101,16 +105,26 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final loadToken = ++_burnoutLoadToken;
     final defaults = await OnboardingService.loadDefaults();
     BurnoutScoreSnapshot? latestScore;
+    BurnoutPatternSummary? patternSummary;
 
     try {
-      latestScore = await BurnoutScoreApi.fetchLatestScore();
+      final results = await Future.wait<Object?>([
+        BurnoutScoreApi.fetchLatestScore(),
+        BurnoutScoreApi.fetchPatternSummary(),
+      ]);
+      latestScore = results[0] as BurnoutScoreSnapshot?;
+      patternSummary = results[1] as BurnoutPatternSummary?;
+      latestScore ??= patternSummary?.latestScore;
     } catch (_) {
       latestScore = null;
+      patternSummary = null;
     }
 
     if (!mounted || loadToken != _burnoutLoadToken) return;
 
     setState(() {
+      _latestBurnoutScore = latestScore;
+      _burnoutPatternSummary = patternSummary;
       if (latestScore != null) {
         _burnoutScore = latestScore.overallScore.round();
         _burnoutStatus = _burnoutStatusForRisk(
@@ -160,14 +174,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       if (showLoader) {
         _isLoadingSummary = true;
       }
-      _isOfflineSummary = false;
+      _summaryIssue = null;
     });
 
     try {
       final data = await LogApi.fetchLatestLog();
       final hasLog = data['has_log'] == true;
       final log = data['log'] as Map<String, dynamic>?;
-      final isOfflineSummary = data['is_offline'] == true;
+      final summaryIssue = _summaryIssueFrom(data);
 
       if (!mounted) return;
 
@@ -182,7 +196,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           _hydrationLevel = null;
           _hydrationLevelColor = Colors.green;
           _isLoadingSummary = false;
-          _isOfflineSummary = isOfflineSummary;
+          _summaryIssue = summaryIssue;
         });
         return;
       }
@@ -203,20 +217,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         _hydrationLevel = hydrationStatus.shortLabel;
         _hydrationLevelColor = Color(hydrationStatus.colorValue);
         _isLoadingSummary = false;
-        _isOfflineSummary = isOfflineSummary;
+        _summaryIssue = summaryIssue;
       });
     } catch (_) {
       if (!mounted) return;
 
       setState(() {
-        _sleepSubtitle = 'Offline - summary unavailable';
+        _sleepSubtitle = 'Summary unavailable';
         _hydrationSubtitle = _sleepSubtitle;
         _sleepQualityLabel = null;
         _sleepQualityColor = Colors.blue;
         _hydrationLevel = null;
         _hydrationLevelColor = Colors.green;
         _isLoadingSummary = false;
-        _isOfflineSummary = true;
+        _summaryIssue = _HomeLiveDataIssue.unavailable;
       });
     }
   }
@@ -282,12 +296,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 12,
                 12,
                 12,
-                pageBottomContentPadding(context, extra: 21),
+                pageBottomContentPadding(context, extra: 10.5),
               ),
               child: Column(
                 children: [
-                  if (_isOfflineSummary) ...[
-                    RevealOnBuild(child: _buildStatusBanner(context)),
+                  if (_summaryIssue != null) ...[
+                    RevealOnBuild(
+                      child: _buildStatusBanner(context, _summaryIssue!),
+                    ),
                     const SizedBox(height: 12),
                   ],
                   RevealOnBuild(
@@ -296,6 +312,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       child: BurnoutCard(
                         score: _burnoutScore,
                         status: _burnoutStatus,
+                        latestScore: _latestBurnoutScore,
+                        patternSummary: _burnoutPatternSummary,
                       ),
                     ),
                   ),
@@ -441,39 +459,62 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
-  Widget _buildStatusBanner(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFF1E293B)
-            : const Color(0xFFEFF6FF),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? Colors.white10
-              : const Color(0xFFBFDBFE),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.wifi_off_rounded,
-            color: Theme.of(context).colorScheme.primary,
+  _HomeLiveDataIssue? _summaryIssueFrom(Map<String, dynamic> data) {
+    if (data['is_offline'] != true) {
+      return null;
+    }
+
+    return data['live_data_issue'] == LogApi.liveDataIssueOffline
+        ? _HomeLiveDataIssue.offline
+        : _HomeLiveDataIssue.unavailable;
+  }
+
+  Widget _buildStatusBanner(BuildContext context, _HomeLiveDataIssue issue) {
+    final isOffline = issue == _HomeLiveDataIssue.offline;
+    final accentColor = isOffline
+        ? const Color(0xFF0F766E)
+        : const Color(0xFF2563EB);
+    final message = isOffline
+        ? 'You appear to be offline.'
+        : 'Live data is currently unavailable.';
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 320),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF102235).withValues(alpha: 0.82)
+                : Colors.white.withValues(alpha: 0.78),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: accentColor.withValues(alpha: 0.2)),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'Live summary data is unavailable right now. The app is showing your saved check-in data and will refresh automatically.',
-              style: TextStyle(
-                height: 1.4,
-                color: pagePrimaryTextColor(context),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(
+                isOffline ? Icons.wifi_off_rounded : Icons.cloud_off_outlined,
+                size: 18,
+                color: accentColor,
               ),
-            ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    height: 1.2,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: pagePrimaryTextColor(context),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

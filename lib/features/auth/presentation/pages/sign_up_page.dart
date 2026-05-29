@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:another_flushbar/flushbar.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../features/log/data/log_api.dart';
@@ -11,6 +10,7 @@ import '../../../../shared/config/api_config.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/terms_privacy_widget.dart';
+import '../../../../shared/widgets/validation_dialog.dart';
 import '../widgets/auth_chrome.dart';
 import 'login_page.dart';
 
@@ -39,24 +39,35 @@ class _SignUpPageState extends State<SignUpPage> {
   final TextEditingController _confirmPasswordController =
       TextEditingController();
 
-  void _showFlushbar(String message, {bool isError = false}) {
-    Flushbar(
-      message: message,
-      duration: const Duration(seconds: 3),
-      margin: const EdgeInsets.all(16),
-      borderRadius: BorderRadius.circular(14),
-      flushbarPosition: FlushbarPosition.TOP,
-      backgroundColor: isError
-          ? const Color(0xFFE53935)
-          : const Color(0xFF2563EB),
-      icon: Icon(
-        isError ? Icons.error_outline : Icons.check_circle_outline,
-        color: Colors.white,
-      ),
-    ).show(context);
+  Map<String, dynamic> _decodeResponseBody(http.Response response) {
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+    } catch (_) {
+      // Keep a friendly fallback when the server does not return JSON.
+    }
+
+    return const {};
+  }
+
+  String _signUpFailureMessage(Map<String, dynamic> data) {
+    final serverMessage = data['message'] ?? data['error'];
+    final normalizedMessage = serverMessage?.toString().trim();
+
+    if (normalizedMessage != null && normalizedMessage.isNotEmpty) {
+      return normalizedMessage;
+    }
+
+    return 'Signup failed';
   }
 
   Future<void> signUp() async {
+    if (_isLoading) {
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
@@ -76,20 +87,17 @@ class _SignUpPageState extends State<SignUpPage> {
         }),
       );
 
-      final data = jsonDecode(response.body);
+      final data = _decodeResponseBody(response);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final authToken = data['access_token']?.toString().trim();
         if (authToken == null || authToken.isEmpty) {
-          _showFlushbar(
-            'Signup failed: session token was missing.',
-            isError: true,
+          if (!mounted) return;
+          await ValidationDialog.show(
+            context,
+            message: 'Signup failed: session token was missing.',
+            type: ValidationDialogType.error,
           );
-          if (mounted) {
-            setState(() {
-              _isLoading = false;
-            });
-          }
           return;
         }
 
@@ -99,10 +107,6 @@ class _SignUpPageState extends State<SignUpPage> {
         );
         await LogApi.persistServerStreakSnapshot(
           data['streak'] as Map<String, dynamic>?,
-        );
-
-        _showFlushbar(
-          data['message']?.toString() ?? 'Account created successfully',
         );
 
         setState(() {
@@ -115,9 +119,19 @@ class _SignUpPageState extends State<SignUpPage> {
           _agreeTerms = false;
         });
 
-        _formKey.currentState!.reset();
+        _formKey.currentState?.reset();
 
-        await Future.delayed(const Duration(seconds: 2));
+        if (!mounted) return;
+        setState(() {
+          _isLoading = false;
+        });
+
+        await ValidationDialog.show(
+          context,
+          message:
+              data['message']?.toString() ?? 'Account created successfully',
+          type: ValidationDialogType.success,
+        );
 
         if (!mounted) return;
 
@@ -130,16 +144,24 @@ class _SignUpPageState extends State<SignUpPage> {
           ),
         );
       } else {
-        _showFlushbar(
-          data['message']?.toString() ?? 'Signup failed',
-          isError: true,
+        if (!mounted) return;
+        await ValidationDialog.show(
+          context,
+          message: _signUpFailureMessage(data),
+          type: ValidationDialogType.error,
         );
       }
     } catch (e) {
-      _showFlushbar('Network error. Please try again.', isError: true);
+      if (!mounted) return;
+      await ValidationDialog.show(
+        context,
+        message:
+            'Unable to reach the server right now. Please check your connection and try again.',
+        type: ValidationDialogType.connection,
+      );
     }
 
-    if (mounted) {
+    if (mounted && _isLoading) {
       setState(() {
         _isLoading = false;
       });
