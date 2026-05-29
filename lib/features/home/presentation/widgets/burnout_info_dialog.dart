@@ -77,7 +77,7 @@ class BurnoutInfoDialog extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               _Pill(
-                                label: '${_titleCase(_riskLevel)} risk',
+                                label: '${_humanize(_riskLevel)} risk',
                                 color: _riskColor(_riskLevel),
                               ),
                               const SizedBox(height: 8),
@@ -318,20 +318,55 @@ class BurnoutInfoDialog extends StatelessWidget {
       return fromSnapshot;
     }
 
+    final fromBaselineStatus = _riskLevelFromBaselineStatus(status);
+    if (fromBaselineStatus != null) {
+      return fromBaselineStatus;
+    }
+
     if (score >= 81) return 'critical';
     if (score >= 61) return 'high';
     if (score >= 41) return 'moderate';
     return 'low';
   }
 
+  String? _riskLevelFromBaselineStatus(String value) {
+    final normalized = value.trim().toLowerCase();
+
+    if (normalized.startsWith('very low')) {
+      return 'very_low';
+    }
+
+    if (normalized.startsWith('low')) {
+      return 'low';
+    }
+
+    if (normalized.startsWith('moderate')) {
+      return 'moderate';
+    }
+
+    if (normalized.startsWith('very high')) {
+      return 'very_high';
+    }
+
+    if (normalized.startsWith('high')) {
+      return 'high';
+    }
+
+    return null;
+  }
+
   String _riskMeaning(String risk) {
     switch (risk) {
+      case 'very_low':
+        return 'Baseline signals look very steady. Keep protecting recovery and routine consistency.';
       case 'low':
         return 'Current signals look steady. Keep protecting recovery and routine consistency.';
       case 'moderate':
         return 'Some strain signals are present. Watch sleep, workload, mood, and recovery trends.';
       case 'high':
         return 'Several signals are elevated. Prioritize recovery time, support, and lighter load where possible.';
+      case 'very_high':
+        return 'Baseline signals are very elevated. Prioritize support, recovery time, and a lighter load where possible.';
       case 'critical':
         return 'Risk signals are very elevated. Treat rest and support as urgent, and consider professional help if distress feels hard to manage.';
       default:
@@ -341,12 +376,16 @@ class BurnoutInfoDialog extends StatelessWidget {
 
   Color _riskColor(String risk) {
     switch (risk) {
+      case 'very_low':
+        return const Color(0xFF0EA5E9);
       case 'low':
         return const Color(0xFF16A34A);
       case 'moderate':
         return const Color(0xFFCA8A04);
       case 'high':
         return const Color(0xFFF97316);
+      case 'very_high':
+        return const Color(0xFFEA580C);
       case 'critical':
         return const Color(0xFFDC2626);
       default:

@@ -139,13 +139,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   String _burnoutStatusForLevel(String? level) {
-    switch (level) {
-      case 'Low':
+    switch (level?.trim().toLowerCase()) {
+      case 'very low':
+        return 'Very Low - Keep your routine steady';
+      case 'low':
         return 'Low - Keep protecting your recovery';
-      case 'Moderate':
+      case 'moderate':
         return 'Moderate - Pay attention to recovery';
-      case 'High':
+      case 'high':
         return 'High - Make room for support and rest';
+      case 'very high':
+        return 'Very High - Prioritize support and recovery';
       default:
         return 'Complete onboarding to set your baseline';
     }

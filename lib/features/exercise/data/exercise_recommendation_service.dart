@@ -64,9 +64,11 @@ class ExerciseRecommendationService {
       burnoutSummary: burnoutSummary,
       adaptiveNudges: adaptiveNudges,
     );
+    final baselineLevel = defaults.initialBurnoutLevel?.trim().toLowerCase();
     final highStress =
-        defaults.initialBurnoutLevel == 'High' ||
-        defaults.burnoutScoreForDisplay >= 70 ||
+        baselineLevel == 'high' ||
+        baselineLevel == 'very high' ||
+        defaults.burnoutScoreForDisplay >= 45 ||
         (defaults.workloadLevel ?? 0) >= 4 ||
         _hasHighBurnoutRisk(burnoutSummary) ||
         _hasHighPriorityNudge(adaptiveNudges);
