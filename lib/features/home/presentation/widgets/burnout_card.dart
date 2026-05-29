@@ -145,7 +145,7 @@ class BurnoutCard extends StatelessWidget {
                     tooltip: 'About burnout score',
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
-                    iconSize: 15,
+                    iconSize: 13,
                     color: textColor,
                     onPressed: () => _showInfoDialog(context),
                     icon: const Icon(Icons.question_mark_rounded),
