@@ -9,6 +9,7 @@ import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../notifications/notification_feed_service.dart';
 import '../preferences/session_reset_service.dart';
+import '../theme/app_page_style.dart';
 
 final ValueNotifier<int> streakRefreshNotifier = ValueNotifier<int>(0);
 
@@ -47,31 +48,8 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
   Future<void> showLogoutConfirmation() async {
     final shouldLogout = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text(
-          'Confirm Logout',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        content: const Text(
-          'Are you sure you want to log out?',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              'Logout',
-              style: TextStyle(color: Colors.redAccent),
-            ),
-          ),
-        ],
-      ),
+      barrierColor: Colors.black.withValues(alpha: isDark ? 0.48 : 0.32),
+      builder: (context) => const _LogoutConfirmationDialog(),
     );
 
     if (shouldLogout == true) {
@@ -414,4 +392,154 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
       ),
     ],
   );
+}
+
+class _LogoutConfirmationDialog extends StatelessWidget {
+  const _LogoutConfirmationDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isCompact = screenWidth < 380;
+    final isNarrow = screenWidth < 340;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark ? const Color(0xFFFF8585) : const Color(0xFFE5484D);
+
+    final stayButton = OutlinedButton.icon(
+      onPressed: () => Navigator.pop(context, false),
+      icon: const Icon(Icons.close_rounded, size: 18),
+      label: const Text('Stay'),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: pagePrimaryTextColor(context),
+        side: BorderSide(color: pageBorderColor(context)),
+        padding: const EdgeInsets.symmetric(vertical: 13),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+    );
+
+    final logoutButton = ElevatedButton.icon(
+      onPressed: () => Navigator.pop(context, true),
+      icon: const Icon(Icons.logout_rounded, size: 18),
+      label: const Text('Log out'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: accent,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(vertical: 13),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+    );
+
+    return Dialog(
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: isCompact ? 14 : 24,
+        vertical: 24,
+      ),
+      backgroundColor: Colors.transparent,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 370),
+        child: Container(
+          padding: EdgeInsets.all(isCompact ? 18 : 22),
+          decoration: BoxDecoration(
+            color: isDark
+                ? const Color(0xFF132235).withValues(alpha: 0.98)
+                : Colors.white.withValues(alpha: 0.98),
+            borderRadius: BorderRadius.circular(isCompact ? 20 : 24),
+            border: Border.all(color: pageBorderColor(context)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.34 : 0.16),
+                blurRadius: 30,
+                offset: const Offset(0, 18),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: isCompact ? 54 : 60,
+                height: isCompact ? 54 : 60,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: isDark ? 0.18 : 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.logout_rounded,
+                  color: accent,
+                  size: isCompact ? 28 : 32,
+                ),
+              ),
+              SizedBox(height: isCompact ? 14 : 16),
+              Text(
+                'Log out of VitalySync?',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: pagePrimaryTextColor(context),
+                  fontSize: isCompact ? 20 : 22,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'You will return to the welcome screen and can sign back in anytime.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: pageSecondaryTextColor(context),
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: isDark ? 0.1 : 0.07),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: accent.withValues(alpha: isDark ? 0.18 : 0.14),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline_rounded, color: accent, size: 18),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Assistant access pauses until you sign in again.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: pageSecondaryTextColor(context),
+                          fontWeight: FontWeight.w600,
+                          height: 1.3,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: isCompact ? 18 : 20),
+              if (isNarrow)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    logoutButton,
+                    const SizedBox(height: 10),
+                    stayButton,
+                  ],
+                )
+              else
+                Row(
+                  children: [
+                    Expanded(child: stayButton),
+                    const SizedBox(width: 12),
+                    Expanded(child: logoutButton),
+                  ],
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

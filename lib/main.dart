@@ -7,7 +7,7 @@ import 'shared/preferences/web_preferences_repair.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await repairWebSharedPreferencesStorage();
+  await repairWebSharedPreferencesStorage();  
   _initializeStartupServices();
   runApp(const MyApp());
 }

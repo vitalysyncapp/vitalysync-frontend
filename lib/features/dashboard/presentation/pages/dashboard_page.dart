@@ -5,11 +5,13 @@ import '../../../../features/activity/data/activity_service.dart';
 import '../../../../features/activity/presentation/widgets/activity_summary_card.dart';
 import '../../data/weekly_user_metrics.dart';
 import '../../data/burnout_score_api.dart';
+import '../../../../shared/goals/user_goals.dart';
 import '../../../../shared/notifications/notification_feed_service.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
 import '../../../../shared/widgets/reveal_on_build.dart';
 import '../widgets/burnout_risk_trend_card.dart';
+import '../widgets/dashboard_goal_tracking_card.dart';
 import '../widgets/dashboard_header_card.dart';
 import '../widgets/dashboard_stat_card.dart';
 import '../widgets/mood_volatility_card.dart';
@@ -38,17 +40,29 @@ class _DashboardState extends State<Dashboard> {
   void initState() {
     super.initState();
     BurnoutScoreApi.refreshSignal.addListener(_handleBurnoutInputsChanged);
+    UserGoalsService.refreshSignal.addListener(_handleGoalsChanged);
     _loadBurnoutPatterns();
   }
 
   @override
   void dispose() {
     BurnoutScoreApi.refreshSignal.removeListener(_handleBurnoutInputsChanged);
+    UserGoalsService.refreshSignal.removeListener(_handleGoalsChanged);
     super.dispose();
   }
 
   void _handleBurnoutInputsChanged() {
     _loadBurnoutPatterns();
+  }
+
+  void _handleGoalsChanged() {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _refreshVersion++;
+    });
   }
 
   Future<void> _loadBurnoutPatterns() async {
@@ -267,6 +281,13 @@ class _DashboardState extends State<Dashboard> {
                   const SizedBox(height: 12),
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 550),
+                    child: DashboardGoalTrackingCard(
+                      key: ValueKey('goal-tracking-$_refreshVersion'),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  RevealOnBuild(
+                    delay: const Duration(milliseconds: 610),
                     child: WeeklyPerformanceCard(
                       key: ValueKey('weekly-performance-$_refreshVersion'),
                     ),

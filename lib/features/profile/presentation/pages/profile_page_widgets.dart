@@ -23,108 +23,128 @@ class _ProfileHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFF60A5FA),
-            Color(0xFF38BDF8),
-            Color.fromARGB(255, 91, 110, 174),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(26),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF38BDF8).withValues(alpha: 0.18),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(26),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFF60A5FA),
+              Color(0xFF38BDF8),
+              Color.fromARGB(255, 91, 110, 174),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 92,
-                height: 92,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.14),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.35),
-                    width: 2,
-                  ),
-                ),
-                child: ClipOval(
-                  child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: Image.asset(
-                      avatarPath,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, _, _) => const Icon(
-                        Icons.person,
-                        size: 42,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 18),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          borderRadius: BorderRadius.circular(26),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF38BDF8).withValues(alpha: 0.18),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            const Positioned(
+              top: 16,
+              right: 18,
+              child: IgnorePointer(child: _ProfileLogoWatermark()),
+            ),
+            Column(
+              children: [
+                Row(
                   children: [
-                    Text(
-                      username,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      email,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white.withValues(alpha: 0.92),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
                     Container(
-                      constraints: const BoxConstraints(maxWidth: 190),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 7,
-                      ),
+                      width: 92,
+                      height: 92,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(30),
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.14),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.35),
+                          width: 2,
+                        ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const CircleAvatar(
-                            radius: 4,
-                            backgroundColor: Color(0xFF4CFF8F),
+                      child: ClipOval(
+                        child: Padding(
+                          padding: const EdgeInsets.all(10),
+                          child: Image.asset(
+                            avatarPath,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, _, _) => const Icon(
+                              Icons.person,
+                              size: 42,
+                              color: Colors.white,
+                            ),
                           ),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: Text(
-                              role ?? 'Role not set',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 18),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            username,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            email,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white.withValues(alpha: 0.92),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            constraints: const BoxConstraints(maxWidth: 210),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 7,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(30),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.14),
                               ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.badge_outlined,
+                                  size: 15,
+                                  color: Colors.white.withValues(alpha: 0.94),
+                                ),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    role ?? 'Role not set',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -132,29 +152,189 @@ class _ProfileHeaderCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                const SizedBox(height: 18),
+                Divider(
+                  color: Colors.white.withValues(alpha: 0.22),
+                  thickness: 1,
+                ),
+                const SizedBox(height: 14),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final columns = constraints.maxWidth >= 520 ? 4 : 2;
+                    const spacing = 10.0;
+                    final tileWidth =
+                        (constraints.maxWidth - (spacing * (columns - 1))) /
+                        columns;
+
+                    return Wrap(
+                      spacing: spacing,
+                      runSpacing: spacing,
+                      children: [
+                        _ProfileStatTile(
+                          width: tileWidth,
+                          icon: const _ProfileFireAnimation(size: 27),
+                          label: 'Current streak',
+                          value: _daysValue(currentStreak),
+                        ),
+                        _ProfileStatTile(
+                          width: tileWidth,
+                          icon: const Text(
+                            '\u{1F525}',
+                            style: TextStyle(fontSize: 23),
+                          ),
+                          label: 'Best',
+                          value: _daysValue(longestStreak),
+                        ),
+                        _ProfileStatTile(
+                          width: tileWidth,
+                          icon: const Icon(
+                            Icons.cake_outlined,
+                            size: 22,
+                            color: Colors.white,
+                          ),
+                          label: 'Age',
+                          value: age == null ? '--' : '$age yrs',
+                        ),
+                        _ProfileStatTile(
+                          width: tileWidth,
+                          icon: const Icon(
+                            Icons.wc_rounded,
+                            size: 23,
+                            color: Colors.white,
+                          ),
+                          label: 'Gender',
+                          value: gender ?? '--',
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _daysValue(int value) {
+    return value == 1 ? '1 day' : '$value days';
+  }
+}
+
+class _ProfileLogoWatermark extends StatelessWidget {
+  const _ProfileLogoWatermark();
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: 0.28,
+      child: SizedBox(
+        width: 88,
+        height: 88,
+        child: Image.asset(
+          'assets/images/logo.png',
+          fit: BoxFit.contain,
+          errorBuilder: (_, _, _) => const SizedBox.shrink(),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileFireAnimation extends StatelessWidget {
+  final double size;
+
+  const _ProfileFireAnimation({required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return Lottie.asset(
+      _profileStreakFireAnimationPath,
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
+      repeat: true,
+      animate: !MediaQuery.disableAnimationsOf(context),
+      errorBuilder: (context, error, stackTrace) {
+        return Icon(
+          Icons.local_fire_department_rounded,
+          size: size * 0.9,
+          color: const Color(0xFFFFC46B),
+        );
+      },
+    );
+  }
+}
+
+class _ProfileStatTile extends StatelessWidget {
+  final double width;
+  final Widget icon;
+  final String label;
+  final String value;
+
+  const _ProfileStatTile({
+    required this.width,
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      height: 78,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                SizedBox(width: 28, height: 28, child: Center(child: icon)),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: Colors.white.withValues(alpha: 0.86),
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(
+              height: 25,
+              width: double.infinity,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: 0,
+                  ),
+                ),
               ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          Divider(color: Colors.white.withValues(alpha: 0.22), thickness: 1),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: _StatItem(value: '$currentStreak', label: 'Current'),
-              ),
-              Expanded(
-                child: _StatItem(value: '$longestStreak', label: 'Best'),
-              ),
-              Expanded(
-                child: _StatItem(value: age?.toString() ?? '--', label: 'Age'),
-              ),
-              Expanded(
-                child: _StatItem(value: gender ?? '--', label: 'Gender'),
-              ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -534,53 +714,6 @@ class _ProfileInfoTile extends StatelessWidget {
         ),
       ),
       trailing: trailing,
-    );
-  }
-}
-
-class _StatItem extends StatelessWidget {
-  final String value;
-  final String label;
-
-  const _StatItem({required this.value, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 3),
-      child: Column(
-        children: [
-          SizedBox(
-            height: 22,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                value,
-                maxLines: 1,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            label,
-            maxLines: 1,
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 11.5,
-              color: Colors.white.withValues(alpha: 0.86),
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

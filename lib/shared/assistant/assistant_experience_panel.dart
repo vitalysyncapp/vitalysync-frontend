@@ -752,7 +752,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     return [
       _AssistantSection(
         icon: Icons.auto_awesome_rounded,
-        label: 'Insights',
+        label: 'Nudges',
         child: _SmartNudgeDialogCard(
           emoji: widget.emoji,
           message: widget.message,

@@ -11,6 +11,7 @@ class BurnoutInfoDialog extends StatelessWidget {
   final BurnoutScoreSnapshot? latestScore;
   final BurnoutPatternSummary? patternSummary;
   final List<Color> accentColors;
+  final VoidCallback onLearnMore;
 
   const BurnoutInfoDialog({
     super.key,
@@ -19,6 +20,7 @@ class BurnoutInfoDialog extends StatelessWidget {
     required this.latestScore,
     required this.patternSummary,
     required this.accentColors,
+    required this.onLearnMore,
   });
 
   @override
@@ -54,7 +56,7 @@ class BurnoutInfoDialog extends StatelessWidget {
                       isCompact ? 16 : 20,
                       16,
                       isCompact ? 16 : 20,
-                      isCompact ? 16 : 20,
+                      14,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,8 +115,40 @@ class BurnoutInfoDialog extends StatelessWidget {
                     ),
                   ),
                 ),
+                _buildLearnMoreButton(context, isCompact),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLearnMoreButton(BuildContext context, bool isCompact) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(
+        isCompact ? 16 : 20,
+        12,
+        isCompact ? 16 : 20,
+        isCompact ? 16 : 18,
+      ),
+      decoration: BoxDecoration(
+        color: pageSurfaceColor(context).withValues(alpha: 0.96),
+        border: Border(top: BorderSide(color: pageBorderColor(context))),
+      ),
+      child: ElevatedButton.icon(
+        onPressed: onLearnMore,
+        icon: const Icon(Icons.menu_book_rounded, size: 18),
+        label: const Text('Learn more about Burnout'),
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          minimumSize: const Size.fromHeight(46),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
       ),

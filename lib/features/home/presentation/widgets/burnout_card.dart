@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../dashboard/data/burnout_score_api.dart';
+import '../pages/about_burnout_page.dart';
 import 'burnout_info_dialog.dart';
 
 class BurnoutCard extends StatelessWidget {
@@ -58,6 +59,14 @@ class BurnoutCard extends StatelessWidget {
     return Colors.transparent;
   }
 
+  void _openAboutBurnout(BuildContext context) {
+    final route = MaterialPageRoute<void>(
+      builder: (_) => const AboutBurnoutPage(),
+    );
+
+    Navigator.of(context).push(route);
+  }
+
   void _showInfoDialog(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -71,6 +80,10 @@ class BurnoutCard extends StatelessWidget {
           latestScore: latestScore,
           patternSummary: patternSummary,
           accentColors: getGradientColors(isDark),
+          onLearnMore: () {
+            Navigator.of(dialogContext).pop();
+            _openAboutBurnout(context);
+          },
         );
       },
     );

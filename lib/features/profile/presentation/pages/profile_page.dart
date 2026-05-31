@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../features/activity/data/activity_service.dart';
@@ -16,6 +17,8 @@ import '../widgets/wellness_profile_card.dart';
 
 part 'profile_page_widgets.dart';
 part 'profile_page_helpers.dart';
+
+const _profileStreakFireAnimationPath = 'assets/animations/streak_fire.json';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});

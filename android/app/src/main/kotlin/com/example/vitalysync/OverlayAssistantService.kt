@@ -44,7 +44,7 @@ class OverlayAssistantService : Service() {
         private const val keyBubbleX = "bubble_x"
         private const val keyBubbleY = "bubble_y"
         private const val keyBubbleDockSide = "bubble_dock_side"
-        private const val bubbleWindowSizeDp = 88
+        private const val bubbleWindowSizeDp = 58
         private const val bubbleVisualSizeDp = 58
         private const val dockSideLeft = "left"
         private const val dockSideRight = "right"

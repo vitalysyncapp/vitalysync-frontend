@@ -535,8 +535,8 @@ class _OverlayAssistantShellState extends State<_OverlayAssistantShell> {
           _OverlayAssistantMode.bubble => const Center(
             key: ValueKey('overlay-bubble'),
             child: SizedBox(
-              width: 88,
-              height: 88,
+              width: 58,
+              height: 58,
               child: AssistantFloatingBubbleVisual(),
             ),
           ),
