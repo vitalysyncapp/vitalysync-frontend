@@ -3,10 +3,12 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../../../shared/config/api_config.dart';
+import '../../../shared/offline/offline_cache_store.dart';
 import 'exercise_goal_model.dart';
 
 class ExerciseGoalApi {
   static const Duration _requestTimeout = Duration(seconds: 8);
+  static const String _historyCache = 'exercise_goal_history';
 
   static Future<ExerciseGoalModel?> fetchToday({
     required int userId,
@@ -86,6 +88,42 @@ class ExerciseGoalApi {
     );
   }
 
+  static Future<List<ExerciseGoalModel>> fetchHistory({
+    required int userId,
+    required String startDate,
+    required String endDate,
+  }) async {
+    try {
+      final response = await http
+          .get(
+            Uri.parse(
+              '${ApiConfig.exerciseGoals('/history/$userId')}?start=$startDate&end=$endDate',
+            ),
+            headers: await ApiConfig.acceptJsonHeaders(),
+          )
+          .timeout(_requestTimeout);
+      final data = _decodeResponseMap(response);
+
+      if (response.statusCode != 200) {
+        return await _readCachedHistory(userId, startDate, endDate);
+      }
+
+      final goals = data['goals'];
+      if (goals is! List) {
+        return const [];
+      }
+
+      await OfflineCacheStore.saveJson(
+        namespace: _historyCache,
+        scope: _historyScope(userId, startDate, endDate),
+        data: {'goals': goals},
+      );
+      return _parseGoals(goals);
+    } catch (_) {
+      return _readCachedHistory(userId, startDate, endDate);
+    }
+  }
+
   static Future<ExerciseGoalModel> _sendGoal({
     required String method,
     required String path,
@@ -130,6 +168,36 @@ class ExerciseGoalApi {
     }
 
     return {'message': response.reasonPhrase ?? 'Unexpected server response'};
+  }
+
+  static Future<List<ExerciseGoalModel>> _readCachedHistory(
+    int userId,
+    String startDate,
+    String endDate,
+  ) async {
+    final data = await OfflineCacheStore.readLatestJson(
+      namespace: _historyCache,
+      scope: _historyScope(userId, startDate, endDate),
+    );
+    final goals = data?['goals'];
+    if (goals is! List) {
+      return const [];
+    }
+
+    return _parseGoals(goals);
+  }
+
+  static List<ExerciseGoalModel> _parseGoals(List<dynamic> goals) {
+    return goals
+        .whereType<Map>()
+        .map(
+          (item) => ExerciseGoalModel.fromJson(Map<String, dynamic>.from(item)),
+        )
+        .toList();
+  }
+
+  static String _historyScope(int userId, String startDate, String endDate) {
+    return '${userId}_${startDate}_$endDate';
   }
 }
 
