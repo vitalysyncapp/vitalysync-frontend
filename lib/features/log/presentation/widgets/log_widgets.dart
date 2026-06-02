@@ -17,6 +17,9 @@ class LogWidgets extends StatelessWidget {
   final String workloadHoursBand;
   final int? perceivedStressLevel;
   final int? breakQualityLevel;
+  final int? dailyDetachmentLevel;
+  final int? dailyFocusLevel;
+  final int? dailyAccomplishmentLevel;
 
   final Set<String> selectedExercises;
   final Set<String> selectedSymptoms;
@@ -41,6 +44,9 @@ class LogWidgets extends StatelessWidget {
   final ValueChanged<String> onWorkloadChanged;
   final ValueChanged<int> onPerceivedStressChanged;
   final ValueChanged<int> onBreakQualityChanged;
+  final ValueChanged<int> onDailyDetachmentChanged;
+  final ValueChanged<int> onDailyFocusChanged;
+  final ValueChanged<int> onDailyAccomplishmentChanged;
   final ValueChanged<String> onExerciseToggle;
   final ValueChanged<String> onSymptomToggle;
   final ValueChanged<String> onHabitToggle;
@@ -55,6 +61,9 @@ class LogWidgets extends StatelessWidget {
     required this.workloadHoursBand,
     required this.perceivedStressLevel,
     required this.breakQualityLevel,
+    required this.dailyDetachmentLevel,
+    required this.dailyFocusLevel,
+    required this.dailyAccomplishmentLevel,
     required this.selectedExercises,
     required this.selectedSymptoms,
     required this.selectedHabits,
@@ -76,6 +85,9 @@ class LogWidgets extends StatelessWidget {
     required this.onWorkloadChanged,
     required this.onPerceivedStressChanged,
     required this.onBreakQualityChanged,
+    required this.onDailyDetachmentChanged,
+    required this.onDailyFocusChanged,
+    required this.onDailyAccomplishmentChanged,
     required this.onExerciseToggle,
     required this.onSymptomToggle,
     required this.onHabitToggle,
@@ -89,23 +101,59 @@ class LogWidgets extends StatelessWidget {
         const SizedBox(height: 12),
         _buildSleepQualityCard(),
         const SizedBox(height: 12),
-        _buildMoodCard(),
-        const SizedBox(height: 12),
-        _buildEnergyCard(context),
-        const SizedBox(height: 12),
-        _buildHydrationCard(),
-        const SizedBox(height: 12),
-        _buildExerciseCard(),
-        const SizedBox(height: 12),
-        _buildSymptomsCard(),
-        const SizedBox(height: 12),
-        _buildHabitsCard(),
-        const SizedBox(height: 12),
-        _buildWorkloadCard(),
+        _buildDimensionHeader(
+          context,
+          icon: Icons.battery_5_bar_rounded,
+          title: 'Emotional exhaustion',
+          dimensionLabel: 'Maslach dimension',
+          description:
+              'Tracks strain, depleted energy, low mood, and physical symptoms that can signal exhaustion.',
+          accentColor: const Color(0xFFFF8A1F),
+        ),
         const SizedBox(height: 12),
         _buildPerceivedStressCard(),
         const SizedBox(height: 12),
+        _buildEnergyCard(context),
+        const SizedBox(height: 12),
+        _buildMoodCard(),
+        const SizedBox(height: 12),
+        _buildSymptomsCard(),
+        const SizedBox(height: 12),
+        _buildDimensionHeader(
+          context,
+          icon: Icons.spa_outlined,
+          title: 'Depersonalization or detachment',
+          dimensionLabel: 'Maslach dimension',
+          description:
+              'Tracks emotional distance and recovery supports that can affect connection to daily responsibilities.',
+          accentColor: const Color(0xFF14B8A6),
+        ),
+        const SizedBox(height: 12),
+        _buildDailyDetachmentCard(),
+        const SizedBox(height: 12),
         _buildBreakQualityCard(),
+        const SizedBox(height: 12),
+        _buildHabitsCard(),
+        const SizedBox(height: 12),
+        _buildHydrationCard(),
+        const SizedBox(height: 12),
+        _buildDimensionHeader(
+          context,
+          icon: Icons.center_focus_strong_rounded,
+          title: 'Reduced accomplishment',
+          dimensionLabel: 'Maslach dimension',
+          description:
+              'Connects workload, activity, and body-support signals with weekly focus and progress answers.',
+          accentColor: const Color(0xFF2563EB),
+        ),
+        const SizedBox(height: 12),
+        _buildDailyFocusCard(),
+        const SizedBox(height: 12),
+        _buildDailyAccomplishmentCard(),
+        const SizedBox(height: 12),
+        _buildWorkloadCard(),
+        const SizedBox(height: 12),
+        _buildExerciseCard(),
       ],
     );
   }

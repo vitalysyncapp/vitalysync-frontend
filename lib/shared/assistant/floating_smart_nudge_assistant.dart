@@ -19,7 +19,9 @@ import '../../features/nutrition/data/nutrition_analyzer.dart';
 import '../../features/nutrition/data/nutrition_coach.dart';
 import '../../features/nutrition/data/nutrition_insight_store.dart';
 import '../../features/nutrition/data/nutrition_reminder_engine.dart';
+import '../learning/first_week_learning_service.dart';
 import '../theme/app_page_style.dart';
+import '../widgets/first_week_learning_pill.dart';
 
 part 'assistant_bubbles.dart';
 part 'assistant_experience_panel.dart';

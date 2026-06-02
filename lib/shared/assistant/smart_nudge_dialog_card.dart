@@ -5,6 +5,7 @@ class _SmartNudgeDialogCard extends StatefulWidget {
   final String message;
   final List<AdaptiveNudgeRecommendation> recommendations;
   final NutritionInsight? nutritionInsight;
+  final FirstWeekLearningState firstWeekLearning;
   final bool isLoading;
   final bool isNutritionLoading;
   final Future<void> Function(
@@ -20,6 +21,7 @@ class _SmartNudgeDialogCard extends StatefulWidget {
     required this.message,
     required this.recommendations,
     required this.nutritionInsight,
+    required this.firstWeekLearning,
     required this.isLoading,
     required this.isNutritionLoading,
     required this.onStatusChanged,
@@ -114,6 +116,7 @@ class _SmartNudgeDialogCardState extends State<_SmartNudgeDialogCard> {
           emoji: widget.emoji,
           fallbackMessage: widget.message,
           primary: primary,
+          firstWeekLearning: widget.firstWeekLearning,
           isLoading: widget.isLoading,
           feedbackStatus: _nudgeStatus,
           isUpdatingFeedback: _isUpdatingNudgeStatus,
@@ -253,6 +256,7 @@ class _SmartNudgeInsightCard extends StatelessWidget {
   final String emoji;
   final String fallbackMessage;
   final AdaptiveNudgeRecommendation? primary;
+  final FirstWeekLearningState firstWeekLearning;
   final bool isLoading;
   final String? feedbackStatus;
   final bool isUpdatingFeedback;
@@ -263,6 +267,7 @@ class _SmartNudgeInsightCard extends StatelessWidget {
     required this.emoji,
     required this.fallbackMessage,
     required this.primary,
+    required this.firstWeekLearning,
     required this.isLoading,
     required this.feedbackStatus,
     required this.isUpdatingFeedback,
@@ -377,6 +382,16 @@ class _SmartNudgeInsightCard extends StatelessWidget {
               ),
             ],
           ),
+          if (firstWeekLearning.isVisible) ...[
+            const SizedBox(height: 10),
+            FirstWeekLearningPill(
+              state: firstWeekLearning,
+              message: firstWeekLearning.assistantNudgeNote,
+              onGradient: true,
+              icon: Icons.psychology_alt_rounded,
+              maxLines: 2,
+            ),
+          ],
           const SizedBox(height: 14),
           Text(
             body,

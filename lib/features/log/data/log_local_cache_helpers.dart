@@ -114,6 +114,11 @@ Map<String, dynamic> _buildLogRequestBody(
         LogApi.normalizeWorkloadHoursBand(log['workload_hours_band']) ?? 'None',
     'perceived_stress_level': LogApi.parseLikert(log['perceived_stress_level']),
     'break_quality_level': LogApi.parseLikert(log['break_quality_level']),
+    'daily_detachment_level': LogApi.parseLikert(log['daily_detachment_level']),
+    'daily_focus_level': LogApi.parseLikert(log['daily_focus_level']),
+    'daily_accomplishment_level': LogApi.parseLikert(
+      log['daily_accomplishment_level'],
+    ),
     'exercise_names': _stringList(log['exercise_names']),
     'symptom_names': _stringList(log['symptom_names']),
     'habit_names': _stringList(log['habit_names']),
@@ -354,6 +359,15 @@ Map<String, dynamic> _normalizeLog(Map<String, dynamic> log) {
   );
   normalized['break_quality_level'] = LogApi.parseLikert(
     log['break_quality_level'],
+  );
+  normalized['daily_detachment_level'] = LogApi.parseLikert(
+    log['daily_detachment_level'],
+  );
+  normalized['daily_focus_level'] = LogApi.parseLikert(
+    log['daily_focus_level'],
+  );
+  normalized['daily_accomplishment_level'] = LogApi.parseLikert(
+    log['daily_accomplishment_level'],
   );
   normalized['exercise_names'] = _stringList(log['exercise_names']);
   normalized['symptom_names'] = _stringList(log['symptom_names']);

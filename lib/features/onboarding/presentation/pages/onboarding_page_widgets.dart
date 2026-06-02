@@ -283,6 +283,7 @@ class _HelperText extends StatelessWidget {
 
 class _OptionTile extends StatelessWidget {
   final String label;
+  final String? description;
   final IconData icon;
   final bool selected;
   final bool multiSelect;
@@ -290,6 +291,7 @@ class _OptionTile extends StatelessWidget {
 
   const _OptionTile({
     required this.label,
+    this.description,
     required this.icon,
     required this.selected,
     this.multiSelect = false,
@@ -342,13 +344,30 @@ class _OptionTile extends StatelessWidget {
               _AnimatedIconBadge(icon, selected: selected),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: pagePrimaryTextColor(context),
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: pagePrimaryTextColor(context),
+                      ),
+                    ),
+                    if (description != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        description!,
+                        style: TextStyle(
+                          height: 1.3,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: pageSecondaryTextColor(context),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               AnimatedSwitcher(

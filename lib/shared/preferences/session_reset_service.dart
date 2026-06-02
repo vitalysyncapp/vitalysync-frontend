@@ -51,6 +51,7 @@ class SessionResetService {
     'cached_daily_activity_',
     'cached_daily_logs',
     'cached_exercise_goal_',
+    'first_week_learning_started_at_',
     'local_weekly_pulse',
     'notification_feed_read_ids_v2_',
     'nutrition_manual_meal_suggestions',
@@ -60,6 +61,7 @@ class SessionResetService {
     'overlay_preview_',
     'pending_daily_activity_',
     'profile_',
+    'recovery_mode_',
     'synced_log_streak',
   ];
 

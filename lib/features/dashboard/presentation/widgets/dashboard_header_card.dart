@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/learning/first_week_learning_service.dart';
+import '../../../../shared/widgets/first_week_learning_pill.dart';
+
 class DashboardHeaderCard extends StatelessWidget {
-  const DashboardHeaderCard({super.key});
+  final FirstWeekLearningState? learningState;
+
+  const DashboardHeaderCard({super.key, this.learningState});
 
   @override
   Widget build(BuildContext context) {
+    final firstWeekState = learningState;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -23,14 +30,14 @@ class DashboardHeaderCard extends StatelessWidget {
           ),
         ],
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   "Your Wellness Analytics Dashboard",
                   style: TextStyle(
                     color: Colors.white,
@@ -38,8 +45,8 @@ class DashboardHeaderCard extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 4),
-                Text(
+                const SizedBox(height: 4),
+                const Text(
                   "Track your wellness trends, sleep, mood, symptoms, and overall performance.",
                   style: TextStyle(
                     color: Colors.white70,
@@ -47,11 +54,19 @@ class DashboardHeaderCard extends StatelessWidget {
                     height: 1.35,
                   ),
                 ),
+                if (firstWeekState?.isVisible == true) ...[
+                  const SizedBox(height: 9),
+                  FirstWeekLearningPill(
+                    state: firstWeekState!,
+                    message: firstWeekState.headerLabel,
+                    onGradient: true,
+                  ),
+                ],
               ],
             ),
           ),
-          SizedBox(width: 10),
-          _HeaderIcon(),
+          const SizedBox(width: 10),
+          const _HeaderIcon(),
         ],
       ),
     );

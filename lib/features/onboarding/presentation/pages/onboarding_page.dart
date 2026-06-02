@@ -47,6 +47,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
     'Active',
     'Very Active',
   ];
+  static const _lifestyleDescriptions = {
+    'Sedentary': 'Mostly sitting with little planned physical activity.',
+    'Lightly Active': 'Light walking or movement during the day.',
+    'Moderately Active':
+        'Regular exercise or active routines a few days weekly.',
+    'Active': 'Frequent exercise or physically active work most days.',
+    'Very Active':
+        'Intense exercise, sports, or heavy activity nearly every day.',
+  };
   static const _exerciseGoalOptions = [
     '0 days',
     '1-2 days',
@@ -224,6 +233,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           ),
           value: _lifestyleType,
           onChanged: (value) => setState(() => _lifestyleType = value),
+          descriptionForOption: (option) => _lifestyleDescriptions[option],
         ),
       ),
       _OnboardingStep(
@@ -665,6 +675,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     required OnboardingQuestion question,
     required String? value,
     required ValueChanged<String> onChanged,
+    String? Function(String option)? descriptionForOption,
   }) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
@@ -689,6 +700,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: _OptionTile(
                     label: option,
+                    description: descriptionForOption?.call(option),
                     icon: _iconForOption(option),
                     selected: value == option,
                     onTap: () => onChanged(option),

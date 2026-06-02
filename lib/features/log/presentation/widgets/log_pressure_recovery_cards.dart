@@ -1,6 +1,63 @@
 part of 'log_widgets.dart';
 
 extension _LogPressureRecoveryCards on LogWidgets {
+  Widget _buildDailyDetachmentCard() {
+    const detachmentLabels = [
+      'Connected',
+      'Present',
+      'Mixed',
+      'Distant',
+      'Detached',
+    ];
+
+    return _buildLikertLevelCard(
+      icon: Icons.link_off_rounded,
+      iconBg: const Color(0xFFE0F7F1),
+      iconColor: const Color(0xFF14B8A6),
+      title: 'Daily Detachment',
+      subtitle: 'How emotionally distant did you feel from responsibilities?',
+      labels: detachmentLabels,
+      selectedLevel: dailyDetachmentLevel,
+      onChanged: onDailyDetachmentChanged,
+      emptyMessage: 'Choose a 1-5 detachment level to complete this group.',
+      selectedMessagePrefix: 'Detachment logged as',
+    );
+  }
+
+  Widget _buildDailyFocusCard() {
+    const focusLabels = ['Scattered', 'Low', 'Okay', 'Focused', 'Clear'];
+
+    return _buildLikertLevelCard(
+      icon: Icons.center_focus_strong_rounded,
+      iconBg: const Color(0xFFEFF6FF),
+      iconColor: const Color(0xFF2563EB),
+      title: 'Daily Focus',
+      subtitle: 'How well could you stay with important tasks today?',
+      labels: focusLabels,
+      selectedLevel: dailyFocusLevel,
+      onChanged: onDailyFocusChanged,
+      emptyMessage: 'Choose a 1-5 focus level to complete this group.',
+      selectedMessagePrefix: 'Focus logged as',
+    );
+  }
+
+  Widget _buildDailyAccomplishmentCard() {
+    const accomplishmentLabels = ['Stuck', 'Limited', 'Some', 'Good', 'Strong'];
+
+    return _buildLikertLevelCard(
+      icon: Icons.emoji_events_rounded,
+      iconBg: const Color(0xFFFFF7ED),
+      iconColor: const Color(0xFFF59E0B),
+      title: 'Daily Accomplishment',
+      subtitle: 'How much meaningful progress did you feel today?',
+      labels: accomplishmentLabels,
+      selectedLevel: dailyAccomplishmentLevel,
+      onChanged: onDailyAccomplishmentChanged,
+      emptyMessage: 'Choose a 1-5 accomplishment level to complete this group.',
+      selectedMessagePrefix: 'Accomplishment logged as',
+    );
+  }
+
   Widget _buildPerceivedStressCard() {
     const stressLabels = ['Calm', 'Light', 'Steady', 'Heavy', 'Intense'];
     final selectedLevel = perceivedStressLevel;

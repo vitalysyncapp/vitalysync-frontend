@@ -59,6 +59,8 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
   bool _isLoadingNutritionInsight = false;
   bool _isLoadingEnvironment = false;
   bool _isLoadingWeeklyPulse = true;
+  FirstWeekLearningState _firstWeekLearning =
+      const FirstWeekLearningState.hidden();
   bool _isSavingWeeklyPulse = false;
   bool _showHydrationLogger = false;
   bool _isLoadingHydrationContext = false;
@@ -91,6 +93,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     if (_nutritionInsight == null && !widget.hasLoadedNutritionInsight) {
       unawaited(_loadNutritionInsight());
     }
+    unawaited(_loadFirstWeekLearning());
     unawaited(_loadEnvironment());
     unawaited(_loadWeeklyPulseStatus());
   }
@@ -236,6 +239,15 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
         _isLoadingEnvironment = false;
       });
     }
+  }
+
+  Future<void> _loadFirstWeekLearning() async {
+    final learningState = await FirstWeekLearningService.load();
+    if (!mounted) return;
+
+    setState(() {
+      _firstWeekLearning = learningState;
+    });
   }
 
   Future<void> _handleNudgeStatus(
@@ -733,6 +745,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
             unawaited(_loadNutritionInsight(forceRefresh: true));
             unawaited(_loadRecommendations());
             unawaited(_loadEnvironment());
+            unawaited(_loadFirstWeekLearning());
             if (_showHydrationLogger) {
               unawaited(_loadHydrationContext());
             }
@@ -758,6 +771,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
           message: widget.message,
           recommendations: _adaptiveNudges,
           nutritionInsight: _nutritionInsight,
+          firstWeekLearning: _firstWeekLearning,
           isLoading: _isLoadingAdaptiveNudges,
           isNutritionLoading: _isLoadingNutritionInsight,
           onStatusChanged: _handleNudgeStatus,

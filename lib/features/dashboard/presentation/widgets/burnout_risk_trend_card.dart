@@ -83,8 +83,98 @@ class BurnoutRiskTrendCard extends StatelessWidget {
               height: 200,
               child: LineChart(_chartData(context, points, sevenDayWindow)),
             ),
+          _buildDimensionScoreRow(context),
           const SizedBox(height: 10),
           _buildPatternFooter(context, sevenDayWindow, pattern),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDimensionScoreRow(BuildContext context) {
+    final latestScore = summary?.latestScore;
+    final dimensions = [
+      _DimensionMetric(
+        label: 'Exhaustion',
+        score: latestScore?.emotionalExhaustionScore,
+        color: const Color(0xFFFF8A1F),
+      ),
+      _DimensionMetric(
+        label: 'Detachment',
+        score: latestScore?.detachmentScore,
+        color: const Color(0xFF14B8A6),
+      ),
+      _DimensionMetric(
+        label: 'Accomplishment',
+        score: latestScore?.reducedAccomplishmentScore,
+        color: const Color(0xFF2563EB),
+      ),
+    ].where((dimension) => dimension.score != null).toList();
+
+    if (dimensions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Row(
+        children: dimensions.map((dimension) {
+          return Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(
+                right: dimension == dimensions.last ? 0 : 7,
+              ),
+              child: _dimensionChip(context, dimension),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _dimensionChip(BuildContext context, _DimensionMetric dimension) {
+    final score = dimension.score!.clamp(0, 100).toDouble();
+
+    return Container(
+      height: 64,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+      decoration: BoxDecoration(
+        color: dimension.color.withValues(alpha: 0.09),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: dimension.color.withValues(alpha: 0.18)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            dimension.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: pagePrimaryTextColor(context),
+              fontSize: 10.8,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 5),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: score / 100,
+              minHeight: 5,
+              backgroundColor: dimension.color.withValues(alpha: 0.14),
+              valueColor: AlwaysStoppedAnimation<Color>(dimension.color),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            score.round().toString(),
+            style: TextStyle(
+              color: dimension.color,
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
         ],
       ),
     );
@@ -365,4 +455,16 @@ class BurnoutRiskTrendCard extends StatelessWidget {
       border: Border.all(color: pageBorderColor(context)),
     );
   }
+}
+
+class _DimensionMetric {
+  final String label;
+  final double? score;
+  final Color color;
+
+  const _DimensionMetric({
+    required this.label,
+    required this.score,
+    required this.color,
+  });
 }

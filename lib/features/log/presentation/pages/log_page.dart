@@ -38,6 +38,9 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   String workloadHoursBand = 'None';
   int? perceivedStressLevel;
   int? breakQualityLevel;
+  int? dailyDetachmentLevel;
+  int? dailyFocusLevel;
+  int? dailyAccomplishmentLevel;
   double defaultSleepHours = 7;
   String exerciseGoalLabel = '3–4 days';
   int? workloadContext;
@@ -187,6 +190,11 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
           'None';
       perceivedStressLevel = LogApi.parseLikert(log['perceived_stress_level']);
       breakQualityLevel = LogApi.parseLikert(log['break_quality_level']);
+      dailyDetachmentLevel = LogApi.parseLikert(log['daily_detachment_level']);
+      dailyFocusLevel = LogApi.parseLikert(log['daily_focus_level']);
+      dailyAccomplishmentLevel = LogApi.parseLikert(
+        log['daily_accomplishment_level'],
+      );
       selectedExercises
         ..clear()
         ..addAll(
@@ -233,6 +241,10 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     if (energyLevel == null) return false;
     if (workloadHoursBand.isEmpty) return false;
     if (perceivedStressLevel == null) return false;
+    if (breakQualityLevel == null) return false;
+    if (dailyDetachmentLevel == null) return false;
+    if (dailyFocusLevel == null) return false;
+    if (dailyAccomplishmentLevel == null) return false;
     if (selectedExercises.isEmpty) return false;
     if (selectedSymptoms.isEmpty) return false;
     if (selectedHabits.isEmpty) return false;
@@ -244,7 +256,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Please complete energy, hydration, workload, stress, exercise, symptoms, and recovery habits before saving.',
+            'Please complete all daily dimension questions, hydration, workload, exercise, symptoms, and recovery habits before saving.',
           ),
         ),
       );
@@ -265,6 +277,9 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
         workloadHoursBand: workloadHoursBand,
         perceivedStressLevel: perceivedStressLevel!,
         breakQualityLevel: breakQualityLevel,
+        dailyDetachmentLevel: dailyDetachmentLevel!,
+        dailyFocusLevel: dailyFocusLevel!,
+        dailyAccomplishmentLevel: dailyAccomplishmentLevel!,
         exerciseNames: selectedExercises.toList()..sort(),
         symptomNames: selectedSymptoms.toList()..sort(),
         habitNames: selectedHabits.toList()..sort(),
@@ -330,6 +345,9 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     workloadHoursBand = 'None';
     perceivedStressLevel = null;
     breakQualityLevel = null;
+    dailyDetachmentLevel = null;
+    dailyFocusLevel = null;
+    dailyAccomplishmentLevel = null;
     selectedExercises.clear();
     final normalizedExercisePrefill = exercisePrefill == null
         ? null
@@ -405,6 +423,15 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     });
   }
 
+  void _showLogScoringInfo() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _LogScoringInfoSheet(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -447,6 +474,11 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                                       perceivedStressLevel:
                                           perceivedStressLevel,
                                       breakQualityLevel: breakQualityLevel,
+                                      dailyDetachmentLevel:
+                                          dailyDetachmentLevel,
+                                      dailyFocusLevel: dailyFocusLevel,
+                                      dailyAccomplishmentLevel:
+                                          dailyAccomplishmentLevel,
                                       selectedExercises: selectedExercises,
                                       selectedSymptoms: selectedSymptoms,
                                       selectedHabits: selectedHabits,
@@ -513,6 +545,21 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                                       onBreakQualityChanged: (value) {
                                         setState(() {
                                           breakQualityLevel = value;
+                                        });
+                                      },
+                                      onDailyDetachmentChanged: (value) {
+                                        setState(() {
+                                          dailyDetachmentLevel = value;
+                                        });
+                                      },
+                                      onDailyFocusChanged: (value) {
+                                        setState(() {
+                                          dailyFocusLevel = value;
+                                        });
+                                      },
+                                      onDailyAccomplishmentChanged: (value) {
+                                        setState(() {
+                                          dailyAccomplishmentLevel = value;
                                         });
                                       },
                                       onExerciseToggle: _toggleExercise,
@@ -845,13 +892,23 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Log Your Day',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: pagePrimaryTextColor(context),
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Log Your Day',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: pagePrimaryTextColor(context),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildHeaderHelpButton(),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -919,6 +976,29 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     );
   }
 
+  Widget _buildHeaderHelpButton() {
+    final primary = Theme.of(context).colorScheme.primary;
+
+    return Tooltip(
+      message: 'Log scoring guide',
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: _showLogScoringInfo,
+        child: Container(
+          width: 30,
+          height: 30,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: primary.withValues(alpha: 0.12),
+            shape: BoxShape.circle,
+            border: Border.all(color: primary.withValues(alpha: 0.18)),
+          ),
+          child: Icon(Icons.question_mark_rounded, size: 16, color: primary),
+        ),
+      ),
+    );
+  }
+
   Widget _buildFireAnimation({required double size}) {
     return Lottie.asset(
       _streakFireAnimationPath,
@@ -961,6 +1041,338 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _LogScoringInfoSheet extends StatelessWidget {
+  const _LogScoringInfoSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return SafeArea(
+      top: false,
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: screenHeight * 0.84),
+          child: Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: pageSurfaceColor(context),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+              border: Border.all(color: pageBorderColor(context)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.38 : 0.14),
+                  blurRadius: 24,
+                  offset: const Offset(0, -8),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 10),
+                Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: pageBorderColor(context),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 14, 10, 10),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(13),
+                        ),
+                        child: Icon(
+                          Icons.functions_rounded,
+                          size: 21,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Log and scoring guide',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: pagePrimaryTextColor(context),
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'How today\'s answers support burnout-risk awareness.',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: pageSecondaryTextColor(context),
+                                fontSize: 12.5,
+                                height: 1.3,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Close',
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: pageSecondaryTextColor(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(
+                      18,
+                      4,
+                      18,
+                      pageBottomContentPadding(context, extra: 18),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        _ScoringInfoBlock(
+                          icon: Icons.fact_check_outlined,
+                          title: 'Log order',
+                          text:
+                              'Sleep duration and sleep quality are standalone recovery inputs and stay first. The three Maslach-style sections follow with four daily questionnaires each.',
+                        ),
+                        SizedBox(height: 10),
+                        _ScoringFormulaBlock(),
+                        SizedBox(height: 10),
+                        _ScoringInfoBlock(
+                          icon: Icons.bedtime_rounded,
+                          title: 'Sleep signals',
+                          text:
+                              'Sleep duration uses hour-based risk bands. Sleep quality uses the 0-4 good formula. They are not direct Maslach dimension items, but they support emotional exhaustion and recovery-deficit scoring.',
+                        ),
+                        SizedBox(height: 10),
+                        _ScoringInfoBlock(
+                          icon: Icons.local_fire_department_rounded,
+                          title: 'Emotional exhaustion',
+                          text:
+                              'Pressure, energy level, mood, and symptoms form the daily emotional-exhaustion group. Sleep, workload, and symptoms also support the backend exhaustion formula.',
+                        ),
+                        SizedBox(height: 10),
+                        _ScoringInfoBlock(
+                          icon: Icons.spa_outlined,
+                          title: 'Detachment',
+                          text:
+                              'Daily detachment, recovery breaks, recovery habits, and hydration form the detachment group. The weekly detachment pulse still anchors the dimension score.',
+                        ),
+                        SizedBox(height: 10),
+                        _ScoringInfoBlock(
+                          icon: Icons.center_focus_strong_rounded,
+                          title: 'Reduced accomplishment',
+                          text:
+                              'Daily focus, daily accomplishment, workload hours, and exercise form the reduced-accomplishment group. Weekly focus and accomplishment remain supporting pulse inputs.',
+                        ),
+                        SizedBox(height: 10),
+                        _ScoringInfoBlock(
+                          icon: Icons.self_improvement_rounded,
+                          title: 'Recovery and workload support',
+                          text:
+                              'Break quality, recovery habits, hydration, exercise, activity minutes, and workload hours shape recovery deficit, workload strain, and daily functioning context.',
+                        ),
+                        SizedBox(height: 10),
+                        _ScoringInfoBlock(
+                          icon: Icons.health_and_safety_outlined,
+                          title: 'Wellness framing',
+                          text:
+                              'This score is for risk awareness, not diagnosis. Missing values are skipped and available weights are normalized.',
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ScoringFormulaBlock extends StatelessWidget {
+  const _ScoringFormulaBlock();
+
+  @override
+  Widget build(BuildContext context) {
+    return _ScoringInfoContainer(
+      icon: Icons.calculate_outlined,
+      title: 'Scoring method',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: const [
+              _FormulaPill('High-risk: (value - 1) / 4 * 100'),
+              _FormulaPill('High-good: (5 - value) / 4 * 100'),
+              _FormulaPill('0-4 good: (4 - value) / 4 * 100'),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'The backend converts answers into 0-100 risk values, then combines them with weighted averages for each dimension.',
+            style: TextStyle(
+              color: pageSecondaryTextColor(context),
+              fontSize: 12.5,
+              height: 1.38,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ScoringInfoBlock extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String text;
+
+  const _ScoringInfoBlock({
+    required this.icon,
+    required this.title,
+    required this.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _ScoringInfoContainer(
+      icon: icon,
+      title: title,
+      child: Text(
+        text,
+        style: TextStyle(
+          color: pageSecondaryTextColor(context),
+          fontSize: 12.5,
+          height: 1.38,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class _ScoringInfoContainer extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final Widget child;
+
+  const _ScoringInfoContainer({
+    required this.icon,
+    required this.title,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.045)
+            : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: pageBorderColor(context)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: primary.withValues(alpha: 0.11),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 16, color: primary),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: pagePrimaryTextColor(context),
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 9),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _FormulaPill extends StatelessWidget {
+  final String label;
+
+  const _FormulaPill(this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: primary.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: primary.withValues(alpha: 0.18)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: primary,
+          fontSize: 10.8,
+          height: 1.2,
+          fontWeight: FontWeight.w800,
+        ),
       ),
     );
   }

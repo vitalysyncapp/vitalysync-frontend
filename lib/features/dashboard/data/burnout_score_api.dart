@@ -13,6 +13,9 @@ class BurnoutScoreSnapshot {
   final String riskLevel;
   final double confidenceScore;
   final double completenessScore;
+  final double? emotionalExhaustionScore;
+  final double? detachmentScore;
+  final double? reducedAccomplishmentScore;
   final List<String> missingFields;
   final List<BurnoutContributingFactor> contributingFactors;
 
@@ -22,6 +25,9 @@ class BurnoutScoreSnapshot {
     required this.riskLevel,
     required this.confidenceScore,
     required this.completenessScore,
+    required this.emotionalExhaustionScore,
+    required this.detachmentScore,
+    required this.reducedAccomplishmentScore,
     required this.missingFields,
     required this.contributingFactors,
   });
@@ -33,6 +39,13 @@ class BurnoutScoreSnapshot {
       riskLevel: json['risk_level']?.toString() ?? 'moderate',
       confidenceScore: _parseDouble(json['confidence_score']),
       completenessScore: _parseDouble(json['completeness_score']),
+      emotionalExhaustionScore: _parseOptionalDouble(
+        json['emotional_exhaustion_score'],
+      ),
+      detachmentScore: _parseOptionalDouble(json['detachment_score']),
+      reducedAccomplishmentScore: _parseOptionalDouble(
+        json['reduced_accomplishment_score'],
+      ),
       missingFields: (json['missing_fields'] as List<dynamic>? ?? const [])
           .map((item) => item.toString())
           .toList(),

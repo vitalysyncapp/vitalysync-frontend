@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../../features/adaptive/data/adaptive_nudge_api.dart';
@@ -6,9 +8,11 @@ import '../../../../features/activity/presentation/widgets/activity_summary_card
 import '../../data/weekly_user_metrics.dart';
 import '../../data/burnout_score_api.dart';
 import '../../../../shared/goals/user_goals.dart';
+import '../../../../shared/learning/first_week_learning_service.dart';
 import '../../../../shared/notifications/notification_feed_service.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
+import '../../../../shared/widgets/first_week_learning_pill.dart';
 import '../../../../shared/widgets/reveal_on_build.dart';
 import '../widgets/burnout_risk_trend_card.dart';
 import '../widgets/dashboard_goal_tracking_card.dart';
@@ -31,10 +35,13 @@ class Dashboard extends StatefulWidget {
 class _DashboardState extends State<Dashboard> {
   BurnoutPatternSummary? _burnoutPatternSummary;
   AdaptiveNudgeRecommendation? _aiInsightNudge;
+  FirstWeekLearningState _firstWeekLearning =
+      const FirstWeekLearningState.hidden();
   bool _isLoadingBurnoutPatterns = true;
   bool _isLoadingAiInsight = true;
   int _refreshVersion = 0;
   int _burnoutLoadToken = 0;
+  int _firstWeekLoadToken = 0;
 
   @override
   void initState() {
@@ -42,6 +49,7 @@ class _DashboardState extends State<Dashboard> {
     BurnoutScoreApi.refreshSignal.addListener(_handleBurnoutInputsChanged);
     UserGoalsService.refreshSignal.addListener(_handleGoalsChanged);
     _loadBurnoutPatterns();
+    unawaited(_loadFirstWeekLearning());
   }
 
   @override
@@ -53,6 +61,7 @@ class _DashboardState extends State<Dashboard> {
 
   void _handleBurnoutInputsChanged() {
     _loadBurnoutPatterns();
+    unawaited(_loadFirstWeekLearning());
   }
 
   void _handleGoalsChanged() {
@@ -107,6 +116,16 @@ class _DashboardState extends State<Dashboard> {
     }
   }
 
+  Future<void> _loadFirstWeekLearning() async {
+    final loadToken = ++_firstWeekLoadToken;
+    final learningState = await FirstWeekLearningService.load();
+    if (!mounted || loadToken != _firstWeekLoadToken) return;
+
+    setState(() {
+      _firstWeekLearning = learningState;
+    });
+  }
+
   Future<void> _refreshDashboard() async {
     setState(() {
       _refreshVersion++;
@@ -115,6 +134,7 @@ class _DashboardState extends State<Dashboard> {
     await Future.wait([
       ActivityService.instance.refresh(),
       _loadBurnoutPatterns(),
+      _loadFirstWeekLearning(),
       refreshAppBarStreak(),
       refreshNotificationFeed(),
     ]);
@@ -192,7 +212,11 @@ class _DashboardState extends State<Dashboard> {
               ),
               child: Column(
                 children: [
-                  const RevealOnBuild(child: DashboardHeaderCard()),
+                  RevealOnBuild(
+                    child: DashboardHeaderCard(
+                      learningState: _firstWeekLearning,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 70),
@@ -228,6 +252,7 @@ class _DashboardState extends State<Dashboard> {
                     child: _AiBurnoutInsightCard(
                       recommendation: _aiInsightNudge,
                       isLoading: _isLoadingAiInsight,
+                      learningState: _firstWeekLearning,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -450,10 +475,12 @@ class _SleepStatSnapshot {
 class _AiBurnoutInsightCard extends StatelessWidget {
   final AdaptiveNudgeRecommendation? recommendation;
   final bool isLoading;
+  final FirstWeekLearningState? learningState;
 
   const _AiBurnoutInsightCard({
     required this.recommendation,
     required this.isLoading,
+    required this.learningState,
   });
 
   @override
@@ -468,6 +495,7 @@ class _AiBurnoutInsightCard extends StatelessWidget {
               .toList()
         : const <String>[];
     final aiEnhanced = recommendation?.metadata['ai_enhanced'] == true;
+    final firstWeekState = learningState;
 
     return Container(
       width: double.infinity,
@@ -543,6 +571,15 @@ class _AiBurnoutInsightCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (firstWeekState?.isVisible == true) ...[
+                  const SizedBox(height: 9),
+                  FirstWeekLearningPill(
+                    state: firstWeekState!,
+                    message: firstWeekState.aiInsightNote,
+                    icon: Icons.auto_awesome_motion_rounded,
+                    maxLines: 2,
+                  ),
+                ],
                 const SizedBox(height: 10),
                 Text(
                   recommendation?.title ?? 'Keep building your trend baseline',
