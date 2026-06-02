@@ -181,7 +181,7 @@ class AdaptiveNudgeApi {
   }) async {
     final userId = await _storedUserId();
     if (userId == null) {
-      return _fallbackResponse();
+      return await _fallbackResponse();
     }
 
     try {
@@ -200,9 +200,10 @@ class AdaptiveNudgeApi {
       final data = _decodeResponseMap(response);
 
       if (response.statusCode != 200) {
+        final fallback = await _fallbackResponse();
         return await _readCachedRecommendations(userId, ai: ai) ??
             (ai ? await _readCachedRecommendations(userId, ai: false) : null) ??
-            _fallbackResponse();
+            fallback;
       }
 
       final parsedResponse = AdaptiveNudgeResponse.fromJson(data);
@@ -228,9 +229,10 @@ class AdaptiveNudgeApi {
       );
       return parsedResponse;
     } catch (_) {
+      final fallback = await _fallbackResponse();
       return await _readCachedRecommendations(userId, ai: ai) ??
           (ai ? await _readCachedRecommendations(userId, ai: false) : null) ??
-          _fallbackResponse();
+          fallback;
     }
   }
 
@@ -240,7 +242,7 @@ class AdaptiveNudgeApi {
   }) async {
     final userId = await _storedUserId();
     if (userId == null) {
-      return _fallbackResponse();
+      return await _fallbackResponse();
     }
 
     final scope = _assistantCacheScope(userId);
@@ -567,8 +569,19 @@ class AdaptiveNudgeApi {
         );
   }
 
-  static AdaptiveNudgeResponse _fallbackResponse() {
-    return const AdaptiveNudgeResponse(
+  static Future<AdaptiveNudgeResponse> _fallbackResponse() async {
+    final username = await _storedUsername();
+    final displayName = username == null ? null : _displayName(username);
+    final prefix = displayName == null ? '' : '$displayName, ';
+    final metadata = <String, dynamic>{
+      'local_fallback': true,
+      'ai_fallback': true,
+    };
+    if (displayName != null) {
+      metadata['user_display_name'] = displayName;
+    }
+
+    return AdaptiveNudgeResponse(
       recommendations: [
         AdaptiveNudgeRecommendation(
           nudgeEventId: null,
@@ -576,17 +589,14 @@ class AdaptiveNudgeApi {
           priority: 'low',
           title: 'Keep today steady',
           message:
-              'Use one small reset today: hydrate, pause briefly, and keep a clear stop time.',
+              '${prefix}use one small reset today: hydrate, pause briefly, and keep a clear stop time.',
           actionLabel: 'Continue',
           triggerReason: 'Local fallback',
           recommendedFocus: 'maintenance',
           patternType: null,
           severity: 'low',
           confidenceScore: 0,
-          metadata: <String, dynamic>{
-            'local_fallback': true,
-            'ai_fallback': true,
-          },
+          metadata: metadata,
         ),
       ],
       adaptiveState: <String, dynamic>{},
@@ -598,6 +608,17 @@ class AdaptiveNudgeApi {
     final month = date.month.toString().padLeft(2, '0');
     final day = date.day.toString().padLeft(2, '0');
     return '${date.year}-$month-$day';
+  }
+
+  static Future<String?> _storedUsername() async {
+    final prefs = await SharedPreferences.getInstance();
+    final username = prefs.getString('username')?.trim();
+    return username?.isNotEmpty == true ? username : null;
+  }
+
+  static String _displayName(String value) {
+    final normalized = value.replaceAll(RegExp(r'\s+'), ' ').trim();
+    return normalized.length <= 36 ? normalized : normalized.substring(0, 36);
   }
 }
 

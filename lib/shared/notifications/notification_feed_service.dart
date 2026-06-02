@@ -427,23 +427,72 @@ List<String> _reportMetricChips(InsightReport report) {
   final chips = <String>[];
   if (report.reportType == 'weekly') {
     _addMetric(chips, 'Logs', metrics['logged_days'], suffix: '/7');
-    _addMetric(chips, 'Avg sleep', metrics['average_sleep_hours'], suffix: 'h');
-    _addMetric(chips, 'Steps', metrics['total_steps'], compactNumber: true);
+    _addMetric(
+      chips,
+      'Focus',
+      metrics['average_daily_focus_level'],
+      suffix: '/5',
+    );
+    _addMetric(
+      chips,
+      'Detach',
+      metrics['average_daily_detachment_level'],
+      suffix: '/5',
+    );
+    _addMetric(
+      chips,
+      'Accomp',
+      metrics['average_daily_accomplishment_level'],
+      suffix: '/5',
+    );
+    if (chips.length <= 1) {
+      _addMetric(chips, 'Avg sleep', metrics['average_sleep_hours'], suffix: 'h');
+      _addMetric(chips, 'Steps', metrics['total_steps'], compactNumber: true);
+    }
     _addRiskMetric(chips, metrics['latest_burnout_risk_level']);
   } else {
-    _addMetric(chips, 'Sleep', metrics['sleep_hours'], suffix: 'h');
-    _addMetric(chips, 'Hydration', metrics['hydration_liters'], suffix: 'L');
     _addMetric(
       chips,
       'Stress',
       metrics['perceived_stress_level'],
       suffix: '/5',
     );
-    _addMetric(chips, 'Steps', metrics['steps'], compactNumber: true);
+    _addMetric(chips, 'Focus', metrics['daily_focus_level'], suffix: '/5');
+    _addMetric(chips, 'Detach', metrics['daily_detachment_level'], suffix: '/5');
+    _addMetric(
+      chips,
+      'Accomp',
+      metrics['daily_accomplishment_level'],
+      suffix: '/5',
+    );
+    if (chips.length <= 1) {
+      _addMetric(chips, 'Sleep', metrics['sleep_hours'], suffix: 'h');
+      _addMetric(chips, 'Hydration', metrics['hydration_liters'], suffix: 'L');
+    }
     _addRiskMetric(chips, metrics['burnout_risk_level']);
   }
 
-  return chips.take(4).toList();
+  return _limitMetricChips(chips);
+}
+
+List<String> _limitMetricChips(List<String> chips) {
+  if (chips.length <= 4) {
+    return chips;
+  }
+
+  String? riskChip;
+  for (final chip in chips) {
+    if (chip.startsWith('Risk ')) {
+      riskChip = chip;
+      break;
+    }
+  }
+
+  if (riskChip == null || chips.take(4).contains(riskChip)) {
+    return chips.take(4).toList();
+  }
+
+  return [...chips.take(3), riskChip];
 }
 
 void _addMetric(
