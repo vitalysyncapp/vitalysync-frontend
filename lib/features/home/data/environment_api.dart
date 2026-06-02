@@ -8,7 +8,7 @@ import '../../../shared/preferences/user_session.dart';
 import 'environment_model.dart';
 
 class EnvironmentApi {
-  static const Duration _requestTimeout = Duration(seconds: 8);
+  static const Duration _requestTimeout = Duration(seconds: 30);
   static const int _maxAttempts = 2;
   static const String _cachedSnapshotKey = 'cached_environment_snapshot';
 

@@ -290,7 +290,7 @@ class BurnoutPatternSummary {
 }
 
 class BurnoutScoreApi {
-  static const Duration _requestTimeout = Duration(seconds: 8);
+  static const Duration _requestTimeout = Duration(seconds: 30);
   static const String _latestScoreCache = 'burnout_latest_score';
   static const String _scoreHistoryCache = 'burnout_score_history';
   static const String _patternSummaryCache = 'burnout_pattern_summary';

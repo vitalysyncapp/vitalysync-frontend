@@ -49,7 +49,7 @@ class LogApi {
   static const String _exercisePrefillKeyPrefix = 'assistant_exercise_prefill';
   static const String _weeklyPulseStatusCache = 'weekly_pulse_status';
   static const String _weeklyPulsePendingCache = 'weekly_pulse_pending';
-  static const Duration _requestTimeout = Duration(seconds: 8);
+  static const Duration _requestTimeout = Duration(seconds: 30);
   static const String liveDataIssueOffline = 'offline';
   static const String liveDataIssueUnavailable = 'unavailable';
 
