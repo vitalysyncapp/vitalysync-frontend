@@ -129,3 +129,49 @@ String _formatLiters(double value) {
 
   return '${rounded.toStringAsFixed(1)} L';
 }
+
+Map<String, int> _baselineAnswersFromSummary(Map<String, dynamic> summary) {
+  final rawAnswers = summary['answers'];
+  if (rawAnswers is! List) {
+    return const <String, int>{};
+  }
+
+  final answers = <String, int>{};
+  for (final rawAnswer in rawAnswers) {
+    if (rawAnswer is! Map) continue;
+
+    final key = rawAnswer['question_key']?.toString().trim() ?? '';
+    final value = _parseLikertValue(rawAnswer['numeric_value']);
+
+    if (key.isNotEmpty && value != null) {
+      answers[key] = value;
+    }
+  }
+
+  return answers;
+}
+
+Map<String, int> _baselineAnswersFromPayload(
+  List<Map<String, dynamic>> payload,
+) {
+  final answers = <String, int>{};
+  for (final answer in payload) {
+    final key = answer['question_key']?.toString().trim() ?? '';
+    final value = _parseLikertValue(answer['numeric_value']);
+
+    if (key.isNotEmpty && value != null) {
+      answers[key] = value;
+    }
+  }
+
+  return answers;
+}
+
+int? _parseLikertValue(dynamic value) {
+  final parsed = value is int ? value : int.tryParse('${value ?? ''}');
+  if (parsed == null || parsed < 1 || parsed > 5) {
+    return null;
+  }
+
+  return parsed;
+}

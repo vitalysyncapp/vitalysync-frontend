@@ -13,6 +13,9 @@ import '../features/nutrition/data/nutrition_reminder_engine.dart';
 import '../features/nutrition/presentation/pages/nutrition_page.dart';
 import '../features/recovery/data/recovery_mode_service.dart';
 import '../features/recovery/presentation/pages/recovery_mode_page.dart';
+import '../features/tutorial/presentation/widgets/core_tutorial_overlay.dart';
+import '../features/tutorial/services/core_tutorial_replay_controller.dart';
+import '../features/tutorial/services/core_tutorial_service.dart';
 import '../shared/widgets/bottom_nav.dart';
 import '../shared/assistant/floating_smart_nudge_assistant.dart';
 import '../shared/widgets/app_bar.dart';
@@ -49,11 +52,15 @@ class MainNavigationController extends InheritedWidget {
 class MainNavigation extends StatefulWidget {
   final int initialIndex;
   final bool openNutritionLogOnStart;
+  final int? tutorialUserId;
+  final bool showTutorialOnStart;
 
   const MainNavigation({
     super.key,
     this.initialIndex = 0, // default
     this.openNutritionLogOnStart = false,
+    this.tutorialUserId,
+    this.showTutorialOnStart = false,
   });
   @override
   State<MainNavigation> createState() => _MainNavigationState();
@@ -67,10 +74,12 @@ class _MainNavigationState extends State<MainNavigation>
   late int _currentIndex;
   late int _nutritionLogFocusRequest;
   late final List<Widget> _pages;
+  late final Map<CoreTutorialTarget, GlobalKey> _tutorialTargetKeys;
   Timer? _offlineSyncTimer;
   bool _isSyncingOfflineLogs = false;
   bool _isRecoveryRouteOpen = false;
   bool _recoveryDismissedThisNavigation = false;
+  bool _isTutorialActive = false;
   int _recoveryCheckToken = 0;
 
   @override
@@ -80,6 +89,21 @@ class _MainNavigationState extends State<MainNavigation>
     _currentIndex = widget.initialIndex;
     _nutritionLogFocusRequest = widget.openNutritionLogOnStart ? 1 : 0;
     _pages = const [HomePage(), LogPage(), NutritionPage(), Dashboard()];
+    _tutorialTargetKeys = {
+      CoreTutorialTarget.navigation: GlobalKey(
+        debugLabel: 'tutorial_navigation',
+      ),
+      CoreTutorialTarget.home: GlobalKey(debugLabel: 'tutorial_home'),
+      CoreTutorialTarget.log: GlobalKey(debugLabel: 'tutorial_log'),
+      CoreTutorialTarget.nutrition: GlobalKey(debugLabel: 'tutorial_nutrition'),
+      CoreTutorialTarget.dashboard: GlobalKey(debugLabel: 'tutorial_dashboard'),
+      CoreTutorialTarget.assistant: GlobalKey(debugLabel: 'tutorial_assistant'),
+    };
+    _isTutorialActive =
+        widget.showTutorialOnStart && widget.tutorialUserId != null;
+    CoreTutorialReplayController.instance.requests.addListener(
+      _handleCoreTutorialReplayRequested,
+    );
     BurnoutScoreApi.refreshSignal.addListener(_handleBurnoutInputsChanged);
     ActivityService.instance.startTracking();
     ExerciseGoalService.instance.start();
@@ -97,6 +121,9 @@ class _MainNavigationState extends State<MainNavigation>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    CoreTutorialReplayController.instance.requests.removeListener(
+      _handleCoreTutorialReplayRequested,
+    );
     BurnoutScoreApi.refreshSignal.removeListener(_handleBurnoutInputsChanged);
     _offlineSyncTimer?.cancel();
     super.dispose();
@@ -118,6 +145,16 @@ class _MainNavigationState extends State<MainNavigation>
   void _handleBurnoutInputsChanged() {
     _recoveryDismissedThisNavigation = false;
     _checkRecoveryMode(forceShow: true);
+  }
+
+  void _handleCoreTutorialReplayRequested() {
+    if (!mounted || _isTutorialActive) {
+      return;
+    }
+
+    setState(() {
+      _isTutorialActive = true;
+    });
   }
 
   void _selectTab(int index) {
@@ -171,7 +208,8 @@ class _MainNavigationState extends State<MainNavigation>
   }
 
   Future<void> _checkRecoveryMode({bool forceShow = false}) async {
-    if (_isRecoveryRouteOpen ||
+    if (_isTutorialActive ||
+        _isRecoveryRouteOpen ||
         (_recoveryDismissedThisNavigation && !forceShow) ||
         !mounted) {
       return;
@@ -216,6 +254,29 @@ class _MainNavigationState extends State<MainNavigation>
     );
   }
 
+  Future<void> _completeCoreTutorial() async {
+    final userId = widget.tutorialUserId;
+    if (userId != null) {
+      await CoreTutorialService.instance.completeForUser(userId);
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() => _isTutorialActive = false);
+    unawaited(_checkRecoveryMode());
+  }
+
+  CoreTutorialTarget _tutorialTargetForPage(int index) {
+    return switch (index) {
+      0 => CoreTutorialTarget.home,
+      1 => CoreTutorialTarget.log,
+      2 => CoreTutorialTarget.nutrition,
+      _ => CoreTutorialTarget.dashboard,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     return MainNavigationController(
@@ -224,60 +285,79 @@ class _MainNavigationState extends State<MainNavigation>
       nutritionLogFocusRequest: _nutritionLogFocusRequest,
       onNutritionLogRequested: _openNutritionLog,
       onLogRequested: _openLogPage,
-      child: Scaffold(
-        extendBody: true,
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-            ...List.generate(_pages.length, (index) {
-              final isActive = index == _currentIndex;
-              final hiddenOffset = index < _currentIndex
-                  ? const Offset(-0.05, 0.02)
-                  : const Offset(0.05, 0.02);
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Scaffold(
+            extendBody: true,
+            body: Stack(
+              fit: StackFit.expand,
+              children: [
+                ...List.generate(_pages.length, (index) {
+                  final isActive = index == _currentIndex;
+                  final hiddenOffset = index < _currentIndex
+                      ? const Offset(-0.05, 0.02)
+                      : const Offset(0.05, 0.02);
 
-              return IgnorePointer(
-                ignoring: !isActive,
-                child: AnimatedSlide(
-                  duration: _pageTransitionDuration,
-                  curve: Curves.easeOutCubic,
-                  offset: isActive ? Offset.zero : hiddenOffset,
-                  child: AnimatedScale(
-                    duration: _pageTransitionDuration,
-                    curve: Curves.easeOutCubic,
-                    scale: isActive ? 1 : 0.985,
-                    child: AnimatedOpacity(
-                      duration: const Duration(milliseconds: 260),
-                      curve: Curves.easeOut,
-                      opacity: isActive ? 1 : 0,
-                      child: ExcludeSemantics(
-                        excluding: !isActive,
-                        child: TickerMode(
-                          enabled: isActive,
-                          child: KeyedSubtree(
-                            key: ValueKey('main_nav_page_$index'),
-                            child: _pages[index],
+                  return IgnorePointer(
+                    ignoring: !isActive,
+                    child: AnimatedSlide(
+                      duration: _pageTransitionDuration,
+                      curve: Curves.easeOutCubic,
+                      offset: isActive ? Offset.zero : hiddenOffset,
+                      child: AnimatedScale(
+                        duration: _pageTransitionDuration,
+                        curve: Curves.easeOutCubic,
+                        scale: isActive ? 1 : 0.985,
+                        child: AnimatedOpacity(
+                          duration: const Duration(milliseconds: 260),
+                          curve: Curves.easeOut,
+                          opacity: isActive ? 1 : 0,
+                          child: ExcludeSemantics(
+                            excluding: !isActive,
+                            child: TickerMode(
+                              enabled: isActive,
+                              child: KeyedSubtree(
+                                key:
+                                    _tutorialTargetKeys[_tutorialTargetForPage(
+                                      index,
+                                    )]!,
+                                child: _pages[index],
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ),
+                  );
+                }),
+                KeyedSubtree(
+                  key: _tutorialTargetKeys[CoreTutorialTarget.assistant],
+                  child: FloatingSmartNudgeAssistant(
+                    message:
+                        "You're doing well today. Log sleep and hydration to keep your streak going.",
+                    buttonSize: _currentIndex == 1 ? 46 : 54,
+                    onLogMealRequested: _openNutritionLog,
+                    onLogPageRequested: _openLogPage,
                   ),
                 ),
-              );
-            }),
-            FloatingSmartNudgeAssistant(
-              message:
-                  "You're doing well today. Log sleep and hydration to keep your streak going.",
-              buttonSize: _currentIndex == 1 ? 46 : 54,
-              onLogMealRequested: _openNutritionLog,
-              onLogPageRequested: _openLogPage,
+              ],
             ),
-          ],
-        ),
-        bottomNavigationBar: buildBottomNav(
-          context: context,
-          currentIndex: _currentIndex,
-          onTap: _selectTab,
-        ),
+            bottomNavigationBar: buildBottomNav(
+              context: context,
+              currentIndex: _currentIndex,
+              onTap: _selectTab,
+              tutorialKey: _tutorialTargetKeys[CoreTutorialTarget.navigation],
+            ),
+          ),
+          if (_isTutorialActive)
+            CoreTutorialOverlay(
+              currentIndex: _currentIndex,
+              onTabSelected: _selectTab,
+              targetKeys: _tutorialTargetKeys,
+              onFinished: _completeCoreTutorial,
+            ),
+        ],
       ),
     );
   }

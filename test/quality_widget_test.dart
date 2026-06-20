@@ -5,8 +5,10 @@ import 'package:vitalysync/features/dashboard/presentation/widgets/dashboard_hea
 import 'package:vitalysync/features/log/presentation/widgets/log_widgets.dart';
 import 'package:vitalysync/features/notifications/presentation/pages/notification_page.dart';
 import 'package:vitalysync/features/nutrition/presentation/widgets/today_nutrition_card.dart';
+import 'package:vitalysync/features/onboarding/data/burnout_baseline_questions.dart';
 import 'package:vitalysync/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:vitalysync/features/profile/presentation/pages/profile_page.dart';
+import 'package:vitalysync/features/profile/presentation/pages/retake_baseline_questionnaire_page.dart';
 import 'package:vitalysync/features/profile/presentation/widgets/wellness_profile_card.dart';
 import 'package:vitalysync/shared/goals/user_goals.dart';
 import 'package:vitalysync/shared/notifications/notification_feed_service.dart';
@@ -136,7 +138,9 @@ void main() {
               burnoutLevel: 'Low',
               burnoutScore: 24,
               isSaving: false,
+              isSavingBaseline: false,
               onEdit: () {},
+              onRetakeBaseline: () {},
             ),
             MyGoalsCard(
               goals: UserGoalsSnapshot.defaults(
@@ -157,6 +161,7 @@ void main() {
 
     expect(find.text('Wellness Profile'), findsOneWidget);
     expect(find.text('Edit Wellness Profile'), findsOneWidget);
+    expect(find.text('Retake Baseline'), findsOneWidget);
     expect(find.text('Daily Water Goal'), findsNothing);
     expect(find.text('Exercise Target'), findsNothing);
 
@@ -167,6 +172,107 @@ void main() {
     expect(find.text('Activity Goal'), findsOneWidget);
     expect(find.text('Daily Steps'), findsOneWidget);
     expect(find.text('Nutrition Goal'), findsOneWidget);
+  });
+
+  testWidgets('wellness profile card triggers retake baseline action', (
+    tester,
+  ) async {
+    var tapped = false;
+
+    await pumpTestApp(
+      tester,
+      SingleChildScrollView(
+        child: WellnessProfileCard(
+          lifestyleType: 'Moderately Active',
+          currentRole: 'Student',
+          usualSleepTime: '10:30 PM',
+          usualWakeTime: '6:30 AM',
+          workIntensity: 'Medium',
+          burnoutLevel: 'Low',
+          burnoutScore: 24,
+          isSaving: false,
+          isSavingBaseline: false,
+          onEdit: () {},
+          onRetakeBaseline: () => tapped = true,
+        ),
+      ),
+    );
+
+    await tester.ensureVisible(find.text('Retake Baseline'));
+    await tester.pump();
+    await tester.tap(find.text('Retake Baseline'));
+    await tester.pump();
+
+    expect(tapped, isTrue);
+  });
+
+  testWidgets('retake baseline requires the visible section before next', (
+    tester,
+  ) async {
+    await pumpTestApp(
+      tester,
+      RetakeBaselineQuestionnairePage(
+        initialAnswers: const {},
+        onSave: (_) async => true,
+      ),
+    );
+
+    final nextButton = tester.widget<ElevatedButton>(_retakePrimaryButton);
+
+    expect(nextButton.onPressed, isNull);
+  });
+
+  testWidgets('retake baseline prefills answers and saves full payload', (
+    tester,
+  ) async {
+    List<Map<String, dynamic>>? savedPayload;
+    final firstSectionAnswers = _answersForSection(0, 4);
+
+    await pumpTestApp(
+      tester,
+      RetakeBaselineQuestionnairePage(
+        initialAnswers: firstSectionAnswers,
+        onSave: (answers) async {
+          savedPayload = answers;
+          return true;
+        },
+      ),
+    );
+
+    final nextButton = tester.widget<ElevatedButton>(_retakePrimaryButton);
+    expect(nextButton.onPressed, isNotNull);
+
+    await tester.tap(_retakePrimaryButton);
+    await tester.pumpAndSettle();
+    await _answerSection(tester, sectionIndex: 1, value: 3);
+
+    await tester.tap(_retakePrimaryButton);
+    await tester.pumpAndSettle();
+    await _answerSection(tester, sectionIndex: 2, value: 5);
+
+    await tester.tap(_retakePrimaryButton);
+    await tester.pump();
+
+    expect(savedPayload, isNotNull);
+    expect(savedPayload, hasLength(15));
+    expect(
+      savedPayload!.firstWhere(
+        (answer) => answer['question_key'] == 'ee_01',
+      )['numeric_value'],
+      4,
+    );
+    expect(
+      savedPayload!.firstWhere(
+        (answer) => answer['question_key'] == 'dp_01',
+      )['numeric_value'],
+      3,
+    );
+    expect(
+      savedPayload!.firstWhere(
+        (answer) => answer['question_key'] == 'pa_01',
+      )['numeric_value'],
+      5,
+    );
   });
 
   testWidgets('notification card renders report metrics and priority', (
@@ -197,4 +303,44 @@ void main() {
     expect(find.text('7h'), findsOneWidget);
     expect(find.text('MEDIUM'), findsOneWidget);
   });
+}
+
+Map<String, int> _answersForSection(int sectionIndex, int value) {
+  return {
+    for (final question in kBurnoutBaselineSections[sectionIndex].questions)
+      question.questionKey: value,
+  };
+}
+
+final Finder _retakePrimaryButton = find.byKey(
+  const ValueKey('retake-baseline-primary-button'),
+);
+
+Future<void> _answerSection(
+  WidgetTester tester, {
+  required int sectionIndex,
+  required int value,
+}) async {
+  final optionLabel = _labelForLikertValue(value);
+
+  for (final question in kBurnoutBaselineSections[sectionIndex].questions) {
+    final questionFinder = find.byKey(
+      ValueKey('baseline-${question.questionKey}'),
+    );
+    await tester.ensureVisible(questionFinder);
+    await tester.pump();
+    await tester.tap(
+      find.descendant(
+        of: questionFinder,
+        matching: find.byTooltip('$value - $optionLabel'),
+      ),
+    );
+    await tester.pump();
+  }
+}
+
+String _labelForLikertValue(int value) {
+  return kBurnoutBaselineScale
+      .firstWhere((option) => option.value == value)
+      .label;
 }

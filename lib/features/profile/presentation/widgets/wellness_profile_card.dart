@@ -11,7 +11,9 @@ class WellnessProfileCard extends StatelessWidget {
   final String burnoutLevel;
   final int burnoutScore;
   final bool isSaving;
+  final bool isSavingBaseline;
   final VoidCallback onEdit;
+  final VoidCallback onRetakeBaseline;
 
   const WellnessProfileCard({
     super.key,
@@ -23,7 +25,9 @@ class WellnessProfileCard extends StatelessWidget {
     required this.burnoutLevel,
     required this.burnoutScore,
     required this.isSaving,
+    required this.isSavingBaseline,
     required this.onEdit,
+    required this.onRetakeBaseline,
   });
 
   @override
@@ -161,6 +165,35 @@ class WellnessProfileCard extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 foregroundColor: themePrimary,
                 side: BorderSide(color: pageBorderColor(context)),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: isSavingBaseline ? null : onRetakeBaseline,
+              icon: isSavingBaseline
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.restart_alt_rounded),
+              label: Text(
+                isSavingBaseline ? 'Saving Baseline...' : 'Retake Baseline',
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: themePrimary,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),

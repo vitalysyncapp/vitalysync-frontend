@@ -6,6 +6,7 @@ import 'package:lottie/lottie.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/widgets/reveal_on_build.dart';
 import '../../../onboarding/services/onboarding_service.dart';
 import '../../data/log_api.dart';
@@ -441,7 +442,15 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
         appBar: buildAppBar(context),
         body: SafeArea(
           child: isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? AppSkeletonList(
+                  padding: EdgeInsets.fromLTRB(
+                    12,
+                    10,
+                    12,
+                    pageBottomContentPadding(context, extra: 10.5),
+                  ),
+                  cardHeights: const [104, 178, 178, 152, 118],
+                )
               : Stack(
                   children: [
                     AnimatedSwitcher(

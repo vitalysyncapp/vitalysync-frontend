@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../profile/presentation/pages/history_page.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 import '../../data/weekly_user_metrics.dart';
 
 class WeeklyPerformanceCard extends StatefulWidget {
@@ -47,12 +48,7 @@ class _WeeklyPerformanceCardState extends State<WeeklyPerformanceCard> {
             ],
           ),
           child: snapshot.connectionState == ConnectionState.waiting
-              ? const SizedBox(
-                  height: 92,
-                  child: Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  ),
-                )
+              ? const SizedBox(height: 92, child: AppSkeletonRows(count: 2))
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

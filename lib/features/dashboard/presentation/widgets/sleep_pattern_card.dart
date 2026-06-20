@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 import '../../data/weekly_user_metrics.dart';
 
 class SleepPatternCard extends StatefulWidget {
@@ -47,7 +48,7 @@ class _SleepPatternCardState extends State<SleepPatternCard> {
               if (snapshot.connectionState == ConnectionState.waiting)
                 const SizedBox(
                   height: 200,
-                  child: Center(child: CircularProgressIndicator()),
+                  child: AppSkeletonChart(height: 190),
                 )
               else
                 SizedBox(

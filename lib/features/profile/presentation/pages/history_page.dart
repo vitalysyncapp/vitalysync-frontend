@@ -7,6 +7,7 @@ import '../../../../features/dashboard/data/burnout_score_api.dart';
 import '../../../../features/log/data/log_api.dart';
 import '../../../../features/nutrition/data/nutrition_api.dart';
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 
 enum _HistoryCategory { dailyLogs, burnout, nutrition, activity }
 
@@ -782,16 +783,7 @@ class _HistoryLoadingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 180,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: pageSurfaceColor(context),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: pageBorderColor(context)),
-      ),
-      child: const CircularProgressIndicator(),
-    );
+    return const AppSkeletonCard(height: 180, lineCount: 3);
   }
 }
 

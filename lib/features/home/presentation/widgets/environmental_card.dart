@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/environment_model.dart';
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 
 class EnvironmentalCard extends StatelessWidget {
   final EnvironmentSnapshot? snapshot;
@@ -156,25 +157,7 @@ class EnvironmentalCard extends StatelessWidget {
   }
 
   Widget _buildLoadingState(BuildContext context) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 18,
-          height: 18,
-          child: CircularProgressIndicator(
-            strokeWidth: 2.2,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            'Loading live weather and air quality...',
-            style: TextStyle(color: pagePrimaryTextColor(context)),
-          ),
-        ),
-      ],
-    );
+    return const AppSkeletonRows(count: 3, spacing: 9, showLeading: true);
   }
 
   Widget _buildErrorState(BuildContext context, String message) {

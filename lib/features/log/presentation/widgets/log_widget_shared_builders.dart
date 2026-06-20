@@ -26,7 +26,6 @@ extension _LogWidgetSharedBuilders on LogWidgets {
     BuildContext context, {
     required IconData icon,
     required String title,
-    required String dimensionLabel,
     required String description,
     required Color accentColor,
   }) {
@@ -34,61 +33,50 @@ extension _LogWidgetSharedBuilders on LogWidgets {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: isDark
             ? accentColor.withValues(alpha: 0.12)
             : accentColor.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: accentColor.withValues(alpha: 0.18)),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 38,
-            height: 38,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
               color: accentColor.withValues(alpha: isDark ? 0.18 : 0.14),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, size: 20, color: accentColor),
+            child: Icon(icon, size: 17, color: accentColor),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  dimensionLabel.toUpperCase(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: accentColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 2),
                 Text(
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: pagePrimaryTextColor(context),
-                    fontSize: 16,
+                    fontSize: 14.5,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 2),
                 Text(
                   description,
-                  maxLines: 3,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: pageSecondaryTextColor(context),
-                    fontSize: 12.5,
-                    height: 1.35,
+                    fontSize: 11.5,
+                    height: 1.24,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

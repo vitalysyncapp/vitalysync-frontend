@@ -9,6 +9,7 @@ import '../../../../features/log/data/log_api.dart';
 import '../../../../features/onboarding/data/onboarding_api.dart';
 import '../../../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../../../features/onboarding/services/onboarding_service.dart';
+import '../../../../features/tutorial/services/core_tutorial_service.dart';
 import '../../../../shared/notifications/local_notification_service.dart';
 import '../../../../shared/notifications/notification_payload_router.dart';
 import '../../../../shared/preferences/session_reset_service.dart';
@@ -64,6 +65,11 @@ class _LoadingScreenState extends State<LoadingScreen>
 
       final launchPayload = LocalNotificationService.instance
           .consumePendingLaunchPayload();
+      final showTutorialOnStart =
+          onboardingCompleted &&
+          await CoreTutorialService.instance.shouldShowForUser(signedInUserId);
+
+      if (!mounted) return;
 
       Navigator.pushReplacement(
         context,
@@ -74,6 +80,8 @@ class _LoadingScreenState extends State<LoadingScreen>
                   openNutritionLogOnStart: shouldOpenNutritionLog(
                     launchPayload,
                   ),
+                  tutorialUserId: signedInUserId,
+                  showTutorialOnStart: showTutorialOnStart,
                 )
               : OnboardingPage(userId: signedInUserId),
         ),
@@ -82,7 +90,12 @@ class _LoadingScreenState extends State<LoadingScreen>
     }
 
     if (session.isLoggedIn || session.hasAuthToken || userId != null) {
-      await SessionResetService.instance.resetForLogout();
+      try {
+        await SessionResetService.instance.resetForLogout();
+      } catch (error, stackTrace) {
+        debugPrint('Unable to fully reset invalid startup session: $error');
+        debugPrintStack(stackTrace: stackTrace);
+      }
     }
 
     if (!mounted) return;

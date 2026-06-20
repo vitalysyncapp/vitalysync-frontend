@@ -12,6 +12,7 @@ const authHealthyLifestyleAsset = 'assets/images/auth_healthy_lifestyle.svg';
 const authMeditationAsset = 'assets/images/auth_meditation.svg';
 const authWorkoutAsset = 'assets/images/auth_workout.svg';
 const authWorkStressAsset = 'assets/images/auth_work_stress.svg';
+const authDashboardAsset = 'assets/images/auth_dashboard.svg';
 
 class AuthScaffold extends StatelessWidget {
   final Widget child;
@@ -20,6 +21,7 @@ class AuthScaffold extends StatelessWidget {
   final List<String>? bottomOverlayAssets;
   final EdgeInsetsGeometry padding;
   final bool centerContent;
+  final bool scrollable;
 
   const AuthScaffold({
     super.key,
@@ -29,6 +31,7 @@ class AuthScaffold extends StatelessWidget {
     this.bottomOverlayAssets,
     this.padding = const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
     this.centerContent = true,
+    this.scrollable = true,
   });
 
   @override
@@ -47,6 +50,13 @@ class AuthScaffold extends StatelessWidget {
             SafeArea(
               child: LayoutBuilder(
                 builder: (context, constraints) {
+                  if (!scrollable) {
+                    return Padding(
+                      padding: padding,
+                      child: centerContent ? Center(child: child) : child,
+                    );
+                  }
+
                   final scrollChild = ConstrainedBox(
                     constraints: BoxConstraints(
                       minHeight: constraints.maxHeight,

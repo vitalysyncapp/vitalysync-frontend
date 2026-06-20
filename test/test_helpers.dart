@@ -13,6 +13,9 @@ final Uint8List transparentImageBytes = base64Decode(
 const minimalSvg =
     '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80" viewBox="0 0 120 80"><rect width="120" height="80" fill="#DDF7EF"/><circle cx="60" cy="40" r="24" fill="#1EAD83"/></svg>';
 
+const minimalLottie =
+    '{"v":"5.7.4","fr":30,"ip":0,"op":60,"w":120,"h":120,"nm":"test","ddd":0,"assets":[],"layers":[{"ddd":0,"ind":1,"ty":4,"nm":"circle","sr":1,"ks":{"o":{"a":0,"k":100},"r":{"a":0,"k":0},"p":{"a":0,"k":[60,60,0]},"a":{"a":0,"k":[0,0,0]},"s":{"a":0,"k":[100,100,100]}},"ao":0,"shapes":[{"ty":"el","p":{"a":0,"k":[0,0]},"s":{"a":0,"k":[60,60]},"nm":"ellipse"},{"ty":"fl","c":{"a":0,"k":[0.12,0.68,0.51,1]},"o":{"a":0,"k":100},"r":1,"bm":0,"nm":"fill"}],"ip":0,"op":60,"st":0,"bm":0}]}';
+
 final ByteData assetManifestBytes = const StandardMessageCodec().encodeMessage(
   <Object?, Object?>{
     'assets/images/logo.png': <Object?>[
@@ -26,6 +29,9 @@ final ByteData assetManifestBytes = const StandardMessageCodec().encodeMessage(
     ],
     'assets/images/auth_work_stress.svg': <Object?>[
       <Object?, Object?>{'asset': 'assets/images/auth_work_stress.svg'},
+    ],
+    'assets/images/auth_dashboard.svg': <Object?>[
+      <Object?, Object?>{'asset': 'assets/images/auth_dashboard.svg'},
     ],
     'assets/images/user.png': <Object?>[
       <Object?, Object?>{'asset': 'assets/images/user.png'},
@@ -80,6 +86,10 @@ Future<void> configureTestAssets() async {
 
         if (key.endsWith('.svg')) {
           return byteDataFromString(minimalSvg);
+        }
+
+        if (key.endsWith('.json')) {
+          return byteDataFromString(minimalLottie);
         }
 
         return ByteData.sublistView(transparentImageBytes);

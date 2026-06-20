@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../features/nutrition/data/nutrition_api.dart';
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 
 const double _dailyCalorieGoal = 2000;
 const double _proteinCaloriesPerGram = 4;
@@ -109,7 +110,7 @@ class _WeeklyCalorieLevelsCard extends StatelessWidget {
           if (isLoading)
             const SizedBox(
               height: 170,
-              child: Center(child: CircularProgressIndicator()),
+              child: AppSkeletonRows(count: 5, showLeading: true),
             )
           else
             Column(
@@ -179,7 +180,7 @@ class _NutritionBalanceCard extends StatelessWidget {
           if (isLoading)
             const SizedBox(
               height: 130,
-              child: Center(child: CircularProgressIndicator()),
+              child: AppSkeletonChart(height: 120, barCount: 3),
             )
           else
             _NutritionBalanceDiagram(data: data),

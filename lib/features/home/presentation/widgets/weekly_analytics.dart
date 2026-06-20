@@ -3,17 +3,20 @@ import 'package:flutter/material.dart';
 import '../../../../app/main_navigation.dart';
 import '../../../../features/dashboard/data/weekly_user_metrics.dart';
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 
 class WeeklyAnalyticsCard extends StatelessWidget {
   final String title;
   final List<WeeklyStatItem> items;
   final VoidCallback? onViewAll;
+  final bool isLoading;
 
   const WeeklyAnalyticsCard({
     super.key,
     this.title = 'This Week',
     required this.items,
     this.onViewAll,
+    this.isLoading = false,
   });
 
   @override
@@ -45,68 +48,76 @@ class WeeklyAnalyticsCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 15.5,
-                  fontWeight: FontWeight.w700,
-                  color: titleColor,
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  final controller = MainNavigationController.maybeOf(context);
-                  if (controller != null) {
-                    controller.onTabSelected(3);
-                    return;
-                  }
-
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const MainNavigation(initialIndex: 3),
-                    ),
-                  );
-                },
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: const Size(0, 0),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  'View All',
+      child: AppSkeleton(
+        enabled: isLoading,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  title,
                   style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w500,
-                    color: linkColor,
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w700,
+                    color: titleColor,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ...List.generate(items.length, (index) {
-            final item = items[index];
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: index == items.length - 1 ? 0 : 11,
-              ),
-              child: _buildStatRow(
-                label: item.label,
-                value: item.value,
-                labelColor: labelColor,
-                valueColor: item.valueColor ?? defaultValueColor,
-                valueWeight: item.valueWeight,
-              ),
-            );
-          }),
-        ],
+                TextButton(
+                  onPressed: isLoading
+                      ? null
+                      : () {
+                          final controller = MainNavigationController.maybeOf(
+                            context,
+                          );
+                          if (controller != null) {
+                            controller.onTabSelected(3);
+                            return;
+                          }
+
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const MainNavigation(initialIndex: 3),
+                            ),
+                          );
+                        },
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(0, 0),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    'View All',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                      color: linkColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ...List.generate(items.length, (index) {
+              final item = items[index];
+              return Padding(
+                padding: EdgeInsets.only(
+                  bottom: index == items.length - 1 ? 0 : 11,
+                ),
+                child: _buildStatRow(
+                  label: item.label,
+                  value: item.value,
+                  labelColor: labelColor,
+                  valueColor: item.valueColor ?? defaultValueColor,
+                  valueWeight: item.valueWeight,
+                ),
+              );
+            }),
+          ],
+        ),
       ),
     );
   }
@@ -195,7 +206,10 @@ class _HomeWeeklyAnalyticsCardState extends State<HomeWeeklyAnalyticsCard> {
                 ),
               ];
 
-        return WeeklyAnalyticsCard(items: items);
+        return WeeklyAnalyticsCard(
+          items: items,
+          isLoading: snapshot.connectionState == ConnectionState.waiting,
+        );
       },
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 import '../../data/weekly_user_metrics.dart';
 
 class SymptomFrequencyCard extends StatefulWidget {
@@ -47,7 +48,7 @@ class _SymptomFrequencyCardState extends State<SymptomFrequencyCard> {
               if (snapshot.connectionState == ConnectionState.waiting)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 18),
-                  child: Center(child: CircularProgressIndicator()),
+                  child: AppSkeletonRows(count: 4),
                 )
               else if (visibleRows.isEmpty)
                 Padding(

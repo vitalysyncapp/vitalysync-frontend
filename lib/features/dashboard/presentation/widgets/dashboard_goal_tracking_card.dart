@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 import '../../data/goal_tracking_metrics.dart';
 
 class DashboardGoalTrackingCard extends StatefulWidget {
@@ -43,7 +44,7 @@ class _DashboardGoalTrackingCardState extends State<DashboardGoalTrackingCard> {
                 ? const SizedBox(
                     key: ValueKey('goal-tracking-loading'),
                     height: 190,
-                    child: Center(child: CircularProgressIndicator()),
+                    child: AppSkeletonRows(count: 4, showLeading: true),
                   )
                 : data == null
                 ? _GoalTrackingUnavailable(onRetry: _reload)

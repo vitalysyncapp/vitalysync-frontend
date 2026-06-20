@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 import '../../data/weekly_user_metrics.dart';
 
 class WellnessIndexCard extends StatefulWidget {
@@ -53,7 +54,7 @@ class _WellnessIndexCardState extends State<WellnessIndexCard> {
               if (snapshot.connectionState == ConnectionState.waiting)
                 const SizedBox(
                   height: 230,
-                  child: Center(child: CircularProgressIndicator()),
+                  child: AppSkeletonChart(height: 220, barCount: 6),
                 )
               else
                 SizedBox(

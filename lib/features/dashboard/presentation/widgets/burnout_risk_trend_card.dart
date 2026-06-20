@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/burnout_score_api.dart';
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 
 class BurnoutRiskTrendCard extends StatelessWidget {
   final BurnoutPatternSummary? summary;
@@ -61,10 +62,7 @@ class BurnoutRiskTrendCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           if (isLoading)
-            const SizedBox(
-              height: 200,
-              child: Center(child: CircularProgressIndicator()),
-            )
+            const SizedBox(height: 200, child: AppSkeletonChart(height: 190))
           else if (points.isEmpty)
             SizedBox(
               height: 200,

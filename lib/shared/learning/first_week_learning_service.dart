@@ -106,7 +106,7 @@ class FirstWeekLearningService {
     DateTime today,
   ) async {
     try {
-      return LogApi.fetchHistory(
+      return await LogApi.fetchHistory(
         startDate: _dateKey(today.subtract(const Duration(days: 29))),
         endDate: _dateKey(today),
         limit: 30,

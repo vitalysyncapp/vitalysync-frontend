@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 import '../../data/activity_api.dart';
 import '../../data/activity_log.dart';
 import '../../data/activity_service.dart';
@@ -100,7 +101,7 @@ class ActivitySummaryCard extends StatelessWidget {
             ? SizedBox(
                 key: const ValueKey('activity-loading'),
                 height: compact ? 84 : 110,
-                child: Center(child: CircularProgressIndicator()),
+                child: const AppSkeletonRows(count: 2, showLeading: true),
               )
             : Column(
                 key: ValueKey('activity-${log.logDate}-${log.steps}'),
@@ -439,7 +440,7 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
             ? const SizedBox(
                 key: ValueKey('weekly-activity-loading'),
                 height: 110,
-                child: Center(child: CircularProgressIndicator()),
+                child: AppSkeletonRows(count: 2, showLeading: true),
               )
             : Column(
                 key: ValueKey('weekly-activity-${log.logDate}-${log.steps}'),

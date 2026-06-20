@@ -41,6 +41,7 @@ Widget buildBottomNav({
   required BuildContext context,
   required int currentIndex,
   required ValueChanged<int> onTap,
+  Key? tutorialKey,
 }) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   final bottomInset = MediaQuery.paddingOf(context).bottom;
@@ -48,6 +49,7 @@ Widget buildBottomNav({
   final isCompact = screenWidth < 390;
 
   return SafeArea(
+    key: tutorialKey,
     top: false,
     child: Padding(
       padding: EdgeInsets.only(

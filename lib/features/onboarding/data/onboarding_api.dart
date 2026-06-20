@@ -130,4 +130,22 @@ class OnboardingApi {
 
     return data;
   }
+
+  static Future<Map<String, dynamic>> updateBurnoutBaseline({
+    required int userId,
+    required List<Map<String, dynamic>> burnoutAnswers,
+  }) async {
+    final response = await http.put(
+      Uri.parse(ApiConfig.onboarding('/$userId/burnout-baseline')),
+      headers: await ApiConfig.jsonHeaders(),
+      body: jsonEncode({'burnout_answers': burnoutAnswers}),
+    );
+
+    final data = _decodeMap(response);
+    if (response.statusCode != 200) {
+      throw Exception(data['message'] ?? 'Failed to save burnout baseline');
+    }
+
+    return data;
+  }
 }

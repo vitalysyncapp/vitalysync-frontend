@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../features/onboarding/data/onboarding_api.dart';
+import '../../../../features/tutorial/services/core_tutorial_replay_controller.dart';
 import '../../../../shared/preferences/app_preferences.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
@@ -195,6 +196,11 @@ class _SettingsPageState extends State<SettingsPage> {
       builder: (_) =>
           _PasswordVerificationDialog(actionTitle: actionTitle, email: email),
     );
+  }
+
+  void _replayCoreTutorial() {
+    CoreTutorialReplayController.instance.requestReplay();
+    Navigator.of(context).pop();
   }
 
   @override
@@ -392,6 +398,17 @@ class _SettingsPageState extends State<SettingsPage> {
                       context: context,
                       title: "Support & App Info",
                       children: [
+                        _buildSettingsTile(
+                          context: context,
+                          icon: Icons.play_circle_outline_rounded,
+                          iconBg: const Color(0xFFE0F7F4),
+                          iconColor: const Color(0xFF0F9F91),
+                          title: "Replay App Tutorial",
+                          subtitle:
+                              "Review Home, Log, Nutrition, Dashboard, and Assistant",
+                          onTap: _replayCoreTutorial,
+                        ),
+                        _buildDivider(context),
                         _buildSettingsTile(
                           context: context,
                           icon: Icons.help_outline_rounded,

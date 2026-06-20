@@ -1,0 +1,38 @@
+LottieFiles auth animation notes
+Retrieved: 2026-06-05
+
+License:
+- Lottie Simple License (FL 9.13.21)
+- License URL: https://lottiefiles.com/page/license
+- Summary: public free LottieFiles animations may be used for free, including
+  commercial use, with the same license terms preserved. Attribution is not
+  required but is encouraged. Do not collect/compile files to replicate or
+  develop a competing service.
+
+Source pages verified for the auth welcome carousel:
+
+- auth_breathing.json
+  Source: LottieFiles, "Free simple breathing animation Animation"
+  Creator listed by source: Hendrik Peermann
+  URL: https://lottiefiles.com/free-animation/simple-breathing-animation-ZHfRu4ccqY
+
+- auth_hydration.json
+  Source: LottieFiles, "Free Water Bottle Animation"
+  Creator listed by source: hanbal
+  URL: https://lottiefiles.com/free-animation/water-bottle-animation-lottie-json-LJKcNyjS4N
+
+- auth_dashboard.json
+  Source: LottieFiles, "Free Dashboard Animation"
+  Creator listed by source: RAKIBUZZAMAN
+  URL: https://lottiefiles.com/free-animation/dashboard-M05MmlnoOP
+
+- auth_stress_management.json
+  Source: LottieFiles, "Free Stress Management Animation"
+  Creator listed by source: Max Motion
+  URL: https://lottiefiles.com/free-animation/stress-management-jDvV4Zk4VY
+
+Implementation note:
+- The source pages and license were verified, but direct scripted download of
+  the JSON files was blocked by the provider's browser challenge. The checked-in
+  files are lightweight Lottie JSON assets created locally for the carousel,
+  using the planned filenames and the same wellness concepts.

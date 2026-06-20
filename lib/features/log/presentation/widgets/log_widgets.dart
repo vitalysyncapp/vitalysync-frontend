@@ -105,7 +105,6 @@ class LogWidgets extends StatelessWidget {
           context,
           icon: Icons.battery_5_bar_rounded,
           title: 'Emotional exhaustion',
-          dimensionLabel: 'Maslach dimension',
           description:
               'Tracks strain, depleted energy, low mood, and physical symptoms that can signal exhaustion.',
           accentColor: const Color(0xFFFF8A1F),
@@ -123,7 +122,6 @@ class LogWidgets extends StatelessWidget {
           context,
           icon: Icons.spa_outlined,
           title: 'Depersonalization or detachment',
-          dimensionLabel: 'Maslach dimension',
           description:
               'Tracks emotional distance and recovery supports that can affect connection to daily responsibilities.',
           accentColor: const Color(0xFF14B8A6),
@@ -141,7 +139,6 @@ class LogWidgets extends StatelessWidget {
           context,
           icon: Icons.center_focus_strong_rounded,
           title: 'Reduced accomplishment',
-          dimensionLabel: 'Maslach dimension',
           description:
               'Connects workload, activity, and body-support signals with weekly focus and progress answers.',
           accentColor: const Color(0xFF2563EB),

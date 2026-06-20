@@ -12,6 +12,7 @@ import '../../../../shared/learning/first_week_learning_service.dart';
 import '../../../../shared/notifications/notification_feed_service.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/widgets/first_week_learning_pill.dart';
 import '../../../../shared/widgets/reveal_on_build.dart';
 import '../widgets/burnout_risk_trend_card.dart';
@@ -229,6 +230,7 @@ class _DashboardState extends State<Dashboard> {
                           subtitleColor: _burnoutTrendColor(),
                           icon: _burnoutTrendIcon(),
                           iconColor: _burnoutTrendColor(),
+                          isLoading: _isLoadingBurnoutPatterns,
                         ),
                         const SizedBox(width: 10),
                         _AvgSleepStatCard(
@@ -400,6 +402,7 @@ class _AvgSleepStatCardState extends State<_AvgSleepStatCard> {
             currentAverage: currentAverage,
             delta: delta,
           ),
+          isLoading: snapshot.connectionState == ConnectionState.waiting,
         );
       },
     );
@@ -514,8 +517,8 @@ class _AiBurnoutInsightCard extends StatelessWidget {
       ),
       child: isLoading
           ? const SizedBox(
-              height: 56,
-              child: Center(child: CircularProgressIndicator()),
+              height: 76,
+              child: AppSkeletonRows(count: 2, showLeading: true),
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,

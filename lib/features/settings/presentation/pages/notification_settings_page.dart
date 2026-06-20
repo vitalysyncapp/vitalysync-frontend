@@ -6,6 +6,7 @@ import '../../../../shared/notifications/local_notification_service.dart';
 import '../../../../shared/preferences/app_preferences.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 
 part 'notification_settings_widgets.dart';
 
@@ -344,7 +345,15 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
         ),
         body: SafeArea(
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? AppSkeletonList(
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    8,
+                    16,
+                    pageBottomContentPadding(context),
+                  ),
+                  cardHeights: const [210, 196, 154, 170],
+                )
               : ListView(
                   padding: EdgeInsets.fromLTRB(
                     16,

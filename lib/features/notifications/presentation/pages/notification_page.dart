@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../shared/notifications/notification_feed_service.dart';
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 
 class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
@@ -51,7 +52,15 @@ class _NotificationPageState extends State<NotificationPage> {
                 const LinearProgressIndicator(minHeight: 2),
               Expanded(
                 child: _isLoading && feed == null
-                    ? const Center(child: CircularProgressIndicator())
+                    ? AppSkeletonList(
+                        padding: EdgeInsets.fromLTRB(
+                          20,
+                          18,
+                          20,
+                          pageBottomContentPadding(context),
+                        ),
+                        cardHeights: const [126, 48, 104, 104, 104],
+                      )
                     : RefreshIndicator(
                         onRefresh: () => _refreshFeed(force: true),
                         child: ListView(

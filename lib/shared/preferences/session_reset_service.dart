@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -5,6 +7,7 @@ import '../../features/activity/data/activity_service.dart';
 import '../../features/exercise/data/exercise_goal_service.dart';
 import '../../features/log/data/log_api.dart';
 import '../../features/onboarding/services/onboarding_service.dart';
+import '../../features/tutorial/services/core_tutorial_service.dart';
 import '../assistant/overlay_assistant_controller.dart';
 import '../notifications/local_notification_service.dart';
 import '../notifications/notification_feed_cache.dart';
@@ -51,6 +54,7 @@ class SessionResetService {
     'cached_daily_activity_',
     'cached_daily_logs',
     'cached_exercise_goal_',
+    CoreTutorialService.storageKeyPrefix,
     'first_week_learning_started_at_',
     'local_weekly_pulse',
     'notification_feed_read_ids_v2_',
@@ -88,7 +92,10 @@ class SessionResetService {
     await LogApi.clearLocalAccountData();
     await OnboardingService.clearDefaults();
     await _clearKnownLocalAccountData();
-    await refreshNotificationFeed();
+    await _ignoreCleanupError(
+      'notification feed',
+      refreshNotificationFeed().timeout(const Duration(milliseconds: 500)),
+    );
 
     await _ignoreCleanupError(
       'assistant overlay preference sync',
@@ -115,8 +122,12 @@ class SessionResetService {
 
   Future<void> _ignoreCleanupError(String label, Future<void> task) async {
     try {
-      await task;
+      await task.timeout(const Duration(milliseconds: 500));
     } catch (error, stackTrace) {
+      if (error is TimeoutException) {
+        return;
+      }
+
       debugPrint('Unable to reset $label during logout: $error');
       debugPrintStack(stackTrace: stackTrace);
     }

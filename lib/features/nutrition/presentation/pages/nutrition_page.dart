@@ -8,6 +8,7 @@ import '../../../../shared/goals/user_goals.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/widgets/reveal_on_build.dart';
 import '../../data/nutrition_api.dart';
 import '../../data/nutrition_meal_suggestion_store.dart';
@@ -645,12 +646,15 @@ class _NutritionPageState extends State<NutritionPage> {
                 SizedBox(height: sectionSpacing),
                 RevealOnBuild(
                   delay: const Duration(milliseconds: 70),
-                  child: TodayNutritionCard(
-                    calories: _dailySummary.totalCalories,
-                    proteinG: _dailySummary.totalProteinG,
-                    carbsG: _dailySummary.totalCarbsG,
-                    fatG: _dailySummary.totalFatG,
-                    calorieGoal: _nutritionCalorieGoal,
+                  child: AppSkeleton(
+                    enabled: _isLoadingDaily,
+                    child: TodayNutritionCard(
+                      calories: _dailySummary.totalCalories,
+                      proteinG: _dailySummary.totalProteinG,
+                      carbsG: _dailySummary.totalCarbsG,
+                      fatG: _dailySummary.totalFatG,
+                      calorieGoal: _nutritionCalorieGoal,
+                    ),
                   ),
                 ),
                 SizedBox(height: sectionSpacing),
@@ -682,7 +686,11 @@ class _NutritionPageState extends State<NutritionPage> {
                 RevealOnBuild(
                   delay: const Duration(milliseconds: 210),
                   child: _isLoadingDaily
-                      ? const Center(child: CircularProgressIndicator())
+                      ? const AppSkeletonCard(
+                          height: 126,
+                          lineCount: 2,
+                          showLeading: false,
+                        )
                       : TodaysMealsCard(
                           onAddTap: _onAddMeal,
                           meals: _dailySummary.meals,
@@ -691,10 +699,13 @@ class _NutritionPageState extends State<NutritionPage> {
                 SizedBox(height: sectionSpacing),
                 RevealOnBuild(
                   delay: const Duration(milliseconds: 280),
-                  child: MacroBalanceCard(
-                    proteinG: _dailySummary.totalProteinG,
-                    carbsG: _dailySummary.totalCarbsG,
-                    fatG: _dailySummary.totalFatG,
+                  child: AppSkeleton(
+                    enabled: _isLoadingDaily,
+                    child: MacroBalanceCard(
+                      proteinG: _dailySummary.totalProteinG,
+                      carbsG: _dailySummary.totalCarbsG,
+                      fatG: _dailySummary.totalFatG,
+                    ),
                   ),
                 ),
               ],

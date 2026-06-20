@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../features/auth/presentation/pages/loading_screen.dart';
+import '../features/tutorial/services/core_tutorial_service.dart';
 import '../shared/assistant/overlay_assistant_controller.dart';
 import '../shared/notifications/local_notification_service.dart';
 import '../shared/notifications/notification_payload_router.dart';
@@ -128,11 +129,17 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       return;
     }
 
+    final userId = session.userId!;
+    final showTutorialOnStart = await CoreTutorialService.instance
+        .shouldShowForUser(userId);
+
     navigator.pushAndRemoveUntil(
       MaterialPageRoute(
         builder: (_) => MainNavigation(
           initialIndex: tabIndexForNotificationPayload(payload),
           openNutritionLogOnStart: shouldOpenNutritionLog(payload),
+          tutorialUserId: userId,
+          showTutorialOnStart: showTutorialOnStart,
         ),
       ),
       (_) => false,

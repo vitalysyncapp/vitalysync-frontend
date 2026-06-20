@@ -25,3 +25,11 @@ Auth illustration asset notes
   URL: https://scale.flexiple.com/illustrations/work-stress-multi/
   License summary: free for personal, academic, and commercial use without
   attribution; do not resell/repackage illustrations or duplicate Scale.
+
+- auth_dashboard.svg
+  Source: Scale by Flexiple, "Performance dashboard illustration"
+  URL: https://scale.flexiple.com/illustrations/performance-dashboard/
+  Asset URL: https://scale.flexiple.com/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBcVVPIiwiZXhwIjpudWxsLCJwdXIiOiJibG9iX2lkIn19--d515e904aa7f478ffb960595029e36ed360e30c9/30.-20Exemplory--20Performance.svg/
+  Retrieved: 2026-06-05
+  License summary: free for personal, academic, and commercial use without
+  attribution; do not resell/repackage illustrations or duplicate Scale.

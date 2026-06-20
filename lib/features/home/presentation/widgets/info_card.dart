@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/app_skeleton.dart';
 
 class InfoCard extends StatelessWidget {
   final IconData icon;
@@ -57,14 +58,11 @@ class InfoCard extends StatelessWidget {
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
             child: isLoading
-                ? SizedBox(
-                    key: const ValueKey('loading'),
+                ? const SizedBox(
+                    key: ValueKey('loading'),
                     height: 24,
-                    width: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: color,
-                    ),
+                    width: 62,
+                    child: AppSkeletonLine(height: 20),
                   )
                 : Text(
                     value,
