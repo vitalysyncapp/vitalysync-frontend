@@ -5,7 +5,9 @@ import '../../../../shared/preferences/app_preferences.dart';
 import '../../../../shared/theme/app_page_style.dart';
 
 class AssistantSettings extends StatefulWidget {
-  const AssistantSettings({super.key});
+  final GlobalKey? tutorialOverlaySwitchKey;
+
+  const AssistantSettings({super.key, this.tutorialOverlaySwitchKey});
 
   @override
   State<AssistantSettings> createState() => _AssistantSettingsState();
@@ -189,16 +191,19 @@ class _AssistantSettingsState extends State<AssistantSettings>
                   context: context,
                   title: 'Floating Assistant',
                   children: [
-                    _buildSwitchTile(
-                      context: context,
-                      icon: Icons.bubble_chart_rounded,
-                      iconBg: const Color(0xFFE5F7F0),
-                      iconColor: const Color(0xFF1F9D63),
-                      title: 'Allow assistant outside app',
-                      subtitle: _assistantOverlaySubtitle(prefs),
-                      value: prefs.assistantOverlayEnabled,
-                      onChanged: (value) =>
-                          _handleAssistantOverlayToggle(prefs, value),
+                    KeyedSubtree(
+                      key: widget.tutorialOverlaySwitchKey,
+                      child: _buildSwitchTile(
+                        context: context,
+                        icon: Icons.bubble_chart_rounded,
+                        iconBg: const Color(0xFFE5F7F0),
+                        iconColor: const Color(0xFF1F9D63),
+                        title: 'Allow assistant outside app',
+                        subtitle: _assistantOverlaySubtitle(prefs),
+                        value: prefs.assistantOverlayEnabled,
+                        onChanged: (value) =>
+                            _handleAssistantOverlayToggle(prefs, value),
+                      ),
                     ),
                   ],
                 ),

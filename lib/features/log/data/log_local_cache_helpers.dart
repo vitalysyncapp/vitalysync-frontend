@@ -77,9 +77,17 @@ Future<Map<String, dynamic>> _postDailyLog(
   final data = _decodeResponseMap(response);
 
   if (response.statusCode != 200 && response.statusCode != 201) {
+    if (response.statusCode == 409 && data['streak_restore'] is Map) {
+      throw StreakRestoreRequiredException(
+        data['message']?.toString() ?? 'Streak restore decision required',
+        Map<String, dynamic>.from(data['streak_restore'] as Map),
+      );
+    }
+
     throw _LogApiException(
       data['message']?.toString() ?? 'Failed to save daily log',
       response.statusCode,
+      data,
     );
   }
 
@@ -126,6 +134,8 @@ Map<String, dynamic> _buildLogRequestBody(
     'exercise_goal_completed': _nullableBool(log['exercise_goal_completed']),
     'exercise_goal_source': _nullableString(log['exercise_goal_source']),
     'exercise_goal_status': _nullableString(log['exercise_goal_status']),
+    'streak_restore_decision':
+        _nullableString(log['streak_restore_decision']) ?? 'defer',
   };
 }
 

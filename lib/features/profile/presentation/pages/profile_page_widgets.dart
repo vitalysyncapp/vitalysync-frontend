@@ -9,6 +9,7 @@ class _ProfileHeaderCard extends StatelessWidget {
   final int longestStreak;
   final int? age;
   final String? gender;
+  final VoidCallback onOpenStreak;
 
   const _ProfileHeaderCard({
     required this.avatarPath,
@@ -19,6 +20,7 @@ class _ProfileHeaderCard extends StatelessWidget {
     required this.longestStreak,
     required this.age,
     required this.gender,
+    required this.onOpenStreak,
   });
 
   @override
@@ -209,6 +211,25 @@ class _ProfileHeaderCard extends StatelessWidget {
                     );
                   },
                 ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: onOpenStreak,
+                    icon: const Icon(Icons.local_fire_department_rounded),
+                    label: const Text('View Streak Card'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF1D8CA8),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      textStyle: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                ),
               ],
             ),
           ],
@@ -219,6 +240,100 @@ class _ProfileHeaderCard extends StatelessWidget {
 
   String _daysValue(int value) {
     return value == 1 ? '1 day' : '$value days';
+  }
+}
+
+class _ProfileStreakPreviewCard extends StatelessWidget {
+  final String username;
+  final int currentStreak;
+  final int longestStreak;
+  final VoidCallback onOpenStreak;
+
+  const _ProfileStreakPreviewCard({
+    required this.username,
+    required this.currentStreak,
+    required this.longestStreak,
+    required this.onOpenStreak,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(22),
+      onTap: onOpenStreak,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: pageSurfaceColor(context),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: pageBorderColor(context)),
+          boxShadow: pageCardShadow(context),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFF8A1F), Color(0xFFFACC15)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(19),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(
+                      0xFFFF8A1F,
+                    ).withValues(alpha: isDark ? 0.18 : 0.2),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.local_fire_department_rounded,
+                color: Colors.white,
+                size: 32,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$username\'s privacy-safe streak card',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: pagePrimaryTextColor(context),
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    '$currentStreak current days - best $longestStreak days',
+                    style: TextStyle(
+                      color: pageSecondaryTextColor(context),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: pageSecondaryTextColor(context),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

@@ -6,6 +6,7 @@ import '../../../../features/activity/data/activity_service.dart';
 import '../../../../features/dashboard/data/burnout_score_api.dart';
 import '../../../../features/onboarding/data/onboarding_api.dart';
 import '../../../../features/onboarding/services/onboarding_service.dart';
+import '../../../../features/streaks/presentation/pages/personal_streak_page.dart';
 import '../../../../shared/goals/user_goals.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
@@ -536,6 +537,13 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  void _openStreakPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const PersonalStreakPage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final avatarPath = getAvatarImage(_gender, _userType);
@@ -591,6 +599,14 @@ class _ProfilePageState extends State<ProfilePage> {
                       longestStreak: _longestStreak,
                       age: _age,
                       gender: _gender,
+                      onOpenStreak: _openStreakPage,
+                    ),
+                    const SizedBox(height: 18),
+                    _ProfileStreakPreviewCard(
+                      username: _username,
+                      currentStreak: _currentStreak,
+                      longestStreak: _longestStreak,
+                      onOpenStreak: _openStreakPage,
                     ),
                     const SizedBox(height: 18),
                     _PersonalInformationCard(

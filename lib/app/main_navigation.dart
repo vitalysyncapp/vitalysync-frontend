@@ -13,6 +13,8 @@ import '../features/nutrition/data/nutrition_reminder_engine.dart';
 import '../features/nutrition/presentation/pages/nutrition_page.dart';
 import '../features/recovery/data/recovery_mode_service.dart';
 import '../features/recovery/presentation/pages/recovery_mode_page.dart';
+import '../features/settings/presentation/pages/assistant_settings.dart';
+import '../features/settings/presentation/pages/settings_page.dart';
 import '../features/tutorial/presentation/widgets/core_tutorial_overlay.dart';
 import '../features/tutorial/services/core_tutorial_replay_controller.dart';
 import '../features/tutorial/services/core_tutorial_service.dart';
@@ -70,16 +72,22 @@ class _MainNavigationState extends State<MainNavigation>
     with WidgetsBindingObserver {
   static const _pageTransitionDuration = Duration(milliseconds: 360);
   static const _offlineSyncInterval = Duration(seconds: 30);
+  static const _tutorialSettingsRouteName = 'core_tutorial/settings';
+  static const _tutorialAssistantRouteName = 'core_tutorial/assistant_settings';
 
   late int _currentIndex;
   late int _nutritionLogFocusRequest;
   late final List<Widget> _pages;
   late final Map<CoreTutorialTarget, GlobalKey> _tutorialTargetKeys;
   Timer? _offlineSyncTimer;
+  OverlayEntry? _tutorialOverlayEntry;
+  CoreTutorialRoute _tutorialRoute = CoreTutorialRoute.main;
   bool _isSyncingOfflineLogs = false;
   bool _isRecoveryRouteOpen = false;
   bool _recoveryDismissedThisNavigation = false;
   bool _isTutorialActive = false;
+  bool _tutorialSettingsRouteOpen = false;
+  bool _tutorialAssistantRouteOpen = false;
   int _recoveryCheckToken = 0;
 
   @override
@@ -98,6 +106,12 @@ class _MainNavigationState extends State<MainNavigation>
       CoreTutorialTarget.nutrition: GlobalKey(debugLabel: 'tutorial_nutrition'),
       CoreTutorialTarget.dashboard: GlobalKey(debugLabel: 'tutorial_dashboard'),
       CoreTutorialTarget.assistant: GlobalKey(debugLabel: 'tutorial_assistant'),
+      CoreTutorialTarget.settingsAssistantTile: GlobalKey(
+        debugLabel: 'tutorial_settings_assistant_tile',
+      ),
+      CoreTutorialTarget.assistantOverlaySwitch: GlobalKey(
+        debugLabel: 'tutorial_assistant_overlay_switch',
+      ),
     };
     _isTutorialActive =
         widget.showTutorialOnStart && widget.tutorialUserId != null;
@@ -110,6 +124,9 @@ class _MainNavigationState extends State<MainNavigation>
     _syncPendingLogs();
     _evaluateNutritionReminder();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_isTutorialActive) {
+        _showTutorialOverlay();
+      }
       _checkRecoveryMode();
     });
     _offlineSyncTimer = Timer.periodic(
@@ -126,6 +143,7 @@ class _MainNavigationState extends State<MainNavigation>
     );
     BurnoutScoreApi.refreshSignal.removeListener(_handleBurnoutInputsChanged);
     _offlineSyncTimer?.cancel();
+    _removeTutorialOverlay();
     super.dispose();
   }
 
@@ -155,6 +173,8 @@ class _MainNavigationState extends State<MainNavigation>
     setState(() {
       _isTutorialActive = true;
     });
+    _tutorialRoute = CoreTutorialRoute.main;
+    _showTutorialOverlay();
   }
 
   void _selectTab(int index) {
@@ -163,6 +183,7 @@ class _MainNavigationState extends State<MainNavigation>
     setState(() {
       _currentIndex = index;
     });
+    _tutorialOverlayEntry?.markNeedsBuild();
 
     _syncPendingLogs();
   }
@@ -264,8 +285,184 @@ class _MainNavigationState extends State<MainNavigation>
       return;
     }
 
+    await _routeCoreTutorial(CoreTutorialRoute.main);
+
+    if (!mounted) {
+      return;
+    }
+
+    _removeTutorialOverlay();
     setState(() => _isTutorialActive = false);
     unawaited(_checkRecoveryMode());
+  }
+
+  void _showTutorialOverlay() {
+    if (_tutorialOverlayEntry != null) {
+      _tutorialOverlayEntry?.markNeedsBuild();
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_isTutorialActive || _tutorialOverlayEntry != null) {
+        return;
+      }
+
+      final overlay = Overlay.of(context, rootOverlay: true);
+      _tutorialOverlayEntry = OverlayEntry(
+        builder: (_) => CoreTutorialOverlay(
+          currentIndex: _currentIndex,
+          onTabSelected: _selectTab,
+          targetKeys: _tutorialTargetKeys,
+          onRouteRequested: _routeCoreTutorial,
+          onFinished: _completeCoreTutorial,
+        ),
+      );
+      overlay.insert(_tutorialOverlayEntry!);
+    });
+  }
+
+  void _removeTutorialOverlay() {
+    _tutorialOverlayEntry?.remove();
+    _tutorialOverlayEntry?.dispose();
+    _tutorialOverlayEntry = null;
+  }
+
+  void _bringTutorialOverlayToFront({Duration delay = Duration.zero}) {
+    Future<void>.delayed(delay, () {
+      if (!mounted || !_isTutorialActive || _tutorialOverlayEntry == null) {
+        return;
+      }
+
+      final overlay = Overlay.of(context, rootOverlay: true);
+      final entry = _tutorialOverlayEntry!;
+      if (entry.mounted) {
+        entry.remove();
+      }
+      overlay.insert(entry);
+      entry.markNeedsBuild();
+    });
+  }
+
+  Future<void> _routeCoreTutorial(CoreTutorialRoute route) async {
+    if (!mounted || !_isTutorialActive) {
+      return;
+    }
+
+    if (_tutorialRoute == route) {
+      _bringTutorialOverlayToFront();
+      return;
+    }
+
+    _tutorialRoute = route;
+    switch (route) {
+      case CoreTutorialRoute.main:
+        _closeTutorialRoutes();
+        break;
+      case CoreTutorialRoute.settings:
+        if (_tutorialAssistantRouteOpen) {
+          Navigator.of(context, rootNavigator: true).pop();
+          _tutorialAssistantRouteOpen = false;
+          await Future<void>.delayed(const Duration(milliseconds: 220));
+        }
+        _openTutorialSettingsRoute();
+        break;
+      case CoreTutorialRoute.assistantSettings:
+        if (!_tutorialSettingsRouteOpen) {
+          _openTutorialSettingsRoute();
+          await Future<void>.delayed(const Duration(milliseconds: 360));
+        }
+        if (!mounted ||
+            !_isTutorialActive ||
+            _tutorialRoute != CoreTutorialRoute.assistantSettings) {
+          return;
+        }
+        _openTutorialAssistantRoute();
+        break;
+    }
+
+    _tutorialOverlayEntry?.markNeedsBuild();
+  }
+
+  void _openTutorialSettingsRoute() {
+    if (_tutorialSettingsRouteOpen) {
+      _bringTutorialOverlayToFront();
+      return;
+    }
+
+    _tutorialSettingsRouteOpen = true;
+    final navigator = Navigator.of(context, rootNavigator: true);
+    unawaited(
+      navigator
+          .push<void>(
+            MaterialPageRoute(
+              settings: const RouteSettings(name: _tutorialSettingsRouteName),
+              builder: (_) => SettingsPage(
+                tutorialAssistantTileKey:
+                    _tutorialTargetKeys[CoreTutorialTarget
+                        .settingsAssistantTile],
+              ),
+            ),
+          )
+          .whenComplete(() {
+            _tutorialSettingsRouteOpen = false;
+            if (mounted &&
+                _isTutorialActive &&
+                _tutorialRoute != CoreTutorialRoute.main) {
+              _tutorialRoute = CoreTutorialRoute.main;
+              _tutorialOverlayEntry?.markNeedsBuild();
+            }
+          }),
+    );
+
+    _bringTutorialOverlayToFront(delay: const Duration(milliseconds: 90));
+    _bringTutorialOverlayToFront(delay: const Duration(milliseconds: 430));
+  }
+
+  void _openTutorialAssistantRoute() {
+    if (_tutorialAssistantRouteOpen) {
+      _bringTutorialOverlayToFront();
+      return;
+    }
+
+    _tutorialAssistantRouteOpen = true;
+    final navigator = Navigator.of(context, rootNavigator: true);
+    unawaited(
+      navigator
+          .push<void>(
+            MaterialPageRoute(
+              settings: const RouteSettings(name: _tutorialAssistantRouteName),
+              builder: (_) => AssistantSettings(
+                tutorialOverlaySwitchKey:
+                    _tutorialTargetKeys[CoreTutorialTarget
+                        .assistantOverlaySwitch],
+              ),
+            ),
+          )
+          .whenComplete(() {
+            _tutorialAssistantRouteOpen = false;
+            if (mounted &&
+                _isTutorialActive &&
+                _tutorialRoute == CoreTutorialRoute.assistantSettings) {
+              _tutorialRoute = CoreTutorialRoute.settings;
+              _tutorialOverlayEntry?.markNeedsBuild();
+            }
+          }),
+    );
+
+    _bringTutorialOverlayToFront(delay: const Duration(milliseconds: 90));
+    _bringTutorialOverlayToFront(delay: const Duration(milliseconds: 430));
+  }
+
+  void _closeTutorialRoutes() {
+    final navigator = Navigator.of(context, rootNavigator: true);
+    navigator.popUntil((route) {
+      final name = route.settings.name;
+      return name != _tutorialSettingsRouteName &&
+          name != _tutorialAssistantRouteName;
+    });
+    _tutorialSettingsRouteOpen = false;
+    _tutorialAssistantRouteOpen = false;
+    _bringTutorialOverlayToFront(delay: const Duration(milliseconds: 90));
   }
 
   CoreTutorialTarget _tutorialTargetForPage(int index) {
@@ -350,13 +547,6 @@ class _MainNavigationState extends State<MainNavigation>
               tutorialKey: _tutorialTargetKeys[CoreTutorialTarget.navigation],
             ),
           ),
-          if (_isTutorialActive)
-            CoreTutorialOverlay(
-              currentIndex: _currentIndex,
-              onTabSelected: _selectTab,
-              targetKeys: _tutorialTargetKeys,
-              onFinished: _completeCoreTutorial,
-            ),
         ],
       ),
     );

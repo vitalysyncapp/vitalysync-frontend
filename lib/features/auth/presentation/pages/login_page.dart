@@ -119,14 +119,6 @@ class _LoginPageState extends State<LoginPage> {
         }
 
         if (!mounted) return;
-        setState(() => isLoading = false);
-        await ValidationDialog.show(
-          context,
-          message: 'Signed in successfully.',
-          type: ValidationDialogType.success,
-        );
-
-        if (!mounted) return;
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(

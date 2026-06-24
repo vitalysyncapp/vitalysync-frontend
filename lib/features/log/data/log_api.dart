@@ -560,6 +560,7 @@ class LogApi {
     required List<String> exerciseNames,
     required List<String> symptomNames,
     required List<String> habitNames,
+    String streakRestoreDecision = 'defer',
   }) async {
     final exerciseGoalMetadata = await ExerciseGoalService.instance
         .goalMetadataForDailyLog();
@@ -585,6 +586,7 @@ class LogApi {
       'exercise_names': exerciseNames,
       'symptom_names': symptomNames,
       'habit_names': habitNames,
+      'streak_restore_decision': streakRestoreDecision,
       ...exerciseGoalMetadata,
     });
 
@@ -620,6 +622,8 @@ class LogApi {
       await invalidateNotificationFeedCache();
 
       return data;
+    } on StreakRestoreRequiredException {
+      rethrow;
     } on _LogApiException catch (error) {
       if (!error.canQueueForLater) {
         throw Exception(error.message);
@@ -1020,12 +1024,27 @@ String _liveDataIssueForError(Object error) {
 class _LogApiException implements Exception {
   final String message;
   final int statusCode;
+  final Map<String, dynamic> payload;
 
-  const _LogApiException(this.message, this.statusCode);
+  const _LogApiException(
+    this.message,
+    this.statusCode, [
+    this.payload = const <String, dynamic>{},
+  ]);
 
   bool get canQueueForLater => statusCode >= 500;
 
   bool get canUseOfflineFallback => statusCode >= 500;
+
+  @override
+  String toString() => message;
+}
+
+class StreakRestoreRequiredException implements Exception {
+  final String message;
+  final Map<String, dynamic> restore;
+
+  const StreakRestoreRequiredException(this.message, this.restore);
 
   @override
   String toString() => message;

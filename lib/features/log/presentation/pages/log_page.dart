@@ -9,6 +9,7 @@ import '../../../../shared/widgets/app_bar.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/widgets/reveal_on_build.dart';
 import '../../../onboarding/services/onboarding_service.dart';
+import '../../../streaks/data/streak_models.dart';
 import '../../data/log_api.dart';
 import '../widgets/log_widgets.dart';
 
@@ -252,7 +253,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     return true;
   }
 
-  Future<void> _saveLog() async {
+  Future<void> _saveLog({String streakRestoreDecision = 'defer'}) async {
     if (!_validateLog()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -284,6 +285,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
         exerciseNames: selectedExercises.toList()..sort(),
         symptomNames: selectedSymptoms.toList()..sort(),
         habitNames: selectedHabits.toList()..sort(),
+        streakRestoreDecision: streakRestoreDecision,
       );
 
       final streak = data['streak'] as Map<String, dynamic>?;
@@ -316,6 +318,19 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
           ),
         ),
       );
+    } on StreakRestoreRequiredException catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        isSaving = false;
+      });
+
+      final decision = await _showStreakRestoreDialog(
+        StreakRestoreDetails.fromJson(error.restore),
+      );
+      if (decision != null && mounted) {
+        await _saveLog(streakRestoreDecision: decision);
+      }
     } catch (error) {
       if (!mounted) return;
 
@@ -327,6 +342,170 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
         context,
       ).showSnackBar(SnackBar(content: Text('Unable to save log: $error')));
     }
+  }
+
+  Future<String?> _showStreakRestoreDialog(StreakRestoreDetails details) async {
+    final missingDays = details.missingDays <= 0
+        ? details.missingDates.length
+        : details.missingDays;
+    final saversRequired = details.saversRequired <= 0
+        ? missingDays
+        : details.saversRequired;
+    final canRestore = details.availableSavers >= saversRequired;
+
+    return showDialog<String>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.45),
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final primaryText = pagePrimaryTextColor(context);
+        final secondaryText = pageSecondaryTextColor(context);
+        final accent = canRestore
+            ? const Color(0xFFFF8A1F)
+            : const Color(0xFFE5484D);
+
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 24,
+          ),
+          backgroundColor: Colors.transparent,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF132235).withValues(alpha: 0.98)
+                    : Colors.white.withValues(alpha: 0.98),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: pageBorderColor(context)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.34 : 0.14),
+                    blurRadius: 28,
+                    offset: const Offset(0, 16),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 62,
+                    height: 62,
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: isDark ? 0.2 : 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      canRestore
+                          ? Icons.local_fire_department_rounded
+                          : Icons.warning_amber_rounded,
+                      color: accent,
+                      size: 34,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    canRestore ? 'Restore your streak?' : 'Savers unavailable',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: primaryText,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    canRestore
+                        ? 'You missed $missingDays day${missingDays == 1 ? '' : 's'}. Use $saversRequired streak saver${saversRequired == 1 ? '' : 's'} to protect your streak before saving today.'
+                        : 'You need $saversRequired saver${saversRequired == 1 ? '' : 's'}, but only have ${details.availableSavers}. You can still save today and start a fresh streak.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: secondaryText,
+                      height: 1.35,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(13),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.055)
+                          : const Color(0xFFFFF7ED),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: accent.withValues(alpha: isDark ? 0.22 : 0.18),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.shield_outlined, color: accent, size: 20),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            '${details.availableSavers} saver${details.availableSavers == 1 ? '' : 's'} available this month',
+                            style: TextStyle(
+                              color: primaryText,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (canRestore)
+                        ElevatedButton.icon(
+                          onPressed: () => Navigator.pop(context, 'use'),
+                          icon: const Icon(Icons.shield_rounded),
+                          label: Text(
+                            'Use $saversRequired saver${saversRequired == 1 ? '' : 's'} and save',
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: accent,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                        ),
+                      if (canRestore) const SizedBox(height: 10),
+                      OutlinedButton.icon(
+                        onPressed: () => Navigator.pop(context, 'skip'),
+                        icon: const Icon(Icons.restart_alt_rounded),
+                        label: const Text('Save without restoring'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: primaryText,
+                          side: BorderSide(color: pageBorderColor(context)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Not now'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _redoLog() {

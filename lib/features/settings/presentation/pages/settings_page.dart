@@ -18,7 +18,9 @@ import 'terms_privacy_page.dart';
 import 'version_page.dart';
 
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({super.key});
+  final GlobalKey? tutorialAssistantTileKey;
+
+  const SettingsPage({super.key, this.tutorialAssistantTileKey});
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -247,21 +249,24 @@ class _SettingsPageState extends State<SettingsPage> {
                       context: context,
                       title: "Floating Assistant",
                       children: [
-                        _buildSettingsTile(
-                          context: context,
-                          icon: Icons.bubble_chart_rounded,
-                          iconBg: const Color(0xFFE5F7F0),
-                          iconColor: const Color(0xFF1F9D63),
-                          title: "Assistant",
-                          subtitle: "Manage outside-app assistant access",
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const AssistantSettings(),
-                              ),
-                            );
-                          },
+                        KeyedSubtree(
+                          key: widget.tutorialAssistantTileKey,
+                          child: _buildSettingsTile(
+                            context: context,
+                            icon: Icons.bubble_chart_rounded,
+                            iconBg: const Color(0xFFE5F7F0),
+                            iconColor: const Color(0xFF1F9D63),
+                            title: "Assistant",
+                            subtitle: "Manage outside-app assistant access",
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const AssistantSettings(),
+                                ),
+                              );
+                            },
+                          ),
                         ),
                       ],
                     ),

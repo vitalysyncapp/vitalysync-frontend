@@ -30,6 +30,8 @@ class ApiConfig {
 
   static String profile(String path) => '$baseUrl/api/profile$path';
 
+  static String streaks(String path) => '$baseUrl/api/streaks$path';
+
   static String environment({
     required double lat,
     required double lon,

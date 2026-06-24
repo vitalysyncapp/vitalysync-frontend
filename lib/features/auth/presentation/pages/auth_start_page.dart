@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -18,6 +20,7 @@ class AuthStartPage extends StatefulWidget {
 class _AuthStartPageState extends State<AuthStartPage> {
   static const _disclaimer =
       'VitalySync provides wellness insights for awareness only and does not replace medical advice.';
+  static const _autoSlideInterval = Duration(seconds: 6);
 
   static const _slides = <_WelcomeSlideData>[
     _WelcomeSlideData(
@@ -85,18 +88,32 @@ class _AuthStartPageState extends State<AuthStartPage> {
   ];
 
   late final PageController _pageController;
+  Timer? _autoSlideTimer;
   int _currentSlide = 0;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
+    _startAutoSlideTimer();
   }
 
   @override
   void dispose() {
+    _autoSlideTimer?.cancel();
     _pageController.dispose();
     super.dispose();
+  }
+
+  void _startAutoSlideTimer() {
+    if (_slides.length <= 1) return;
+
+    _autoSlideTimer = Timer.periodic(_autoSlideInterval, (_) {
+      if (!mounted || !_pageController.hasClients) return;
+
+      final nextSlide = (_currentSlide + 1) % _slides.length;
+      _goToSlide(nextSlide);
+    });
   }
 
   void _goToSlide(int index) {

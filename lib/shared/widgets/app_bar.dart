@@ -6,6 +6,7 @@ import '../../features/auth/presentation/pages/auth_start_page.dart';
 import '../../features/log/data/log_api.dart';
 import '../../features/notifications/presentation/pages/notification_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/streaks/presentation/pages/personal_streak_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../notifications/notification_feed_service.dart';
 import '../preferences/session_reset_service.dart';
@@ -189,32 +190,45 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
                     builder: (context, scale, child) {
                       return Transform.scale(scale: scale, child: child);
                     },
-                    child: Container(
-                      margin: const EdgeInsets.only(right: 6),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: actionChipDecoration(),
-                      child: Row(
-                        children: [
-                          Text(
-                            '$currentStreak',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(22),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const PersonalStreakPage(),
                             ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
                           ),
-                          const SizedBox(width: 6),
-                          Icon(
-                            Icons.local_fire_department_rounded,
-                            size: 16,
-                            color: loggedToday
-                                ? const Color(0xFFFFB15A)
-                                : Colors.white54,
+                          decoration: actionChipDecoration(),
+                          child: Row(
+                            children: [
+                              Text(
+                                '$currentStreak',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Icon(
+                                Icons.local_fire_department_rounded,
+                                size: 16,
+                                color: loggedToday
+                                    ? const Color(0xFFFFB15A)
+                                    : Colors.white54,
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
