@@ -10,11 +10,35 @@ import 'package:vitalysync/shared/preferences/session_reset_service.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('catalog exposes 24 distinct CC0 avatar choices', () {
-    expect(ProfileAvatarCatalog.entries, hasLength(24));
+  test('catalog exposes 40 distinct flat-vector avatar choices', () {
+    expect(ProfileAvatarCatalog.entries, hasLength(40));
     expect(
       ProfileAvatarCatalog.entries.map((entry) => entry.id).toSet(),
+      hasLength(40),
+    );
+    expect(
+      ProfileAvatarCatalog.entriesFor(ProfileAvatarCategory.personas),
       hasLength(24),
+    );
+    for (final category in ProfileAvatarCategory.values.where(
+      (category) => category != ProfileAvatarCategory.personas,
+    )) {
+      expect(ProfileAvatarCatalog.entriesFor(category), hasLength(4));
+    }
+  });
+
+  test('suggested avatar normalizes role and gender values', () {
+    expect(
+      suggestedProfileAvatarAsset(' female ', ' student '),
+      'assets/images/female Student.png',
+    );
+    expect(
+      suggestedProfileAvatarAsset('MALE', 'Working Professional'),
+      'assets/images/business-man.png',
+    );
+    expect(
+      suggestedProfileAvatarAsset('Other', 'Student'),
+      'assets/images/user.png',
     );
   });
 
@@ -22,12 +46,12 @@ void main() {
     final storage = _MemoryAvatarStorage();
     final store = ProfileAvatarStore(storage: storage);
 
-    await store.saveBundled(7, 'open_peeps_03');
+    await store.saveBundled(7, 'personas_03');
 
     final saved = await store.load(7);
     final otherUser = await store.load(8);
     expect(saved.kind, ProfileAvatarKind.bundled);
-    expect(saved.avatarId, 'open_peeps_03');
+    expect(saved.avatarId, 'personas_03');
     expect(otherUser.kind, ProfileAvatarKind.suggested);
   });
 
@@ -68,7 +92,7 @@ void main() {
     final store = ProfileAvatarStore(storage: storage);
 
     await expectLater(
-      store.saveBundled(3, 'open_peeps_01'),
+      store.saveBundled(3, 'personas_01'),
       throwsA(isA<ProfileAvatarException>()),
     );
     expect(storage.values, isEmpty);
@@ -114,7 +138,7 @@ void main() {
       '${ProfileAvatarStore.storageKeyPrefix}19': jsonEncode({
         'version': 1,
         'kind': 'bundled',
-        'avatar_id': 'open_peeps_05',
+        'avatar_id': 'personas_05',
       }),
       'profile_temporary_value': 'remove-me',
     });
@@ -127,6 +151,21 @@ void main() {
       isNotNull,
     );
     expect(preferences.getString('profile_temporary_value'), isNull);
+  });
+
+  test('legacy Open Peeps selections migrate to Personas', () async {
+    final storage = _MemoryAvatarStorage();
+    storage.values['${ProfileAvatarStore.storageKeyPrefix}12'] = jsonEncode({
+      'version': 1,
+      'kind': 'bundled',
+      'avatar_id': 'open_peeps_08',
+    });
+    final store = ProfileAvatarStore(storage: storage);
+
+    final selection = await store.load(12);
+
+    expect(selection.kind, ProfileAvatarKind.bundled);
+    expect(selection.avatarId, 'personas_08');
   });
 }
 

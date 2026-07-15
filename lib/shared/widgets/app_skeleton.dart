@@ -251,18 +251,21 @@ class AppSkeletonList extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final List<double> cardHeights;
   final ScrollPhysics? physics;
+  final bool shrinkWrap;
 
   const AppSkeletonList({
     super.key,
     this.padding = const EdgeInsets.all(16),
     this.cardHeights = const [124, 92, 92, 92],
     this.physics,
+    this.shrinkWrap = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
       physics: physics ?? const AlwaysScrollableScrollPhysics(),
+      shrinkWrap: shrinkWrap,
       padding: padding,
       itemCount: cardHeights.length,
       separatorBuilder: (_, _) => const SizedBox(height: 14),

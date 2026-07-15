@@ -1,0 +1,16 @@
+Avataaars professional avatar assets
+
+The SVG files prefixed with avataaars_ are deterministic variants generated
+from the DiceBear Avataaars style. They use curated clothing, hairstyle,
+expression, accessory, and color options for the student, working
+professional, young professional, and freelancer collections.
+
+Avataaars was created by Pablo Stanley and is available for personal and
+commercial use. These files are DiceBear-generated remixes of that work.
+
+Source and license details:
+https://avataaars.com/
+https://www.dicebear.com/styles/avataaars/
+
+Generation endpoint:
+https://api.dicebear.com/10.x/avataaars/svg

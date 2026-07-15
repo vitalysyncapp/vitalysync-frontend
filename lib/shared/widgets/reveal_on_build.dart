@@ -30,6 +30,7 @@ class _RevealOnBuildState extends State<RevealOnBuild>
   late final Animation<double> _opacity;
   late final Animation<Offset> _slide;
   Timer? _delayTimer;
+  bool _reduceMotion = false;
 
   @override
   void initState() {
@@ -53,9 +54,23 @@ class _RevealOnBuildState extends State<RevealOnBuild>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    if (reduceMotion && !_reduceMotion) {
+      _delayTimer?.cancel();
+      _controller.value = 1;
+    }
+    _reduceMotion = reduceMotion;
+  }
+
+  @override
   void didUpdateWidget(covariant RevealOnBuild oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!oldWidget.enabled && widget.enabled && _controller.value == 0) {
+    if (!widget.enabled) {
+      _delayTimer?.cancel();
+      _controller.value = 1;
+    } else if (!oldWidget.enabled && !_reduceMotion && _controller.value == 0) {
       _startAnimation();
     }
   }

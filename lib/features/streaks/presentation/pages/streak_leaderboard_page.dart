@@ -1,16 +1,29 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
+import '../../../profile/data/profile_avatar.dart';
 import '../../data/streak_api.dart';
 import '../../data/streak_models.dart';
 
 const _streakFireAnimationPath = 'assets/animations/streak_fire.json';
 const _healthyHeartAnimationPath = 'assets/animations/healthy_heart.json';
+const _defaultLeaderboardAvatarPath = 'assets/images/user.png';
+
+typedef StreakLeaderboardLoader =
+    Future<StreakLeaderboard> Function({
+      required String section,
+      required String metric,
+    });
 
 class StreakLeaderboardPage extends StatefulWidget {
-  const StreakLeaderboardPage({super.key});
+  const StreakLeaderboardPage({super.key, this.loadLeaderboard});
+
+  final StreakLeaderboardLoader? loadLeaderboard;
 
   @override
   State<StreakLeaderboardPage> createState() => _StreakLeaderboardPageState();
@@ -21,7 +34,6 @@ class _StreakLeaderboardPageState extends State<StreakLeaderboardPage> {
     _LeaderboardOption('global', 'Global', Icons.public_rounded),
     _LeaderboardOption('area', 'Local', Icons.location_on_outlined),
     _LeaderboardOption('role', 'Role', Icons.badge_outlined),
-    _LeaderboardOption('wellness', 'Goal', Icons.flag_outlined),
   ];
 
   static const _metrics = <_LeaderboardOption>[
@@ -30,22 +42,38 @@ class _StreakLeaderboardPageState extends State<StreakLeaderboardPage> {
       'Current',
       Icons.local_fire_department_rounded,
     ),
-    _LeaderboardOption('month', 'Month', Icons.calendar_month_rounded),
     _LeaderboardOption('longest', 'Best', Icons.emoji_events_outlined),
   ];
 
   String _section = 'global';
   String _metric = 'current';
   late Future<StreakLeaderboard> _future;
+  UserSessionSnapshot _session = UserSessionSnapshot.empty;
 
   @override
   void initState() {
     super.initState();
     _future = _load();
+    unawaited(_loadSessionProfile());
+  }
+
+  @override
+  void didUpdateWidget(StreakLeaderboardPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.loadLeaderboard != widget.loadLeaderboard) {
+      _future = _load();
+    }
   }
 
   Future<StreakLeaderboard> _load() {
-    return StreakApi.fetchLeaderboard(section: _section, metric: _metric);
+    final loader = widget.loadLeaderboard ?? StreakApi.fetchLeaderboard;
+    return loader(section: _section, metric: _metric);
+  }
+
+  Future<void> _loadSessionProfile() async {
+    final session = await UserSessionController.instance.load();
+    if (!mounted) return;
+    setState(() => _session = session);
   }
 
   void _selectSection(String section) {
@@ -65,10 +93,16 @@ class _StreakLeaderboardPageState extends State<StreakLeaderboardPage> {
   }
 
   Future<void> _refresh() async {
+    final nextFuture = _load();
     setState(() {
-      _future = _load();
+      _future = nextFuture;
     });
-    await _future;
+
+    try {
+      await nextFuture;
+    } catch (_) {
+      // FutureBuilder owns the visible error state.
+    }
   }
 
   @override
@@ -90,6 +124,8 @@ class _StreakLeaderboardPageState extends State<StreakLeaderboardPage> {
           ),
           title: Text(
             'Streak leaderboard',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: pagePrimaryTextColor(context),
               fontWeight: FontWeight.w900,
@@ -104,11 +140,14 @@ class _StreakLeaderboardPageState extends State<StreakLeaderboardPage> {
               leaderboardContent = const AppSkeletonList(
                 key: ValueKey('leaderboard-loading'),
                 padding: EdgeInsets.zero,
-                cardHeights: [160, 74, 74, 74, 74],
+                physics: NeverScrollableScrollPhysics(),
+                shrinkWrap: true,
+                cardHeights: [72, 72, 72, 72, 72],
               );
             } else if (snapshot.hasError || !snapshot.hasData) {
               leaderboardContent = _LeaderboardError(
                 key: const ValueKey('leaderboard-error'),
+                error: snapshot.error,
                 onRetry: _refresh,
               );
             } else {
@@ -116,6 +155,7 @@ class _StreakLeaderboardPageState extends State<StreakLeaderboardPage> {
                 key: ValueKey('$_section-$_metric'),
                 leaderboard: snapshot.data!,
                 metric: _metric,
+                currentUserSession: _session,
               );
             }
 
@@ -133,14 +173,18 @@ class _StreakLeaderboardPageState extends State<StreakLeaderboardPage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _LeaderboardHero(metric: _metric),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 16),
                     _OptionChips(
+                      key: const ValueKey('leaderboard-section-options'),
+                      semanticLabel: 'Leaderboard section',
                       options: _sections,
                       selected: _section,
                       onSelected: _selectSection,
                     ),
                     const SizedBox(height: 10),
                     _OptionChips(
+                      key: const ValueKey('leaderboard-metric-options'),
+                      semanticLabel: 'Streak category',
                       options: _metrics,
                       selected: _metric,
                       onSelected: _selectMetric,
@@ -148,7 +192,7 @@ class _StreakLeaderboardPageState extends State<StreakLeaderboardPage> {
                     ),
                     const SizedBox(height: 18),
                     AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 320),
+                      duration: const Duration(milliseconds: 260),
                       switchInCurve: Curves.easeOutCubic,
                       switchOutCurve: Curves.easeInCubic,
                       transitionBuilder: (child, animation) {
@@ -177,27 +221,25 @@ class _StreakLeaderboardPageState extends State<StreakLeaderboardPage> {
 }
 
 class _LeaderboardOption {
+  const _LeaderboardOption(this.value, this.label, this.icon);
+
   final String value;
   final String label;
   final IconData icon;
-
-  const _LeaderboardOption(this.value, this.label, this.icon);
 }
 
 class _LeaderboardHero extends StatelessWidget {
-  final String metric;
-
   const _LeaderboardHero({required this.metric});
+
+  final String metric;
 
   @override
   Widget build(BuildContext context) {
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    final subtitle = switch (metric) {
-      'month' => 'Ranked by check-ins and protected days this month.',
-      'longest' => 'Ranked by all-time best streak.',
-      _ => 'Ranked by active streaks and privacy-safe profiles.',
-    };
+    final subtitle = metric == 'longest'
+        ? 'Ranked by each user\'s all-time best streak.'
+        : 'Ranked by active streaks and privacy-safe profiles.';
 
     return Container(
       constraints: const BoxConstraints(minHeight: 174),
@@ -264,40 +306,6 @@ class _LeaderboardHero extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.16),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.2),
-                        ),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.groups_2_rounded,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                          SizedBox(width: 6),
-                          Text(
-                            'Streak league',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.6,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
                     const Text(
                       'Small wins.\nStrong streaks.',
                       style: TextStyle(
@@ -328,26 +336,35 @@ class _LeaderboardHero extends StatelessWidget {
 }
 
 class _OptionChips extends StatelessWidget {
-  final List<_LeaderboardOption> options;
-  final String selected;
-  final ValueChanged<String> onSelected;
-  final bool compact;
-
   const _OptionChips({
+    super.key,
+    required this.semanticLabel,
     required this.options,
     required this.selected,
     required this.onSelected,
     this.compact = false,
   });
 
+  final String semanticLabel;
+  final List<_LeaderboardOption> options;
+  final String selected;
+  final ValueChanged<String> onSelected;
+  final bool compact;
+
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
+    return Semantics(
+      container: true,
+      label: semanticLabel,
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        runAlignment: WrapAlignment.center,
+        spacing: 8,
+        runSpacing: 8,
         children: [
-          for (final option in options) ...[
+          for (final option in options)
             ChoiceChip(
+              key: ValueKey('leaderboard-option-${option.value}'),
               selected: selected == option.value,
               onSelected: (_) => onSelected(option.value),
               avatar: Icon(
@@ -368,13 +385,11 @@ class _OptionChips extends StatelessWidget {
               backgroundColor: pageSurfaceColor(context),
               side: BorderSide(color: pageBorderColor(context)),
               padding: EdgeInsets.symmetric(
-                horizontal: compact ? 8 : 10,
-                vertical: compact ? 6 : 9,
+                horizontal: compact ? 12 : 14,
+                vertical: compact ? 6 : 8,
               ),
               showCheckmark: false,
             ),
-            const SizedBox(width: 8),
-          ],
         ],
       ),
     );
@@ -382,14 +397,16 @@ class _OptionChips extends StatelessWidget {
 }
 
 class _LeaderboardContent extends StatelessWidget {
-  final StreakLeaderboard leaderboard;
-  final String metric;
-
   const _LeaderboardContent({
     super.key,
     required this.leaderboard,
     required this.metric,
+    required this.currentUserSession,
   });
+
+  final StreakLeaderboard leaderboard;
+  final String metric;
+  final UserSessionSnapshot currentUserSession;
 
   @override
   Widget build(BuildContext context) {
@@ -398,12 +415,12 @@ class _LeaderboardContent extends StatelessWidget {
         icon: Icons.lock_outline_rounded,
         title: '${leaderboard.sectionLabel} is not available yet',
         message:
-            'This section unlocks after VitalySync has enough profile or location context for your account.',
+            'Add matching location or role details to join this leaderboard.',
       );
     }
 
     if (leaderboard.rows.isEmpty) {
-      return _EmptyLeaderboard(
+      return const _EmptyLeaderboard(
         icon: Icons.local_fire_department_outlined,
         animationAsset: _healthyHeartAnimationPath,
         title: 'No rankings yet',
@@ -411,122 +428,61 @@ class _LeaderboardContent extends StatelessWidget {
       );
     }
 
-    final topRows = leaderboard.rows.take(3).toList();
-    final remaining = leaderboard.rows.skip(3).toList();
+    final orderedRows = [...leaderboard.rows]
+      ..sort((left, right) => left.rank.compareTo(right.rank));
+    final podiumRows = orderedRows
+        .where((row) => row.rank >= 1 && row.rank <= 5)
+        .toList();
+    final remainingRows = orderedRows
+        .where((row) => row.rank < 1 || row.rank > 5)
+        .toList();
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      key: const ValueKey('leaderboard-list'),
       children: [
-        _SectionSummary(leaderboard: leaderboard),
-        const SizedBox(height: 14),
-        _Podium(rows: topRows, metric: metric),
-        const SizedBox(height: 14),
-        ...remaining.map((row) => _RankRow(row: row, metric: metric)),
+        if (podiumRows.isNotEmpty)
+          _TopFivePodium(
+            rows: podiumRows,
+            metric: metric,
+            currentUserSession: currentUserSession,
+          ),
+        if (podiumRows.isNotEmpty && remainingRows.isNotEmpty)
+          const SizedBox(height: 14),
+        for (final row in remainingRows)
+          _LeaderboardRow(
+            row: row,
+            metric: metric,
+            currentUserSession: currentUserSession,
+            presentation: row.rank >= 6 && row.rank <= 10
+                ? _RankPresentation.medal
+                : _RankPresentation.number,
+          ),
       ],
     );
   }
 }
 
-class _SectionSummary extends StatelessWidget {
-  final StreakLeaderboard leaderboard;
+class _TopFivePodium extends StatelessWidget {
+  const _TopFivePodium({
+    required this.rows,
+    required this.metric,
+    required this.currentUserSession,
+  });
 
-  const _SectionSummary({required this.leaderboard});
-
-  @override
-  Widget build(BuildContext context) {
-    final currentUserRank = leaderboard.currentUserRank;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: pageSurfaceColor(context),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: pageBorderColor(context)),
-        boxShadow: pageCardShadow(context),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Theme.of(context).colorScheme.primary,
-                  const Color(0xFF38BDF8),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.primary.withValues(alpha: 0.22),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Text(
-              currentUserRank == null ? '--' : '#$currentUserRank',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  currentUserRank == null
-                      ? '${leaderboard.sectionLabel} leaderboard'
-                      : 'Your ${leaderboard.sectionLabel} position',
-                  style: TextStyle(
-                    color: pagePrimaryTextColor(context),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  '${leaderboard.rows.length} ranked streak${leaderboard.rows.length == 1 ? '' : 's'} - Privacy-safe profiles',
-                  style: TextStyle(
-                    color: pageSecondaryTextColor(context),
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Icon(
-            Icons.verified_user_outlined,
-            color: Theme.of(context).colorScheme.primary,
-            size: 22,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Podium extends StatelessWidget {
   final List<StreakLeaderboardRow> rows;
   final String metric;
+  final UserSessionSnapshot currentUserSession;
 
-  const _Podium({required this.rows, required this.metric});
+  List<StreakLeaderboardRow> _inRankOrder(List<int> ranks) {
+    final rowsByRank = {for (final row in rows) row.rank: row};
+    return [for (final rank in ranks) ?rowsByRank[rank]];
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
+      key: const ValueKey('leaderboard-podium'),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       decoration: BoxDecoration(
         color: pageSurfaceColor(context),
         borderRadius: BorderRadius.circular(22),
@@ -534,7 +490,7 @@ class _Podium extends StatelessWidget {
         boxShadow: pageCardShadow(context),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
@@ -553,70 +509,58 @@ class _Podium extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Top streaks',
-                      style: TextStyle(
-                        color: pagePrimaryTextColor(context),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    Text(
-                      'Consistency worth celebrating',
-                      style: TextStyle(
-                        color: pageSecondaryTextColor(context),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  'Top 5 streaks',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: pagePrimaryTextColor(context),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           LayoutBuilder(
             builder: (context, constraints) {
-              final orderedRows = <StreakLeaderboardRow>[
-                if (rows.length > 1) rows[1],
-                rows.first,
-                if (rows.length > 2) rows[2],
-              ];
-
-              if (constraints.maxWidth < 300) {
-                return Column(
-                  children: orderedRows
-                      .map(
-                        (row) => Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: _PodiumTile(row: row, metric: metric),
-                        ),
-                      )
-                      .toList(),
+              if (constraints.maxWidth >= 560) {
+                return _PodiumLine(
+                  rows: _inRankOrder(const [4, 2, 1, 3, 5]),
+                  metric: metric,
+                  currentUserSession: currentUserSession,
+                  maxWidth: constraints.maxWidth,
+                  maxTileWidth: 108,
+                  spacing: 8,
                 );
               }
 
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              final upperRows = _inRankOrder(const [2, 1, 3]);
+              final lowerRows = _inRankOrder(const [4, 5]);
+
+              return Column(
                 children: [
-                  for (var index = 0; index < orderedRows.length; index++) ...[
-                    if (index > 0) const SizedBox(width: 8),
-                    Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.only(
-                          top: orderedRows[index].rank == 1 ? 0 : 24,
-                        ),
-                        child: _PodiumTile(
-                          row: orderedRows[index],
-                          metric: metric,
-                          compact: true,
-                        ),
-                      ),
+                  if (upperRows.isNotEmpty)
+                    _PodiumLine(
+                      rows: upperRows,
+                      metric: metric,
+                      currentUserSession: currentUserSession,
+                      maxWidth: constraints.maxWidth,
+                      maxTileWidth: 118,
+                      spacing: 8,
                     ),
-                  ],
+                  if (upperRows.isNotEmpty && lowerRows.isNotEmpty)
+                    const SizedBox(height: 10),
+                  if (lowerRows.isNotEmpty)
+                    _PodiumLine(
+                      rows: lowerRows,
+                      metric: metric,
+                      currentUserSession: currentUserSession,
+                      maxWidth: constraints.maxWidth,
+                      maxTileWidth: 138,
+                      spacing: 8,
+                    ),
                 ],
               );
             },
@@ -627,298 +571,428 @@ class _Podium extends StatelessWidget {
   }
 }
 
-class _PodiumTile extends StatelessWidget {
-  final StreakLeaderboardRow row;
-  final String metric;
-  final bool compact;
+class _PodiumLine extends StatelessWidget {
+  const _PodiumLine({
+    required this.rows,
+    required this.metric,
+    required this.currentUserSession,
+    required this.maxWidth,
+    required this.maxTileWidth,
+    required this.spacing,
+  });
 
+  final List<StreakLeaderboardRow> rows;
+  final String metric;
+  final UserSessionSnapshot currentUserSession;
+  final double maxWidth;
+  final double maxTileWidth;
+  final double spacing;
+
+  @override
+  Widget build(BuildContext context) {
+    if (rows.isEmpty) return const SizedBox.shrink();
+
+    final gaps = spacing * (rows.length - 1);
+    final availableTileWidth = (maxWidth - gaps) / rows.length;
+    final tileWidth = availableTileWidth.clamp(64.0, maxTileWidth).toDouble();
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        for (var index = 0; index < rows.length; index++) ...[
+          if (index > 0) SizedBox(width: spacing),
+          SizedBox(
+            width: tileWidth,
+            child: Padding(
+              padding: EdgeInsets.only(top: _podiumTopInset(rows[index].rank)),
+              child: _PodiumTile(
+                row: rows[index],
+                metric: metric,
+                currentUserSession: currentUserSession,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _PodiumTile extends StatelessWidget {
   const _PodiumTile({
     required this.row,
     required this.metric,
-    this.compact = false,
+    required this.currentUserSession,
   });
+
+  final StreakLeaderboardRow row;
+  final String metric;
+  final UserSessionSnapshot currentUserSession;
 
   @override
   Widget build(BuildContext context) {
-    final color = _parseColor(row.avatarColor);
-    final reduceMotion =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    final crownColor = row.rank == 1
-        ? const Color(0xFFFACC15)
-        : row.rank == 2
-        ? const Color(0xFFCBD5E1)
-        : const Color(0xFFF59E0B);
+    final accent = _podiumAccent(context, row.rank);
+    final isWinner = row.rank == 1;
+    final avatarSize = switch (row.rank) {
+      1 => 48.0,
+      2 || 3 => 43.0,
+      _ => 40.0,
+    };
+    final pedestalHeight = switch (row.rank) {
+      1 => 30.0,
+      2 => 26.0,
+      3 => 23.0,
+      _ => 20.0,
+    };
+    final score = _scoreLabel(row.score);
+    final streakKind = metric == 'longest' ? 'Best streak' : 'Current streak';
 
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        compact ? 8 : 14,
-        compact ? 10 : 14,
-        compact ? 8 : 14,
-        compact ? 12 : 14,
-      ),
-      decoration: BoxDecoration(
-        gradient: row.rank == 1
-            ? LinearGradient(
-                colors: [
-                  const Color(0xFFFACC15).withValues(alpha: 0.18),
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.09),
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              )
-            : null,
-        color: row.rank == 1
-            ? null
-            : row.isCurrentUser
-            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
-            : pageSubtleSurfaceColor(context),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: row.rank == 1
-              ? const Color(0xFFFACC15).withValues(alpha: 0.42)
-              : row.isCurrentUser
-              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.35)
-              : pageBorderColor(context),
-        ),
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: crownColor.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  row.rank == 1
-                      ? Icons.workspace_premium_rounded
-                      : Icons.emoji_events_rounded,
-                  color: crownColor,
-                  size: 15,
-                ),
-                const SizedBox(width: 3),
-                Text(
-                  '#${row.rank}',
-                  style: TextStyle(
-                    color: pagePrimaryTextColor(context),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
+    return Semantics(
+      container: true,
+      label: 'Rank ${row.rank}, ${row.displayName}, $score, $streakKind',
+      child: Container(
+        key: ValueKey('leaderboard-podium-user-${row.userId}'),
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          gradient: isWinner
+              ? LinearGradient(
+                  colors: [
+                    const Color(0xFFFACC15).withValues(alpha: 0.2),
+                    Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.08),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                )
+              : null,
+          color: isWinner ? null : pageSubtleSurfaceColor(context),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: row.isCurrentUser
+                ? Theme.of(context).colorScheme.primary
+                : accent.withValues(alpha: 0.5),
+            width: row.isCurrentUser ? 2 : 1,
           ),
-          SizedBox(height: compact ? 7 : 10),
-          if (row.rank == 1)
-            SizedBox(
-              width: compact ? 66 : 76,
-              height: compact ? 66 : 76,
-              child: Stack(
-                alignment: Alignment.center,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(6, 8, 6, 7),
+              child: Column(
                 children: [
-                  Positioned.fill(
-                    child: Lottie.asset(
-                      _streakFireAnimationPath,
-                      fit: BoxFit.contain,
-                      repeat: !reduceMotion,
-                      animate: !reduceMotion,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Icon(
-                          Icons.local_fire_department_rounded,
-                          color: const Color(0xFFFF8A3D).withValues(alpha: 0.5),
-                          size: compact ? 56 : 64,
-                        );
-                      },
+                  Icon(
+                    isWinner
+                        ? Icons.workspace_premium_rounded
+                        : Icons.leaderboard_rounded,
+                    color: accent,
+                    size: isWinner ? 23 : 19,
+                  ),
+                  const SizedBox(height: 5),
+                  _DefaultAvatar(
+                    key: ValueKey('leaderboard-default-avatar-${row.userId}'),
+                    semanticLabel: 'Default avatar for ${row.displayName}',
+                    assetPath: _leaderboardAvatarAsset(row, currentUserSession),
+                    size: avatarSize,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    row.displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: pagePrimaryTextColor(context),
+                      fontSize: row.rank <= 3 ? 12.5 : 12,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
-                  _InitialsAvatar(
-                    row: row,
-                    color: color,
-                    size: compact ? 40 : 46,
-                    ringColor: Colors.white,
+                  const SizedBox(height: 4),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        score,
+                        maxLines: 1,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
-            )
-          else
-            _InitialsAvatar(row: row, color: color, size: compact ? 42 : 48),
-          SizedBox(height: compact ? 7 : 10),
-          Text(
-            row.displayName,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: pagePrimaryTextColor(context),
-              fontWeight: FontWeight.w900,
-              fontSize: compact ? 12.5 : null,
             ),
-          ),
-          if (row.isCurrentUser) ...[
-            const SizedBox(height: 3),
-            Text(
-              'You',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.primary,
-                fontSize: 9,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0.8,
+            Container(
+              width: double.infinity,
+              height: pedestalHeight,
+              alignment: Alignment.center,
+              color: accent.withValues(alpha: isWinner ? 0.3 : 0.2),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  '${row.rank}',
+                  style: TextStyle(
+                    color: pagePrimaryTextColor(context),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
               ),
             ),
           ],
-          const SizedBox(height: 6),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              _scoreLabel(row.score, metric),
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.primary,
-                fontWeight: FontWeight.w900,
-                fontSize: compact ? 13 : 16,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _RankRow extends StatelessWidget {
+enum _RankPresentation { medal, number }
+
+class _LeaderboardRow extends StatelessWidget {
+  const _LeaderboardRow({
+    required this.row,
+    required this.metric,
+    required this.currentUserSession,
+    required this.presentation,
+  });
+
   final StreakLeaderboardRow row;
   final String metric;
-
-  const _RankRow({required this.row, required this.metric});
+  final UserSessionSnapshot currentUserSession;
+  final _RankPresentation presentation;
 
   @override
   Widget build(BuildContext context) {
-    final color = _parseColor(row.avatarColor);
+    final isBest = metric == 'longest';
+    final streakKind = isBest ? 'Best streak' : 'Current streak';
+    final score = _scoreLabel(row.score);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: row.isCurrentUser
-            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
-            : pageSurfaceColor(context),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: row.isCurrentUser
-              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.32)
-              : pageBorderColor(context),
+    return Semantics(
+      container: true,
+      label: 'Rank ${row.rank}, ${row.displayName}, $score, $streakKind',
+      child: Container(
+        key: ValueKey(
+          presentation == _RankPresentation.medal
+              ? 'leaderboard-medal-row-${row.userId}'
+              : 'leaderboard-number-row-${row.userId}',
         ),
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 34,
-            child: Text(
-              '#${row.rank}',
-              style: TextStyle(
-                color: pagePrimaryTextColor(context),
-                fontWeight: FontWeight.w900,
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        decoration: BoxDecoration(
+          color: row.isCurrentUser
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
+              : pageSurfaceColor(context),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: row.isCurrentUser
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.34)
+                : pageBorderColor(context),
+          ),
+          boxShadow: pageCardShadow(context),
+        ),
+        child: Row(
+          children: [
+            _RankMarker(row: row, presentation: presentation),
+            const SizedBox(width: 8),
+            _DefaultAvatar(
+              key: ValueKey('leaderboard-default-avatar-${row.userId}'),
+              semanticLabel: 'Default avatar for ${row.displayName}',
+              assetPath: _leaderboardAvatarAsset(row, currentUserSession),
+              size: 44,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                row.displayName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: pagePrimaryTextColor(context),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
-          ),
-          _InitialsAvatar(row: row, color: color, size: 42),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  row.displayName,
+            const SizedBox(width: 8),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 82),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Text(
+                  score,
                   maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: pagePrimaryTextColor(context),
+                    color: Theme.of(context).colorScheme.primary,
+                    fontSize: 15,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '${row.protectedDayCount} protected day${row.protectedDayCount == 1 ? '' : 's'}',
-                  style: TextStyle(
-                    color: pageSecondaryTextColor(context),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12.5,
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-          Text(
-            _scoreLabel(row.score, metric),
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InitialsAvatar extends StatelessWidget {
-  final StreakLeaderboardRow row;
-  final Color color;
-  final double size;
-  final Color? ringColor;
-
-  const _InitialsAvatar({
-    required this.row,
-    required this.color,
-    required this.size,
-    this.ringColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        border: ringColor == null
-            ? null
-            : Border.all(color: ringColor!, width: 3),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.25),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Text(
-        row.initials,
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w900,
-          fontSize: size * 0.34,
+          ],
         ),
       ),
     );
   }
 }
 
-class _EmptyLeaderboard extends StatelessWidget {
-  final IconData icon;
-  final String? animationAsset;
-  final String title;
-  final String message;
+class _RankMarker extends StatelessWidget {
+  const _RankMarker({required this.row, required this.presentation});
 
+  final StreakLeaderboardRow row;
+  final _RankPresentation presentation;
+
+  @override
+  Widget build(BuildContext context) {
+    if (presentation == _RankPresentation.medal) {
+      return Container(
+        key: ValueKey('leaderboard-medal-marker-${row.userId}'),
+        width: 40,
+        height: 46,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.military_tech_rounded,
+              color: Color(0xFFF59E0B),
+              size: 23,
+            ),
+            Text(
+              '${row.rank}',
+              style: TextStyle(
+                color: pagePrimaryTextColor(context),
+                fontSize: 9.5,
+                height: 1,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return SizedBox(
+      key: ValueKey('leaderboard-number-marker-${row.userId}'),
+      width: 40,
+      child: Text(
+        '${row.rank}',
+        maxLines: 1,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: pagePrimaryTextColor(context),
+          fontSize: 15,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
+class _DefaultAvatar extends StatelessWidget {
+  const _DefaultAvatar({
+    super.key,
+    required this.semanticLabel,
+    required this.assetPath,
+    this.size = 48,
+  });
+
+  final String semanticLabel;
+  final String assetPath;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      image: true,
+      label: semanticLabel,
+      child: Container(
+        width: size,
+        height: size,
+        padding: EdgeInsets.all(size * 0.08),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+          shape: BoxShape.circle,
+        ),
+        child: ClipOval(
+          child: Image.asset(
+            assetPath,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              return Icon(
+                Icons.person_rounded,
+                color: Theme.of(context).colorScheme.primary,
+                size: size * 0.62,
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _leaderboardAvatarAsset(
+  StreakLeaderboardRow row,
+  UserSessionSnapshot currentUserSession,
+) {
+  final currentUserId = currentUserSession.userId;
+  final isCurrentUser =
+      row.isCurrentUser ||
+      (currentUserId != null && row.userId == currentUserId);
+  if (!isCurrentUser) return _defaultLeaderboardAvatarPath;
+
+  return suggestedProfileAvatarAsset(
+    currentUserSession.gender,
+    currentUserSession.userType,
+  );
+}
+
+double _podiumTopInset(int rank) {
+  return switch (rank) {
+    1 => 0,
+    2 => 14,
+    3 => 22,
+    4 => 18,
+    _ => 26,
+  };
+}
+
+Color _podiumAccent(BuildContext context, int rank) {
+  return switch (rank) {
+    1 => const Color(0xFFF5B700),
+    2 => const Color(0xFF94A3B8),
+    3 => const Color(0xFFC26A2E),
+    4 => Theme.of(context).colorScheme.primary,
+    _ => const Color(0xFF38A7C4),
+  };
+}
+
+class _EmptyLeaderboard extends StatelessWidget {
   const _EmptyLeaderboard({
     required this.icon,
     this.animationAsset,
     required this.title,
     required this.message,
   });
+
+  final IconData icon;
+  final String? animationAsset;
+  final String title;
+  final String message;
 
   @override
   Widget build(BuildContext context) {
@@ -987,12 +1061,19 @@ class _EmptyLeaderboard extends StatelessWidget {
 }
 
 class _LeaderboardError extends StatelessWidget {
-  final Future<void> Function() onRetry;
+  const _LeaderboardError({
+    super.key,
+    required this.error,
+    required this.onRetry,
+  });
 
-  const _LeaderboardError({super.key, required this.onRetry});
+  final Object? error;
+  final Future<void> Function() onRetry;
 
   @override
   Widget build(BuildContext context) {
+    final message = _leaderboardErrorMessage(error);
+
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
@@ -1003,7 +1084,7 @@ class _LeaderboardError extends StatelessWidget {
       child: Column(
         children: [
           Icon(
-            Icons.wifi_off_rounded,
+            _leaderboardErrorIcon(error),
             color: pageSecondaryTextColor(context),
             size: 42,
           ),
@@ -1019,7 +1100,7 @@ class _LeaderboardError extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Check your connection and try again.',
+            message,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: pageSecondaryTextColor(context),
@@ -1039,19 +1120,32 @@ class _LeaderboardError extends StatelessWidget {
   }
 }
 
-String _scoreLabel(int score, String metric) {
-  final unit = switch (metric) {
-    'month' => score == 1 ? 'check-in' : 'check-ins',
-    _ => score == 1 ? 'day' : 'days',
-  };
-  return '$score $unit';
+String _scoreLabel(int score) {
+  return '$score ${score == 1 ? 'day' : 'days'}';
 }
 
-Color _parseColor(String value) {
-  final normalized = value.replaceAll('#', '').trim();
-  final parsed = int.tryParse(normalized, radix: 16);
-  if (parsed == null) {
-    return const Color(0xFF1D8CA8);
+IconData _leaderboardErrorIcon(Object? error) {
+  if (error is StreakApiException) {
+    if (error.isAuthError) {
+      return Icons.lock_outline_rounded;
+    }
+
+    if (!error.isNetworkError) {
+      return Icons.cloud_off_outlined;
+    }
   }
-  return Color(0xFF000000 | parsed);
+
+  return Icons.wifi_off_rounded;
+}
+
+String _leaderboardErrorMessage(Object? error) {
+  if (error is StreakApiException) {
+    return error.message;
+  }
+
+  final message = error?.toString().replaceFirst('Exception: ', '').trim();
+
+  return message?.isNotEmpty == true
+      ? message!
+      : 'Unable to reach the VitalySync API right now.';
 }

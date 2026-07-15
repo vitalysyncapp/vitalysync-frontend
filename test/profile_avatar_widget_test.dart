@@ -19,7 +19,7 @@ void main() {
   setUpAll(configureTestAssets);
   tearDownAll(clearTestAssets);
 
-  testWidgets('editor renders 24 choices and saves a bundled avatar', (
+  testWidgets('editor renders 40 choices and saves a bundled avatar', (
     tester,
   ) async {
     final storage = _MemoryAvatarStorage();
@@ -32,8 +32,15 @@ void main() {
     for (final entry in ProfileAvatarCatalog.entries) {
       expect(find.byKey(ValueKey('avatar-option-${entry.id}')), findsOneWidget);
     }
+    expect(find.text('Students'), findsNothing);
+    expect(find.text('Working professionals'), findsNothing);
+    expect(find.text('Young professionals'), findsNothing);
+    expect(find.text('Freelancers'), findsNothing);
+    expect(find.text('Personas collection'), findsNothing);
 
-    final option = find.byKey(const ValueKey('avatar-option-open_peeps_08'));
+    final option = find.byKey(
+      const ValueKey('avatar-option-avataaars_working_professional_03'),
+    );
     await tester.ensureVisible(option);
     await tester.tap(option);
     await tester.ensureVisible(
@@ -44,17 +51,17 @@ void main() {
 
     final saved = await store.load(42);
     expect(saved.kind, ProfileAvatarKind.bundled);
-    expect(saved.avatarId, 'open_peeps_08');
+    expect(saved.avatarId, 'avataaars_working_professional_03');
   });
 
   testWidgets('backing out discards the avatar draft', (tester) async {
     final storage = _MemoryAvatarStorage();
     final store = ProfileAvatarStore(storage: storage);
-    await store.saveBundled(42, 'open_peeps_02');
+    await store.saveBundled(42, 'personas_02');
     final controller = ProfileAvatarController(store: store);
 
     await _openEditor(tester, controller: controller);
-    final option = find.byKey(const ValueKey('avatar-option-open_peeps_03'));
+    final option = find.byKey(const ValueKey('avatar-option-personas_03'));
     await tester.ensureVisible(option);
     await tester.tap(option);
     await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
@@ -62,7 +69,7 @@ void main() {
 
     final saved = await store.load(42);
     expect(saved.kind, ProfileAvatarKind.bundled);
-    expect(saved.avatarId, 'open_peeps_02');
+    expect(saved.avatarId, 'personas_02');
   });
 
   testWidgets('uploaded photo uses injected picker and crop result', (
@@ -162,7 +169,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(SvgPicture), findsNothing);
 
-    await ProfileAvatarController.instance.saveBundled(77, 'open_peeps_12');
+    await ProfileAvatarController.instance.saveBundled(77, 'personas_12');
     await tester.pumpAndSettle();
 
     expect(find.byType(SvgPicture), findsOneWidget);

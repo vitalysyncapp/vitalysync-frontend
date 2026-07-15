@@ -895,7 +895,7 @@ const _coreTutorialSteps = [
     icon: Icons.leaderboard_rounded,
     title: 'Streaks now have a leaderboard',
     body:
-        'Tap your streak chip in the home header to open my streak. The leaderboard compares global, local, role, and goal cohorts using privacy-safe profile details.',
+        'Tap your streak chip in the home header to open my streak. The leaderboard compares global, local, and role streaks using privacy-safe profile details.',
     assistantDock: _TutorialAssistantDock.topRight,
   ),
   _TutorialStepData(

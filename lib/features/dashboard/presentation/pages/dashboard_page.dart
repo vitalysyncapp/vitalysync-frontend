@@ -12,6 +12,7 @@ import '../../../../shared/learning/first_week_learning_service.dart';
 import '../../../../shared/notifications/notification_feed_service.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
+import '../../../../shared/widgets/analytics_animation.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/widgets/first_week_learning_pill.dart';
 import '../../../../shared/widgets/reveal_on_build.dart';
@@ -240,7 +241,7 @@ class _DashboardState extends State<Dashboard> {
                   ),
                   const SizedBox(height: 12),
                   RevealOnBuild(
-                    delay: const Duration(milliseconds: 220),
+                    delay: const Duration(milliseconds: 140),
                     child: BurnoutRiskTrendCard(
                       summary: _burnoutPatternSummary,
                       isLoading: _isLoadingBurnoutPatterns,
@@ -249,7 +250,7 @@ class _DashboardState extends State<Dashboard> {
                   ),
                   const SizedBox(height: 12),
                   RevealOnBuild(
-                    delay: const Duration(milliseconds: 250),
+                    delay: const Duration(milliseconds: 200),
                     child: _AiBurnoutInsightCard(
                       recommendation: _aiInsightNudge,
                       isLoading: _isLoadingAiInsight,
@@ -258,7 +259,7 @@ class _DashboardState extends State<Dashboard> {
                   ),
                   const SizedBox(height: 12),
                   RevealOnBuild(
-                    delay: Duration(milliseconds: 130),
+                    delay: const Duration(milliseconds: 260),
                     child: ValueListenableBuilder<ActivityTrackingState>(
                       valueListenable: ActivityService.instance.notifier,
                       builder: (context, activityState, _) {
@@ -271,49 +272,49 @@ class _DashboardState extends State<Dashboard> {
                   ),
                   const SizedBox(height: 12),
                   RevealOnBuild(
-                    delay: const Duration(milliseconds: 190),
+                    delay: const Duration(milliseconds: 320),
                     child: NutritionAnalyticsCard(
                       key: ValueKey('nutrition-analytics-$_refreshVersion'),
                     ),
                   ),
                   const SizedBox(height: 12),
                   RevealOnBuild(
-                    delay: const Duration(milliseconds: 310),
+                    delay: const Duration(milliseconds: 380),
                     child: SleepPatternCard(
                       key: ValueKey('sleep-pattern-$_refreshVersion'),
                     ),
                   ),
                   const SizedBox(height: 12),
                   RevealOnBuild(
-                    delay: const Duration(milliseconds: 370),
+                    delay: const Duration(milliseconds: 440),
                     child: WellnessIndexCard(
                       key: ValueKey('wellness-index-$_refreshVersion'),
                     ),
                   ),
                   const SizedBox(height: 12),
                   RevealOnBuild(
-                    delay: const Duration(milliseconds: 430),
+                    delay: const Duration(milliseconds: 500),
                     child: MoodVolatilityCard(
                       key: ValueKey('mood-volatility-$_refreshVersion'),
                     ),
                   ),
                   const SizedBox(height: 12),
                   RevealOnBuild(
-                    delay: const Duration(milliseconds: 490),
+                    delay: const Duration(milliseconds: 560),
                     child: SymptomFrequencyCard(
                       key: ValueKey('symptom-frequency-$_refreshVersion'),
                     ),
                   ),
                   const SizedBox(height: 12),
                   RevealOnBuild(
-                    delay: const Duration(milliseconds: 550),
+                    delay: const Duration(milliseconds: 620),
                     child: DashboardGoalTrackingCard(
                       key: ValueKey('goal-tracking-$_refreshVersion'),
                     ),
                   ),
                   const SizedBox(height: 12),
                   RevealOnBuild(
-                    delay: const Duration(milliseconds: 610),
+                    delay: const Duration(milliseconds: 680),
                     child: WeeklyPerformanceCard(
                       key: ValueKey('weekly-performance-$_refreshVersion'),
                     ),
@@ -514,142 +515,144 @@ class _AiBurnoutInsightCard extends StatelessWidget {
           ),
         ],
       ),
-      child: isLoading
-          ? const SizedBox(
-              height: 76,
-              child: AppSkeletonRows(count: 2, showLeading: true),
-            )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: AnalyticsContentSwitcher(
+        isLoading: isLoading,
+        loading: const SizedBox(
+          height: 76,
+          child: AppSkeletonRows(count: 2, showLeading: true),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 34,
-                      height: 34,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: aiEnhanced
-                              ? const [
-                                  Color.fromARGB(255, 105, 28, 183),
-                                  Color(0xFF59B7EF),
-                                ]
-                              : const [Color(0xFF64748B), Color(0xFF94A3B8)],
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: aiEnhanced
+                          ? const [
+                              Color.fromARGB(255, 105, 28, 183),
+                              Color(0xFF59B7EF),
+                            ]
+                          : const [Color(0xFF64748B), Color(0xFF94A3B8)],
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.auto_awesome_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'AI insight',
+                        style: TextStyle(
+                          color: pagePrimaryTextColor(context),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
-                      child: const Icon(
-                        Icons.auto_awesome_rounded,
-                        color: Colors.white,
-                        size: 18,
+                      const SizedBox(height: 1),
+                      Text(
+                        aiEnhanced
+                            ? 'Personalized from your pattern data'
+                            : 'Rule-based fallback insight',
+                        style: TextStyle(
+                          color: pageSecondaryTextColor(context),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'AI insight',
-                            style: TextStyle(
-                              color: pagePrimaryTextColor(context),
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 1),
-                          Text(
-                            aiEnhanced
-                                ? 'Personalized from your pattern data'
-                                : 'Rule-based fallback insight',
-                            style: TextStyle(
-                              color: pageSecondaryTextColor(context),
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                if (firstWeekState?.isVisible == true) ...[
-                  const SizedBox(height: 9),
-                  FirstWeekLearningPill(
-                    state: firstWeekState!,
-                    message: firstWeekState.aiInsightNote,
-                    icon: Icons.auto_awesome_motion_rounded,
-                    maxLines: 2,
-                  ),
-                ],
-                const SizedBox(height: 10),
-                Text(
-                  recommendation?.title ?? 'Keep building your trend baseline',
-                  style: TextStyle(
-                    color: pagePrimaryTextColor(context),
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w800,
+                    ],
                   ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  recommendation?.message ??
-                      'Complete a few more check-ins so VitalySync can personalize burnout insights more accurately.',
-                  maxLines: 5,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: pageSecondaryTextColor(context),
-                    fontSize: 12.5,
-                    height: 1.35,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                if (why != null && why.isNotEmpty) ...[
-                  const SizedBox(height: 9),
-                  Text(
-                    why,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: pagePrimaryTextColor(context),
-                      fontSize: 12.5,
-                      height: 1.35,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-                if (steps.isNotEmpty) ...[
-                  const SizedBox(height: 9),
-                  ...steps.map(
-                    (step) => Padding(
-                      padding: const EdgeInsets.only(top: 5),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(
-                            Icons.check_circle_rounded,
-                            size: 15,
-                            color: Color(0xFF1FB489),
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              step,
-                              style: TextStyle(
-                                color: pageSecondaryTextColor(context),
-                                fontSize: 12,
-                                height: 1.3,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
               ],
             ),
+            if (firstWeekState?.isVisible == true) ...[
+              const SizedBox(height: 9),
+              FirstWeekLearningPill(
+                state: firstWeekState!,
+                message: firstWeekState.aiInsightNote,
+                icon: Icons.auto_awesome_motion_rounded,
+                maxLines: 2,
+              ),
+            ],
+            const SizedBox(height: 10),
+            Text(
+              recommendation?.title ?? 'Keep building your trend baseline',
+              style: TextStyle(
+                color: pagePrimaryTextColor(context),
+                fontSize: 14.5,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              recommendation?.message ??
+                  'Complete a few more check-ins so VitalySync can personalize burnout insights more accurately.',
+              maxLines: 5,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: pageSecondaryTextColor(context),
+                fontSize: 12.5,
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (why != null && why.isNotEmpty) ...[
+              const SizedBox(height: 9),
+              Text(
+                why,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: pagePrimaryTextColor(context),
+                  fontSize: 12.5,
+                  height: 1.35,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+            if (steps.isNotEmpty) ...[
+              const SizedBox(height: 9),
+              ...steps.map(
+                (step) => Padding(
+                  padding: const EdgeInsets.only(top: 5),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        size: 15,
+                        color: Color(0xFF1FB489),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          step,
+                          style: TextStyle(
+                            color: pageSecondaryTextColor(context),
+                            fontSize: 12,
+                            height: 1.3,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

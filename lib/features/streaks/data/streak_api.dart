@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -31,7 +32,11 @@ class StreakApi {
       final data = _decodeResponseMap(response);
 
       if (response.statusCode != 200) {
-        throw Exception(data['message'] ?? 'Failed to fetch streak overview');
+        throw StreakApiException.fromResponse(
+          data,
+          response.statusCode,
+          fallbackMessage: 'Failed to fetch streak overview',
+        );
       }
 
       await OfflineCacheStore.saveJson(
@@ -40,16 +45,19 @@ class StreakApi {
         data: data,
       );
       return StreakOverview.fromJson(data);
-    } catch (_) {
+    } catch (error) {
       final cached = await OfflineCacheStore.readLatestJson(
         namespace: _overviewCache,
         scope: userId.toString(),
       );
-      if (cached != null) {
+      if (cached != null && _canUseOfflineFallback(error)) {
         return StreakOverview.fromJson(cached, isOffline: true);
       }
 
-      rethrow;
+      throw _normalizeError(
+        error,
+        fallbackMessage: 'Unable to load your streak right now.',
+      );
     }
   }
 
@@ -75,7 +83,11 @@ class StreakApi {
       final data = _decodeResponseMap(response);
 
       if (response.statusCode != 200) {
-        throw Exception(data['message'] ?? 'Failed to fetch leaderboard');
+        throw StreakApiException.fromResponse(
+          data,
+          response.statusCode,
+          fallbackMessage: 'Failed to fetch leaderboard',
+        );
       }
 
       await OfflineCacheStore.saveJson(
@@ -84,17 +96,53 @@ class StreakApi {
         data: data,
       );
       return StreakLeaderboard.fromJson(data);
-    } catch (_) {
+    } catch (error) {
       final cached = await OfflineCacheStore.readLatestJson(
         namespace: _leaderboardCache,
         scope: cacheScope,
       );
-      if (cached != null) {
+      if (cached != null && _canUseOfflineFallback(error)) {
         return StreakLeaderboard.fromJson(cached);
       }
 
-      rethrow;
+      throw _normalizeError(
+        error,
+        fallbackMessage: 'Unable to load streak rankings right now.',
+      );
     }
+  }
+
+  static bool _canUseOfflineFallback(Object error) {
+    if (error is StreakApiException) {
+      return error.canUseOfflineFallback;
+    }
+
+    return true;
+  }
+
+  static StreakApiException _normalizeError(
+    Object error, {
+    required String fallbackMessage,
+  }) {
+    if (error is StreakApiException) {
+      return error;
+    }
+
+    if (error is TimeoutException) {
+      return StreakApiException(
+        'The VitalySync API took too long to respond. Try again in a moment.',
+        isNetworkError: true,
+      );
+    }
+
+    if (error is http.ClientException) {
+      return StreakApiException(
+        'Unable to reach the VitalySync API right now.',
+        isNetworkError: true,
+      );
+    }
+
+    return StreakApiException(fallbackMessage);
   }
 
   static Map<String, dynamic> _decodeResponseMap(http.Response response) {
@@ -109,4 +157,47 @@ class StreakApi {
 
     return {'message': response.reasonPhrase ?? 'Unexpected server response'};
   }
+}
+
+class StreakApiException implements Exception {
+  final String message;
+  final int? statusCode;
+  final bool isNetworkError;
+
+  const StreakApiException(
+    this.message, {
+    this.statusCode,
+    this.isNetworkError = false,
+  });
+
+  factory StreakApiException.fromResponse(
+    Map<String, dynamic> data,
+    int statusCode, {
+    required String fallbackMessage,
+  }) {
+    final serverMessage = data['message']?.toString().trim();
+
+    final message = switch (statusCode) {
+      401 => 'Your session expired. Please sign in again.',
+      403 =>
+        'This account cannot access that streak data. Please sign in again.',
+      _ => serverMessage?.isNotEmpty == true ? serverMessage! : fallbackMessage,
+    };
+
+    return StreakApiException(message, statusCode: statusCode);
+  }
+
+  bool get canUseOfflineFallback {
+    final status = statusCode;
+    if (isNetworkError || status == null) {
+      return true;
+    }
+
+    return status == 408 || status == 429 || status >= 500;
+  }
+
+  bool get isAuthError => statusCode == 401 || statusCode == 403;
+
+  @override
+  String toString() => message;
 }

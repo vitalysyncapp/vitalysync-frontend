@@ -4,7 +4,9 @@ import 'package:intl/intl.dart';
 
 import '../../../../features/nutrition/data/nutrition_api.dart';
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/analytics_animation.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
+import '../../../../shared/widgets/reveal_on_build.dart';
 
 const double _dailyCalorieGoal = 2000;
 const double _proteinCaloriesPerGram = 4;
@@ -107,22 +109,28 @@ class _WeeklyCalorieLevelsCard extends StatelessWidget {
             gradientColors: const [Color(0xFF1FB489), Color(0xFFF59E0B)],
           ),
           const SizedBox(height: 12),
-          if (isLoading)
-            const SizedBox(
+          AnalyticsContentSwitcher(
+            isLoading: isLoading,
+            loading: const SizedBox(
               height: 170,
               child: AppSkeletonRows(count: 5, showLeading: true),
-            )
-          else
-            Column(
+            ),
+            child: Column(
               children: List.generate(data.days.length, (index) {
-                return Padding(
-                  padding: EdgeInsets.only(
-                    bottom: index == data.days.length - 1 ? 0 : 8,
+                return RevealOnBuild(
+                  delay: Duration(milliseconds: 45 * index),
+                  duration: const Duration(milliseconds: 340),
+                  beginOffset: const Offset(0, 0.08),
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      bottom: index == data.days.length - 1 ? 0 : 8,
+                    ),
+                    child: _CalorieLevelListItem(day: data.days[index]),
                   ),
-                  child: _CalorieLevelListItem(day: data.days[index]),
                 );
               }),
             ),
+          ),
           const SizedBox(height: 10),
           Divider(color: pageBorderColor(context)),
           const SizedBox(height: 8),
@@ -177,13 +185,14 @@ class _NutritionBalanceCard extends StatelessWidget {
             gradientColors: const [Color(0xFF2F80ED), Color(0xFF1FB489)],
           ),
           const SizedBox(height: 12),
-          if (isLoading)
-            const SizedBox(
+          AnalyticsContentSwitcher(
+            isLoading: isLoading,
+            loading: const SizedBox(
               height: 130,
               child: AppSkeletonChart(height: 120, barCount: 3),
-            )
-          else
-            _NutritionBalanceDiagram(data: data),
+            ),
+            child: _NutritionBalanceDiagram(data: data),
+          ),
         ],
       ),
     );
@@ -363,13 +372,13 @@ class _CalorieLevelListItem extends StatelessWidget {
                 const SizedBox(height: 6),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: LinearProgressIndicator(
+                  child: AnimatedAnalyticsProgress(
                     value: progress,
                     minHeight: 6,
                     backgroundColor: pageBorderColor(
                       context,
                     ).withValues(alpha: 0.55),
-                    valueColor: AlwaysStoppedAnimation<Color>(level.color),
+                    color: level.color,
                   ),
                 ),
                 const SizedBox(height: 5),
@@ -466,50 +475,55 @@ class _MacroPieChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasMacroData = data.hasMacroData;
     final primaryTextColor = pagePrimaryTextColor(context);
-    final sections = hasMacroData
-        ? [
-            _macroSection(
-              value: data.proteinCalories,
-              percent: data.proteinPercent,
-              color: _proteinColor,
-              context: context,
-            ),
-            _macroSection(
-              value: data.carbCalories,
-              percent: data.carbPercent,
-              color: _carbColor,
-              context: context,
-            ),
-            _macroSection(
-              value: data.fatCalories,
-              percent: data.fatPercent,
-              color: _fatColor,
-              context: context,
-            ),
-          ]
-        : [
-            PieChartSectionData(
-              value: 1,
-              title: '',
-              radius: 22,
-              color: pageBorderColor(context),
-            ),
-          ];
-
     return SizedBox(
       width: 128,
       height: 128,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          PieChart(
-            PieChartData(
-              startDegreeOffset: -90,
-              sectionsSpace: 3,
-              centerSpaceRadius: 35,
-              borderData: FlBorderData(show: false),
-              sections: sections,
-            ),
+          AnalyticsChartReveal(
+            builder: (context, progress) {
+              final sections = hasMacroData
+                  ? [
+                      _macroSection(
+                        value: data.proteinCalories,
+                        percent: data.proteinPercent,
+                        color: _proteinColor,
+                        progress: progress,
+                      ),
+                      _macroSection(
+                        value: data.carbCalories,
+                        percent: data.carbPercent,
+                        color: _carbColor,
+                        progress: progress,
+                      ),
+                      _macroSection(
+                        value: data.fatCalories,
+                        percent: data.fatPercent,
+                        color: _fatColor,
+                        progress: progress,
+                      ),
+                    ]
+                  : [
+                      PieChartSectionData(
+                        value: 1,
+                        title: '',
+                        radius: 22 * progress,
+                        color: pageBorderColor(context),
+                      ),
+                    ];
+
+              return PieChart(
+                PieChartData(
+                  startDegreeOffset: -90,
+                  sectionsSpace: 3 * progress,
+                  centerSpaceRadius: 35,
+                  borderData: FlBorderData(show: false),
+                  sections: sections,
+                ),
+                duration: Duration.zero,
+              );
+            },
           ),
           Column(
             mainAxisSize: MainAxisSize.min,
@@ -542,13 +556,13 @@ class _MacroPieChart extends StatelessWidget {
     required double value,
     required double percent,
     required Color color,
-    required BuildContext context,
+    required double progress,
   }) {
     return PieChartSectionData(
       value: value,
-      title: percent >= 12 ? '${percent.round()}%' : '',
+      title: progress > 0.72 && percent >= 12 ? '${percent.round()}%' : '',
       color: color,
-      radius: 21,
+      radius: 21 * progress,
       titleStyle: const TextStyle(
         color: Colors.white,
         fontSize: 11,

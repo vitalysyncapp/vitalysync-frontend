@@ -77,6 +77,24 @@ class AboutPage extends StatelessWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 16),
+              _SectionCard(
+                title: 'Illustration credits',
+                children: const [
+                  _CreditBlock(
+                    icon: Icons.face_retouching_natural_outlined,
+                    title: 'Personas avatars',
+                    subtitle:
+                        'Personas by Draftbit, generated with DiceBear · CC BY 4.0',
+                  ),
+                  _CreditBlock(
+                    icon: Icons.badge_outlined,
+                    title: 'Professional avatars',
+                    subtitle:
+                        'Avataaars by Pablo Stanley, generated with DiceBear',
+                  ),
+                ],
+              ),
             ],
           ),
         ),

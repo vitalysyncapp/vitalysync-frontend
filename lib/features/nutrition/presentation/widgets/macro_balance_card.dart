@@ -19,8 +19,16 @@ class MacroBalanceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isCompact = screenWidth < 380;
+    final cornerRadius = isCompact ? 18.0 : 22.0;
 
     return WhiteCard(
+      key: const ValueKey('macro-balance-surface'),
+      borderRadius: BorderRadius.only(
+        topLeft: Radius.circular(cornerRadius),
+        topRight: Radius.circular(isCompact ? 50 : 62),
+        bottomLeft: Radius.circular(cornerRadius),
+        bottomRight: Radius.circular(cornerRadius),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

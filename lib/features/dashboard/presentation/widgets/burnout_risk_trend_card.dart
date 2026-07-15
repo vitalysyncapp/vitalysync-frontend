@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/burnout_score_api.dart';
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/analytics_animation.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 
 class BurnoutRiskTrendCard extends StatelessWidget {
@@ -61,26 +62,35 @@ class BurnoutRiskTrendCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          if (isLoading)
-            const SizedBox(height: 200, child: AppSkeletonChart(height: 190))
-          else if (points.isEmpty)
-            SizedBox(
+          AnalyticsContentSwitcher(
+            isLoading: isLoading,
+            loading: const SizedBox(
               height: 200,
-              child: Center(
-                child: Text(
-                  'No score history yet',
-                  style: TextStyle(
-                    color: pageSecondaryTextColor(context),
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            )
-          else
-            SizedBox(
-              height: 200,
-              child: LineChart(_chartData(context, points, sevenDayWindow)),
+              child: AppSkeletonChart(height: 190),
             ),
+            child: points.isEmpty
+                ? SizedBox(
+                    height: 200,
+                    child: Center(
+                      child: Text(
+                        'No score history yet',
+                        style: TextStyle(
+                          color: pageSecondaryTextColor(context),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  )
+                : SizedBox(
+                    height: 200,
+                    child: AnalyticsChartReveal(
+                      builder: (context, progress) => LineChart(
+                        _chartData(context, points, sevenDayWindow, progress),
+                        duration: Duration.zero,
+                      ),
+                    ),
+                  ),
+          ),
           _buildDimensionScoreRow(context),
           const SizedBox(height: 10),
           _buildPatternFooter(context, sevenDayWindow, pattern),
@@ -157,11 +167,11 @@ class BurnoutRiskTrendCard extends StatelessWidget {
           const SizedBox(height: 5),
           ClipRRect(
             borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
+            child: AnimatedAnalyticsProgress(
               value: score / 100,
               minHeight: 5,
               backgroundColor: dimension.color.withValues(alpha: 0.14),
-              valueColor: AlwaysStoppedAnimation<Color>(dimension.color),
+              color: dimension.color,
             ),
           ),
           const SizedBox(height: 4),
@@ -210,10 +220,14 @@ class BurnoutRiskTrendCard extends StatelessWidget {
     BuildContext context,
     List<BurnoutPatternPoint> points,
     BurnoutWindowSummary? window,
+    double animationProgress,
   ) {
     final spots = List.generate(
       points.length,
-      (index) => FlSpot(index.toDouble(), points[index].overallScore),
+      (index) => FlSpot(
+        index.toDouble(),
+        points[index].overallScore * animationProgress,
+      ),
     );
     final lineColor = _trendColor(window?.trendDirection);
     final maxX = math.max(1, points.length - 1).toDouble();

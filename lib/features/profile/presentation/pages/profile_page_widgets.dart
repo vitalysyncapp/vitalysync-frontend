@@ -10,7 +10,6 @@ class _ProfileHeaderCard extends StatelessWidget {
   final int? age;
   final String? gender;
   final VoidCallback onEditAvatar;
-  final VoidCallback onOpenStreak;
 
   const _ProfileHeaderCard({
     required this.userId,
@@ -22,7 +21,6 @@ class _ProfileHeaderCard extends StatelessWidget {
     required this.age,
     required this.gender,
     required this.onEditAvatar,
-    required this.onOpenStreak,
   });
 
   @override
@@ -256,25 +254,6 @@ class _ProfileHeaderCard extends StatelessWidget {
                     );
                   },
                 ),
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: onOpenStreak,
-                    icon: const Icon(Icons.local_fire_department_rounded),
-                    label: const Text('View streak card'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: const Color(0xFF1D8CA8),
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 13),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      textStyle: const TextStyle(fontWeight: FontWeight.w900),
-                    ),
-                  ),
-                ),
               ],
             ),
           ],
@@ -289,13 +268,11 @@ class _ProfileHeaderCard extends StatelessWidget {
 }
 
 class _ProfileStreakPreviewCard extends StatelessWidget {
-  final String username;
   final int currentStreak;
   final int longestStreak;
   final VoidCallback onOpenStreak;
 
   const _ProfileStreakPreviewCard({
-    required this.username,
     required this.currentStreak,
     required this.longestStreak,
     required this.onOpenStreak,
@@ -351,7 +328,7 @@ class _ProfileStreakPreviewCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '$username\'s privacy-safe streak card',
+                    'View streak card',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -362,7 +339,8 @@ class _ProfileStreakPreviewCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    '$currentStreak current days - best $longestStreak days',
+                    'Current: ${_daysValue(currentStreak)}  -  '
+                    'Best: ${_daysValue(longestStreak)}',
                     style: TextStyle(
                       color: pageSecondaryTextColor(context),
                       fontWeight: FontWeight.w700,
@@ -379,6 +357,10 @@ class _ProfileStreakPreviewCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _daysValue(int value) {
+    return value == 1 ? '1 day' : '$value days';
   }
 }
 

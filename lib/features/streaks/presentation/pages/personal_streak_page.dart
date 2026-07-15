@@ -24,10 +24,14 @@ class _PersonalStreakPageState extends State<PersonalStreakPage> {
   }
 
   Future<void> _refresh() async {
-    setState(() {
-      _future = StreakApi.fetchOverview();
-    });
-    await _future;
+    final nextFuture = StreakApi.fetchOverview();
+    setState(() => _future = nextFuture);
+
+    try {
+      await nextFuture;
+    } catch (_) {
+      // FutureBuilder owns the visible error state.
+    }
   }
 
   void _openLeaderboard() {
@@ -94,7 +98,10 @@ class _PersonalStreakPageState extends State<PersonalStreakPage> {
             }
 
             if (snapshot.hasError || !snapshot.hasData) {
-              return _StreakErrorState(onRetry: _refresh);
+              return _StreakErrorState(
+                error: snapshot.error,
+                onRetry: _refresh,
+              );
             }
 
             final overview = snapshot.data!;
@@ -323,7 +330,7 @@ class _LeaderboardCta extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    'Compare global, local, role, and goal cohorts.',
+                    'Compare global, local, and role streaks.',
                     style: TextStyle(
                       color: pageSecondaryTextColor(context),
                       fontWeight: FontWeight.w600,
@@ -446,12 +453,15 @@ class _EventRow extends StatelessWidget {
 }
 
 class _StreakErrorState extends StatelessWidget {
+  final Object? error;
   final Future<void> Function() onRetry;
 
-  const _StreakErrorState({required this.onRetry});
+  const _StreakErrorState({required this.error, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
+    final message = _streakErrorMessage(error);
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -473,6 +483,16 @@ class _StreakErrorState extends StatelessWidget {
                 fontSize: 18,
               ),
             ),
+            const SizedBox(height: 6),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: pageSecondaryTextColor(context),
+                fontWeight: FontWeight.w600,
+                height: 1.35,
+              ),
+            ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: onRetry,
@@ -484,4 +504,16 @@ class _StreakErrorState extends StatelessWidget {
       ),
     );
   }
+}
+
+String _streakErrorMessage(Object? error) {
+  if (error is StreakApiException) {
+    return error.message;
+  }
+
+  final message = error?.toString().replaceFirst('Exception: ', '').trim();
+
+  return message?.isNotEmpty == true
+      ? message!
+      : 'Unable to reach the VitalySync API right now.';
 }

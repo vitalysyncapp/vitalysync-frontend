@@ -1,0 +1,19 @@
+Personas avatar assets
+
+The SVG files in this directory are deterministic variants generated from
+the DiceBear Personas avatar style using seeds VitalySync-01 through
+VitalySync-24.
+
+"Personas by Draftbit" was created by Draftbit and is licensed under the
+Creative Commons Attribution 4.0 International license (CC BY 4.0). These
+files are DiceBear-generated remixes of that work.
+
+Source:
+https://personas.draftbit.com/
+https://www.dicebear.com/styles/personas/
+
+License:
+https://creativecommons.org/licenses/by/4.0/
+
+Generation endpoint:
+https://api.dicebear.com/10.x/personas/svg

@@ -645,11 +645,9 @@ class _ProfilePageState extends State<ProfilePage> {
                       age: _age,
                       gender: _gender,
                       onEditAvatar: _openEditAvatarPage,
-                      onOpenStreak: _openStreakPage,
                     ),
                     const SizedBox(height: 18),
                     _ProfileStreakPreviewCard(
-                      username: _username,
                       currentStreak: _currentStreak,
                       longestStreak: _longestStreak,
                       onOpenStreak: _openStreakPage,

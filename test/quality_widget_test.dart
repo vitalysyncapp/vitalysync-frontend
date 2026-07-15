@@ -113,12 +113,13 @@ void main() {
       ),
     );
 
-    expect(find.text("Today's nutrition"), findsOneWidget);
-    expect(find.text('1450'), findsOneWidget);
+    expect(find.text('Eaten today'), findsOneWidget);
+    expect(find.text('1,450 kcal'), findsOneWidget);
+    expect(find.text('750'), findsOneWidget);
     expect(find.text('Protein'), findsOneWidget);
     expect(find.text('Carbs'), findsOneWidget);
-    expect(find.text('Fats'), findsOneWidget);
-    expect(find.text('Goal: 2,200'), findsOneWidget);
+    expect(find.text('Fat'), findsOneWidget);
+    expect(find.text('2,200 kcal'), findsOneWidget);
   });
 
   testWidgets('profile wellness and goals sections are separated', (

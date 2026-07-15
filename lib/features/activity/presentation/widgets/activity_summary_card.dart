@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/analytics_animation.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../data/activity_api.dart';
 import '../../data/activity_log.dart';
@@ -434,120 +435,117 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
           ),
         ],
       ),
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 220),
-        child: _isLoading
-            ? const SizedBox(
-                key: ValueKey('weekly-activity-loading'),
-                height: 110,
-                child: AppSkeletonRows(count: 2, showLeading: true),
-              )
-            : Column(
-                key: ValueKey('weekly-activity-${log.logDate}-${log.steps}'),
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: const Color(
-                            0xFF1EAD83,
-                          ).withValues(alpha: 0.13),
-                          borderRadius: BorderRadius.circular(13),
-                        ),
-                        child: const Icon(
-                          Icons.insights_rounded,
-                          color: Color(0xFF1EAD83),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Weekly step analytics',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: widget.compact ? 14.5 : 15.5,
-                                fontWeight: FontWeight.w800,
-                                color: pagePrimaryTextColor(context),
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              syncLabel,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: pageSecondaryTextColor(context),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+      child: AnalyticsContentSwitcher(
+        isLoading: _isLoading,
+        contentKey: '${log.logDate}-${log.steps}',
+        loading: const SizedBox(
+          height: 110,
+          child: AppSkeletonRows(count: 2, showLeading: true),
+        ),
+        child: Column(
+          key: ValueKey('weekly-activity-${log.logDate}-${log.steps}'),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1EAD83).withValues(alpha: 0.13),
+                    borderRadius: BorderRadius.circular(13),
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _ActivityMetric(
-                          label: 'Total steps',
-                          value: numberFormat.format(totalSteps),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _ActivityMetric(
-                          label: 'Daily average',
-                          value: numberFormat.format(averageSteps),
-                        ),
-                      ),
-                    ],
+                  child: const Icon(
+                    Icons.insights_rounded,
+                    color: Color(0xFF1EAD83),
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      _StatusPill(
-                        label:
-                            '$bestDayLabel best: ${numberFormat.format(bestDay.steps)}',
-                        color: const Color(0xFF0EA5E9),
-                      ),
-                      const SizedBox(width: 8),
-                      _StatusPill(label: statusLabel, color: statusColor),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '$goalDays of ${weeklyLogs.length} goal days reached',
+                        'Weekly step analytics',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: widget.compact ? 14.5 : 15.5,
                           fontWeight: FontWeight.w800,
                           color: pagePrimaryTextColor(context),
                         ),
                       ),
+                      const SizedBox(height: 2),
+                      Text(
+                        syncLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: pageSecondaryTextColor(context),
+                        ),
+                      ),
                     ],
                   ),
-                  if (_errorMessage != null) ...[
-                    const SizedBox(height: 10),
-                    Text(
-                      _errorMessage!,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFFDC2626),
-                        height: 1.35,
-                      ),
-                    ),
-                  ],
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _ActivityMetric(
+                    label: 'Total steps',
+                    value: numberFormat.format(totalSteps),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _ActivityMetric(
+                    label: 'Daily average',
+                    value: numberFormat.format(averageSteps),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _StatusPill(
+                  label:
+                      '$bestDayLabel best: ${numberFormat.format(bestDay.steps)}',
+                  color: const Color(0xFF0EA5E9),
+                ),
+                const SizedBox(width: 8),
+                _StatusPill(label: statusLabel, color: statusColor),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Text(
+                  '$goalDays of ${weeklyLogs.length} goal days reached',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: pagePrimaryTextColor(context),
+                  ),
+                ),
+              ],
+            ),
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 10),
+              Text(
+                _errorMessage!,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFFDC2626),
+                  height: 1.35,
+                ),
               ),
+            ],
+          ],
+        ),
       ),
     );
   }

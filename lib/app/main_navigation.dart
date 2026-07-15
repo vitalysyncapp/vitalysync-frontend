@@ -79,6 +79,7 @@ class _MainNavigationState extends State<MainNavigation>
 
   late MainTab _currentTab;
   late int _nutritionLogFocusRequest;
+  late final LogPageController _logPageController;
   late final List<Widget> _pages;
   late final Map<CoreTutorialTarget, GlobalKey> _tutorialTargetKeys;
   Timer? _offlineSyncTimer;
@@ -98,10 +99,11 @@ class _MainNavigationState extends State<MainNavigation>
     WidgetsBinding.instance.addObserver(this);
     _currentTab = widget.initialTab;
     _nutritionLogFocusRequest = widget.openNutritionLogOnStart ? 1 : 0;
+    _logPageController = LogPageController();
     _pages = [
       HomePage(onProfileTap: () => _selectTab(MainTab.profile)),
       const NutritionPage(),
-      const LogPage(),
+      LogPage(controller: _logPageController),
       const Dashboard(),
       const ProfilePage(),
     ];
@@ -153,6 +155,7 @@ class _MainNavigationState extends State<MainNavigation>
     BurnoutScoreApi.refreshSignal.removeListener(_handleBurnoutInputsChanged);
     _offlineSyncTimer?.cancel();
     _removeTutorialOverlay();
+    _logPageController.dispose();
     super.dispose();
   }
 
@@ -492,80 +495,107 @@ class _MainNavigationState extends State<MainNavigation>
       nutritionLogFocusRequest: _nutritionLogFocusRequest,
       onNutritionLogRequested: _openNutritionLog,
       onLogRequested: _openLogPage,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Scaffold(
-            extendBody: false,
-            body: Stack(
-              fit: StackFit.expand,
-              children: [
-                ...List.generate(_pages.length, (index) {
-                  final tab = MainTab.values[index];
-                  final isActive = tab == _currentTab;
-                  final hiddenOffset = index < _currentTab.index
-                      ? const Offset(-0.05, 0.02)
-                      : const Offset(0.05, 0.02);
+      child: ValueListenableBuilder<LogNavigationState>(
+        valueListenable: _logPageController,
+        builder: (context, logNavigationState, _) {
+          final isLogSelected = _currentTab == MainTab.log;
+          final logLabel = !isLogSelected
+              ? 'Log'
+              : logNavigationState.isSaving
+              ? 'Saving'
+              : logNavigationState.canSave
+              ? logNavigationState.hasLoggedToday
+                    ? 'Update'
+                    : 'Save'
+              : logNavigationState.hasLoggedToday
+              ? 'Done'
+              : 'Log';
 
-                  return IgnorePointer(
-                    ignoring: !isActive,
-                    child: AnimatedSlide(
-                      duration: _pageTransitionDuration,
-                      curve: Curves.easeOutCubic,
-                      offset: isActive ? Offset.zero : hiddenOffset,
-                      child: AnimatedScale(
-                        duration: _pageTransitionDuration,
-                        curve: Curves.easeOutCubic,
-                        scale: isActive ? 1 : 0.985,
-                        child: AnimatedOpacity(
-                          duration: const Duration(milliseconds: 260),
-                          curve: Curves.easeOut,
-                          opacity: isActive ? 1 : 0,
-                          child: ExcludeSemantics(
-                            excluding: !isActive,
-                            child: TickerMode(
-                              enabled: isActive,
-                              child: KeyedSubtree(
-                                key:
-                                    _tutorialTargetKeys[_tutorialTargetForPage(
-                                      tab,
-                                    )]!,
-                                child: _pages[index],
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              Scaffold(
+                extendBody: false,
+                body: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    ...List.generate(_pages.length, (index) {
+                      final tab = MainTab.values[index];
+                      final isActive = tab == _currentTab;
+                      final hiddenOffset = index < _currentTab.index
+                          ? const Offset(-0.05, 0.02)
+                          : const Offset(0.05, 0.02);
+
+                      return IgnorePointer(
+                        ignoring: !isActive,
+                        child: AnimatedSlide(
+                          duration: _pageTransitionDuration,
+                          curve: Curves.easeOutCubic,
+                          offset: isActive ? Offset.zero : hiddenOffset,
+                          child: AnimatedScale(
+                            duration: _pageTransitionDuration,
+                            curve: Curves.easeOutCubic,
+                            scale: isActive ? 1 : 0.985,
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 260),
+                              curve: Curves.easeOut,
+                              opacity: isActive ? 1 : 0,
+                              child: ExcludeSemantics(
+                                excluding: !isActive,
+                                child: TickerMode(
+                                  enabled: isActive,
+                                  child: KeyedSubtree(
+                                    key:
+                                        _tutorialTargetKeys[_tutorialTargetForPage(
+                                          tab,
+                                        )]!,
+                                    child: _pages[index],
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
+                      );
+                    }),
+                    KeyedSubtree(
+                      key: _tutorialTargetKeys[CoreTutorialTarget.assistant],
+                      child: FloatingSmartNudgeAssistant(
+                        message:
+                            "You're doing well today. Log sleep and hydration to keep your streak going.",
+                        buttonSize: _currentTab == MainTab.log ? 46 : 54,
+                        onLogMealRequested: _openNutritionLog,
+                        onLogPageRequested: _openLogPage,
                       ),
                     ),
-                  );
-                }),
-                KeyedSubtree(
-                  key: _tutorialTargetKeys[CoreTutorialTarget.assistant],
-                  child: FloatingSmartNudgeAssistant(
-                    message:
-                        "You're doing well today. Log sleep and hydration to keep your streak going.",
-                    buttonSize: _currentTab == MainTab.log ? 46 : 54,
-                    onLogMealRequested: _openNutritionLog,
-                    onLogPageRequested: _openLogPage,
-                  ),
+                  ],
                 ),
-              ],
-            ),
-            floatingActionButton: buildLogNavigationButton(
-              context: context,
-              isSelected: _currentTab == MainTab.log,
-              onTap: () => _selectTab(MainTab.log),
-            ),
-            floatingActionButtonLocation:
-                FloatingActionButtonLocation.centerDocked,
-            bottomNavigationBar: buildBottomNav(
-              context: context,
-              currentTab: _currentTab,
-              onTap: _selectTab,
-              tutorialKey: _tutorialTargetKeys[CoreTutorialTarget.navigation],
-            ),
-          ),
-        ],
+                floatingActionButton: buildLogNavigationButton(
+                  context: context,
+                  isSelected: isLogSelected,
+                  hasLoggedToday: logNavigationState.hasLoggedToday,
+                  canSave: logNavigationState.canSave,
+                  isSaving: logNavigationState.isSaving,
+                  onTap: () => _selectTab(MainTab.log),
+                  onSave: () {
+                    unawaited(_logPageController.save());
+                  },
+                ),
+                floatingActionButtonLocation:
+                    FloatingActionButtonLocation.centerDocked,
+                bottomNavigationBar: buildBottomNav(
+                  context: context,
+                  currentTab: _currentTab,
+                  onTap: _selectTab,
+                  logLabel: logLabel,
+                  hasLoggedToday: logNavigationState.hasLoggedToday,
+                  tutorialKey:
+                      _tutorialTargetKeys[CoreTutorialTarget.navigation],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

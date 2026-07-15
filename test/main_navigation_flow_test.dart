@@ -149,6 +149,83 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('selected log notch reuses save action and shows completion', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: _LogNotchHarness()));
+    await tester.pump();
+
+    expect(find.byIcon(Icons.save_rounded), findsOneWidget);
+    expect(find.text('Save'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('main-nav-log')));
+    await tester.pump();
+
+    final state = tester.state<_LogNotchHarnessState>(
+      find.byType(_LogNotchHarness),
+    );
+    expect(state.saveCount, 1);
+    expect(state.navigationCount, 0);
+
+    state.markLoggedToday();
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey('log-nav-complete-badge')),
+      findsOneWidget,
+    );
+    expect(find.text('Done'), findsOneWidget);
+
+    final circle = tester.widget<DecoratedBox>(
+      find
+          .descendant(
+            of: find.byKey(const ValueKey('main-nav-log')),
+            matching: find.byType(DecoratedBox),
+          )
+          .first,
+    );
+    final gradient = (circle.decoration as BoxDecoration).gradient;
+    expect(gradient, isA<LinearGradient>());
+    expect((gradient! as LinearGradient).colors, const [
+      Color(0xFF119B68),
+      Color(0xFF62D98D),
+    ]);
+    expect(tester.takeException(), isNull);
+  });
+
+  test(
+    'log page controller only invokes save while the form is ready',
+    () async {
+      final logController = LogPageController();
+      var saveCount = 0;
+      Future<void> save() async => saveCount++;
+      logController.bindSaveAction(save);
+
+      await logController.save();
+      expect(saveCount, 0);
+
+      logController.updateState(
+        isLoading: false,
+        hasLoggedToday: false,
+        isSaving: false,
+        isFormVisible: true,
+      );
+      await logController.save();
+      expect(saveCount, 1);
+
+      logController.updateState(
+        isLoading: false,
+        hasLoggedToday: true,
+        isSaving: false,
+        isFormVisible: false,
+      );
+      await logController.save();
+      expect(saveCount, 1);
+
+      logController.dispose();
+    },
+  );
+
   testWidgets('profile owns the settings navigation action', (tester) async {
     configureLoggedInSession();
     await pumpMainNavigation(tester, initialTab: MainTab.profile);
@@ -258,6 +335,49 @@ class _BottomNavHarnessState extends State<_BottomNavHarness> {
         context: context,
         currentTab: currentTab,
         onTap: (tab) => setState(() => currentTab = tab),
+      ),
+    );
+  }
+}
+
+class _LogNotchHarness extends StatefulWidget {
+  const _LogNotchHarness();
+
+  @override
+  State<_LogNotchHarness> createState() => _LogNotchHarnessState();
+}
+
+class _LogNotchHarnessState extends State<_LogNotchHarness> {
+  int saveCount = 0;
+  int navigationCount = 0;
+  bool hasLoggedToday = false;
+  bool canSave = true;
+
+  void markLoggedToday() {
+    setState(() {
+      hasLoggedToday = true;
+      canSave = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      floatingActionButton: buildLogNavigationButton(
+        context: context,
+        isSelected: true,
+        hasLoggedToday: hasLoggedToday,
+        canSave: canSave,
+        onTap: () => navigationCount++,
+        onSave: () => setState(() => saveCount++),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: buildBottomNav(
+        context: context,
+        currentTab: MainTab.log,
+        onTap: (_) {},
+        logLabel: hasLoggedToday ? 'Done' : 'Save',
+        hasLoggedToday: hasLoggedToday,
       ),
     );
   }

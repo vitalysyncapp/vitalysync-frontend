@@ -7,6 +7,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 enum ProfileAvatarKind { suggested, bundled, custom }
 
+enum ProfileAvatarCategory {
+  student,
+  workingProfessional,
+  youngProfessional,
+  freelancer,
+  personas,
+}
+
 @immutable
 class ProfileAvatarSelection {
   const ProfileAvatarSelection._({
@@ -36,12 +44,14 @@ class AvatarCatalogEntry {
     required this.assetPath,
     required this.semanticLabel,
     required this.frameColor,
+    this.category = ProfileAvatarCategory.personas,
   });
 
   final String id;
   final String assetPath;
   final String semanticLabel;
   final Color frameColor;
+  final ProfileAvatarCategory category;
 }
 
 class ProfileAvatarCatalog {
@@ -49,155 +59,275 @@ class ProfileAvatarCatalog {
 
   static const entries = <AvatarCatalogEntry>[
     AvatarCatalogEntry(
-      id: 'open_peeps_01',
-      assetPath: 'assets/images/avatars/open_peeps_01.svg',
+      id: 'personas_01',
+      assetPath: 'assets/images/avatars/personas_01.svg',
       semanticLabel: 'Avatar option 1',
       frameColor: Color(0xFFD9F7F3),
     ),
     AvatarCatalogEntry(
-      id: 'open_peeps_02',
-      assetPath: 'assets/images/avatars/open_peeps_02.svg',
+      id: 'personas_02',
+      assetPath: 'assets/images/avatars/personas_02.svg',
       semanticLabel: 'Avatar option 2',
       frameColor: Color(0xFFDDF4FF),
     ),
     AvatarCatalogEntry(
-      id: 'open_peeps_03',
-      assetPath: 'assets/images/avatars/open_peeps_03.svg',
+      id: 'personas_03',
+      assetPath: 'assets/images/avatars/personas_03.svg',
       semanticLabel: 'Avatar option 3',
       frameColor: Color(0xFFE6E8FF),
     ),
     AvatarCatalogEntry(
-      id: 'open_peeps_04',
-      assetPath: 'assets/images/avatars/open_peeps_04.svg',
+      id: 'personas_04',
+      assetPath: 'assets/images/avatars/personas_04.svg',
       semanticLabel: 'Avatar option 4',
       frameColor: Color(0xFFEAF7E8),
     ),
     AvatarCatalogEntry(
-      id: 'open_peeps_05',
-      assetPath: 'assets/images/avatars/open_peeps_05.svg',
+      id: 'personas_05',
+      assetPath: 'assets/images/avatars/personas_05.svg',
       semanticLabel: 'Avatar option 5',
       frameColor: Color(0xFFFFF1D6),
     ),
     AvatarCatalogEntry(
-      id: 'open_peeps_06',
-      assetPath: 'assets/images/avatars/open_peeps_06.svg',
+      id: 'personas_06',
+      assetPath: 'assets/images/avatars/personas_06.svg',
       semanticLabel: 'Avatar option 6',
       frameColor: Color(0xFFF3E7FF),
     ),
     AvatarCatalogEntry(
-      id: 'open_peeps_07',
-      assetPath: 'assets/images/avatars/open_peeps_07.svg',
+      id: 'personas_07',
+      assetPath: 'assets/images/avatars/personas_07.svg',
       semanticLabel: 'Avatar option 7',
       frameColor: Color(0xFFD9F7F3),
     ),
     AvatarCatalogEntry(
-      id: 'open_peeps_08',
-      assetPath: 'assets/images/avatars/open_peeps_08.svg',
+      id: 'personas_08',
+      assetPath: 'assets/images/avatars/personas_08.svg',
       semanticLabel: 'Avatar option 8',
       frameColor: Color(0xFFDDF4FF),
     ),
     AvatarCatalogEntry(
-      id: 'open_peeps_09',
-      assetPath: 'assets/images/avatars/open_peeps_09.svg',
+      id: 'personas_09',
+      assetPath: 'assets/images/avatars/personas_09.svg',
       semanticLabel: 'Avatar option 9',
       frameColor: Color(0xFFE6E8FF),
     ),
     AvatarCatalogEntry(
-      id: 'open_peeps_10',
-      assetPath: 'assets/images/avatars/open_peeps_10.svg',
+      id: 'personas_10',
+      assetPath: 'assets/images/avatars/personas_10.svg',
       semanticLabel: 'Avatar option 10',
       frameColor: Color(0xFFEAF7E8),
     ),
     AvatarCatalogEntry(
-      id: 'open_peeps_11',
-      assetPath: 'assets/images/avatars/open_peeps_11.svg',
+      id: 'personas_11',
+      assetPath: 'assets/images/avatars/personas_11.svg',
       semanticLabel: 'Avatar option 11',
       frameColor: Color(0xFFFFF1D6),
     ),
     AvatarCatalogEntry(
-      id: 'open_peeps_12',
-      assetPath: 'assets/images/avatars/open_peeps_12.svg',
+      id: 'personas_12',
+      assetPath: 'assets/images/avatars/personas_12.svg',
       semanticLabel: 'Avatar option 12',
       frameColor: Color(0xFFF3E7FF),
     ),
     AvatarCatalogEntry(
-      id: 'open_peeps_13',
-      assetPath: 'assets/images/avatars/open_peeps_13.svg',
+      id: 'personas_13',
+      assetPath: 'assets/images/avatars/personas_13.svg',
       semanticLabel: 'Avatar option 13',
       frameColor: Color(0xFFD9F7F3),
     ),
     AvatarCatalogEntry(
-      id: 'open_peeps_14',
-      assetPath: 'assets/images/avatars/open_peeps_14.svg',
+      id: 'personas_14',
+      assetPath: 'assets/images/avatars/personas_14.svg',
       semanticLabel: 'Avatar option 14',
       frameColor: Color(0xFFDDF4FF),
     ),
     AvatarCatalogEntry(
-      id: 'open_peeps_15',
-      assetPath: 'assets/images/avatars/open_peeps_15.svg',
+      id: 'personas_15',
+      assetPath: 'assets/images/avatars/personas_15.svg',
       semanticLabel: 'Avatar option 15',
       frameColor: Color(0xFFE6E8FF),
     ),
     AvatarCatalogEntry(
-      id: 'open_peeps_16',
-      assetPath: 'assets/images/avatars/open_peeps_16.svg',
+      id: 'personas_16',
+      assetPath: 'assets/images/avatars/personas_16.svg',
       semanticLabel: 'Avatar option 16',
       frameColor: Color(0xFFEAF7E8),
     ),
     AvatarCatalogEntry(
-      id: 'open_peeps_17',
-      assetPath: 'assets/images/avatars/open_peeps_17.svg',
+      id: 'personas_17',
+      assetPath: 'assets/images/avatars/personas_17.svg',
       semanticLabel: 'Avatar option 17',
       frameColor: Color(0xFFFFF1D6),
     ),
     AvatarCatalogEntry(
-      id: 'open_peeps_18',
-      assetPath: 'assets/images/avatars/open_peeps_18.svg',
+      id: 'personas_18',
+      assetPath: 'assets/images/avatars/personas_18.svg',
       semanticLabel: 'Avatar option 18',
       frameColor: Color(0xFFF3E7FF),
     ),
     AvatarCatalogEntry(
-      id: 'open_peeps_19',
-      assetPath: 'assets/images/avatars/open_peeps_19.svg',
+      id: 'personas_19',
+      assetPath: 'assets/images/avatars/personas_19.svg',
       semanticLabel: 'Avatar option 19',
       frameColor: Color(0xFFD9F7F3),
     ),
     AvatarCatalogEntry(
-      id: 'open_peeps_20',
-      assetPath: 'assets/images/avatars/open_peeps_20.svg',
+      id: 'personas_20',
+      assetPath: 'assets/images/avatars/personas_20.svg',
       semanticLabel: 'Avatar option 20',
       frameColor: Color(0xFFDDF4FF),
     ),
     AvatarCatalogEntry(
-      id: 'open_peeps_21',
-      assetPath: 'assets/images/avatars/open_peeps_21.svg',
+      id: 'personas_21',
+      assetPath: 'assets/images/avatars/personas_21.svg',
       semanticLabel: 'Avatar option 21',
       frameColor: Color(0xFFE6E8FF),
     ),
     AvatarCatalogEntry(
-      id: 'open_peeps_22',
-      assetPath: 'assets/images/avatars/open_peeps_22.svg',
+      id: 'personas_22',
+      assetPath: 'assets/images/avatars/personas_22.svg',
       semanticLabel: 'Avatar option 22',
       frameColor: Color(0xFFEAF7E8),
     ),
     AvatarCatalogEntry(
-      id: 'open_peeps_23',
-      assetPath: 'assets/images/avatars/open_peeps_23.svg',
+      id: 'personas_23',
+      assetPath: 'assets/images/avatars/personas_23.svg',
       semanticLabel: 'Avatar option 23',
       frameColor: Color(0xFFFFF1D6),
     ),
     AvatarCatalogEntry(
-      id: 'open_peeps_24',
-      assetPath: 'assets/images/avatars/open_peeps_24.svg',
+      id: 'personas_24',
+      assetPath: 'assets/images/avatars/personas_24.svg',
       semanticLabel: 'Avatar option 24',
       frameColor: Color(0xFFF3E7FF),
     ),
+    AvatarCatalogEntry(
+      id: 'avataaars_student_01',
+      assetPath: 'assets/images/avatars/avataaars_student_01.svg',
+      semanticLabel: 'Student avatar option 1',
+      frameColor: Color(0xFFDDF4FF),
+      category: ProfileAvatarCategory.student,
+    ),
+    AvatarCatalogEntry(
+      id: 'avataaars_student_02',
+      assetPath: 'assets/images/avatars/avataaars_student_02.svg',
+      semanticLabel: 'Student avatar option 2',
+      frameColor: Color(0xFFE6E8FF),
+      category: ProfileAvatarCategory.student,
+    ),
+    AvatarCatalogEntry(
+      id: 'avataaars_student_03',
+      assetPath: 'assets/images/avatars/avataaars_student_03.svg',
+      semanticLabel: 'Student avatar option 3',
+      frameColor: Color(0xFFD9F7F3),
+      category: ProfileAvatarCategory.student,
+    ),
+    AvatarCatalogEntry(
+      id: 'avataaars_student_04',
+      assetPath: 'assets/images/avatars/avataaars_student_04.svg',
+      semanticLabel: 'Student avatar option 4',
+      frameColor: Color(0xFFEAF7E8),
+      category: ProfileAvatarCategory.student,
+    ),
+    AvatarCatalogEntry(
+      id: 'avataaars_working_professional_01',
+      assetPath: 'assets/images/avatars/avataaars_working_professional_01.svg',
+      semanticLabel: 'Working professional avatar option 1',
+      frameColor: Color(0xFFE8EEF4),
+      category: ProfileAvatarCategory.workingProfessional,
+    ),
+    AvatarCatalogEntry(
+      id: 'avataaars_working_professional_02',
+      assetPath: 'assets/images/avatars/avataaars_working_professional_02.svg',
+      semanticLabel: 'Working professional avatar option 2',
+      frameColor: Color(0xFFE7F1EF),
+      category: ProfileAvatarCategory.workingProfessional,
+    ),
+    AvatarCatalogEntry(
+      id: 'avataaars_working_professional_03',
+      assetPath: 'assets/images/avatars/avataaars_working_professional_03.svg',
+      semanticLabel: 'Working professional avatar option 3',
+      frameColor: Color(0xFFEAF0F7),
+      category: ProfileAvatarCategory.workingProfessional,
+    ),
+    AvatarCatalogEntry(
+      id: 'avataaars_working_professional_04',
+      assetPath: 'assets/images/avatars/avataaars_working_professional_04.svg',
+      semanticLabel: 'Working professional avatar option 4',
+      frameColor: Color(0xFFE7EDF8),
+      category: ProfileAvatarCategory.workingProfessional,
+    ),
+    AvatarCatalogEntry(
+      id: 'avataaars_young_professional_01',
+      assetPath: 'assets/images/avatars/avataaars_young_professional_01.svg',
+      semanticLabel: 'Young professional avatar option 1',
+      frameColor: Color(0xFFDDF4FF),
+      category: ProfileAvatarCategory.youngProfessional,
+    ),
+    AvatarCatalogEntry(
+      id: 'avataaars_young_professional_02',
+      assetPath: 'assets/images/avatars/avataaars_young_professional_02.svg',
+      semanticLabel: 'Young professional avatar option 2',
+      frameColor: Color(0xFFE6E8FF),
+      category: ProfileAvatarCategory.youngProfessional,
+    ),
+    AvatarCatalogEntry(
+      id: 'avataaars_young_professional_03',
+      assetPath: 'assets/images/avatars/avataaars_young_professional_03.svg',
+      semanticLabel: 'Young professional avatar option 3',
+      frameColor: Color(0xFFD9F7F3),
+      category: ProfileAvatarCategory.youngProfessional,
+    ),
+    AvatarCatalogEntry(
+      id: 'avataaars_young_professional_04',
+      assetPath: 'assets/images/avatars/avataaars_young_professional_04.svg',
+      semanticLabel: 'Young professional avatar option 4',
+      frameColor: Color(0xFFEAF7E8),
+      category: ProfileAvatarCategory.youngProfessional,
+    ),
+    AvatarCatalogEntry(
+      id: 'avataaars_freelancer_01',
+      assetPath: 'assets/images/avatars/avataaars_freelancer_01.svg',
+      semanticLabel: 'Freelancer avatar option 1',
+      frameColor: Color(0xFFD9F7F3),
+      category: ProfileAvatarCategory.freelancer,
+    ),
+    AvatarCatalogEntry(
+      id: 'avataaars_freelancer_02',
+      assetPath: 'assets/images/avatars/avataaars_freelancer_02.svg',
+      semanticLabel: 'Freelancer avatar option 2',
+      frameColor: Color(0xFFFFF1D6),
+      category: ProfileAvatarCategory.freelancer,
+    ),
+    AvatarCatalogEntry(
+      id: 'avataaars_freelancer_03',
+      assetPath: 'assets/images/avatars/avataaars_freelancer_03.svg',
+      semanticLabel: 'Freelancer avatar option 3',
+      frameColor: Color(0xFFF3E7FF),
+      category: ProfileAvatarCategory.freelancer,
+    ),
+    AvatarCatalogEntry(
+      id: 'avataaars_freelancer_04',
+      assetPath: 'assets/images/avatars/avataaars_freelancer_04.svg',
+      semanticLabel: 'Freelancer avatar option 4',
+      frameColor: Color(0xFFDDF4FF),
+      category: ProfileAvatarCategory.freelancer,
+    ),
   ];
+
+  static List<AvatarCatalogEntry> entriesFor(ProfileAvatarCategory category) =>
+      entries
+          .where((entry) => entry.category == category)
+          .toList(growable: false);
 
   static AvatarCatalogEntry? findById(String? id) {
     if (id == null || id.isEmpty) return null;
+    final canonicalId = id.startsWith('open_peeps_')
+        ? id.replaceFirst('open_peeps_', 'personas_')
+        : id;
     for (final entry in entries) {
-      if (entry.id == id) return entry;
+      if (entry.id == canonicalId) return entry;
     }
     return null;
   }
@@ -206,13 +336,17 @@ class ProfileAvatarCatalog {
 String suggestedProfileAvatarAsset(String? gender, String? userType) {
   if (gender == null || userType == null) return 'assets/images/user.png';
 
-  if (gender.toLowerCase() == 'male') {
-    return userType == 'Student'
+  final normalizedGender = gender.trim().toLowerCase();
+  final normalizedUserType = userType.trim().toLowerCase();
+  final isStudent = normalizedUserType == 'student';
+
+  if (normalizedGender == 'male') {
+    return isStudent
         ? 'assets/images/male Student.png'
         : 'assets/images/business-man.png';
   }
-  if (gender.toLowerCase() == 'female') {
-    return userType == 'Student'
+  if (normalizedGender == 'female') {
+    return isStudent
         ? 'assets/images/female Student.png'
         : 'assets/images/businesswoman.png';
   }
@@ -275,10 +409,11 @@ class ProfileAvatarStore {
       switch (decoded['kind']) {
         case 'bundled':
           final avatarId = decoded['avatar_id']?.toString();
-          if (ProfileAvatarCatalog.findById(avatarId) == null) {
+          final entry = ProfileAvatarCatalog.findById(avatarId);
+          if (entry == null) {
             throw const FormatException('Unknown avatar ID');
           }
-          return ProfileAvatarSelection.bundled(avatarId!);
+          return ProfileAvatarSelection.bundled(entry.id);
         case 'custom':
           final encodedPhoto = decoded['photo_base64']?.toString() ?? '';
           final bytes = base64Decode(encodedPhoto);
@@ -299,14 +434,15 @@ class ProfileAvatarStore {
   }
 
   Future<void> saveBundled(int userId, String avatarId) async {
-    if (userId <= 0 || ProfileAvatarCatalog.findById(avatarId) == null) {
+    final entry = ProfileAvatarCatalog.findById(avatarId);
+    if (userId <= 0 || entry == null) {
       throw const ProfileAvatarException('That avatar is not available.');
     }
 
     await _write(userId, <String, dynamic>{
       'version': _version,
       'kind': 'bundled',
-      'avatar_id': avatarId,
+      'avatar_id': entry.id,
     });
   }
 
@@ -405,11 +541,15 @@ class ProfileAvatarController {
   }
 
   Future<void> saveBundled(int userId, String avatarId) async {
-    await _store.saveBundled(userId, avatarId);
+    final entry = ProfileAvatarCatalog.findById(avatarId);
+    if (entry == null) {
+      throw const ProfileAvatarException('That avatar is not available.');
+    }
+    await _store.saveBundled(userId, entry.id);
     _loadGeneration++;
     notifier.value = ProfileAvatarState(
       userId: userId,
-      selection: ProfileAvatarSelection.bundled(avatarId),
+      selection: ProfileAvatarSelection.bundled(entry.id),
       isLoaded: true,
     );
   }

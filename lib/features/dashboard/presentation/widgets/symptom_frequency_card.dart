@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/analytics_animation.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
+import '../../../../shared/widgets/reveal_on_build.dart';
 import '../../data/weekly_user_metrics.dart';
 
 class SymptomFrequencyCard extends StatefulWidget {
@@ -62,15 +64,22 @@ class _SymptomFrequencyCardState extends State<SymptomFrequencyCard> {
                   ),
                 )
               else
-                ...visibleRows.map(
-                  (entry) => _symptomRow(
-                    context: context,
-                    label: entry.key,
-                    days: '${entry.value} ${entry.value == 1 ? 'day' : 'days'}',
-                    progress: (entry.value / 7).clamp(0.0, 1.0),
-                    color: _colorFor(entry.value),
-                  ),
-                ),
+                ...List.generate(visibleRows.length, (index) {
+                  final entry = visibleRows[index];
+                  return RevealOnBuild(
+                    delay: Duration(milliseconds: 65 * index),
+                    duration: const Duration(milliseconds: 360),
+                    beginOffset: const Offset(0, 0.08),
+                    child: _symptomRow(
+                      context: context,
+                      label: entry.key,
+                      days:
+                          '${entry.value} ${entry.value == 1 ? 'day' : 'days'}',
+                      progress: (entry.value / 7).clamp(0.0, 1.0),
+                      color: _colorFor(entry.value),
+                    ),
+                  );
+                }),
             ],
           ),
         );
@@ -115,11 +124,11 @@ class _SymptomFrequencyCardState extends State<SymptomFrequencyCard> {
           const SizedBox(height: 6),
           ClipRRect(
             borderRadius: BorderRadius.circular(20),
-            child: LinearProgressIndicator(
+            child: AnimatedAnalyticsProgress(
               value: progress,
               minHeight: 8,
               backgroundColor: pageBorderColor(context),
-              valueColor: AlwaysStoppedAnimation<Color>(color),
+              color: color,
             ),
           ),
         ],

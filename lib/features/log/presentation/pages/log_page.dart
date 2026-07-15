@@ -23,8 +23,72 @@ const _wellnessConfettiColors = [
   Color(0xFFE879F9),
 ];
 
+@immutable
+class LogNavigationState {
+  final bool isLoading;
+  final bool hasLoggedToday;
+  final bool isSaving;
+  final bool isFormVisible;
+
+  const LogNavigationState({
+    this.isLoading = true,
+    this.hasLoggedToday = false,
+    this.isSaving = false,
+    this.isFormVisible = false,
+  });
+
+  bool get canSave => !isLoading && !isSaving && isFormVisible;
+}
+
+class LogPageController extends ValueNotifier<LogNavigationState> {
+  LogPageController() : super(const LogNavigationState());
+
+  Future<void> Function()? _saveAction;
+
+  void bindSaveAction(Future<void> Function() saveAction) {
+    _saveAction = saveAction;
+  }
+
+  void unbindSaveAction(Future<void> Function() saveAction) {
+    if (_saveAction == saveAction) {
+      _saveAction = null;
+    }
+  }
+
+  void updateState({
+    required bool isLoading,
+    required bool hasLoggedToday,
+    required bool isSaving,
+    required bool isFormVisible,
+  }) {
+    final current = value;
+    if (current.isLoading == isLoading &&
+        current.hasLoggedToday == hasLoggedToday &&
+        current.isSaving == isSaving &&
+        current.isFormVisible == isFormVisible) {
+      return;
+    }
+    value = LogNavigationState(
+      isLoading: isLoading,
+      hasLoggedToday: hasLoggedToday,
+      isSaving: isSaving,
+      isFormVisible: isFormVisible,
+    );
+  }
+
+  Future<void> save() async {
+    final saveAction = _saveAction;
+    if (!value.canSave || saveAction == null) {
+      return;
+    }
+    await saveAction();
+  }
+}
+
 class LogPage extends StatefulWidget {
-  const LogPage({super.key});
+  final LogPageController? controller;
+
+  const LogPage({super.key, this.controller});
 
   @override
   State<LogPage> createState() => _LogPageState();
@@ -104,17 +168,31 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    widget.controller?.bindSaveAction(_saveLog);
     _confettiController = ConfettiController(
       duration: const Duration(seconds: 2),
     );
+    _publishNavigationState();
     _loadLogState();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    widget.controller?.unbindSaveAction(_saveLog);
     _confettiController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant LogPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller == widget.controller) {
+      return;
+    }
+    oldWidget.controller?.unbindSaveAction(_saveLog);
+    widget.controller?.bindSaveAction(_saveLog);
+    _publishNavigationState();
   }
 
   @override
@@ -129,6 +207,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       setState(() {
         isLoading = true;
       });
+      _publishNavigationState();
     }
 
     try {
@@ -154,6 +233,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
         pendingSyncCount = pendingCount;
         isLoading = false;
       });
+      _publishNavigationState();
 
       if (hasLog) {
         _populateFromLog(data['log'] as Map<String, dynamic>);
@@ -173,11 +253,21 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       setState(() {
         isLoading = false;
       });
+      _publishNavigationState();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Unable to load today\'s log: $error')),
       );
     }
+  }
+
+  void _publishNavigationState() {
+    widget.controller?.updateState(
+      isLoading: isLoading,
+      hasLoggedToday: hasSavedLogToday,
+      isSaving: isSaving,
+      isFormVisible: !isLoading && !isSubmitted,
+    );
   }
 
   void _populateFromLog(Map<String, dynamic> log) {
@@ -268,6 +358,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     setState(() {
       isSaving = true;
     });
+    _publishNavigationState();
 
     try {
       final data = await LogApi.saveDailyLog(
@@ -303,6 +394,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
         pendingSyncCount = pendingCount;
         isSaving = false;
       });
+      _publishNavigationState();
 
       await refreshAppBarStreak();
       if (!mounted) return;
@@ -324,6 +416,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       setState(() {
         isSaving = false;
       });
+      _publishNavigationState();
 
       final decision = await _showStreakRestoreDialog(
         StreakRestoreDetails.fromJson(error.restore),
@@ -337,6 +430,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       setState(() {
         isSaving = false;
       });
+      _publishNavigationState();
 
       ScaffoldMessenger.of(
         context,
@@ -512,6 +606,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     setState(() {
       isSubmitted = false;
     });
+    _publishNavigationState();
   }
 
   void _resetForm({double hydrationPrefill = 0, String? exercisePrefill}) {

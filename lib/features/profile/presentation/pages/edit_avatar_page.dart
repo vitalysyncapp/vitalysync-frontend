@@ -242,36 +242,19 @@ class _EditAvatarPageState extends State<EditAvatarPage> {
                             _AvatarSectionCard(
                               title: 'Choose an avatar',
                               subtitle:
-                                  'Pick a friendly illustration that feels like you.',
-                              child: GridView.builder(
+                                  'Browse professional roles or the original Personas collection.',
+                              child: _AvatarCatalog(
                                 key: const ValueKey('avatar-catalog-grid'),
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: ProfileAvatarCatalog.entries.length,
-                                gridDelegate:
-                                    const SliverGridDelegateWithMaxCrossAxisExtent(
-                                      maxCrossAxisExtent: 104,
-                                      mainAxisSpacing: 12,
-                                      crossAxisSpacing: 12,
-                                    ),
-                                itemBuilder: (context, index) {
-                                  final entry =
-                                      ProfileAvatarCatalog.entries[index];
-                                  final selected =
-                                      _draft.kind ==
-                                          ProfileAvatarKind.bundled &&
-                                      _draft.avatarId == entry.id;
-                                  return _AvatarOption(
-                                    entry: entry,
-                                    selected: selected,
-                                    onTap: () {
-                                      setState(() {
-                                        _draft = ProfileAvatarSelection.bundled(
-                                          entry.id,
-                                        );
-                                      });
-                                    },
-                                  );
+                                selectedAvatarId:
+                                    _draft.kind == ProfileAvatarKind.bundled
+                                    ? _draft.avatarId
+                                    : null,
+                                onSelected: (entry) {
+                                  setState(() {
+                                    _draft = ProfileAvatarSelection.bundled(
+                                      entry.id,
+                                    );
+                                  });
                                 },
                               ),
                             ),
@@ -444,6 +427,44 @@ class _AvatarSectionCard extends StatelessWidget {
           child,
         ],
       ),
+    );
+  }
+}
+
+class _AvatarCatalog extends StatelessWidget {
+  const _AvatarCatalog({
+    super.key,
+    required this.selectedAvatarId,
+    required this.onSelected,
+  });
+
+  final String? selectedAvatarId;
+  final ValueChanged<AvatarCatalogEntry> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final entries = [
+      for (final category in ProfileAvatarCategory.values)
+        ...ProfileAvatarCatalog.entriesFor(category),
+    ];
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: entries.length,
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 104,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+      ),
+      itemBuilder: (context, index) {
+        final entry = entries[index];
+        return _AvatarOption(
+          entry: entry,
+          selected: selectedAvatarId == entry.id,
+          onTap: () => onSelected(entry),
+        );
+      },
     );
   }
 }

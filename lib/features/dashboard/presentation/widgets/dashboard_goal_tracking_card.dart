@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/analytics_animation.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../data/goal_tracking_metrics.dart';
 
@@ -38,14 +39,14 @@ class _DashboardGoalTrackingCardState extends State<DashboardGoalTrackingCard> {
             border: Border.all(color: pageBorderColor(context)),
             boxShadow: pageCardShadow(context),
           ),
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 220),
+          child: AnalyticsContentSwitcher(
+            isLoading: isLoading,
+            loading: const SizedBox(
+              height: 190,
+              child: AppSkeletonRows(count: 4, showLeading: true),
+            ),
             child: isLoading
-                ? const SizedBox(
-                    key: ValueKey('goal-tracking-loading'),
-                    height: 190,
-                    child: AppSkeletonRows(count: 4, showLeading: true),
-                  )
+                ? const SizedBox.shrink()
                 : data == null
                 ? _GoalTrackingUnavailable(onRetry: _reload)
                 : _GoalTrackingContent(data: data),
@@ -227,13 +228,13 @@ class _GoalMetricRow extends StatelessWidget {
                 const SizedBox(height: 7),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(999),
-                  child: LinearProgressIndicator(
+                  child: AnimatedAnalyticsProgress(
                     value: metric.progress,
                     minHeight: 6,
                     backgroundColor: pageBorderColor(
                       context,
                     ).withValues(alpha: 0.58),
-                    valueColor: AlwaysStoppedAnimation<Color>(statusColor),
+                    color: statusColor,
                   ),
                 ),
                 const SizedBox(height: 6),

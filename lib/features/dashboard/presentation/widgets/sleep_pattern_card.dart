@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/analytics_animation.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../data/weekly_user_metrics.dart';
 
@@ -45,16 +46,22 @@ class _SleepPatternCardState extends State<SleepPatternCard> {
                 ),
               ),
               const SizedBox(height: 12),
-              if (snapshot.connectionState == ConnectionState.waiting)
-                const SizedBox(
+              AnalyticsContentSwitcher(
+                isLoading: snapshot.connectionState == ConnectionState.waiting,
+                loading: const SizedBox(
                   height: 200,
                   child: AppSkeletonChart(height: 190),
-                )
-              else
-                SizedBox(
-                  height: 200,
-                  child: BarChart(_chartData(context, days)),
                 ),
+                child: SizedBox(
+                  height: 200,
+                  child: AnalyticsChartReveal(
+                    builder: (context, progress) => BarChart(
+                      _chartData(context, days, progress),
+                      duration: Duration.zero,
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(height: 12),
               Divider(color: pageBorderColor(context)),
               const SizedBox(height: 9),
@@ -88,7 +95,11 @@ class _SleepPatternCardState extends State<SleepPatternCard> {
     );
   }
 
-  BarChartData _chartData(BuildContext context, List<DailyUserMetric> days) {
+  BarChartData _chartData(
+    BuildContext context,
+    List<DailyUserMetric> days,
+    double animationProgress,
+  ) {
     final chartDays = days.isEmpty
         ? List<DailyUserMetric>.generate(
             7,
@@ -184,7 +195,7 @@ class _SleepPatternCardState extends State<SleepPatternCard> {
           x: index,
           barRods: [
             BarChartRodData(
-              toY: chartDays[index].sleepHours,
+              toY: chartDays[index].sleepHours * animationProgress,
               width: 18,
               borderRadius: BorderRadius.circular(8),
               color: chartDays[index].sleepHours >= 7

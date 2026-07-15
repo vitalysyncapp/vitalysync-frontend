@@ -4,8 +4,9 @@ import '../../../../shared/theme/app_page_style.dart';
 
 class WhiteCard extends StatelessWidget {
   final Widget child;
+  final BorderRadiusGeometry? borderRadius;
 
-  const WhiteCard({super.key, required this.child});
+  const WhiteCard({super.key, required this.child, this.borderRadius});
 
   @override
   Widget build(BuildContext context) {
@@ -14,11 +15,12 @@ class WhiteCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(isCompact ? 12 : 14),
+      padding: EdgeInsets.all(isCompact ? 12 : 15),
       decoration: BoxDecoration(
         color: pageSurfaceColor(context),
-        borderRadius: BorderRadius.circular(isCompact ? 16 : 18),
-        border: Border.all(color: pageBorderColor(context)),
+        borderRadius:
+            borderRadius ?? BorderRadius.circular(isCompact ? 18 : 22),
+        border: Border.all(color: pageBorderColor(context), width: 1.05),
         boxShadow: pageCardShadow(context),
       ),
       child: child,

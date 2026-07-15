@@ -209,7 +209,7 @@ class _NutritionPageState extends State<NutritionPage> {
     });
   }
 
-  Future<void> _onAddMeal() async {
+  Future<void> _onAddMeal({String? initialMealType}) async {
     final mealSuggestions = await NutritionMealSuggestionStore.loadMealNames();
     if (!mounted) return;
     setState(() {
@@ -220,7 +220,7 @@ class _NutritionPageState extends State<NutritionPage> {
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) => _ManualLogDialog(
-        initialMealType: _selectedMealType,
+        initialMealType: initialMealType ?? _selectedMealType,
         loggedMealTypes: _dailySummary.logged,
         mealSuggestions: _manualMealSuggestions,
       ),
@@ -685,14 +685,13 @@ class _NutritionPageState extends State<NutritionPage> {
                 RevealOnBuild(
                   delay: const Duration(milliseconds: 210),
                   child: _isLoadingDaily
-                      ? const AppSkeletonCard(
-                          height: 126,
-                          lineCount: 2,
-                          showLeading: false,
-                        )
+                      ? const TodaysMealsSkeleton()
                       : TodaysMealsCard(
                           onAddTap: _onAddMeal,
+                          onMealTypeAddTap: (mealType) =>
+                              _onAddMeal(initialMealType: mealType),
                           meals: _dailySummary.meals,
+                          verticalScrollController: _scrollController,
                         ),
                 ),
                 SizedBox(height: sectionSpacing),

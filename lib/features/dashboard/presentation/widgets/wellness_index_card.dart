@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/analytics_animation.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../data/weekly_user_metrics.dart';
 
@@ -51,16 +52,22 @@ class _WellnessIndexCardState extends State<WellnessIndexCard> {
                 ),
               ),
               const SizedBox(height: 12),
-              if (snapshot.connectionState == ConnectionState.waiting)
-                const SizedBox(
+              AnalyticsContentSwitcher(
+                isLoading: snapshot.connectionState == ConnectionState.waiting,
+                loading: const SizedBox(
                   height: 230,
                   child: AppSkeletonChart(height: 220, barCount: 6),
-                )
-              else
-                SizedBox(
-                  height: 230,
-                  child: RadarChart(_chartData(context, entries)),
                 ),
+                child: SizedBox(
+                  height: 230,
+                  child: AnalyticsChartReveal(
+                    builder: (context, progress) => RadarChart(
+                      _chartData(context, entries, progress),
+                      duration: Duration.zero,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         );
@@ -68,7 +75,11 @@ class _WellnessIndexCardState extends State<WellnessIndexCard> {
     );
   }
 
-  RadarChartData _chartData(BuildContext context, List<int> entries) {
+  RadarChartData _chartData(
+    BuildContext context,
+    List<int> entries,
+    double animationProgress,
+  ) {
     return RadarChartData(
       radarShape: RadarShape.polygon,
       radarBorderData: const BorderSide(color: Colors.transparent),
@@ -96,7 +107,10 @@ class _WellnessIndexCardState extends State<WellnessIndexCard> {
           entryRadius: 2,
           borderWidth: 2,
           dataEntries: entries
-              .map((value) => RadarEntry(value: value.toDouble()))
+              .map(
+                (value) =>
+                    RadarEntry(value: value.toDouble() * animationProgress),
+              )
               .toList(),
         ),
       ],
