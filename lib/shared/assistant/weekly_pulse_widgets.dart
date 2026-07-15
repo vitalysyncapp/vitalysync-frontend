@@ -116,7 +116,7 @@ class _WeeklyPulseCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Weekly Pulse',
+                        'Weekly pulse',
                         style: TextStyle(
                           color: pagePrimaryTextColor(context),
                           fontSize: 20,
@@ -205,8 +205,8 @@ class _WeeklyPulseCard extends StatelessWidget {
                   isSaving
                       ? 'Saving...'
                       : hasResponse
-                      ? 'Update Weekly Pulse'
-                      : 'Save Weekly Pulse',
+                      ? 'Update weekly pulse'
+                      : 'Save weekly pulse',
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1FB489),
@@ -287,7 +287,7 @@ class _WeeklyPulseSavedView extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: onRedo,
             icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Redo Weekly Pulse'),
+            label: const Text('Redo weekly pulse'),
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFF15803D),
               side: const BorderSide(color: Color(0xFF86EFAC)),

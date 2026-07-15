@@ -295,7 +295,7 @@ class _HistoryPageState extends State<HistoryPage> {
         ),
         if (_selectedDate != null)
           _FilterButton(
-            label: 'Clear Date',
+            label: 'Clear date',
             icon: Icons.close_rounded,
             selected: false,
             onTap: () => setState(() => _selectedDate = null),
@@ -446,7 +446,7 @@ class _HistoryHeroCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Wellness History',
+                  'Wellness history',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -521,7 +521,7 @@ class _BurnoutHistoryCard extends StatelessWidget {
       icon: Icons.monitor_heart_outlined,
       iconColor: _categoryColor(_HistoryCategory.burnout),
       title: _displayDate(score.scoreDate),
-      subtitle: '${_titleCase(score.riskLevel)} risk',
+      subtitle: '${_sentenceCase(score.riskLevel)} risk',
       children: [
         _HistoryMetric(label: 'Score', value: '${score.overallScore.round()}%'),
         _HistoryMetric(
@@ -966,7 +966,7 @@ String _rangeLabel(DateTime start, DateTime end) {
 String _categoryLabel(_HistoryCategory category) {
   switch (category) {
     case _HistoryCategory.dailyLogs:
-      return 'Daily Logs';
+      return 'Daily logs';
     case _HistoryCategory.burnout:
       return 'Burnout';
     case _HistoryCategory.nutrition:
@@ -1019,22 +1019,19 @@ String _formatAmount(double value) {
   return value.toStringAsFixed(1);
 }
 
-String _titleCase(String value) {
+String _sentenceCase(String value) {
   final words = value
       .replaceAll('_', ' ')
       .replaceAll('-', ' ')
       .trim()
       .split(RegExp(r'\s+'))
       .where((word) => word.isNotEmpty)
-      .map((word) {
-        if (word.length == 1) {
-          return word.toUpperCase();
-        }
+      .map((word) => word.toLowerCase())
+      .toList();
 
-        return '${word.substring(0, 1).toUpperCase()}${word.substring(1).toLowerCase()}';
-      });
-
-  return words.isEmpty ? 'Not set' : words.join(' ');
+  if (words.isEmpty) return 'Not set';
+  final text = words.join(' ');
+  return '${text[0].toUpperCase()}${text.substring(1)}';
 }
 
 String _cleanError(Object error) {

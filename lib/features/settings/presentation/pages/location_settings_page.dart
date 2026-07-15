@@ -31,7 +31,7 @@ class LocationSettingsPage extends StatelessWidget {
                 onPressed: () => Navigator.pop(context),
               ),
               title: Text(
-                'Location Settings',
+                'Location settings',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: pagePrimaryTextColor(context),
@@ -48,7 +48,7 @@ class LocationSettingsPage extends StatelessWidget {
                 ),
                 children: [
                   _SectionCard(
-                    title: 'Location Access',
+                    title: 'Location access',
                     children: [
                       Padding(
                         padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
@@ -74,7 +74,7 @@ class LocationSettingsPage extends StatelessWidget {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Use Device Location',
+                                        'Use device location',
                                         style: TextStyle(
                                           fontWeight: FontWeight.w700,
                                           color: pagePrimaryTextColor(context),
@@ -121,7 +121,7 @@ class LocationSettingsPage extends StatelessWidget {
                                 onPressed: () {
                                   DeviceLocationService.openSystemLocationSettings();
                                 },
-                                child: const Text('Open System Settings'),
+                                child: const Text('Open system settings'),
                               ),
                             ],
                           ],

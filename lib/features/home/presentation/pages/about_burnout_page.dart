@@ -20,7 +20,7 @@ class AboutBurnoutPage extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
-            'About Burnout',
+            'About burnout',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: pagePrimaryTextColor(context),
@@ -41,7 +41,7 @@ class AboutBurnoutPage extends StatelessWidget {
               _SectionCard(
                 icon: Icons.psychology_alt_outlined,
                 color: Color(0xFF2563EB),
-                title: 'What Burnout Means',
+                title: 'What burnout means',
                 children: [
                   _Paragraph(
                     text:
@@ -57,7 +57,7 @@ class AboutBurnoutPage extends StatelessWidget {
               _SectionCard(
                 icon: Icons.bubble_chart_outlined,
                 color: Color(0xFF7C3AED),
-                title: 'Three Core Signals',
+                title: 'Three core signals',
                 children: [
                   _SignalItem(
                     emoji: '🔥',
@@ -86,7 +86,7 @@ class AboutBurnoutPage extends StatelessWidget {
               _SectionCard(
                 icon: Icons.favorite_border_rounded,
                 color: Color(0xFFDC2626),
-                title: 'How It Can Affect People',
+                title: 'How it can affect people',
                 children: [
                   _BulletItem(
                     icon: Icons.bedtime_outlined,
@@ -114,7 +114,7 @@ class AboutBurnoutPage extends StatelessWidget {
               _SectionCard(
                 icon: Icons.balance_rounded,
                 color: Color(0xFFF97316),
-                title: 'Main Reasons It Grows',
+                title: 'Main reasons it grows',
                 children: [
                   _Paragraph(
                     text:
@@ -127,7 +127,7 @@ class AboutBurnoutPage extends StatelessWidget {
               _SectionCard(
                 icon: Icons.fact_check_outlined,
                 color: Color(0xFF0F766E),
-                title: 'Evidence Base',
+                title: 'Evidence base',
                 children: [
                   _SourceItem(
                     label: 'WHO ICD-11 burnout page',

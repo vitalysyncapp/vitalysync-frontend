@@ -175,3 +175,9 @@ int? _parseLikertValue(dynamic value) {
 
   return parsed;
 }
+
+String _sentenceCaseCategory(String value) {
+  final text = value.trim();
+  if (text.length < 2) return text;
+  return '${text[0].toUpperCase()}${text.substring(1).toLowerCase()}';
+}

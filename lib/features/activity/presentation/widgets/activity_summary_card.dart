@@ -132,7 +132,7 @@ class ActivitySummaryCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Daily Steps',
+                              'Daily steps',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -468,7 +468,7 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Weekly Step Analytics',
+                              'Weekly step analytics',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -497,14 +497,14 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
                     children: [
                       Expanded(
                         child: _ActivityMetric(
-                          label: 'Total Steps',
+                          label: 'Total steps',
                           value: numberFormat.format(totalSteps),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: _ActivityMetric(
-                          label: 'Daily Avg',
+                          label: 'Daily average',
                           value: numberFormat.format(averageSteps),
                         ),
                       ),
@@ -566,7 +566,7 @@ Future<int?> _showStepGoalDialog(
       return StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
-            title: const Text('Edit Daily Step Goal'),
+            title: const Text('Edit daily step goal'),
             content: TextFormField(
               initialValue: goalInput,
               autofocus: true,

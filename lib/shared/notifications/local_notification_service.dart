@@ -555,7 +555,7 @@ class LocalNotificationService {
     final android = notificationType == 'hydration_reminder'
         ? const AndroidNotificationDetails(
             _hydrationReminderChannelId,
-            'Hydration Reminders',
+            'Hydration reminders',
             channelDescription:
                 'Water break reminders that should stay visible even while the floating assistant is active.',
             importance: Importance.high,
@@ -565,7 +565,7 @@ class LocalNotificationService {
           )
         : const AndroidNotificationDetails(
             _generalReminderChannelId,
-            'VitalySync Reminders',
+            'VitalySync reminders',
             channelDescription:
                 'Daily check-ins, hydration prompts, meal reminders, sleep wind-downs, and adaptive nudges.',
             importance: Importance.defaultImportance,

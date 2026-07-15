@@ -42,9 +42,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    await tester.ensureVisible(find.text('Replay App Tutorial'));
+    await tester.ensureVisible(find.text('Replay app tutorial'));
     await tester.pump();
-    await tester.tap(find.text('Replay App Tutorial'));
+    await tester.tap(find.text('Replay app tutorial'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 

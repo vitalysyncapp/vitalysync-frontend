@@ -620,12 +620,12 @@ class _FloatingSmartNudgeAssistantState
       if (appliedToLog) {
         message += ' Today\'s log now shows None.';
       } else if (queuedForLog) {
-        message += ' None will prefill the Log page.';
+        message += ' None will prefill the log page.';
       }
     } else if (appliedToLog) {
       message += ' $normalizedName also updated today\'s log.';
     } else if (queuedForLog) {
-      message += ' $normalizedName will prefill the Log page.';
+      message += ' $normalizedName will prefill the log page.';
     }
 
     return message;

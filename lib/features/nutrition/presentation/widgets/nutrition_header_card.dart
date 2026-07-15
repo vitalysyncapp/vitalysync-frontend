@@ -46,7 +46,7 @@ class NutritionHeaderCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'AI Powered Nutrition Tracker',
+                  'AI-powered nutrition tracker',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: isCompact ? 13.5 : 16,

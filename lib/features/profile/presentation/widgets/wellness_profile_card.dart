@@ -83,7 +83,7 @@ class WellnessProfileCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Wellness Profile',
+                      'Wellness profile',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
@@ -106,37 +106,37 @@ class WellnessProfileCard extends StatelessWidget {
           _rowItem(
             emoji: '\u{1F33F}',
             icon: Icons.directions_walk_rounded,
-            label: 'Lifestyle Type',
-            value: lifestyleType,
+            label: 'Lifestyle type',
+            value: _sentenceCaseCategory(lifestyleType),
           ),
           _rowItem(
             emoji: '\u{1F4BC}',
             icon: Icons.work_outline_rounded,
-            label: 'Current Role',
-            value: currentRole,
+            label: 'Current role',
+            value: _sentenceCaseCategory(currentRole),
           ),
           _rowItem(
             emoji: '\u{1F319}',
             icon: Icons.bedtime_outlined,
-            label: 'Usual Sleep Time',
+            label: 'Usual sleep time',
             value: usualSleepTime,
           ),
           _rowItem(
             emoji: '\u2600\uFE0F',
             icon: Icons.wb_sunny_outlined,
-            label: 'Usual Wake Time',
+            label: 'Usual wake time',
             value: usualWakeTime,
           ),
           _rowItemWithBadge(
             emoji: '\u26A1',
-            label: 'Work Intensity',
-            value: workIntensity,
+            label: 'Work intensity',
+            value: _sentenceCaseCategory(workIntensity),
           ),
           _rowItem(
             emoji: '\u{1F525}',
             icon: Icons.local_fire_department_outlined,
-            label: 'Initial Burnout',
-            value: '$burnoutLevel ($burnoutScore%)',
+            label: 'Initial burnout',
+            value: '${_sentenceCaseCategory(burnoutLevel)} ($burnoutScore%)',
           ),
           const SizedBox(height: 6),
           Container(
@@ -159,7 +159,7 @@ class WellnessProfileCard extends StatelessWidget {
               onPressed: isSaving ? null : onEdit,
               icon: const Icon(Icons.edit_outlined),
               label: const Text(
-                'Edit Wellness Profile',
+                'Edit wellness profile',
                 style: TextStyle(fontWeight: FontWeight.w800),
               ),
               style: OutlinedButton.styleFrom(
@@ -188,7 +188,7 @@ class WellnessProfileCard extends StatelessWidget {
                     )
                   : const Icon(Icons.restart_alt_rounded),
               label: Text(
-                isSavingBaseline ? 'Saving Baseline...' : 'Retake Baseline',
+                isSavingBaseline ? 'Saving baseline...' : 'Retake baseline',
                 style: const TextStyle(fontWeight: FontWeight.w800),
               ),
               style: ElevatedButton.styleFrom(
@@ -263,6 +263,12 @@ class WellnessProfileCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _sentenceCaseCategory(String value) {
+  final text = value.trim();
+  if (text.length < 2) return text;
+  return '${text[0].toUpperCase()}${text.substring(1).toLowerCase()}';
 }
 
 class _WellnessDataRow extends StatelessWidget {

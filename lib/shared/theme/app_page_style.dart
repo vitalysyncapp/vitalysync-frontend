@@ -59,3 +59,7 @@ List<BoxShadow> pageCardShadow(BuildContext context) {
 double pageBottomContentPadding(BuildContext context, {double extra = 36}) {
   return MediaQuery.paddingOf(context).bottom + extra;
 }
+
+double mainPageBottomContentPadding(BuildContext context) {
+  return pageBottomContentPadding(context, extra: 48);
+}

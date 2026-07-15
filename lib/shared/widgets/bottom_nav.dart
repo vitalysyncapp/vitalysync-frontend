@@ -1,131 +1,218 @@
-import 'dart:ui';
-
+import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
 import 'package:flutter/material.dart';
 
+import '../navigation/main_tab.dart';
+
 class _BottomNavItemData {
+  final MainTab tab;
   final IconData icon;
   final IconData activeIcon;
   final String label;
 
   const _BottomNavItemData({
+    required this.tab,
     required this.icon,
     required this.activeIcon,
     required this.label,
   });
 }
 
-const _navItems = [
+const _sideNavItems = [
   _BottomNavItemData(
+    tab: MainTab.home,
     icon: Icons.home_outlined,
     activeIcon: Icons.home_rounded,
     label: 'Home',
   ),
   _BottomNavItemData(
-    icon: Icons.monitor_heart_outlined,
-    activeIcon: Icons.monitor_heart_rounded,
-    label: 'Log',
-  ),
-  _BottomNavItemData(
-    icon: Icons.camera_alt_outlined,
-    activeIcon: Icons.camera_alt_rounded,
+    tab: MainTab.nutrition,
+    icon: Icons.restaurant_menu_outlined,
+    activeIcon: Icons.restaurant_menu_rounded,
     label: 'Nutrition',
   ),
   _BottomNavItemData(
+    tab: MainTab.dashboard,
     icon: Icons.analytics_outlined,
     activeIcon: Icons.analytics_rounded,
     label: 'Dashboard',
+  ),
+  _BottomNavItemData(
+    tab: MainTab.profile,
+    icon: Icons.person_outline_rounded,
+    activeIcon: Icons.person_rounded,
+    label: 'Profile',
   ),
 ];
 
 Widget buildBottomNav({
   required BuildContext context,
-  required int currentIndex,
-  required ValueChanged<int> onTap,
+  required MainTab currentTab,
+  required ValueChanged<MainTab> onTap,
   Key? tutorialKey,
 }) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
-  final bottomInset = MediaQuery.paddingOf(context).bottom;
+  final reduceMotion = MediaQuery.disableAnimationsOf(context);
   final screenWidth = MediaQuery.sizeOf(context).width;
+  final bottomInset = MediaQuery.paddingOf(context).bottom;
   final isCompact = screenWidth < 390;
+  final activeSideIndex = _sideNavItems.indexWhere(
+    (item) => item.tab == currentTab,
+  );
+  final surfaceColor = isDark
+      ? const Color(0xFF101E30).withValues(alpha: 0.98)
+      : Colors.white.withValues(alpha: 0.98);
 
-  return SafeArea(
+  return KeyedSubtree(
     key: tutorialKey,
-    top: false,
-    child: Padding(
-      padding: EdgeInsets.only(
-        left: isCompact ? 8 : 12,
-        right: isCompact ? 8 : 12,
-        bottom: bottomInset > 0 ? 8 : 12,
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: isCompact ? 6 : 8,
-              vertical: 6,
-            ),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(30),
-              gradient: LinearGradient(
-                colors: isDark
-                    ? [
-                        const Color(0xFF132134).withValues(alpha: 0.94),
-                        const Color(0xFF0C1726).withValues(alpha: 0.92),
-                      ]
-                    : [
-                        Colors.white.withValues(alpha: 0.95),
-                        const Color(0xFFF0FBF7).withValues(alpha: 0.92),
-                      ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : Colors.white.withValues(alpha: 0.85),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.12),
-                  blurRadius: 32,
-                  offset: const Offset(0, 18),
+    child: Stack(
+      clipBehavior: Clip.none,
+      children: [
+        AnimatedBottomNavigationBar.builder(
+          key: const ValueKey('main-bottom-navigation'),
+          itemCount: _sideNavItems.length,
+          activeIndex: activeSideIndex,
+          gapLocation: GapLocation.center,
+          gapWidth: isCompact ? 62 : 68,
+          notchMargin: 4,
+          notchSmoothness: NotchSmoothness.smoothEdge,
+          height: isCompact ? 68 : 72,
+          leftCornerRadius: 0,
+          rightCornerRadius: 0,
+          elevation: 0,
+          backgroundColor: surfaceColor,
+          splashColor: const Color(0xFF1D8CA8).withValues(alpha: 0.2),
+          splashRadius: 24,
+          splashSpeedInMilliseconds: reduceMotion ? 1 : 260,
+          scaleFactor: reduceMotion ? 0 : 0.12,
+          borderColor: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : const Color(0xFFDCE7ED),
+          borderWidth: 0.8,
+          shadow: Shadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.34 : 0.14),
+            blurRadius: 18,
+            offset: const Offset(0, -3),
+          ),
+          blurEffect: true,
+          safeAreaValues: const SafeAreaValues(bottom: true),
+          onTap: (index) => onTap(_sideNavItems[index].tab),
+          tabBuilder: (index, isActive) {
+            final item = _sideNavItems[index];
+            return _NavigationItem(
+              key: ValueKey('main-nav-${item.tab.name}'),
+              item: item,
+              isActive: isActive,
+              isDark: isDark,
+              isCompact: isCompact,
+              reduceMotion: reduceMotion,
+            );
+          },
+        ),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: bottomInset + (isCompact ? 20 : 21),
+          child: ExcludeSemantics(
+            child: IgnorePointer(
+              child: AnimatedDefaultTextStyle(
+                duration: reduceMotion
+                    ? Duration.zero
+                    : const Duration(milliseconds: 220),
+                style: TextStyle(
+                  color: currentTab == MainTab.log
+                      ? const Color(0xFF1D8CA8)
+                      : isDark
+                      ? Colors.white.withValues(alpha: 0.7)
+                      : const Color(0xFF718295),
+                  fontSize: isCompact ? 9.5 : 10.4,
+                  fontWeight: currentTab == MainTab.log
+                      ? FontWeight.w800
+                      : FontWeight.w600,
                 ),
-                BoxShadow(
-                  color: isDark
-                      ? const Color(0xFF5DB8F0).withValues(alpha: 0.08)
-                      : const Color.fromARGB(
-                          255,
-                          29,
-                          140,
-                          168,
-                        ).withValues(alpha: 0.22),
-                  blurRadius: 26,
-                  spreadRadius: -8,
-                  offset: const Offset(0, 8),
-                ),
-              ],
+                textAlign: TextAlign.center,
+                child: const Text('Log'),
+              ),
             ),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isVeryCompact = constraints.maxWidth < 350;
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
-                return Row(
-                  children: List.generate(_navItems.length, (index) {
-                    final item = _navItems[index];
-                    return Expanded(
-                      child: _FloatingNavItem(
-                        item: item,
-                        isDark: isDark,
-                        isSelected: currentIndex == index,
-                        isCompact: isVeryCompact,
-                        onTap: () => onTap(index),
-                      ),
-                    );
-                  }),
-                );
-              },
+Widget buildLogNavigationButton({
+  required BuildContext context,
+  required bool isSelected,
+  required VoidCallback onTap,
+}) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final reduceMotion = MediaQuery.disableAnimationsOf(context);
+  final isCompact = MediaQuery.sizeOf(context).width < 390;
+  final size = isCompact ? 54.0 : 60.0;
+  final accent = const Color(0xFF1D8CA8);
+
+  return Semantics(
+    key: const ValueKey('main-nav-log'),
+    container: true,
+    button: true,
+    selected: isSelected,
+    label: 'Log',
+    child: AnimatedScale(
+      duration: reduceMotion
+          ? Duration.zero
+          : const Duration(milliseconds: 260),
+      curve: Curves.easeOutBack,
+      scale: isSelected ? 1.06 : 1,
+      child: SizedBox.square(
+        dimension: size,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: isSelected
+                ? const LinearGradient(
+                    colors: [Color(0xFF1D8CA8), Color(0xFF5DB8F0)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
+            color: isSelected
+                ? null
+                : isDark
+                ? const Color(0xFF15283D)
+                : Colors.white,
+            border: Border.all(
+              color: isSelected ? Colors.white.withValues(alpha: 0.78) : accent,
+              width: isSelected ? 2.5 : 3.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: accent.withValues(alpha: isDark ? 0.32 : 0.26),
+                blurRadius: isSelected ? 20 : 15,
+                offset: const Offset(0, 7),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onTap,
+              child: Center(
+                child: AnimatedSwitcher(
+                  duration: reduceMotion
+                      ? Duration.zero
+                      : const Duration(milliseconds: 220),
+                  child: Icon(
+                    isSelected
+                        ? Icons.monitor_heart_rounded
+                        : Icons.monitor_heart_outlined,
+                    key: ValueKey(isSelected),
+                    color: isSelected ? Colors.white : accent,
+                    size: isCompact ? 24 : 26,
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -134,114 +221,72 @@ Widget buildBottomNav({
   );
 }
 
-class _FloatingNavItem extends StatelessWidget {
+class _NavigationItem extends StatelessWidget {
   final _BottomNavItemData item;
+  final bool isActive;
   final bool isDark;
-  final bool isSelected;
   final bool isCompact;
-  final VoidCallback onTap;
+  final bool reduceMotion;
 
-  const _FloatingNavItem({
+  const _NavigationItem({
+    super.key,
     required this.item,
+    required this.isActive,
     required this.isDark,
-    required this.isSelected,
     required this.isCompact,
-    required this.onTap,
+    required this.reduceMotion,
   });
 
   @override
   Widget build(BuildContext context) {
-    final inactiveIconColor = isDark
+    final activeColor = const Color(0xFF1D8CA8);
+    final inactiveColor = isDark
         ? Colors.white.withValues(alpha: 0.68)
-        : const Color(0xFF5F7288);
-    final inactiveLabelColor = isDark
-        ? Colors.white.withValues(alpha: 0.72)
-        : const Color(0xFF587081);
+        : const Color(0xFF718295);
+    final duration = reduceMotion
+        ? Duration.zero
+        : const Duration(milliseconds: 240);
 
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: isCompact ? 1 : 2),
-      child: Semantics(
-        button: true,
-        selected: isSelected,
-        label: item.label,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(22),
-          onTap: onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 280),
-            curve: Curves.easeOutCubic,
-            constraints: const BoxConstraints(minHeight: 58),
-            padding: EdgeInsets.symmetric(
-              horizontal: isCompact ? 4 : 6,
-              vertical: 6,
-            ),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
-              gradient: isSelected
-                  ? const LinearGradient(
-                      colors: [
-                        Color.fromARGB(255, 29, 140, 168),
-                        Color(0xFF59B7EF),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    )
-                  : null,
-              border: Border.all(
-                color: isSelected
-                    ? Colors.white.withValues(alpha: isDark ? 0.12 : 0.56)
-                    : Colors.transparent,
+    return Semantics(
+      button: true,
+      selected: isActive,
+      label: item.label,
+      child: ExcludeSemantics(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            isCompact ? 2 : 4,
+            isCompact ? 7 : 8,
+            isCompact ? 2 : 4,
+            isCompact ? 16 : 17,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedScale(
+                duration: duration,
+                curve: Curves.easeOutBack,
+                scale: isActive ? 1.12 : 1,
+                child: Icon(
+                  isActive ? item.activeIcon : item.icon,
+                  color: isActive ? activeColor : inactiveColor,
+                  size: isCompact ? 22 : 24,
+                ),
               ),
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: const Color(
-                          0xFF3BB8C7,
-                        ).withValues(alpha: isDark ? 0.26 : 0.22),
-                        blurRadius: 18,
-                        offset: const Offset(0, 10),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AnimatedSlide(
-                  duration: const Duration(milliseconds: 280),
-                  curve: Curves.easeOutCubic,
-                  offset: isSelected ? const Offset(0, -0.04) : Offset.zero,
-                  child: AnimatedScale(
-                    duration: const Duration(milliseconds: 280),
-                    curve: Curves.easeOutBack,
-                    scale: isSelected ? 1.08 : 1,
-                    child: Icon(
-                      isSelected ? item.activeIcon : item.icon,
-                      size: isCompact ? 20 : 22,
-                      color: isSelected ? Colors.white : inactiveIconColor,
-                    ),
-                  ),
+              const SizedBox(height: 3),
+              AnimatedDefaultTextStyle(
+                duration: duration,
+                style: TextStyle(
+                  color: isActive ? activeColor : inactiveColor,
+                  fontSize: isCompact ? 9.5 : 10.4,
+                  fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
                 ),
-                const SizedBox(height: 3),
-                AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeOut,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : inactiveLabelColor,
-                    fontSize: isCompact ? 10 : 10.8,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                    letterSpacing: 0,
-                  ),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(item.label, maxLines: 1, softWrap: false),
-                    ),
-                  ),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(item.label, maxLines: 1),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

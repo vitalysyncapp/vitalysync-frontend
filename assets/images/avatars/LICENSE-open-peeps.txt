@@ -1,0 +1,18 @@
+Open Peeps avatar assets
+
+The SVG files in this directory are deterministic variants generated from
+the DiceBear Open Peeps avatar style using seeds VitalySync-01 through
+VitalySync-24.
+
+Open Peeps was created by Pablo Stanley and is available under the
+Creative Commons CC0 1.0 Universal public-domain dedication.
+
+Source:
+https://www.openpeeps.com/
+https://www.dicebear.com/styles/open-peeps/
+
+License:
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Generation endpoint:
+https://api.dicebear.com/10.x/open-peeps/svg

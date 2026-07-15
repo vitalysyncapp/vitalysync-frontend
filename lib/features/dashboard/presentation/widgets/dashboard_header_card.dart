@@ -38,7 +38,7 @@ class DashboardHeaderCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  "Your Wellness Analytics Dashboard",
+                  "Your wellness analytics dashboard",
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 17,

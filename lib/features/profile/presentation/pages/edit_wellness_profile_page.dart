@@ -137,7 +137,7 @@ class _EditWellnessProfilePageState extends State<EditWellnessProfilePage> {
             onPressed: _isSubmitting ? null : () => Navigator.pop(context),
           ),
           title: Text(
-            'Edit Wellness',
+            'Edit wellness',
             style: TextStyle(
               color: pagePrimaryTextColor(context),
               fontSize: 22,
@@ -157,14 +157,14 @@ class _EditWellnessProfilePageState extends State<EditWellnessProfilePage> {
             child: _EditWellnessCard(
               children: [
                 _buildDropdownField(
-                  label: 'Current Role',
+                  label: 'Current role',
                   icon: Icons.work_outline_rounded,
                   value: _selectedRole,
                   items: _roleOptions,
                   onChanged: (value) => setState(() => _selectedRole = value),
                 ),
                 _buildDropdownField(
-                  label: 'Lifestyle Type',
+                  label: 'Lifestyle type',
                   icon: Icons.directions_walk_rounded,
                   value: _selectedLifestyle,
                   items: _lifestyleOptions,
@@ -175,7 +175,7 @@ class _EditWellnessProfilePageState extends State<EditWellnessProfilePage> {
                   },
                 ),
                 _buildDropdownField(
-                  label: 'Work Intensity',
+                  label: 'Work intensity',
                   icon: Icons.speed_outlined,
                   value: _selectedIntensity,
                   items: _workIntensityOptions,
@@ -187,7 +187,7 @@ class _EditWellnessProfilePageState extends State<EditWellnessProfilePage> {
                 ),
                 _buildTextField(
                   controller: _sleepController,
-                  label: 'Sleep Schedule',
+                  label: 'Sleep schedule',
                   icon: Icons.bedtime_outlined,
                   validator: (value) {
                     final text = value?.trim() ?? '';
@@ -216,7 +216,7 @@ class _EditWellnessProfilePageState extends State<EditWellnessProfilePage> {
                             ),
                           )
                         : const Icon(Icons.save_outlined),
-                    label: Text(_isSubmitting ? 'Saving...' : 'Save Changes'),
+                    label: Text(_isSubmitting ? 'Saving...' : 'Save changes'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2563EB),
                       foregroundColor: Colors.white,
@@ -272,8 +272,10 @@ class _EditWellnessProfilePageState extends State<EditWellnessProfilePage> {
         decoration: _fieldDecoration(label: label, icon: icon),
         items: items
             .map(
-              (item) =>
-                  DropdownMenuItem<String>(value: item, child: Text(item)),
+              (item) => DropdownMenuItem<String>(
+                value: item,
+                child: Text(_sentenceCaseOption(item)),
+              ),
             )
             .toList(),
       ),
@@ -307,6 +309,12 @@ class _EditWellnessProfilePageState extends State<EditWellnessProfilePage> {
       ),
     );
   }
+}
+
+String _sentenceCaseOption(String value) {
+  final text = value.trim();
+  if (text.length < 2) return text;
+  return '${text[0].toUpperCase()}${text.substring(1).toLowerCase()}';
 }
 
 class _EditWellnessCard extends StatelessWidget {
@@ -358,7 +366,7 @@ class _EditWellnessCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Wellness Profile',
+                      'Wellness profile',
                       style: TextStyle(
                         color: primary,
                         fontSize: 17,

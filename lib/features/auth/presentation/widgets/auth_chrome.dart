@@ -14,11 +14,14 @@ const authWorkoutAsset = 'assets/images/auth_workout.svg';
 const authWorkStressAsset = 'assets/images/auth_work_stress.svg';
 const authDashboardAsset = 'assets/images/auth_dashboard.svg';
 
+enum AuthBackdropStyle { welcome, login, signUp }
+
 class AuthScaffold extends StatelessWidget {
   final Widget child;
   final String illustrationAsset;
   final String? topOverlayAsset;
   final List<String>? bottomOverlayAssets;
+  final AuthBackdropStyle backdropStyle;
   final EdgeInsetsGeometry padding;
   final bool centerContent;
   final bool scrollable;
@@ -29,6 +32,7 @@ class AuthScaffold extends StatelessWidget {
     required this.illustrationAsset,
     this.topOverlayAsset,
     this.bottomOverlayAssets,
+    this.backdropStyle = AuthBackdropStyle.welcome,
     this.padding = const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
     this.centerContent = true,
     this.scrollable = true,
@@ -42,10 +46,12 @@ class AuthScaffold extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
+            _AuthBackdropWash(style: backdropStyle),
             _BackgroundHealthMotif(
               illustrationAsset: illustrationAsset,
               topOverlayAsset: topOverlayAsset,
               bottomOverlayAssets: bottomOverlayAssets,
+              style: backdropStyle,
             ),
             SafeArea(
               child: LayoutBuilder(
@@ -82,15 +88,181 @@ class AuthScaffold extends StatelessWidget {
   }
 }
 
+class _AuthBackdropWash extends StatelessWidget {
+  final AuthBackdropStyle style;
+
+  const _AuthBackdropWash({required this.style});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final accent = switch (style) {
+      AuthBackdropStyle.welcome => const Color(0xFFC789B5),
+      AuthBackdropStyle.login => const Color(0xFF67A7E8),
+      AuthBackdropStyle.signUp => const Color(0xFFF0A35C),
+    };
+    final lightEnd = switch (style) {
+      AuthBackdropStyle.welcome => const Color(0xFFF8F2FC),
+      AuthBackdropStyle.login => const Color(0xFFF0F5FF),
+      AuthBackdropStyle.signUp => const Color(0xFFFFF7EF),
+    };
+
+    return IgnorePointer(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDark
+                    ? [
+                        const Color(0xFF071421).withValues(alpha: 0.78),
+                        const Color(0xFF10263A).withValues(alpha: 0.70),
+                        const Color(0xFF111B31).withValues(alpha: 0.76),
+                      ]
+                    : [
+                        const Color(0xFFF9FFFD).withValues(alpha: 0.78),
+                        const Color(0xFFEAF8F3).withValues(alpha: 0.72),
+                        lightEnd.withValues(alpha: 0.76),
+                      ],
+              ),
+            ),
+          ),
+          Positioned(
+            top: -110,
+            right: -90,
+            child: _AmbientBlob(
+              size: 280,
+              color: accent.withValues(alpha: isDark ? 0.16 : 0.22),
+            ),
+          ),
+          Positioned(
+            left: -120,
+            bottom: -80,
+            child: _AmbientBlob(
+              size: 300,
+              color: primary.withValues(alpha: isDark ? 0.13 : 0.18),
+            ),
+          ),
+          CustomPaint(
+            painter: _AuthFlowPainter(
+              color: isDark ? Colors.white : const Color(0xFF315A66),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AuthFlowPainter extends CustomPainter {
+  final Color color;
+
+  const _AuthFlowPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final linePaint = Paint()
+      ..color = color.withValues(alpha: 0.075)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5
+      ..strokeCap = StrokeCap.round;
+
+    final topPath = Path()
+      ..moveTo(-size.width * 0.12, size.height * 0.20)
+      ..cubicTo(
+        size.width * 0.18,
+        size.height * 0.04,
+        size.width * 0.28,
+        size.height * 0.34,
+        size.width * 0.55,
+        size.height * 0.16,
+      )
+      ..cubicTo(
+        size.width * 0.76,
+        size.height * 0.02,
+        size.width * 0.86,
+        size.height * 0.22,
+        size.width * 1.12,
+        size.height * 0.08,
+      );
+    canvas.drawPath(topPath, linePaint);
+
+    final lowerPath = Path()
+      ..moveTo(-size.width * 0.10, size.height * 0.76)
+      ..cubicTo(
+        size.width * 0.17,
+        size.height * 0.61,
+        size.width * 0.33,
+        size.height * 0.91,
+        size.width * 0.58,
+        size.height * 0.74,
+      )
+      ..cubicTo(
+        size.width * 0.80,
+        size.height * 0.60,
+        size.width * 0.89,
+        size.height * 0.88,
+        size.width * 1.12,
+        size.height * 0.72,
+      );
+    canvas.drawPath(lowerPath, linePaint);
+
+    final ringPaint = Paint()
+      ..color = color.withValues(alpha: 0.055)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+    canvas.drawCircle(
+      Offset(size.width * 0.10, size.height * 0.48),
+      size.width * 0.14,
+      ringPaint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.92, size.height * 0.45),
+      size.width * 0.20,
+      ringPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _AuthFlowPainter oldDelegate) {
+    return oldDelegate.color != color;
+  }
+}
+
+class _AmbientBlob extends StatelessWidget {
+  final double size;
+  final Color color;
+
+  const _AmbientBlob({required this.size, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return ImageFiltered(
+      imageFilter: ImageFilter.blur(sigmaX: 38, sigmaY: 38),
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+      ),
+    );
+  }
+}
+
 class _BackgroundHealthMotif extends StatefulWidget {
   final String illustrationAsset;
   final String? topOverlayAsset;
   final List<String>? bottomOverlayAssets;
+  final AuthBackdropStyle style;
 
   const _BackgroundHealthMotif({
     required this.illustrationAsset,
     required this.topOverlayAsset,
     required this.bottomOverlayAssets,
+    required this.style,
   });
 
   @override
@@ -107,7 +279,7 @@ class _BackgroundHealthMotifState extends State<_BackgroundHealthMotif>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 7),
+      duration: const Duration(seconds: 9),
     )..repeat(reverse: true);
     _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
   }
@@ -121,167 +293,163 @@ class _BackgroundHealthMotifState extends State<_BackgroundHealthMotif>
   @override
   Widget build(BuildContext context) {
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = Theme.of(context).colorScheme.primary;
-    final bottomAssets = widget.bottomOverlayAssets;
 
     return IgnorePointer(
       child: AnimatedBuilder(
         animation: reduceMotion ? kAlwaysCompleteAnimation : _animation,
         builder: (context, _) {
-          final value = reduceMotion ? 1.0 : _animation.value;
-          final lift = lerpDouble(-10, 10, value)!;
+          final value = reduceMotion ? 0.5 : _animation.value;
+          final lift = lerpDouble(-8, 8, value)!;
 
-          if (bottomAssets != null && bottomAssets.isNotEmpty) {
-            return _BottomSvgOverlay(
-              assets: bottomAssets,
-              topAsset: widget.topOverlayAsset,
-              lift: lift,
-              opacity: isDark ? 0.20 : 0.34,
-              primaryColor: primary,
-            );
-          }
-
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              Positioned(
-                right: -32,
-                top: 52 + lift,
-                child: Opacity(
-                  opacity: isDark ? 0.15 : 0.26,
-                  child: SvgPicture.asset(
-                    widget.illustrationAsset,
-                    width: 260,
-                    semanticsLabel: 'Wellness illustration',
-                  ),
-                ),
-              ),
-              Positioned(
-                left: 24,
-                top: 112 - (lift * 0.35),
-                child: _FloatingHealthIcon(
-                  icon: Icons.favorite_rounded,
-                  color: const Color(0xFFFF6B8A),
-                  background: Colors.white.withValues(
-                    alpha: isDark ? 0.10 : 0.42,
-                  ),
-                ),
-              ),
-              Positioned(
-                right: 28,
-                bottom: 126 + (lift * 0.4),
-                child: _FloatingHealthIcon(
-                  icon: Icons.spa_rounded,
-                  color: primary,
-                  background: Colors.white.withValues(
-                    alpha: isDark ? 0.10 : 0.46,
-                  ),
-                ),
-              ),
-              Positioned(
-                left: 30,
-                bottom: 58 - (lift * 0.5),
-                child: _FloatingHealthIcon(
-                  icon: Icons.nights_stay_rounded,
-                  color: const Color(0xFF5B8DEF),
-                  background: Colors.white.withValues(
-                    alpha: isDark ? 0.10 : 0.42,
-                  ),
-                ),
-              ),
-            ],
-          );
+          return switch (widget.style) {
+            AuthBackdropStyle.welcome => _buildWelcomeComposition(lift),
+            AuthBackdropStyle.login => _buildLoginComposition(lift),
+            AuthBackdropStyle.signUp => _buildSignUpComposition(lift),
+          };
         },
       ),
     );
   }
-}
 
-class _BottomSvgOverlay extends StatelessWidget {
-  final List<String> assets;
-  final String? topAsset;
-  final double lift;
-  final double opacity;
-  final Color primaryColor;
-
-  const _BottomSvgOverlay({
-    required this.assets,
-    required this.topAsset,
-    required this.lift,
-    required this.opacity,
-    required this.primaryColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final primaryAsset = assets.first;
-    final secondaryAsset = assets.length > 1 ? assets[1] : assets.first;
-    final isCompact = screenWidth < 380;
-    final primaryWidth = isCompact ? 230.0 : 294.0;
-    final secondaryWidth = isCompact ? 190.0 : 244.0;
-    final topWidth = isCompact ? 178.0 : 232.0;
+  Widget _buildWelcomeComposition(double lift) {
+    final assets = widget.bottomOverlayAssets ?? const <String>[];
+    final lowerAsset = assets.isEmpty ? widget.illustrationAsset : assets.first;
+    final secondAsset = assets.length > 1 ? assets[1] : null;
 
     return Stack(
       fit: StackFit.expand,
       children: [
-        if (topAsset != null)
+        Positioned(
+          top: 22 + (lift * 0.30),
+          right: -48,
+          child: _BackdropSvgAccent(
+            asset: widget.topOverlayAsset ?? widget.illustrationAsset,
+            width: 190,
+            opacity: 0.42,
+            angle: 0.05,
+          ),
+        ),
+        Positioned(
+          left: -72,
+          bottom: 8 + (lift * 0.45),
+          child: _BackdropSvgAccent(
+            asset: lowerAsset,
+            width: 250,
+            opacity: 0.36,
+            angle: -0.045,
+          ),
+        ),
+        if (secondAsset != null)
           Positioned(
-            top: 20 + (lift * 0.24),
-            right: isCompact ? 8 : 18,
-            child: Opacity(
-              opacity: opacity * 0.82,
-              child: SvgPicture.asset(
-                topAsset!,
-                width: topWidth,
-                fit: BoxFit.contain,
-                excludeFromSemantics: true,
-              ),
+            right: -62,
+            bottom: 42 - (lift * 0.24),
+            child: _BackdropSvgAccent(
+              asset: secondAsset,
+              width: 180,
+              opacity: 0.28,
+              angle: 0.06,
             ),
           ),
         Positioned(
-          left: isCompact ? 10 : 18,
-          bottom: 18 + (lift * 0.35),
-          child: Opacity(
-            opacity: opacity,
-            child: SvgPicture.asset(
-              primaryAsset,
-              width: primaryWidth,
-              fit: BoxFit.contain,
-              excludeFromSemantics: true,
-            ),
-          ),
-        ),
-        Positioned(
-          right: isCompact ? 10 : 18,
-          bottom: 28 - (lift * 0.28),
-          child: Opacity(
-            opacity: opacity * 0.86,
-            child: SvgPicture.asset(
-              secondaryAsset,
-              width: secondaryWidth,
-              fit: BoxFit.contain,
-              excludeFromSemantics: true,
-            ),
-          ),
-        ),
-        Positioned(
-          left: isCompact ? 22 : 30,
-          bottom: (isCompact ? 162 : 198) - (lift * 0.4),
-          child: _FloatingHealthIcon(
+          top: 118 - (lift * 0.25),
+          left: 18,
+          child: const _FloatingHealthIcon(
             icon: Icons.favorite_rounded,
-            color: const Color(0xFFFF6B8A),
-            background: Colors.white.withValues(alpha: 0.26),
+            color: Color(0xFFEC6A8D),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoginComposition(double lift) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Positioned(
+          top: 42 + (lift * 0.42),
+          right: -72,
+          child: _BackdropSvgAccent(
+            asset: widget.illustrationAsset,
+            width: 250,
+            opacity: 0.52,
+            angle: 0.045,
+          ),
+        ),
+        if (widget.topOverlayAsset != null)
+          Positioned(
+            left: -58,
+            bottom: 20 - (lift * 0.36),
+            child: _BackdropSvgAccent(
+              asset: widget.topOverlayAsset!,
+              width: 188,
+              opacity: 0.34,
+              angle: -0.055,
+            ),
+          ),
+        Positioned(
+          left: 24,
+          top: 98 - (lift * 0.25),
+          child: const _FloatingHealthIcon(
+            icon: Icons.nights_stay_rounded,
+            color: Color(0xFF5B7FE8),
           ),
         ),
         Positioned(
-          right: isCompact ? 26 : 38,
-          bottom: (isCompact ? 178 : 220) + (lift * 0.32),
+          right: 22,
+          bottom: 72 + (lift * 0.22),
           child: _FloatingHealthIcon(
             icon: Icons.spa_rounded,
-            color: primaryColor,
-            background: Colors.white.withValues(alpha: 0.30),
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSignUpComposition(double lift) {
+    final assets = widget.bottomOverlayAssets ?? const <String>[];
+    final lowerAsset =
+        widget.topOverlayAsset ??
+        (assets.isEmpty ? widget.illustrationAsset : assets.first);
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Positioned(
+          top: 26 + (lift * 0.36),
+          right: -70,
+          child: _BackdropSvgAccent(
+            asset: widget.illustrationAsset,
+            width: 238,
+            opacity: 0.48,
+            angle: 0.05,
+          ),
+        ),
+        Positioned(
+          left: -70,
+          bottom: 28 - (lift * 0.32),
+          child: _BackdropSvgAccent(
+            asset: lowerAsset,
+            width: 205,
+            opacity: 0.32,
+            angle: -0.06,
+          ),
+        ),
+        Positioned(
+          left: 22,
+          top: 116 - (lift * 0.24),
+          child: const _FloatingHealthIcon(
+            icon: Icons.favorite_rounded,
+            color: Color(0xFFEC6A8D),
+          ),
+        ),
+        Positioned(
+          right: 24,
+          bottom: 92 + (lift * 0.20),
+          child: _FloatingHealthIcon(
+            icon: Icons.auto_awesome_rounded,
+            color: Theme.of(context).colorScheme.primary,
           ),
         ),
       ],
@@ -289,33 +457,97 @@ class _BottomSvgOverlay extends StatelessWidget {
   }
 }
 
-class _FloatingHealthIcon extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final Color background;
+class _BackdropSvgAccent extends StatelessWidget {
+  final String asset;
+  final double width;
+  final double opacity;
+  final double angle;
 
-  const _FloatingHealthIcon({
-    required this.icon,
-    required this.color,
-    required this.background,
+  const _BackdropSvgAccent({
+    required this.asset,
+    required this.width,
+    required this.opacity,
+    required this.angle,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ClipOval(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+
+    return Transform.rotate(
+      angle: angle,
+      child: Opacity(
+        opacity: isDark ? opacity * 0.72 : opacity,
         child: Container(
-          width: 46,
-          height: 46,
+          width: width,
+          height: width * 0.76,
+          padding: EdgeInsets.all(width * 0.08),
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: background,
-            border: Border.all(color: Colors.white.withValues(alpha: 0.42)),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark
+                  ? [
+                      Colors.white.withValues(alpha: 0.12),
+                      primary.withValues(alpha: 0.08),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.82),
+                      Colors.white.withValues(alpha: 0.36),
+                    ],
+            ),
+            borderRadius: BorderRadius.circular(width * 0.20),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: isDark ? 0.12 : 0.58),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: primary.withValues(alpha: isDark ? 0.12 : 0.14),
+                blurRadius: 30,
+                offset: const Offset(0, 14),
+              ),
+            ],
           ),
-          child: Icon(icon, color: color, size: 23),
+          child: SvgPicture.asset(
+            asset,
+            fit: BoxFit.contain,
+            excludeFromSemantics: true,
+          ),
         ),
       ),
+    );
+  }
+}
+
+class _FloatingHealthIcon extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+
+  const _FloatingHealthIcon({required this.icon, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white.withValues(alpha: isDark ? 0.09 : 0.66),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: isDark ? 0.12 : 0.60),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.14),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Icon(icon, color: color, size: 20),
     );
   }
 }
@@ -335,30 +567,46 @@ class AuthGlassPanel extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(28),
+      borderRadius: BorderRadius.circular(30),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
           width: double.infinity,
           constraints: const BoxConstraints(maxWidth: 440),
           padding: padding,
           decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF142237).withValues(alpha: 0.82)
-                : Colors.white.withValues(alpha: 0.82),
-            borderRadius: BorderRadius.circular(28),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark
+                  ? [
+                      const Color(0xFF1A2B42).withValues(alpha: 0.88),
+                      const Color(0xFF101D30).withValues(alpha: 0.78),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.92),
+                      const Color(0xFFF7FCFA).withValues(alpha: 0.76),
+                    ],
+            ),
+            borderRadius: BorderRadius.circular(30),
             border: Border.all(
               color: isDark
-                  ? Colors.white.withValues(alpha: 0.10)
-                  : Colors.white.withValues(alpha: 0.68),
+                  ? Colors.white.withValues(alpha: 0.13)
+                  : Colors.white.withValues(alpha: 0.78),
+              width: 1.2,
             ),
             boxShadow: [
               BoxShadow(
                 color: isDark
-                    ? Colors.black.withValues(alpha: 0.24)
-                    : const Color(0xFF58BFA6).withValues(alpha: 0.18),
-                blurRadius: 30,
-                offset: const Offset(0, 16),
+                    ? Colors.black.withValues(alpha: 0.30)
+                    : const Color(0xFF2B7D6B).withValues(alpha: 0.14),
+                blurRadius: 36,
+                offset: const Offset(0, 18),
+              ),
+              BoxShadow(
+                color: Colors.white.withValues(alpha: isDark ? 0.02 : 0.28),
+                blurRadius: 4,
+                offset: const Offset(0, -1),
               ),
             ],
           ),
@@ -413,7 +661,7 @@ class AuthBrandHeader extends StatelessWidget {
           Text(
             subtitle!,
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
+          style: GoogleFonts.poppins(
               height: 1.45,
               fontSize: 14.5,
               fontWeight: FontWeight.w500,
@@ -705,7 +953,7 @@ class AuthFinePrint extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: GoogleFonts.inter(
+              style: GoogleFonts.poppins(
                 height: 1.42,
                 fontSize: 12.5,
                 color: pageSecondaryTextColor(context),

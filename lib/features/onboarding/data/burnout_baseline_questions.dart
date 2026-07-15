@@ -10,7 +10,7 @@ const kBurnoutBaselineScale = [
 
 const kBurnoutBaselineSections = [
   BurnoutSection(
-    title: '\u{1F635} Emotional Exhaustion',
+    title: '\u{1F635} Emotional exhaustion',
     category: 'emotional_exhaustion',
     questions: [
       BurnoutQuestion(
@@ -75,7 +75,7 @@ const kBurnoutBaselineSections = [
     ],
   ),
   BurnoutSection(
-    title: '\u{1F3C6} Personal Accomplishment',
+    title: '\u{1F3C6} Personal accomplishment',
     category: 'personal_accomplishment',
     questions: [
       BurnoutQuestion(

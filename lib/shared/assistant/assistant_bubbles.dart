@@ -167,7 +167,7 @@ class _ExercisePreviewBubble extends StatelessWidget {
             Text(
               isCompleted
                   ? 'Nice work. This goal is complete.'
-                  : '${goal.targetLabel()} - open Exercise to mark done or cancel.',
+                  : '${goal.targetLabel()} - open exercise to mark done or cancel.',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -183,7 +183,7 @@ class _ExercisePreviewBubble extends StatelessWidget {
               child: ElevatedButton.icon(
                 onPressed: onChoose,
                 icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                label: const Text('View Goal'),
+                label: const Text('View goal'),
                 style: _bubbleElevatedButtonStyle(),
               ),
             ),
@@ -193,7 +193,7 @@ class _ExercisePreviewBubble extends StatelessWidget {
     }
 
     final title = recommendation?.exerciseName ?? 'Choose today\'s movement';
-    final target = recommendation?.targetLabel ?? 'Open Exercise for options';
+    final target = recommendation?.targetLabel ?? 'Open exercise for options';
     final reason = _shortAssistantText(
       recommendation?.reason ?? '',
       maxChars: 82,

@@ -189,7 +189,7 @@ class _AssistantSettingsState extends State<AssistantSettings>
                 ),
                 child: _buildSectionCard(
                   context: context,
-                  title: 'Floating Assistant',
+                  title: 'Floating assistant',
                   children: [
                     KeyedSubtree(
                       key: widget.tutorialOverlaySwitchKey,

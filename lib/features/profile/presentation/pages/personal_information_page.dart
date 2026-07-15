@@ -41,6 +41,12 @@ class PersonalInformationPage extends StatelessWidget {
     return text.isEmpty ? 'Not set' : text;
   }
 
+  String _categoryValue(String? value) {
+    final text = _value(value);
+    if (text.length < 2 || text == 'Not set') return text;
+    return '${text[0].toUpperCase()}${text.substring(1).toLowerCase()}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -59,7 +65,7 @@ class PersonalInformationPage extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
-            'Personal Info',
+            'Personal info',
             style: TextStyle(
               color: pagePrimaryTextColor(context),
               fontSize: 22,
@@ -148,7 +154,7 @@ class PersonalInformationPage extends StatelessWidget {
               _InfoGroupCard(
                 emoji: '👤',
                 icon: Icons.person_outline,
-                title: 'Profile Details',
+                title: 'Profile details',
                 children: [
                   _InfoRow(
                     icon: Icons.alternate_email_rounded,
@@ -172,8 +178,8 @@ class PersonalInformationPage extends StatelessWidget {
                   ),
                   _InfoRow(
                     icon: Icons.work_outline_rounded,
-                    label: 'Current Role',
-                    value: _value(role),
+                    label: 'Current role',
+                    value: _categoryValue(role),
                   ),
                   _InfoRow(
                     icon: Icons.verified_user_outlined,
@@ -186,26 +192,26 @@ class PersonalInformationPage extends StatelessWidget {
               _InfoGroupCard(
                 emoji: '🌿',
                 icon: Icons.spa_outlined,
-                title: 'Onboarding Profile',
+                title: 'Onboarding profile',
                 children: [
                   _InfoRow(
                     icon: Icons.directions_walk_rounded,
-                    label: 'Lifestyle Type',
-                    value: _value(lifestyleType),
+                    label: 'Lifestyle type',
+                    value: _categoryValue(lifestyleType),
                   ),
                   _InfoRow(
                     icon: Icons.flag_outlined,
-                    label: 'Wellness Goal',
+                    label: 'Wellness goal',
                     value: _value(wellnessGoal),
                   ),
                   _InfoRow(
                     icon: Icons.bedtime_outlined,
-                    label: 'Usual Sleep',
+                    label: 'Usual sleep',
                     value: _value(usualSleepTime),
                   ),
                   _InfoRow(
                     icon: Icons.wb_sunny_outlined,
-                    label: 'Usual Wake',
+                    label: 'Usual wake',
                     value: _value(usualWakeTime),
                   ),
                 ],
@@ -214,26 +220,26 @@ class PersonalInformationPage extends StatelessWidget {
               _InfoGroupCard(
                 emoji: '⚡',
                 icon: Icons.monitor_heart_outlined,
-                title: 'Health Baseline',
+                title: 'Health baseline',
                 children: [
                   _InfoRow(
                     icon: Icons.speed_outlined,
-                    label: 'Work Intensity',
-                    value: _value(workIntensity),
+                    label: 'Work intensity',
+                    value: _categoryValue(workIntensity),
                   ),
                   _InfoRow(
                     icon: Icons.local_fire_department_outlined,
-                    label: 'Initial Burnout',
-                    value: '${_value(burnoutLevel)} ($burnoutScore%)',
+                    label: 'Initial burnout',
+                    value: '${_categoryValue(burnoutLevel)} ($burnoutScore%)',
                   ),
                   _InfoRow(
                     icon: Icons.water_drop_outlined,
-                    label: 'Daily Water Goal',
+                    label: 'Daily water goal',
                     value: _value(waterGoal),
                   ),
                   _InfoRow(
                     icon: Icons.fitness_center_outlined,
-                    label: 'Exercise Target',
+                    label: 'Exercise target',
                     value: _value(exerciseTarget),
                   ),
                 ],

@@ -87,15 +87,15 @@ void main() {
       ),
     );
 
-    expect(find.text('Sleep Duration'), findsOneWidget);
+    expect(find.text('Sleep duration'), findsOneWidget);
     expect(find.text('Hydration'), findsOneWidget);
-    expect(find.text('Recovery Habits'), findsOneWidget);
+    expect(find.text('Recovery habits'), findsOneWidget);
   });
 
   testWidgets('dashboard header renders analytics copy', (tester) async {
     await pumpTestApp(tester, const DashboardHeaderCard());
 
-    expect(find.text('Your Wellness Analytics Dashboard'), findsOneWidget);
+    expect(find.text('Your wellness analytics dashboard'), findsOneWidget);
     expect(find.byIcon(Icons.insights_rounded), findsOneWidget);
   });
 
@@ -113,7 +113,7 @@ void main() {
       ),
     );
 
-    expect(find.text("Today's Nutrition"), findsOneWidget);
+    expect(find.text("Today's nutrition"), findsOneWidget);
     expect(find.text('1450'), findsOneWidget);
     expect(find.text('Protein'), findsOneWidget);
     expect(find.text('Carbs'), findsOneWidget);
@@ -159,19 +159,19 @@ void main() {
       ),
     );
 
-    expect(find.text('Wellness Profile'), findsOneWidget);
-    expect(find.text('Edit Wellness Profile'), findsOneWidget);
-    expect(find.text('Retake Baseline'), findsOneWidget);
-    expect(find.text('Daily Water Goal'), findsNothing);
-    expect(find.text('Exercise Target'), findsNothing);
+    expect(find.text('Wellness profile'), findsOneWidget);
+    expect(find.text('Edit wellness profile'), findsOneWidget);
+    expect(find.text('Retake baseline'), findsOneWidget);
+    expect(find.text('Daily water goal'), findsNothing);
+    expect(find.text('Exercise target'), findsNothing);
 
-    expect(find.text('My Goals'), findsOneWidget);
-    expect(find.text('Wellness Goal'), findsOneWidget);
-    expect(find.text('Sleep Goal'), findsOneWidget);
-    expect(find.text('Hydration Goal'), findsOneWidget);
-    expect(find.text('Activity Goal'), findsOneWidget);
-    expect(find.text('Daily Steps'), findsOneWidget);
-    expect(find.text('Nutrition Goal'), findsOneWidget);
+    expect(find.text('My goals'), findsOneWidget);
+    expect(find.text('Wellness goal'), findsOneWidget);
+    expect(find.text('Sleep goal'), findsOneWidget);
+    expect(find.text('Hydration goal'), findsOneWidget);
+    expect(find.text('Activity goal'), findsOneWidget);
+    expect(find.text('Daily steps'), findsOneWidget);
+    expect(find.text('Nutrition goal'), findsOneWidget);
   });
 
   testWidgets('wellness profile card triggers retake baseline action', (
@@ -198,9 +198,9 @@ void main() {
       ),
     );
 
-    await tester.ensureVisible(find.text('Retake Baseline'));
+    await tester.ensureVisible(find.text('Retake baseline'));
     await tester.pump();
-    await tester.tap(find.text('Retake Baseline'));
+    await tester.tap(find.text('Retake baseline'));
     await tester.pump();
 
     expect(tapped, isTrue);
@@ -301,7 +301,7 @@ void main() {
     expect(find.text('Daily wellness report'), findsWidgets);
     expect(find.text('Sleep'), findsOneWidget);
     expect(find.text('7h'), findsOneWidget);
-    expect(find.text('MEDIUM'), findsOneWidget);
+    expect(find.text('Medium'), findsOneWidget);
   });
 }
 

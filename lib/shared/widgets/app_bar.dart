@@ -2,14 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../features/auth/presentation/pages/auth_start_page.dart';
 import '../../features/log/data/log_api.dart';
 import '../../features/notifications/presentation/pages/notification_page.dart';
-import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/profile/presentation/widgets/profile_avatar_image.dart';
 import '../../features/streaks/presentation/pages/personal_streak_page.dart';
-import '../../features/settings/presentation/pages/settings_page.dart';
 import '../notifications/notification_feed_service.dart';
-import '../preferences/session_reset_service.dart';
 import '../theme/app_page_style.dart';
 
 final ValueNotifier<int> streakRefreshNotifier = ValueNotifier<int>(0);
@@ -26,50 +23,13 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
   String greeting() {
     final hour = DateTime.now().hour;
     if (localeCode == 'fil') {
-      if (hour < 12) return 'Magandang Umaga';
-      if (hour < 18) return 'Magandang Hapon';
-      return 'Magandang Gabi';
+      if (hour < 12) return 'Magandang umaga';
+      if (hour < 18) return 'Magandang hapon';
+      return 'Magandang gabi';
     }
-    if (hour < 12) return 'Good Morning';
-    if (hour < 18) return 'Good Afternoon';
-    return 'Good Evening';
-  }
-
-  Future<void> logout() async {
-    await SessionResetService.instance.resetForLogout();
-    await refreshAppBarStreak();
-
-    if (!context.mounted) return;
-    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const AuthStartPage()),
-      (route) => false,
-    );
-  }
-
-  Future<void> showLogoutConfirmation() async {
-    final shouldLogout = await showDialog<bool>(
-      context: context,
-      barrierColor: Colors.black.withValues(alpha: isDark ? 0.48 : 0.32),
-      builder: (context) => const _LogoutConfirmationDialog(),
-    );
-
-    if (shouldLogout == true) {
-      await logout();
-    }
-  }
-
-  String getAvatarImage(String? gender, String? userType) {
-    if (gender == null || userType == null) return 'assets/images/user.png';
-
-    if (gender.toLowerCase() == 'male') {
-      if (userType == 'Student') return 'assets/images/male Student.png';
-      return 'assets/images/business-man.png';
-    } else if (gender.toLowerCase() == 'female') {
-      if (userType == 'Student') return 'assets/images/female Student.png';
-      return 'assets/images/businesswoman.png';
-    } else {
-      return 'assets/images/user.png';
-    }
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
   }
 
   String todayKey() {
@@ -170,9 +130,9 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
             future: SharedPreferences.getInstance(),
             builder: (context, snapshot) {
               final prefs = snapshot.data;
+              final userId = prefs?.getInt('user_id');
               final gender = prefs?.getString('gender');
               final userType = prefs?.getString('user_type');
-              final avatarImage = getAvatarImage(gender, userType);
 
               final currentStreak = prefs?.getInt('log_streak') ?? 0;
               final lastLogDate = LogApi.normalizeDateString(
@@ -302,13 +262,11 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
                   ),
                   Padding(
                     padding: const EdgeInsets.only(right: 12),
-                    child: PopupMenuButton<int>(
-                      offset: const Offset(0, 54),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      color: isDark ? const Color(0xFF18263B) : Colors.white,
-                      icon: Container(
+                    child: Semantics(
+                      key: const ValueKey('main-app-bar-avatar'),
+                      image: true,
+                      label: 'User avatar',
+                      child: Container(
                         padding: const EdgeInsets.all(2),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
@@ -317,85 +275,14 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
                             width: 1.2,
                           ),
                         ),
-                        child: CircleAvatar(
-                          radius: 14,
-                          backgroundImage: AssetImage(avatarImage),
+                        child: CurrentUserAvatar(
+                          userId: userId,
+                          gender: gender,
+                          userType: userType,
+                          size: 28,
+                          semanticLabel: 'User avatar',
                         ),
                       ),
-                      onSelected: (value) {
-                        switch (value) {
-                          case 0:
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const ProfilePage(),
-                              ),
-                            );
-                            break;
-                          case 1:
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const SettingsPage(),
-                              ),
-                            );
-                            break;
-                          case 2:
-                            showLogoutConfirmation();
-                            break;
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        PopupMenuItem(
-                          value: 0,
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.person_outline,
-                                size: 20,
-                                color: isDark ? Colors.white70 : Colors.black87,
-                              ),
-                              const SizedBox(width: 10),
-                              const Text('Profile'),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 1,
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.settings_outlined,
-                                size: 20,
-                                color: isDark ? Colors.white70 : Colors.black87,
-                              ),
-                              const SizedBox(width: 10),
-                              const Text('Settings'),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 2,
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.logout_rounded,
-                                size: 20,
-                                color: Colors.redAccent,
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                'Logout',
-                                style: TextStyle(
-                                  color: isDark
-                                      ? Colors.red[300]
-                                      : Colors.redAccent,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
                     ),
                   ),
                 ],
@@ -408,8 +295,8 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
   );
 }
 
-class _LogoutConfirmationDialog extends StatelessWidget {
-  const _LogoutConfirmationDialog();
+class LogoutConfirmationDialog extends StatelessWidget {
+  const LogoutConfirmationDialog({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -420,6 +307,7 @@ class _LogoutConfirmationDialog extends StatelessWidget {
     final accent = isDark ? const Color(0xFFFF8585) : const Color(0xFFE5484D);
 
     final stayButton = OutlinedButton.icon(
+      key: const ValueKey('logout-stay-button'),
       onPressed: () => Navigator.pop(context, false),
       icon: const Icon(Icons.close_rounded, size: 18),
       label: const Text('Stay'),
@@ -432,6 +320,7 @@ class _LogoutConfirmationDialog extends StatelessWidget {
     );
 
     final logoutButton = ElevatedButton.icon(
+      key: const ValueKey('logout-confirm-button'),
       onPressed: () => Navigator.pop(context, true),
       icon: const Icon(Icons.logout_rounded, size: 18),
       label: const Text('Log out'),

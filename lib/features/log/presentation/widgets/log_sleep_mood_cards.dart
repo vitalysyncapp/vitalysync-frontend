@@ -9,7 +9,7 @@ extension _LogSleepMoodCards on LogWidgets {
             icon: Icons.nightlight_round,
             iconBg: const Color(0xFFE8E7FF),
             iconColor: const Color(0xFF4B3FF2),
-            title: "Sleep Duration",
+            title: "Sleep duration",
             subtitle: "Last night",
           ),
           const SizedBox(height: 12),
@@ -61,7 +61,7 @@ extension _LogSleepMoodCards on LogWidgets {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            "Sleep Quality",
+            "Sleep quality",
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -332,7 +332,7 @@ extension _LogSleepMoodCards on LogWidgets {
             icon: Icons.battery_5_bar_rounded,
             iconBg: const Color(0xFFFFEEDB),
             iconColor: const Color(0xFFFF5A00),
-            title: "Energy Level",
+            title: "Energy level",
             subtitle: "How much energy did you have today?",
           ),
           const SizedBox(height: 12),

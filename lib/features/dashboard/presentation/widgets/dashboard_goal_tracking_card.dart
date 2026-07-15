@@ -99,7 +99,7 @@ class _GoalTrackingContent extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Goal Tracking',
+                    'Goal tracking',
                     style: TextStyle(
                       color: pagePrimaryTextColor(context),
                       fontSize: 15.5,
@@ -126,7 +126,7 @@ class _GoalTrackingContent extends StatelessWidget {
         ),
         const SizedBox(height: 13),
         Text(
-          'Wellness Goals',
+          'Wellness goals',
           style: TextStyle(
             color: pagePrimaryTextColor(context),
             fontSize: 12.5,
@@ -277,7 +277,7 @@ class _FocusRecommendationSection extends StatelessWidget {
             const SizedBox(width: 7),
             Expanded(
               child: Text(
-                'Focus Recommendations',
+                'Focus recommendations',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(

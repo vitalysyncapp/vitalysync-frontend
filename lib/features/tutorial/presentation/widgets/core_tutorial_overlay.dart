@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
+import '../../../../shared/navigation/main_tab.dart';
 import '../../../../shared/theme/app_page_style.dart';
 
 enum CoreTutorialTarget {
@@ -12,6 +13,7 @@ enum CoreTutorialTarget {
   log,
   nutrition,
   dashboard,
+  profile,
   assistant,
   settingsAssistantTile,
   assistantOverlaySwitch,
@@ -23,15 +25,15 @@ enum CoreTutorialRoute { main, settings, assistantSettings }
 enum _TutorialAssistantDock { topLeft, topRight, bottomLeft, bottomRight }
 
 class CoreTutorialOverlay extends StatefulWidget {
-  final int currentIndex;
-  final ValueChanged<int> onTabSelected;
+  final MainTab currentTab;
+  final ValueChanged<MainTab> onTabSelected;
   final Map<CoreTutorialTarget, GlobalKey> targetKeys;
   final Future<void> Function(CoreTutorialRoute route) onRouteRequested;
   final Future<void> Function() onFinished;
 
   const CoreTutorialOverlay({
     super.key,
-    required this.currentIndex,
+    required this.currentTab,
     required this.onTabSelected,
     required this.targetKeys,
     required this.onRouteRequested,
@@ -77,7 +79,7 @@ class _CoreTutorialOverlayState extends State<CoreTutorialOverlay>
   @override
   void didUpdateWidget(covariant CoreTutorialOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.currentIndex != widget.currentIndex) {
+    if (oldWidget.currentTab != widget.currentTab) {
       _queueTargetUpdate();
     }
   }
@@ -96,15 +98,15 @@ class _CoreTutorialOverlayState extends State<CoreTutorialOverlay>
 
   void _syncStepSideEffects() {
     final step = _coreTutorialSteps[_currentStep];
-    final tabIndex = step.tabIndex;
-    final willSwitchTab = tabIndex != null && tabIndex != widget.currentIndex;
+    final tab = step.tab;
+    final willSwitchTab = tab != null && tab != widget.currentTab;
     final settleDelay = _longerDelay(
       willSwitchTab ? _tabSwitchDelay : Duration.zero,
       step.settleDelay,
     );
 
     if (willSwitchTab) {
-      widget.onTabSelected(tabIndex);
+      widget.onTabSelected(tab);
     }
 
     unawaited(widget.onRouteRequested(step.route));
@@ -812,7 +814,7 @@ class _TutorialFocusFramePainter extends CustomPainter {
 
 class _TutorialStepData {
   final CoreTutorialTarget target;
-  final int? tabIndex;
+  final MainTab? tab;
   final CoreTutorialRoute route;
   final IconData icon;
   final String title;
@@ -822,7 +824,7 @@ class _TutorialStepData {
 
   const _TutorialStepData({
     required this.target,
-    required this.tabIndex,
+    required this.tab,
     this.route = CoreTutorialRoute.main,
     required this.icon,
     required this.title,
@@ -835,7 +837,7 @@ class _TutorialStepData {
 const _coreTutorialSteps = [
   _TutorialStepData(
     target: CoreTutorialTarget.navigation,
-    tabIndex: null,
+    tab: null,
     icon: Icons.explore_rounded,
     title: 'Welcome to your VitalySync tour',
     body:
@@ -844,7 +846,7 @@ const _coreTutorialSteps = [
   ),
   _TutorialStepData(
     target: CoreTutorialTarget.home,
-    tabIndex: 0,
+    tab: MainTab.home,
     icon: Icons.home_rounded,
     title: 'Home is your daily snapshot',
     body:
@@ -852,17 +854,8 @@ const _coreTutorialSteps = [
     assistantDock: _TutorialAssistantDock.bottomRight,
   ),
   _TutorialStepData(
-    target: CoreTutorialTarget.log,
-    tabIndex: 1,
-    icon: Icons.monitor_heart_rounded,
-    title: 'Log is your daily check-in',
-    body:
-        'Record sleep, mood, energy, hydration, workload, stress, symptoms, exercise, and recovery habits so your insights stay grounded in real days.',
-    assistantDock: _TutorialAssistantDock.topRight,
-  ),
-  _TutorialStepData(
     target: CoreTutorialTarget.nutrition,
-    tabIndex: 2,
+    tab: MainTab.nutrition,
     icon: Icons.camera_alt_rounded,
     title: 'Nutrition keeps meals in context',
     body:
@@ -870,8 +863,17 @@ const _coreTutorialSteps = [
     assistantDock: _TutorialAssistantDock.topLeft,
   ),
   _TutorialStepData(
+    target: CoreTutorialTarget.log,
+    tab: MainTab.log,
+    icon: Icons.monitor_heart_rounded,
+    title: 'Log is your daily check-in',
+    body:
+        'Record sleep, mood, energy, hydration, workload, stress, symptoms, exercise, and recovery habits so your insights stay grounded in real days.',
+    assistantDock: _TutorialAssistantDock.topRight,
+  ),
+  _TutorialStepData(
     target: CoreTutorialTarget.dashboard,
-    tabIndex: 3,
+    tab: MainTab.dashboard,
     icon: Icons.analytics_rounded,
     title: 'Dashboard shows the bigger pattern',
     body:
@@ -879,17 +881,26 @@ const _coreTutorialSteps = [
     assistantDock: _TutorialAssistantDock.bottomLeft,
   ),
   _TutorialStepData(
+    target: CoreTutorialTarget.profile,
+    tab: MainTab.profile,
+    icon: Icons.person_rounded,
+    title: 'Profile keeps your wellness setup together',
+    body:
+        'Review personal details, wellness baselines, goals, settings, and account actions from your profile tab.',
+    assistantDock: _TutorialAssistantDock.topLeft,
+  ),
+  _TutorialStepData(
     target: CoreTutorialTarget.none,
-    tabIndex: 0,
+    tab: MainTab.home,
     icon: Icons.leaderboard_rounded,
     title: 'Streaks now have a leaderboard',
     body:
-        'Tap your streak chip in the top bar to open My Streak. The leaderboard compares global, local, role, and goal cohorts using privacy-safe profile details.',
+        'Tap your streak chip in the home header to open my streak. The leaderboard compares global, local, role, and goal cohorts using privacy-safe profile details.',
     assistantDock: _TutorialAssistantDock.topRight,
   ),
   _TutorialStepData(
     target: CoreTutorialTarget.assistant,
-    tabIndex: 3,
+    tab: MainTab.dashboard,
     icon: Icons.auto_awesome_rounded,
     title: 'The assistant adapts to your day',
     body:
@@ -898,18 +909,18 @@ const _coreTutorialSteps = [
   ),
   _TutorialStepData(
     target: CoreTutorialTarget.settingsAssistantTile,
-    tabIndex: null,
+    tab: null,
     route: CoreTutorialRoute.settings,
     icon: Icons.settings_rounded,
     title: 'Settings keeps assistant access in one place',
     body:
-        'I opened Settings for you. The Assistant section controls whether the assistant can keep helping after you leave the app.',
+        'I opened settings for you. The assistant section controls whether the assistant can keep helping after you leave the app.',
     assistantDock: _TutorialAssistantDock.bottomLeft,
     settleDelay: Duration(milliseconds: 680),
   ),
   _TutorialStepData(
     target: CoreTutorialTarget.assistantOverlaySwitch,
-    tabIndex: null,
+    tab: null,
     route: CoreTutorialRoute.assistantSettings,
     icon: Icons.bubble_chart_rounded,
     title: 'Overlay mode is optional',
@@ -920,7 +931,7 @@ const _coreTutorialSteps = [
   ),
   _TutorialStepData(
     target: CoreTutorialTarget.none,
-    tabIndex: null,
+    tab: null,
     route: CoreTutorialRoute.main,
     icon: Icons.check_circle_rounded,
     title: 'You are ready to begin',

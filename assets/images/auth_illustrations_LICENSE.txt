@@ -33,3 +33,31 @@ Auth illustration asset notes
   Retrieved: 2026-06-05
   License summary: free for personal, academic, and commercial use without
   attribution; do not resell/repackage illustrations or duplicate Scale.
+
+Welcome carousel illustrations
+
+- welcome_morning.svg
+  Source: unDraw, "Morning Plans"
+  URL: https://undraw.co/illustration/morning-plans_5vln
+  Asset URL: https://cdn.undraw.co/illustration/morning-plans_5vln.svg
+
+- welcome_mindfulness.svg
+  Source: unDraw, "Mindfulness"
+  URL: https://undraw.co/illustration/mindfulness_d853
+  Asset URL: https://cdn.undraw.co/illustration/mindfulness_d853.svg
+
+- welcome_reminders.svg
+  Source: unDraw, "Reminders"
+  URL: https://undraw.co/illustration/reminders_o8j5
+  Asset URL: https://cdn.undraw.co/illustration/reminders_o8j5.svg
+
+- welcome_insights.svg
+  Source: unDraw, "Data Reports"
+  URL: https://undraw.co/illustration/data-reports_l2u3
+  Asset URL: https://cdn.undraw.co/illustration/data-reports_l2u3.svg
+
+  Retrieved: 2026-07-14
+  License: https://undraw.co/license
+  License summary: free for personal and commercial use without attribution.
+  Do not redistribute the illustrations as an asset pack, replicate unDraw, or
+  use the assets for AI/ML training.

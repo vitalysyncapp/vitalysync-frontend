@@ -37,7 +37,7 @@ class BurnoutRiskTrendCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  "Burnout Risk Trend",
+                  "Burnout risk trend",
                   style: TextStyle(
                     fontSize: 15.5,
                     fontWeight: FontWeight.bold,

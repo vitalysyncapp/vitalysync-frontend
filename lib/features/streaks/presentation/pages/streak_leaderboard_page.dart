@@ -89,7 +89,7 @@ class _StreakLeaderboardPageState extends State<StreakLeaderboardPage> {
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
-            'Streak Leaderboard',
+            'Streak leaderboard',
             style: TextStyle(
               color: pagePrimaryTextColor(context),
               fontWeight: FontWeight.w900,
@@ -286,7 +286,7 @@ class _LeaderboardHero extends StatelessWidget {
                           ),
                           SizedBox(width: 6),
                           Text(
-                            'STREAK LEAGUE',
+                            'Streak league',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 11,
@@ -759,7 +759,7 @@ class _PodiumTile extends StatelessWidget {
           if (row.isCurrentUser) ...[
             const SizedBox(height: 3),
             Text(
-              'YOU',
+              'You',
               style: TextStyle(
                 color: Theme.of(context).colorScheme.primary,
                 fontSize: 9,

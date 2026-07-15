@@ -30,7 +30,7 @@ class TermsPrivacyWidget extends StatelessWidget {
                 const SizedBox(height: 16),
                 _policyCard(
                   context: context,
-                  title: 'Terms and Conditions',
+                  title: 'Terms and conditions',
                   icon: Icons.gavel_rounded,
                   color: const Color(0xFF2F66F3),
                   children: _termsContent(context),
@@ -38,7 +38,7 @@ class TermsPrivacyWidget extends StatelessWidget {
                 const SizedBox(height: 16),
                 _policyCard(
                   context: context,
-                  title: 'Privacy Policy',
+                  title: 'Privacy policy',
                   icon: Icons.privacy_tip_rounded,
                   color: const Color(0xFF14B8A6),
                   children: _privacyContent(context),
@@ -84,7 +84,7 @@ class TermsPrivacyWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Terms & Privacy Policy',
+                  'Terms and privacy policy',
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
@@ -184,12 +184,12 @@ class TermsPrivacyWidget extends StatelessWidget {
     return [
       _section(
         context,
-        '1. Acceptance of Terms',
-        'By accessing or using VitalySync, you agree to be bound by these Terms and Conditions. If you do not agree, you must refrain from using the application.',
+        '1. Acceptance of terms',
+        'By accessing or using VitalySync, you agree to be bound by these terms and conditions. If you do not agree, you must refrain from using the application.',
       ),
       _section(
         context,
-        '2. Description of Service',
+        '2. Description of service',
         'VitalySync is a health and wellness application that allows users to:',
         bullets: const [
           'Log daily activities and wellness data',
@@ -201,7 +201,7 @@ class TermsPrivacyWidget extends StatelessWidget {
       ),
       _section(
         context,
-        '3. User Responsibilities',
+        '3. User responsibilities',
         'Users agree to:',
         bullets: const [
           'Provide accurate and complete information',
@@ -213,17 +213,17 @@ class TermsPrivacyWidget extends StatelessWidget {
       ),
       _section(
         context,
-        '4. Health Disclaimer',
+        '4. Health disclaimer',
         'VitalySync does not provide medical diagnosis or treatment. Consult a healthcare professional for medical concerns.',
       ),
       _section(
         context,
-        '5. Intellectual Property',
+        '5. Intellectual property',
         'All content and features are owned by the developers and protected by law.',
       ),
       _section(
         context,
-        '6. Limitation of Liability',
+        '6. Limitation of liability',
         'VitalySync is not liable for:',
         bullets: const [
           'Inaccuracies in data',
@@ -238,13 +238,13 @@ class TermsPrivacyWidget extends StatelessWidget {
       ),
       _section(
         context,
-        '8. Changes to Terms',
-        'We may update these Terms. Continued use means acceptance.',
+        '8. Changes to terms',
+        'We may update these terms. Continued use means acceptance.',
       ),
       _section(
         context,
-        '9. Governing Law',
-        'These Terms are governed by the laws of the Republic of the Philippines.',
+        '9. Governing law',
+        'These terms are governed by the laws of the Republic of the Philippines.',
       ),
     ];
   }
@@ -258,7 +258,7 @@ class TermsPrivacyWidget extends StatelessWidget {
       ),
       _section(
         context,
-        '2. Information We Collect',
+        '2. Information we collect',
         'Personal data may include:',
         bullets: const [
           'Name, email, profile details',
@@ -268,7 +268,7 @@ class TermsPrivacyWidget extends StatelessWidget {
       ),
       _section(
         context,
-        '3. Purpose of Data Collection',
+        '3. Purpose of data collection',
         'Data is used to:',
         bullets: const [
           'Provide app functionality',
@@ -278,33 +278,33 @@ class TermsPrivacyWidget extends StatelessWidget {
       ),
       _section(
         context,
-        '4. Legal Basis',
+        '4. Legal basis',
         'Processing is based on consent, legitimate interest, and legal obligations.',
       ),
       _section(
         context,
-        '5. Data Security',
+        '5. Data security',
         'We implement safeguards to protect your data.',
       ),
       _section(
         context,
-        '6. Data Sharing',
+        '6. Data sharing',
         'We do not sell data. Sharing occurs only when necessary or legally required.',
       ),
       _section(
         context,
-        '7. User Rights',
+        '7. User rights',
         'You may access, correct, delete data, or file complaints.',
       ),
       _section(
         context,
-        '8. Data Retention',
+        '8. Data retention',
         'Data is kept only as long as necessary.',
       ),
       _section(context, '9. Cookies', 'Used to improve experience.'),
       _section(
         context,
-        '10. Policy Updates',
+        '10. Policy updates',
         'Users will be notified of major changes.',
       ),
       _section(
@@ -314,7 +314,7 @@ class TermsPrivacyWidget extends StatelessWidget {
       ),
       _section(
         context,
-        '12. Data Breach Notification',
+        '12. Data breach notification',
         'Users will be notified if a breach occurs and actions will be taken.',
       ),
       _section(

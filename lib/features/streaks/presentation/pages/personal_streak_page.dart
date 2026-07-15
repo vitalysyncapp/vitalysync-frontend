@@ -15,7 +15,6 @@ class PersonalStreakPage extends StatefulWidget {
 }
 
 class _PersonalStreakPageState extends State<PersonalStreakPage> {
-  final GlobalKey _shareCardKey = GlobalKey();
   late Future<StreakOverview> _future;
 
   @override
@@ -56,19 +55,25 @@ class _PersonalStreakPageState extends State<PersonalStreakPage> {
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
-            'My Streak',
+            'My streak',
             style: TextStyle(
               color: pagePrimaryTextColor(context),
               fontWeight: FontWeight.w900,
             ),
           ),
           actions: [
-            IconButton(
-              tooltip: 'Leaderboard',
-              onPressed: _openLeaderboard,
-              icon: Icon(
-                Icons.leaderboard_rounded,
-                color: pagePrimaryTextColor(context),
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: IconButton.filledTonal(
+                tooltip: 'Leaderboard',
+                onPressed: _openLeaderboard,
+                style: IconButton.styleFrom(
+                  backgroundColor: pageSurfaceColor(context),
+                ),
+                icon: Icon(
+                  Icons.leaderboard_rounded,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
             ),
           ],
@@ -80,7 +85,7 @@ class _PersonalStreakPageState extends State<PersonalStreakPage> {
               return AppSkeletonList(
                 padding: EdgeInsets.fromLTRB(
                   16,
-                  16,
+                  12,
                   16,
                   pageBottomContentPadding(context),
                 ),
@@ -107,7 +112,6 @@ class _PersonalStreakPageState extends State<PersonalStreakPage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     RepaintBoundary(
-                      key: _shareCardKey,
                       child: StreakShareCard(
                         displayName: overview.displayName,
                         currentStreak: overview.streak.currentStreak,
@@ -117,9 +121,7 @@ class _PersonalStreakPageState extends State<PersonalStreakPage> {
                         isOffline: overview.isOffline,
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    _ScreenshotHint(isOffline: overview.isOffline),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 20),
                     _SaverPanel(overview: overview),
                     const SizedBox(height: 18),
                     _LeaderboardCta(onTap: _openLeaderboard),
@@ -131,45 +133,6 @@ class _PersonalStreakPageState extends State<PersonalStreakPage> {
             );
           },
         ),
-      ),
-    );
-  }
-}
-
-class _ScreenshotHint extends StatelessWidget {
-  final bool isOffline;
-
-  const _ScreenshotHint({required this.isOffline});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: pageSurfaceColor(context),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: pageBorderColor(context)),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.photo_camera_outlined,
-            color: Theme.of(context).colorScheme.primary,
-            size: 21,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              isOffline
-                  ? 'Showing your latest cached streak card.'
-                  : 'Screenshot-ready card with no private profile details.',
-              style: TextStyle(
-                color: pageSecondaryTextColor(context),
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -191,7 +154,7 @@ class _SaverPanel extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: pageSurfaceColor(context),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(26),
         border: Border.all(color: pageBorderColor(context)),
         boxShadow: pageCardShadow(context),
       ),
@@ -205,11 +168,18 @@ class _SaverPanel extends StatelessWidget {
                 height: 46,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFFFF8A1F), Color(0xFFFACC15)],
+                    colors: [Color(0xFFFF6B35), Color(0xFFFFB800)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFF8A1F).withValues(alpha: 0.28),
+                      blurRadius: 16,
+                      offset: const Offset(0, 7),
+                    ),
+                  ],
                 ),
                 child: const Icon(
                   Icons.shield_rounded,
@@ -223,7 +193,7 @@ class _SaverPanel extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Streak Savers',
+                      'Streak savers',
                       style: TextStyle(
                         color: pagePrimaryTextColor(context),
                         fontSize: 18,
@@ -273,7 +243,7 @@ class _SaverPanel extends StatelessWidget {
               minHeight: 9,
               value: progress.clamp(0, 1).toDouble(),
               backgroundColor: pageSubtleSurfaceColor(context),
-              valueColor: const AlwaysStoppedAnimation(Color(0xFFFF8A1F)),
+              valueColor: const AlwaysStoppedAnimation(Color(0xFFFF7A2F)),
             ),
           ),
         ],
@@ -327,8 +297,9 @@ class _LeaderboardCta extends StatelessWidget {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: pageSurfaceColor(context),
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(color: pageBorderColor(context)),
+          boxShadow: pageCardShadow(context),
         ),
         child: Row(
           children: [
@@ -343,7 +314,7 @@ class _LeaderboardCta extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Streak Leaderboard',
+                    'Streak leaderboard',
                     style: TextStyle(
                       color: pagePrimaryTextColor(context),
                       fontWeight: FontWeight.w900,
@@ -383,14 +354,15 @@ class _RecentStreakEvents extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: pageSurfaceColor(context),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: pageBorderColor(context)),
+        boxShadow: pageCardShadow(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Recent Streak Activity',
+            'Recent streak activity',
             style: TextStyle(
               color: pagePrimaryTextColor(context),
               fontSize: 17,

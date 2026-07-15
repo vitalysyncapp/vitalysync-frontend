@@ -140,7 +140,7 @@ class BurnoutInfoDialog extends StatelessWidget {
       child: ElevatedButton.icon(
         onPressed: onLearnMore,
         icon: const Icon(Icons.menu_book_rounded, size: 18),
-        label: const Text('Learn more about Burnout'),
+        label: const Text('Learn more about burnout'),
         style: ElevatedButton.styleFrom(
           elevation: 0,
           minimumSize: const Size.fromHeight(46),
@@ -427,19 +427,17 @@ class BurnoutInfoDialog extends StatelessWidget {
     }
   }
 
-  String _titleCase(String value) {
-    if (value.isEmpty) return 'Unknown';
-    return value[0].toUpperCase() + value.substring(1).toLowerCase();
-  }
-
   String _humanize(String value) {
-    return value
+    final words = value
         .replaceAll('_', ' ')
         .replaceAll('-', ' ')
         .split(' ')
         .where((word) => word.trim().isNotEmpty)
-        .map((word) => _titleCase(word))
-        .join(' ');
+        .map((word) => word.toLowerCase())
+        .toList();
+    if (words.isEmpty) return 'Unknown';
+    final text = words.join(' ');
+    return '${text[0].toUpperCase()}${text.substring(1)}';
   }
 
   TextStyle _bodyStyle(BuildContext context) {

@@ -37,7 +37,7 @@ class _SymptomFrequencyCardState extends State<SymptomFrequencyCard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Symptom Frequency',
+                'Symptom frequency',
                 style: TextStyle(
                   fontSize: 15.5,
                   fontWeight: FontWeight.bold,

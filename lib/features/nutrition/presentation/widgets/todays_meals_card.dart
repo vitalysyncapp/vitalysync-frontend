@@ -27,7 +27,7 @@ class TodaysMealsCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "Today's Meals",
+                "Today's meals",
                 style: TextStyle(
                   fontSize: 15.5,
                   fontWeight: FontWeight.w800,
@@ -63,7 +63,7 @@ class TodaysMealsCard extends StatelessWidget {
                         ),
                         SizedBox(width: isCompact ? 4 : 6),
                         Text(
-                          'Manual Log',
+                          'Manual log',
                           style: TextStyle(
                             fontSize: isCompact ? 10.5 : 11,
                             fontWeight: FontWeight.w700,

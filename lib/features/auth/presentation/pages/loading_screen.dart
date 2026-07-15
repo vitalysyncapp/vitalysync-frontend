@@ -76,7 +76,7 @@ class _LoadingScreenState extends State<LoadingScreen>
         MaterialPageRoute(
           builder: (_) => onboardingCompleted
               ? MainNavigation(
-                  initialIndex: tabIndexForNotificationPayload(launchPayload),
+                  initialTab: tabForNotificationPayload(launchPayload),
                   openNutritionLogOnStart: shouldOpenNutritionLog(
                     launchPayload,
                   ),
@@ -200,7 +200,7 @@ class _LoadingScreenState extends State<LoadingScreen>
                   Text(
                     'VitalySync provides wellness insights only and does not replace medical advice.',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
+                    style: GoogleFonts.poppins(
                       fontSize: 12.5,
                       height: 1.35,
                       color: isDark

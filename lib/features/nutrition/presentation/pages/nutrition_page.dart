@@ -5,9 +5,9 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../app/main_navigation.dart';
 import '../../../../shared/goals/user_goals.dart';
+import '../../../../shared/navigation/main_tab.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
-import '../../../../shared/widgets/app_bar.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/widgets/reveal_on_build.dart';
 import '../../data/nutrition_api.dart';
@@ -119,7 +119,7 @@ class _NutritionPageState extends State<NutritionPage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final controller = MainNavigationController.maybeOf(context);
-    if (controller == null || controller.currentIndex != 2) {
+    if (controller == null || controller.currentTab != MainTab.nutrition) {
       return;
     }
 
@@ -545,7 +545,7 @@ class _NutritionPageState extends State<NutritionPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Review Meal',
+            'Review meal',
             style: TextStyle(
               fontSize: isCompact ? 15.5 : 16.5,
               fontWeight: FontWeight.w800,
@@ -585,7 +585,7 @@ class _NutritionPageState extends State<NutritionPage> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: _isSaving ? null : _analyzeSelectedMeal,
-                  child: const Text('Try Again'),
+                  child: const Text('Try again'),
                 ),
               ),
             ],
@@ -605,7 +605,7 @@ class _NutritionPageState extends State<NutritionPage> {
                       ),
                     )
                   : const Icon(Icons.check_circle_outline_rounded),
-              label: Text(_isSaving ? 'Saving...' : 'Confirm Log'),
+              label: Text(_isSaving ? 'Saving...' : 'Confirm log'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF16A34A),
                 foregroundColor: Colors.white,
@@ -629,7 +629,6 @@ class _NutritionPageState extends State<NutritionPage> {
       decoration: buildPageDecoration(context),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: buildAppBar(context),
         body: SafeArea(
           child: SingleChildScrollView(
             controller: _scrollController,
@@ -637,7 +636,7 @@ class _NutritionPageState extends State<NutritionPage> {
               pagePadding,
               pagePadding,
               pagePadding,
-              pageBottomContentPadding(context, extra: 10.5),
+              mainPageBottomContentPadding(context),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

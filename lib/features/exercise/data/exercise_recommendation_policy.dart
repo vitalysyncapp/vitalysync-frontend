@@ -15,7 +15,7 @@ extension ExerciseEffortLevelLabel on ExerciseEffortLevel {
       case ExerciseEffortLevel.active:
         return 'Active';
       case ExerciseEffortLevel.veryActive:
-        return 'Very Active';
+        return 'Very active';
     }
   }
 }
@@ -689,14 +689,14 @@ class ExerciseRecommendationPolicy {
         );
       case 'lightly active':
         return const _LifestyleBounds(
-          label: 'Lightly Active',
+          label: 'Lightly active',
           minLevel: 0,
           startLevel: 1,
           maxLevel: 3,
         );
       case 'moderately active':
         return const _LifestyleBounds(
-          label: 'Moderately Active',
+          label: 'Moderately active',
           minLevel: 0,
           startLevel: 2,
           maxLevel: 4,
@@ -710,14 +710,14 @@ class ExerciseRecommendationPolicy {
         );
       case 'very active':
         return const _LifestyleBounds(
-          label: 'Very Active',
+          label: 'Very active',
           minLevel: 0,
           startLevel: 4,
           maxLevel: 4,
         );
       default:
         return const _LifestyleBounds(
-          label: 'Lightly Active',
+          label: 'Lightly active',
           minLevel: 0,
           startLevel: 1,
           maxLevel: 3,

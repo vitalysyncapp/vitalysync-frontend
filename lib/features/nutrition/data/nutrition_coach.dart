@@ -23,7 +23,7 @@ class NutritionInsight {
   factory NutritionInsight.fromJson(Map<String, dynamic> json) {
     return NutritionInsight(
       id: json['id']?.toString() ?? 'nutrition_insight',
-      title: json['title']?.toString() ?? 'Nutrition Insight',
+      title: json['title']?.toString() ?? 'Nutrition insight',
       message: json['message']?.toString() ?? '',
       confidence: _confidenceFromString(json['confidence']?.toString()),
       source: json['source']?.toString() ?? 'nutrition_coach',

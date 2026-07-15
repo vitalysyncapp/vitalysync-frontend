@@ -100,7 +100,7 @@ class _WeeklyCalorieLevelsCard extends StatelessWidget {
         children: [
           _NutritionSectionHeader(
             icon: Icons.local_fire_department_rounded,
-            title: 'Weekly Calorie Levels',
+            title: 'Weekly calorie levels',
             subtitle: data.unavailable
                 ? 'Saved nutrition data unavailable'
                 : 'Daily energy intake made easier to read',
@@ -170,7 +170,7 @@ class _NutritionBalanceCard extends StatelessWidget {
         children: [
           _NutritionSectionHeader(
             icon: Icons.donut_small_rounded,
-            title: 'Nutrition Balance',
+            title: 'Nutrition balance',
             subtitle: data.hasMacroData
                 ? 'Protein, carbs, and fat from logged meals'
                 : 'Log meals with macros to build this view',

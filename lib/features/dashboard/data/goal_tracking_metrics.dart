@@ -152,7 +152,7 @@ class GoalTrackingMetricsService {
     return [
       _targetMetric(
         id: 'sleep',
-        title: 'Sleep Goal',
+        title: 'Sleep goal',
         current: weeklyMetrics.averageSleep,
         target: goals.sleepHours,
         valueLabel: weeklyMetrics.averageSleep > 0
@@ -161,7 +161,7 @@ class GoalTrackingMetricsService {
         targetLabel: '${goals.sleepLabel} goal',
         detailLabel: sleepLoggedDays > 0
             ? '$sleepLoggedDays/7 sleep logs this week'
-            : 'Log sleep in Daily Log to compare progress.',
+            : 'Log sleep in the daily log to compare progress.',
         hasData: sleepLoggedDays > 0,
         recommendationTitle: 'Protect sleep consistency',
         recommendationMessage:
@@ -169,7 +169,7 @@ class GoalTrackingMetricsService {
       ),
       _targetMetric(
         id: 'hydration',
-        title: 'Hydration Goal',
+        title: 'Hydration goal',
         current: weeklyMetrics.averageHydration,
         target: goals.hydrationLiters,
         valueLabel: weeklyMetrics.averageHydration > 0
@@ -178,7 +178,7 @@ class GoalTrackingMetricsService {
         targetLabel: '${goals.hydrationLabel} goal',
         detailLabel: hydrationLoggedDays > 0
             ? '$hydrationLoggedDays/7 hydration logs this week'
-            : 'Add hydration in Daily Log to see your trend.',
+            : 'Add hydration in the daily log to see your trend.',
         hasData: hydrationLoggedDays > 0,
         recommendationTitle: 'Stabilize hydration',
         recommendationMessage:
@@ -186,7 +186,7 @@ class GoalTrackingMetricsService {
       ),
       _targetMetric(
         id: 'activity',
-        title: 'Activity Goal',
+        title: 'Activity goal',
         current: weeklyMetrics.exerciseDays.toDouble(),
         target: goals.activityDaysPerWeek.toDouble(),
         valueLabel: '${weeklyMetrics.exerciseDays}/7 movement days',
@@ -201,7 +201,7 @@ class GoalTrackingMetricsService {
       ),
       _targetMetric(
         id: 'steps',
-        title: 'Daily Steps',
+        title: 'Daily steps',
         current: weeklyMetrics.averageSteps.toDouble(),
         target: goals.dailySteps.toDouble(),
         valueLabel: '${_formatInt(weeklyMetrics.averageSteps)} avg',
@@ -297,7 +297,7 @@ class GoalTrackingMetricsService {
 
     return GoalTrackingMetric(
       id: 'nutrition',
-      title: 'Nutrition Goal',
+      title: 'Nutrition goal',
       valueLabel: hasData
           ? '${_formatInt(current.round())} kcal avg'
           : 'No meal logs',

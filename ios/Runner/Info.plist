@@ -4,6 +4,8 @@
 <dict>
 	<key>NSCameraUsageDescription</key>
 	<string>This app uses the camera to take meal photos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>VitalySync uses your photo library to choose profile and meal photos.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>This app uses your location to show local weather and air quality.</string>
 	<key>NSMotionUsageDescription</key>

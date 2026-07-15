@@ -39,7 +39,7 @@ class LogNewMealCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Log New Meal',
+            'Log new meal',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w800,
@@ -107,7 +107,7 @@ class LogNewMealCard extends StatelessWidget {
                     SizedBox(height: isCompact ? 6 : 7),
                   ],
                   Text(
-                    'Take Photo',
+                    'Take photo',
                     style: TextStyle(
                       fontSize: isCompact ? 12.5 : 13.5,
                       fontWeight: FontWeight.w700,
@@ -154,7 +154,7 @@ class LogNewMealCard extends StatelessWidget {
                   ),
                   SizedBox(width: isCompact ? 6 : 8),
                   Text(
-                    'Choose from Gallery',
+                    'Choose from gallery',
                     style: TextStyle(
                       fontSize: isCompact ? 11.5 : 12.5,
                       fontWeight: FontWeight.w500,
@@ -180,7 +180,7 @@ class LogNewMealCard extends StatelessWidget {
                       ),
                     )
                   : const Icon(Icons.auto_awesome_rounded),
-              label: Text(isAnalyzing ? 'Analyzing...' : 'Analyze Meal'),
+              label: Text(isAnalyzing ? 'Analyzing...' : 'Analyze meal'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF16A34A),
                 foregroundColor: Colors.white,

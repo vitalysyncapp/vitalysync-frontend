@@ -199,7 +199,6 @@ class _DashboardState extends State<Dashboard> {
       decoration: buildPageDecoration(context),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: buildAppBar(context),
         body: SafeArea(
           child: RefreshIndicator(
             onRefresh: _refreshDashboard,
@@ -209,7 +208,7 @@ class _DashboardState extends State<Dashboard> {
                 12,
                 12,
                 12,
-                pageBottomContentPadding(context, extra: 10.5),
+                mainPageBottomContentPadding(context),
               ),
               child: Column(
                 children: [
@@ -224,7 +223,7 @@ class _DashboardState extends State<Dashboard> {
                     child: Row(
                       children: [
                         DashboardStatCard(
-                          title: "Burnout Risk",
+                          title: "Burnout risk",
                           value: _burnoutRiskValue(),
                           subtitle: _burnoutRiskSubtitle(),
                           subtitleColor: _burnoutTrendColor(),
@@ -377,7 +376,7 @@ class _AvgSleepStatCardState extends State<_AvgSleepStatCard> {
         final delta = currentAverage - previousAverage;
 
         return DashboardStatCard(
-          title: "Avg Sleep",
+          title: "Average sleep",
           value: currentAverage > 0
               ? "${currentAverage.toStringAsFixed(1)}h"
               : "--",
@@ -551,7 +550,7 @@ class _AiBurnoutInsightCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'AI Insight',
+                            'AI insight',
                             style: TextStyle(
                               color: pagePrimaryTextColor(context),
                               fontSize: 15,

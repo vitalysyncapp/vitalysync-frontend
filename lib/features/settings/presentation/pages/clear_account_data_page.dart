@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/preferences/session_reset_service.dart';
+import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../auth/presentation/pages/auth_start_page.dart';
+import '../../../profile/data/profile_avatar.dart';
 
 class ClearAccountDataPage extends StatefulWidget {
   const ClearAccountDataPage({super.key});
@@ -21,7 +23,7 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
         return AlertDialog(
           title: const Text('Clear local account data?'),
           content: const Text(
-            'This removes saved preferences, cached logs, pending offline logs, and your local session on this device. Your server account will stay active.',
+            'This removes your saved avatar, preferences, cached logs, pending offline logs, and local session on this device. Your server account will stay active.',
           ),
           actions: [
             TextButton(
@@ -31,7 +33,7 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
             TextButton(
               onPressed: () => Navigator.pop(context, true),
               child: const Text(
-                'Clear Data',
+                'Clear data',
                 style: TextStyle(color: Colors.red),
               ),
             ),
@@ -47,6 +49,11 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
     setState(() => _isSubmitting = true);
 
     try {
+      final session = await UserSessionController.instance.load();
+      final userId = session.userId;
+      if (userId != null) {
+        await ProfileAvatarController.instance.clearForUser(userId);
+      }
       await SessionResetService.instance.resetForLogout();
 
       if (!mounted) {
@@ -80,7 +87,7 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
-            'Clear Account Data',
+            'Clear account data',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: pagePrimaryTextColor(context),
@@ -97,11 +104,11 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
             ),
             children: [
               _SectionCard(
-                title: 'What This Clears',
+                title: 'What this clears',
                 children: [
                   _InfoBlock(
                     text:
-                        'This action clears local app data tied to your account on this device, including preferences, cached logs, and the saved session.',
+                        'This action clears local app data tied to your account on this device, including your saved avatar, preferences, cached logs, and saved session.',
                   ),
                   _divider(context),
                   _InfoBlock(
@@ -124,7 +131,7 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Clear Local Data',
+                        'Clear local data',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -163,7 +170,7 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Text('Clear Data on This Device'),
+                              : const Text('Clear data on this device'),
                         ),
                       ),
                     ],

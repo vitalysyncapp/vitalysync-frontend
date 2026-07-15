@@ -139,7 +139,7 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
             onPressed: _isSubmitting ? null : () => Navigator.pop(context),
           ),
           title: Text(
-            'Edit Goals',
+            'Edit goals',
             style: TextStyle(
               color: pagePrimaryTextColor(context),
               fontSize: 22,
@@ -161,7 +161,7 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
                 _buildWellnessGoalPicker(),
                 _buildNumberField(
                   controller: _sleepController,
-                  label: 'Sleep Goal',
+                  label: 'Sleep goal',
                   icon: Icons.bedtime_outlined,
                   suffix: 'hours',
                   min: 1,
@@ -169,7 +169,7 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
                 ),
                 _buildNumberField(
                   controller: _hydrationController,
-                  label: 'Hydration Goal',
+                  label: 'Hydration goal',
                   icon: Icons.water_drop_outlined,
                   suffix: 'L',
                   min: 0.25,
@@ -177,7 +177,7 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
                 ),
                 _buildNumberField(
                   controller: _activityController,
-                  label: 'Activity Goal',
+                  label: 'Activity goal',
                   icon: Icons.fitness_center_outlined,
                   suffix: 'days/week',
                   min: 0,
@@ -186,7 +186,7 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
                 ),
                 _buildNumberField(
                   controller: _stepsController,
-                  label: 'Daily Steps',
+                  label: 'Daily steps',
                   icon: Icons.directions_walk_rounded,
                   suffix: 'steps',
                   min: 1000,
@@ -195,7 +195,7 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
                 ),
                 _buildNumberField(
                   controller: _nutritionController,
-                  label: 'Nutrition Goal',
+                  label: 'Nutrition goal',
                   icon: Icons.local_dining_outlined,
                   suffix: 'kcal',
                   min: 800,
@@ -217,7 +217,7 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
                             ),
                           )
                         : const Icon(Icons.save_outlined),
-                    label: Text(_isSubmitting ? 'Saving...' : 'Save Goals'),
+                    label: Text(_isSubmitting ? 'Saving...' : 'Save goals'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2563EB),
                       foregroundColor: Colors.white,
@@ -495,7 +495,7 @@ class _GoalsEditorCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'My Goals',
+                      'My goals',
                       style: TextStyle(
                         color: primary,
                         fontSize: 17,

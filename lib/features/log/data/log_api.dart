@@ -488,7 +488,7 @@ class LogApi {
 
     if (dangerousByRate || liters >= 7) {
       return const HydrationStatus(
-        level: 'Dangerous Level',
+        level: 'Dangerous level',
         shortLabel: 'Danger',
         colorValue: 0xFFDC2626,
       );
@@ -496,22 +496,22 @@ class LogApi {
 
     if (liters >= 5) {
       return const HydrationStatus(
-        level: 'Overhydration Risk',
-        shortLabel: 'Overhydration Risk',
+        level: 'Overhydration risk',
+        shortLabel: 'Overhydration risk',
         colorValue: 0xFFF97316,
       );
     }
 
     if (liters >= 3.5) {
       return const HydrationStatus(
-        level: 'High Intake Warning',
-        shortLabel: 'High Intake',
+        level: 'High intake warning',
+        shortLabel: 'High intake',
         colorValue: 0xFFEAB308,
       );
     }
 
     return const HydrationStatus(
-      level: 'Normal Zone',
+      level: 'Normal zone',
       shortLabel: 'Normal',
       colorValue: 0xFF16A34A,
     );

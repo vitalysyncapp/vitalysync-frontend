@@ -11,6 +11,7 @@ import '../features/log/data/log_api.dart';
 import '../features/log/presentation/pages/log_page.dart';
 import '../features/nutrition/data/nutrition_reminder_engine.dart';
 import '../features/nutrition/presentation/pages/nutrition_page.dart';
+import '../features/profile/presentation/pages/profile_page.dart';
 import '../features/recovery/data/recovery_mode_service.dart';
 import '../features/recovery/presentation/pages/recovery_mode_page.dart';
 import '../features/settings/presentation/pages/assistant_settings.dart';
@@ -20,18 +21,19 @@ import '../features/tutorial/services/core_tutorial_replay_controller.dart';
 import '../features/tutorial/services/core_tutorial_service.dart';
 import '../shared/widgets/bottom_nav.dart';
 import '../shared/assistant/floating_smart_nudge_assistant.dart';
+import '../shared/navigation/main_tab.dart';
 import '../shared/widgets/app_bar.dart';
 
 class MainNavigationController extends InheritedWidget {
-  final int currentIndex;
-  final ValueChanged<int> onTabSelected;
+  final MainTab currentTab;
+  final ValueChanged<MainTab> onTabSelected;
   final int nutritionLogFocusRequest;
   final VoidCallback onNutritionLogRequested;
   final VoidCallback onLogRequested;
 
   const MainNavigationController({
     super.key,
-    required this.currentIndex,
+    required this.currentTab,
     required this.onTabSelected,
     required this.nutritionLogFocusRequest,
     required this.onNutritionLogRequested,
@@ -46,20 +48,20 @@ class MainNavigationController extends InheritedWidget {
 
   @override
   bool updateShouldNotify(MainNavigationController oldWidget) {
-    return currentIndex != oldWidget.currentIndex ||
+    return currentTab != oldWidget.currentTab ||
         nutritionLogFocusRequest != oldWidget.nutritionLogFocusRequest;
   }
 }
 
 class MainNavigation extends StatefulWidget {
-  final int initialIndex;
+  final MainTab initialTab;
   final bool openNutritionLogOnStart;
   final int? tutorialUserId;
   final bool showTutorialOnStart;
 
   const MainNavigation({
     super.key,
-    this.initialIndex = 0, // default
+    this.initialTab = MainTab.home,
     this.openNutritionLogOnStart = false,
     this.tutorialUserId,
     this.showTutorialOnStart = false,
@@ -75,7 +77,7 @@ class _MainNavigationState extends State<MainNavigation>
   static const _tutorialSettingsRouteName = 'core_tutorial/settings';
   static const _tutorialAssistantRouteName = 'core_tutorial/assistant_settings';
 
-  late int _currentIndex;
+  late MainTab _currentTab;
   late int _nutritionLogFocusRequest;
   late final List<Widget> _pages;
   late final Map<CoreTutorialTarget, GlobalKey> _tutorialTargetKeys;
@@ -94,9 +96,15 @@ class _MainNavigationState extends State<MainNavigation>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _currentIndex = widget.initialIndex;
+    _currentTab = widget.initialTab;
     _nutritionLogFocusRequest = widget.openNutritionLogOnStart ? 1 : 0;
-    _pages = const [HomePage(), LogPage(), NutritionPage(), Dashboard()];
+    _pages = [
+      HomePage(onProfileTap: () => _selectTab(MainTab.profile)),
+      const NutritionPage(),
+      const LogPage(),
+      const Dashboard(),
+      const ProfilePage(),
+    ];
     _tutorialTargetKeys = {
       CoreTutorialTarget.navigation: GlobalKey(
         debugLabel: 'tutorial_navigation',
@@ -105,6 +113,7 @@ class _MainNavigationState extends State<MainNavigation>
       CoreTutorialTarget.log: GlobalKey(debugLabel: 'tutorial_log'),
       CoreTutorialTarget.nutrition: GlobalKey(debugLabel: 'tutorial_nutrition'),
       CoreTutorialTarget.dashboard: GlobalKey(debugLabel: 'tutorial_dashboard'),
+      CoreTutorialTarget.profile: GlobalKey(debugLabel: 'tutorial_profile'),
       CoreTutorialTarget.assistant: GlobalKey(debugLabel: 'tutorial_assistant'),
       CoreTutorialTarget.settingsAssistantTile: GlobalKey(
         debugLabel: 'tutorial_settings_assistant_tile',
@@ -177,11 +186,11 @@ class _MainNavigationState extends State<MainNavigation>
     _showTutorialOverlay();
   }
 
-  void _selectTab(int index) {
-    if (index == _currentIndex) return;
+  void _selectTab(MainTab tab) {
+    if (tab == _currentTab) return;
 
     setState(() {
-      _currentIndex = index;
+      _currentTab = tab;
     });
     _tutorialOverlayEntry?.markNeedsBuild();
 
@@ -190,7 +199,7 @@ class _MainNavigationState extends State<MainNavigation>
 
   void _openNutritionLog() {
     setState(() {
-      _currentIndex = 2;
+      _currentTab = MainTab.nutrition;
       _nutritionLogFocusRequest++;
     });
 
@@ -199,7 +208,7 @@ class _MainNavigationState extends State<MainNavigation>
 
   void _openLogPage() {
     setState(() {
-      _currentIndex = 1;
+      _currentTab = MainTab.log;
     });
 
     _syncPendingLogs();
@@ -310,7 +319,7 @@ class _MainNavigationState extends State<MainNavigation>
       final overlay = Overlay.of(context, rootOverlay: true);
       _tutorialOverlayEntry = OverlayEntry(
         builder: (_) => CoreTutorialOverlay(
-          currentIndex: _currentIndex,
+          currentTab: _currentTab,
           onTabSelected: _selectTab,
           targetKeys: _tutorialTargetKeys,
           onRouteRequested: _routeCoreTutorial,
@@ -465,19 +474,20 @@ class _MainNavigationState extends State<MainNavigation>
     _bringTutorialOverlayToFront(delay: const Duration(milliseconds: 90));
   }
 
-  CoreTutorialTarget _tutorialTargetForPage(int index) {
-    return switch (index) {
-      0 => CoreTutorialTarget.home,
-      1 => CoreTutorialTarget.log,
-      2 => CoreTutorialTarget.nutrition,
-      _ => CoreTutorialTarget.dashboard,
+  CoreTutorialTarget _tutorialTargetForPage(MainTab tab) {
+    return switch (tab) {
+      MainTab.home => CoreTutorialTarget.home,
+      MainTab.nutrition => CoreTutorialTarget.nutrition,
+      MainTab.log => CoreTutorialTarget.log,
+      MainTab.dashboard => CoreTutorialTarget.dashboard,
+      MainTab.profile => CoreTutorialTarget.profile,
     };
   }
 
   @override
   Widget build(BuildContext context) {
     return MainNavigationController(
-      currentIndex: _currentIndex,
+      currentTab: _currentTab,
       onTabSelected: _selectTab,
       nutritionLogFocusRequest: _nutritionLogFocusRequest,
       onNutritionLogRequested: _openNutritionLog,
@@ -486,13 +496,14 @@ class _MainNavigationState extends State<MainNavigation>
         fit: StackFit.expand,
         children: [
           Scaffold(
-            extendBody: true,
+            extendBody: false,
             body: Stack(
               fit: StackFit.expand,
               children: [
                 ...List.generate(_pages.length, (index) {
-                  final isActive = index == _currentIndex;
-                  final hiddenOffset = index < _currentIndex
+                  final tab = MainTab.values[index];
+                  final isActive = tab == _currentTab;
+                  final hiddenOffset = index < _currentTab.index
                       ? const Offset(-0.05, 0.02)
                       : const Offset(0.05, 0.02);
 
@@ -517,7 +528,7 @@ class _MainNavigationState extends State<MainNavigation>
                               child: KeyedSubtree(
                                 key:
                                     _tutorialTargetKeys[_tutorialTargetForPage(
-                                      index,
+                                      tab,
                                     )]!,
                                 child: _pages[index],
                               ),
@@ -533,16 +544,23 @@ class _MainNavigationState extends State<MainNavigation>
                   child: FloatingSmartNudgeAssistant(
                     message:
                         "You're doing well today. Log sleep and hydration to keep your streak going.",
-                    buttonSize: _currentIndex == 1 ? 46 : 54,
+                    buttonSize: _currentTab == MainTab.log ? 46 : 54,
                     onLogMealRequested: _openNutritionLog,
                     onLogPageRequested: _openLogPage,
                   ),
                 ),
               ],
             ),
+            floatingActionButton: buildLogNavigationButton(
+              context: context,
+              isSelected: _currentTab == MainTab.log,
+              onTap: () => _selectTab(MainTab.log),
+            ),
+            floatingActionButtonLocation:
+                FloatingActionButtonLocation.centerDocked,
             bottomNavigationBar: buildBottomNav(
               context: context,
-              currentIndex: _currentIndex,
+              currentTab: _currentTab,
               onTap: _selectTab,
               tutorialKey: _tutorialTargetKeys[CoreTutorialTarget.navigation],
             ),

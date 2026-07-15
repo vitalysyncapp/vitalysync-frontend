@@ -3,14 +3,20 @@ import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../features/activity/data/activity_service.dart';
+import '../../../../features/auth/presentation/pages/auth_start_page.dart';
 import '../../../../features/dashboard/data/burnout_score_api.dart';
 import '../../../../features/onboarding/data/onboarding_api.dart';
 import '../../../../features/onboarding/services/onboarding_service.dart';
 import '../../../../features/streaks/presentation/pages/personal_streak_page.dart';
+import '../../../../features/settings/presentation/pages/settings_page.dart';
 import '../../../../shared/goals/user_goals.dart';
+import '../../../../shared/preferences/session_reset_service.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/app_bar.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
+import '../widgets/profile_avatar_image.dart';
+import 'edit_avatar_page.dart';
 import 'edit_profile_page.dart';
 import 'edit_goals_page.dart';
 import 'edit_wellness_profile_page.dart';
@@ -53,8 +59,9 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isLoading = true, _isSaving = false;
   bool _isSavingWellness = false, _isSavingGoals = false;
   bool _isSavingBaseline = false;
+  bool _isLoggingOut = false;
   int? _userId, _age;
-  String _username = 'User Name', _email = 'user@email.com';
+  String _username = 'User name', _email = 'user@email.com';
   String? _gender, _userType;
   String _sleepSchedule = '10:30 PM - 6:30 AM',
       _lifestyleType = 'Moderately Active',
@@ -185,7 +192,7 @@ class _ProfilePageState extends State<ProfilePage> {
       _userId = session.userId;
       _username = session.username?.isNotEmpty == true
           ? session.username!
-          : 'User Name';
+          : 'User name';
       _email = session.email?.isNotEmpty == true
           ? session.email!
           : 'user@email.com';
@@ -208,21 +215,6 @@ class _ProfilePageState extends State<ProfilePage> {
       _baselineAnswers = baselineAnswers;
       _isLoading = false;
     });
-  }
-
-  String getAvatarImage(String? gender, String? userType) {
-    if (gender == null || userType == null) return 'assets/images/user.png';
-    if (gender.toLowerCase() == 'male') {
-      return userType == 'Student'
-          ? 'assets/images/male Student.png'
-          : 'assets/images/business-man.png';
-    }
-    if (gender.toLowerCase() == 'female') {
-      return userType == 'Student'
-          ? 'assets/images/female Student.png'
-          : 'assets/images/businesswoman.png';
-    }
-    return 'assets/images/user.png';
   }
 
   Future<bool> _saveProfileChanges({
@@ -421,6 +413,8 @@ class _ProfilePageState extends State<ProfilePage> {
               'others': 'Other',
             },
           ),
+          userId: _userId,
+          onEditAvatar: _openEditAvatarPage,
           onSave:
               ({
                 required String username,
@@ -437,6 +431,22 @@ class _ProfilePageState extends State<ProfilePage> {
                   userType: userType,
                 );
               },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openEditAvatarPage() async {
+    final userId = _userId;
+    if (userId == null) return;
+
+    await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditAvatarPage(
+          userId: userId,
+          gender: _gender,
+          userType: _userType,
         ),
       ),
     );
@@ -544,40 +554,75 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  void _openSettingsPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const SettingsPage()),
+    );
+  }
+
+  Future<void> _showLogoutConfirmation() async {
+    if (_isLoggingOut) {
+      return;
+    }
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: isDark ? 0.48 : 0.32),
+      builder: (_) => const LogoutConfirmationDialog(),
+    );
+
+    if (shouldLogout == true) {
+      await Future<void>.delayed(const Duration(milliseconds: 220));
+      if (!mounted) {
+        return;
+      }
+      await _logout();
+    }
+  }
+
+  Future<void> _logout() async {
+    setState(() => _isLoggingOut = true);
+
+    try {
+      await SessionResetService.instance.resetForLogout();
+      await refreshAppBarStreak();
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const AuthStartPage()),
+        (_) => false,
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() => _isLoggingOut = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to log out. Please try again.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final avatarPath = getAvatarImage(_gender, _userType);
     return Container(
+      padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top),
       decoration: buildPageDecoration(context),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-          centerTitle: false,
-          leading: IconButton(
-            icon: Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: pagePrimaryTextColor(context),
-            ),
-            onPressed: () => Navigator.pop(context),
-          ),
-          title: Text(
-            'Profile',
-            style: TextStyle(
-              color: pagePrimaryTextColor(context),
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
         body: _isLoading
             ? AppSkeletonList(
                 padding: EdgeInsets.fromLTRB(
                   16,
                   16,
                   16,
-                  pageBottomContentPadding(context),
+                  pageBottomContentPadding(context, extra: 104),
                 ),
                 cardHeights: const [172, 150, 188, 188],
               )
@@ -586,12 +631,12 @@ class _ProfilePageState extends State<ProfilePage> {
                   16,
                   16,
                   16,
-                  pageBottomContentPadding(context),
+                  pageBottomContentPadding(context, extra: 104),
                 ),
                 child: Column(
                   children: [
                     _ProfileHeaderCard(
-                      avatarPath: avatarPath,
+                      userId: _userId,
                       username: _username,
                       email: _email,
                       role: _userType,
@@ -599,6 +644,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       longestStreak: _longestStreak,
                       age: _age,
                       gender: _gender,
+                      onEditAvatar: _openEditAvatarPage,
                       onOpenStreak: _openStreakPage,
                     ),
                     const SizedBox(height: 18),
@@ -637,6 +683,12 @@ class _ProfilePageState extends State<ProfilePage> {
                       goals: _goals,
                       isSaving: _isSavingGoals,
                       onEdit: _openEditGoalsPage,
+                    ),
+                    const SizedBox(height: 18),
+                    _ProfileAccountCard(
+                      isLoggingOut: _isLoggingOut,
+                      onOpenSettings: _openSettingsPage,
+                      onLogout: _showLogoutConfirmation,
                     ),
                   ],
                 ),

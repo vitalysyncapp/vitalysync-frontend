@@ -55,7 +55,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     'Poor',
     'Fair',
     'Good',
-    'Very Good',
+    'Very good',
     'Excellent',
   ];
 
@@ -76,8 +76,8 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     'Fatigue',
     'Irritability',
     'Anxiety',
-    'Body Pain',
-    'Back Pain',
+    'Body pain',
+    'Back pain',
     'None',
   ];
 
@@ -618,7 +618,6 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       decoration: buildPageDecoration(context),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: buildAppBar(context),
         body: SafeArea(
           child: isLoading
               ? AppSkeletonList(
@@ -626,7 +625,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                     12,
                     10,
                     12,
-                    pageBottomContentPadding(context, extra: 10.5),
+                    mainPageBottomContentPadding(context),
                   ),
                   cardHeights: const [104, 178, 178, 152, 118],
                 )
@@ -644,7 +643,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                                 12,
                                 10,
                                 12,
-                                pageBottomContentPadding(context, extra: 10.5),
+                                mainPageBottomContentPadding(context),
                               ),
                               child: Column(
                                 children: [
@@ -851,8 +850,8 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
               )
             : Text(
                 hasSavedLogToday
-                    ? 'Update Today\'s Check-in'
-                    : 'Save Daily Check-in',
+                    ? 'Update today\'s check-in'
+                    : 'Save daily check-in',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -873,7 +872,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
             _buildSuccessAnimation(),
             const SizedBox(height: 18),
             Text(
-              lastSaveWasOffline ? 'Check-in Saved Offline' : 'Check-in Saved!',
+              lastSaveWasOffline ? 'Check-in saved offline' : 'Check-in saved!',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 23,
@@ -912,7 +911,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                   ),
                 ),
                 child: const Text(
-                  'Redo Today\'s Log',
+                  'Redo today\'s log',
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                 ),
               ),
@@ -1084,7 +1083,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                   children: [
                     Expanded(
                       child: Text(
-                        'Log Your Day',
+                        'Log your day',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(

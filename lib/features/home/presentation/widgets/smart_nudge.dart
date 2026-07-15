@@ -43,7 +43,7 @@ class SmartNudgeCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Today's Smart Nudge",
+            "Today's smart nudge",
             style: TextStyle(
               fontSize: 12.5,
               color: textColor.withValues(alpha: 0.85),

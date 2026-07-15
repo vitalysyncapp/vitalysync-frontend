@@ -16,14 +16,37 @@ import '../../../../shared/widgets/glass_card.dart';
 import '../../../../shared/widgets/reveal_on_build.dart';
 import '../widgets/burnout_card.dart';
 import '../widgets/environmental_card.dart';
+import '../widgets/home_header.dart';
 import '../widgets/info_card.dart';
 import '../widgets/quick_actions.dart';
 import '../widgets/weekly_analytics.dart';
 
 enum _HomeLiveDataIssue { offline, unavailable }
 
+BoxDecoration _buildHomePageDecoration(BuildContext context) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
+  return BoxDecoration(
+    gradient: LinearGradient(
+      colors: isDark
+          ? const [Color(0xFF08131D), Color(0xFF0B2230), Color(0xFF17253A)]
+          : const [
+              Color(0xFFEAF9F2),
+              Color(0xFFEEF8FF),
+              Color(0xFFF8F3FF),
+              Color(0xFFFFFFFF),
+            ],
+      stops: isDark ? const [0, 0.5, 1] : const [0, 0.38, 0.72, 1],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+  );
+}
+
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  const HomePage({super.key, required this.onProfileTap});
+
+  final VoidCallback onProfileTap;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -141,7 +164,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   String _burnoutStatusForLevel(String? level) {
     switch (level?.trim().toLowerCase()) {
       case 'very low':
-        return 'Very Low - Keep your routine steady';
+        return 'Very low - keep your routine steady';
       case 'low':
         return 'Low - Keep protecting your recovery';
       case 'moderate':
@@ -149,7 +172,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       case 'high':
         return 'High - Make room for support and rest';
       case 'very high':
-        return 'Very High - Prioritize support and recovery';
+        return 'Very high - prioritize support and recovery';
       default:
         return 'Complete onboarding to set your baseline';
     }
@@ -287,10 +310,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: buildPageDecoration(context),
+      decoration: _buildHomePageDecoration(context),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: buildAppBar(context),
         body: SafeArea(
           child: RefreshIndicator(
             onRefresh: _refreshHome,
@@ -298,12 +320,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: EdgeInsets.fromLTRB(
                 12,
+                6,
                 12,
-                12,
-                pageBottomContentPadding(context, extra: 10.5),
+                mainPageBottomContentPadding(context),
               ),
               child: Column(
                 children: [
+                  RevealOnBuild(
+                    delay: const Duration(milliseconds: 40),
+                    child: HomeHeader(onProfileTap: widget.onProfileTap),
+                  ),
+                  const SizedBox(height: 8),
                   if (_summaryIssue != null) ...[
                     RevealOnBuild(
                       child: _buildStatusBanner(context, _summaryIssue!),
@@ -432,13 +459,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   String? _sleepQualityLabelFor(int value) {
     switch (value) {
       case 0:
-        return 'Poor Quality';
+        return 'Poor quality';
       case 1:
-        return 'Fair Quality';
+        return 'Fair quality';
       case 2:
-        return 'Good Quality';
+        return 'Good quality';
       case 3:
-        return 'Very Good';
+        return 'Very good';
       case 4:
         return 'Excellent';
       default:

@@ -21,7 +21,7 @@ class AssistantExerciseCard extends StatelessWidget {
 
     return _AssistantCardShell(
       icon: Icons.fitness_center_rounded,
-      title: 'Exercise Recommendation',
+      title: 'Exercise recommendation',
       subtitle: 'Choose one for today',
       child: Column(
         children: [

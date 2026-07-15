@@ -372,7 +372,7 @@ class _SmartNudgeInsightCard extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  priority.toUpperCase(),
+                  _humanizeMetadataLabel(priority),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 10,
@@ -527,7 +527,7 @@ class _NutritionInsightDialogCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      insight.confidence.label.toUpperCase(),
+                      _humanizeMetadataLabel(insight.confidence.label),
                       style: TextStyle(
                         color: accent,
                         fontSize: 10.5,

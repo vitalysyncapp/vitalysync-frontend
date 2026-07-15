@@ -117,7 +117,7 @@ class StreakOverview {
 
     return StreakOverview(
       userId: LogApi.parseInt(json['user_id']),
-      displayName: json['display_name']?.toString() ?? 'VitalySync User',
+      displayName: json['display_name']?.toString() ?? 'VitalySync user',
       streak: StreakSnapshot.fromJson(
         json['streak'] is Map
             ? Map<String, dynamic>.from(json['streak'] as Map)
@@ -163,7 +163,7 @@ class StreakLeaderboardRow {
     return StreakLeaderboardRow(
       rank: LogApi.parseInt(json['rank']),
       userId: LogApi.parseInt(json['user_id']),
-      displayName: json['display_name']?.toString() ?? 'VitalySync User',
+      displayName: json['display_name']?.toString() ?? 'VitalySync user',
       initials: json['initials']?.toString() ?? 'VS',
       avatarColor: json['avatar_color']?.toString() ?? '#1D8CA8',
       score: LogApi.parseInt(json['score']),

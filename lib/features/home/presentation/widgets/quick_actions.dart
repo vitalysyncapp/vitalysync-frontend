@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/main_navigation.dart';
+import '../../../../shared/navigation/main_tab.dart';
 import '../../../../shared/theme/app_page_style.dart';
 
 class QuickActionCard extends StatelessWidget {
@@ -106,16 +107,16 @@ class QuickActionCard extends StatelessWidget {
   }
 }
 
-void _goToTab(BuildContext context, int index) {
+void _goToTab(BuildContext context, MainTab tab) {
   final controller = MainNavigationController.maybeOf(context);
   if (controller != null) {
-    controller.onTabSelected(index);
+    controller.onTabSelected(tab);
     return;
   }
 
   Navigator.pushReplacement(
     context,
-    MaterialPageRoute(builder: (_) => MainNavigation(initialIndex: index)),
+    MaterialPageRoute(builder: (_) => MainNavigation(initialTab: tab)),
   );
 }
 
@@ -129,8 +130,10 @@ void _goToNutritionLog(BuildContext context) {
   Navigator.pushReplacement(
     context,
     MaterialPageRoute(
-      builder: (_) =>
-          const MainNavigation(initialIndex: 2, openNutritionLogOnStart: true),
+      builder: (_) => const MainNavigation(
+        initialTab: MainTab.nutrition,
+        openNutritionLogOnStart: true,
+      ),
     ),
   );
 }
@@ -143,15 +146,15 @@ class QuickActionsSection extends StatelessWidget {
     final actions = [
       _QuickActionItem(
         icon: Icons.monitor_heart_rounded,
-        title: 'Daily Check-in',
+        title: 'Daily check-in',
         gradientColors: const [Color(0xFFE6F6FF), Color(0xFFDDEEFF)],
         iconColor: const Color(0xFF2067C9),
         titleColor: const Color(0xFF15447C),
-        onTap: () => _goToTab(context, 1),
+        onTap: () => _goToTab(context, MainTab.log),
       ),
       _QuickActionItem(
         icon: Icons.restaurant_menu_rounded,
-        title: 'Log Meal',
+        title: 'Log meal',
         gradientColors: const [Color(0xFFE6FBF1), Color(0xFFD7F6E8)],
         iconColor: const Color(0xFF178A58),
         titleColor: const Color(0xFF17583B),
@@ -194,7 +197,7 @@ class QuickActionsSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Quick Actions',
+                'Quick actions',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,

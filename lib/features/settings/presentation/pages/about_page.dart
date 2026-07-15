@@ -39,7 +39,7 @@ class AboutPage extends StatelessWidget {
               _HeroCard(),
               const SizedBox(height: 16),
               _SectionCard(
-                title: 'What VitalySync Does',
+                title: 'What VitalySync does',
                 children: const [
                   _InfoBlock(
                     text:
@@ -54,7 +54,7 @@ class AboutPage extends StatelessWidget {
                 children: const [
                   _PersonBlock(
                     name: 'Orlandone Estoce',
-                    role: 'Lead Developer',
+                    role: 'Lead developer',
                   ),
                   _PersonBlock(name: 'Rynhard Mencede', role: 'Developer'),
                   _PersonBlock(name: 'Krischalyn Estorgio', role: 'Developer'),
@@ -72,8 +72,8 @@ class AboutPage extends StatelessWidget {
                   ),
                   _CreditBlock(
                     icon: Icons.health_and_safety_outlined,
-                    title: 'Mental Health Professional',
-                    subtitle: 'to be added',
+                    title: 'Mental health professional',
+                    subtitle: 'To be added',
                   ),
                 ],
               ),

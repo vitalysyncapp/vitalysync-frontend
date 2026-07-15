@@ -1,7 +1,7 @@
 part of 'profile_page.dart';
 
 class _ProfileHeaderCard extends StatelessWidget {
-  final String avatarPath;
+  final int? userId;
   final String username;
   final String email;
   final String? role;
@@ -9,10 +9,11 @@ class _ProfileHeaderCard extends StatelessWidget {
   final int longestStreak;
   final int? age;
   final String? gender;
+  final VoidCallback onEditAvatar;
   final VoidCallback onOpenStreak;
 
   const _ProfileHeaderCard({
-    required this.avatarPath,
+    required this.userId,
     required this.username,
     required this.email,
     required this.role,
@@ -20,6 +21,7 @@ class _ProfileHeaderCard extends StatelessWidget {
     required this.longestStreak,
     required this.age,
     required this.gender,
+    required this.onEditAvatar,
     required this.onOpenStreak,
   });
 
@@ -60,28 +62,69 @@ class _ProfileHeaderCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Container(
-                      width: 92,
-                      height: 92,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withValues(alpha: 0.14),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.35),
-                          width: 2,
-                        ),
-                      ),
-                      child: ClipOval(
-                        child: Padding(
-                          padding: const EdgeInsets.all(10),
-                          child: Image.asset(
-                            avatarPath,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, _, _) => const Icon(
-                              Icons.person,
-                              size: 42,
-                              color: Colors.white,
-                            ),
+                    Semantics(
+                      button: true,
+                      label: 'Change profile avatar',
+                      child: Tooltip(
+                        message: 'Change profile avatar',
+                        child: InkWell(
+                          key: const ValueKey('profile-header-avatar-edit'),
+                          onTap: onEditAvatar,
+                          customBorder: const CircleBorder(),
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Container(
+                                width: 92,
+                                height: 92,
+                                padding: const EdgeInsets.all(3),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white.withValues(alpha: 0.14),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.42),
+                                    width: 2,
+                                  ),
+                                ),
+                                child: CurrentUserAvatar(
+                                  userId: userId,
+                                  gender: gender,
+                                  userType: role,
+                                  size: 82,
+                                  semanticLabel: 'Current profile avatar',
+                                ),
+                              ),
+                              Positioned(
+                                right: -1,
+                                bottom: -1,
+                                child: Container(
+                                  width: 30,
+                                  height: 30,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF0F6F86),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.18,
+                                        ),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(
+                                    Icons.edit_rounded,
+                                    size: 16,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -136,7 +179,9 @@ class _ProfileHeaderCard extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 Flexible(
                                   child: Text(
-                                    role ?? 'Role not set',
+                                    role == null
+                                        ? 'Role not set'
+                                        : _sentenceCaseCategory(role!),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
@@ -217,7 +262,7 @@ class _ProfileHeaderCard extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: onOpenStreak,
                     icon: const Icon(Icons.local_fire_department_rounded),
-                    label: const Text('View Streak Card'),
+                    label: const Text('View streak card'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: const Color(0xFF1D8CA8),
@@ -479,7 +524,6 @@ class _PersonalInformationCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: pageSurfaceColor(context),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: pageBorderColor(context)),
         boxShadow: [
@@ -494,81 +538,86 @@ class _PersonalInformationCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Personal Information',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: pagePrimaryTextColor(context),
-                ),
-              ),
-            ),
-          ),
-          Divider(height: 1, thickness: 1, color: pageBorderColor(context)),
-          _ProfileInfoTile(
-            icon: Icons.person_outline,
-            iconBg: const Color(0xFFE8F0FF),
-            iconColor: const Color(0xFF2F6BFF),
-            title: 'Profile Details',
-            subtitle:
-                '${gender ?? 'Gender not set'} - ${role ?? 'Role not set'}',
-            onTap: onOpenDetails,
-            trailing: Icon(
-              Icons.chevron_right_rounded,
-              color: pageSecondaryTextColor(context),
-            ),
-          ),
-          Divider(height: 1, thickness: 1, color: pageBorderColor(context)),
-          _ProfileInfoTile(
-            icon: Icons.nightlight_round,
-            iconBg: const Color(0xFFE0F2FE),
-            iconColor: const Color(0xFF0891B2),
-            title: 'Sleep Schedule',
-            subtitle: sleepSchedule,
-          ),
-          Divider(height: 1, thickness: 1, color: pageBorderColor(context)),
-          _ProfileInfoTile(
-            icon: Icons.history_rounded,
-            iconBg: const Color(0xFFEAF7EE),
-            iconColor: const Color(0xFF1FB489),
-            title: 'History',
-            subtitle: 'Daily logs, burnout, nutrition, and activity',
-            onTap: onOpenHistory,
-            trailing: Icon(
-              Icons.chevron_right_rounded,
-              color: pageSecondaryTextColor(context),
-            ),
-          ),
-          Divider(height: 1, thickness: 1, color: pageBorderColor(context)),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
-            child: SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: isSaving ? null : onEditProfile,
-                icon: const Icon(Icons.edit_outlined),
-                label: const Text(
-                  'Edit Profile',
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.primary,
-                  side: BorderSide(color: pageBorderColor(context)),
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+      child: Material(
+        color: pageSurfaceColor(context),
+        borderRadius: BorderRadius.circular(22),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Personal information',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: pagePrimaryTextColor(context),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+            Divider(height: 1, thickness: 1, color: pageBorderColor(context)),
+            _ProfileInfoTile(
+              icon: Icons.person_outline,
+              iconBg: const Color(0xFFE8F0FF),
+              iconColor: const Color(0xFF2F6BFF),
+              title: 'Profile details',
+              subtitle:
+                  '${gender ?? 'Gender not set'} - ${role == null ? 'Role not set' : _sentenceCaseCategory(role!)}',
+              onTap: onOpenDetails,
+              trailing: Icon(
+                Icons.chevron_right_rounded,
+                color: pageSecondaryTextColor(context),
+              ),
+            ),
+            Divider(height: 1, thickness: 1, color: pageBorderColor(context)),
+            _ProfileInfoTile(
+              icon: Icons.nightlight_round,
+              iconBg: const Color(0xFFE0F2FE),
+              iconColor: const Color(0xFF0891B2),
+              title: 'Sleep schedule',
+              subtitle: sleepSchedule,
+            ),
+            Divider(height: 1, thickness: 1, color: pageBorderColor(context)),
+            _ProfileInfoTile(
+              icon: Icons.history_rounded,
+              iconBg: const Color(0xFFEAF7EE),
+              iconColor: const Color(0xFF1FB489),
+              title: 'History',
+              subtitle: 'Daily logs, burnout, nutrition, and activity',
+              onTap: onOpenHistory,
+              trailing: Icon(
+                Icons.chevron_right_rounded,
+                color: pageSecondaryTextColor(context),
+              ),
+            ),
+            Divider(height: 1, thickness: 1, color: pageBorderColor(context)),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: isSaving ? null : onEditProfile,
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text(
+                    'Edit profile',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.primary,
+                    side: BorderSide(color: pageBorderColor(context)),
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -626,7 +675,7 @@ class MyGoalsCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'My Goals',
+                      'My goals',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
@@ -635,7 +684,7 @@ class MyGoalsCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Targets shared with Home and Nutrition',
+                      'Targets shared with home and nutrition',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -651,32 +700,32 @@ class MyGoalsCard extends StatelessWidget {
           const SizedBox(height: 16),
           _GoalDataRow(
             icon: Icons.flag_outlined,
-            label: 'Wellness Goal',
+            label: 'Wellness goal',
             value: goals.wellnessGoal,
           ),
           _GoalDataRow(
             icon: Icons.bedtime_outlined,
-            label: 'Sleep Goal',
+            label: 'Sleep goal',
             value: goals.sleepLabel,
           ),
           _GoalDataRow(
             icon: Icons.water_drop_outlined,
-            label: 'Hydration Goal',
+            label: 'Hydration goal',
             value: goals.hydrationLabel,
           ),
           _GoalDataRow(
             icon: Icons.fitness_center_outlined,
-            label: 'Activity Goal',
+            label: 'Activity goal',
             value: goals.activityLabel,
           ),
           _GoalDataRow(
             icon: Icons.directions_walk_rounded,
-            label: 'Daily Steps',
+            label: 'Daily steps',
             value: goals.dailyStepsLabel,
           ),
           _GoalDataRow(
             icon: Icons.local_dining_outlined,
-            label: 'Nutrition Goal',
+            label: 'Nutrition goal',
             value: goals.nutritionLabel,
           ),
           const SizedBox(height: 4),
@@ -686,7 +735,7 @@ class MyGoalsCard extends StatelessWidget {
               onPressed: isSaving ? null : onEdit,
               icon: const Icon(Icons.edit_outlined),
               label: const Text(
-                'Edit Goals',
+                'Edit goals',
                 style: TextStyle(fontWeight: FontWeight.w800),
               ),
               style: OutlinedButton.styleFrom(
@@ -829,6 +878,146 @@ class _ProfileInfoTile extends StatelessWidget {
         ),
       ),
       trailing: trailing,
+    );
+  }
+}
+
+class _ProfileAccountCard extends StatelessWidget {
+  final bool isLoggingOut;
+  final VoidCallback onOpenSettings;
+  final VoidCallback onLogout;
+
+  const _ProfileAccountCard({
+    required this.isLoggingOut,
+    required this.onOpenSettings,
+    required this.onLogout,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dangerColor = isDark
+        ? const Color(0xFFFF8A8A)
+        : const Color(0xFFD83B45);
+
+    return Container(
+      key: const ValueKey('profile-account-card'),
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: pageBorderColor(context)),
+        boxShadow: pageCardShadow(context),
+      ),
+      child: Material(
+        color: pageSurfaceColor(context),
+        borderRadius: BorderRadius.circular(22),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Account',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: pagePrimaryTextColor(context),
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    'App preferences and session controls',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: pageSecondaryTextColor(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Divider(height: 1, color: pageBorderColor(context)),
+            ListTile(
+              key: const ValueKey('profile-settings-action'),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 7,
+              ),
+              onTap: onOpenSettings,
+              leading: Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: const Color(
+                    0xFF1D8CA8,
+                  ).withValues(alpha: isDark ? 0.18 : 0.1),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.settings_outlined,
+                  color: Color(0xFF1D8CA8),
+                ),
+              ),
+              title: Text(
+                'Settings',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: pagePrimaryTextColor(context),
+                ),
+              ),
+              subtitle: Text(
+                'Notifications, privacy, preferences, and support',
+                style: TextStyle(color: pageSecondaryTextColor(context)),
+              ),
+              trailing: Icon(
+                Icons.chevron_right_rounded,
+                color: pageSecondaryTextColor(context),
+              ),
+            ),
+            Divider(height: 1, color: pageBorderColor(context)),
+            ListTile(
+              key: const ValueKey('profile-logout-action'),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 7,
+              ),
+              enabled: !isLoggingOut,
+              onTap: isLoggingOut ? null : onLogout,
+              leading: Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: dangerColor.withValues(alpha: isDark ? 0.16 : 0.1),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: isLoggingOut
+                    ? Padding(
+                        padding: const EdgeInsets.all(13),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.4,
+                          color: dangerColor,
+                        ),
+                      )
+                    : Icon(Icons.logout_rounded, color: dangerColor),
+              ),
+              title: Text(
+                isLoggingOut ? 'Logging out...' : 'Log out',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: dangerColor,
+                ),
+              ),
+              subtitle: Text(
+                'Sign out safely on this device',
+                style: TextStyle(color: pageSecondaryTextColor(context)),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

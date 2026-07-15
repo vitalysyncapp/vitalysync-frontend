@@ -247,7 +247,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     const SizedBox(height: 16),
                     _buildSectionCard(
                       context: context,
-                      title: "Floating Assistant",
+                      title: "Floating assistant",
                       children: [
                         KeyedSubtree(
                           key: widget.tutorialAssistantTileKey,
@@ -273,7 +273,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     const SizedBox(height: 16),
                     _buildSectionCard(
                       context: context,
-                      title: "App Settings",
+                      title: "App settings",
                       children: [
                         _buildSettingsTile(
                           context: context,
@@ -301,7 +301,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           icon: Icons.phone_android_rounded,
                           iconBg: const Color(0xFFE3E7FF),
                           iconColor: const Color(0xFF5B5FEF),
-                          title: "App Preferences",
+                          title: "App preferences",
                           subtitle:
                               "${prefs.themeMode == ThemeMode.dark ? 'Dark' : 'Light'} mode, ${prefs.languageLabel}, ${prefs.fontSizeLabel} text",
                           onTap: () {
@@ -318,14 +318,14 @@ class _SettingsPageState extends State<SettingsPage> {
                     const SizedBox(height: 16),
                     _buildSectionCard(
                       context: context,
-                      title: "Privacy & Security",
+                      title: "Privacy and security",
                       children: [
                         _buildSettingsTile(
                           context: context,
                           icon: Icons.shield_outlined,
                           iconBg: const Color(0xFFFFE3E3),
                           iconColor: const Color(0xFFFF2D2D),
-                          title: "Privacy Settings",
+                          title: "Privacy settings",
                           subtitle:
                               prefs.hideSensitiveContent ||
                                   prefs.biometricLockEnabled
@@ -346,7 +346,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           icon: Icons.location_on_outlined,
                           iconBg: const Color(0xFFE2F7EC),
                           iconColor: const Color(0xFF1F9D63),
-                          title: "Location Settings",
+                          title: "Location settings",
                           subtitle: "Current: ${prefs.locationPermissionLabel}",
                           onTap: () {
                             Navigator.push(
@@ -362,14 +362,14 @@ class _SettingsPageState extends State<SettingsPage> {
                     const SizedBox(height: 16),
                     _buildSectionCard(
                       context: context,
-                      title: "Account Settings",
+                      title: "Account settings",
                       children: [
                         _buildSettingsTile(
                           context: context,
                           icon: Icons.cleaning_services_outlined,
                           iconBg: const Color(0xFFFFF2E2),
                           iconColor: const Color(0xFFCC7A00),
-                          title: "Clear Data for This Account",
+                          title: "Clear data for this account",
                           subtitle: _accountActionSubtitle,
                           onTap: () {
                             _openProtectedAccountPage(
@@ -385,7 +385,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           icon: Icons.person_remove_outlined,
                           iconBg: const Color(0xFFFFE3E3),
                           iconColor: const Color(0xFFD14343),
-                          title: "Delete Account",
+                          title: "Delete account",
                           subtitle: _accountActionSubtitle,
                           onTap: () {
                             _openProtectedAccountPage(
@@ -401,16 +401,16 @@ class _SettingsPageState extends State<SettingsPage> {
                     const SizedBox(height: 16),
                     _buildSectionCard(
                       context: context,
-                      title: "Support & App Info",
+                      title: "Support and app info",
                       children: [
                         _buildSettingsTile(
                           context: context,
                           icon: Icons.play_circle_outline_rounded,
                           iconBg: const Color(0xFFE0F7F4),
                           iconColor: const Color(0xFF0F9F91),
-                          title: "Replay App Tutorial",
+                          title: "Replay app tutorial",
                           subtitle:
-                              "Review Home, Log, Nutrition, Dashboard, and Assistant",
+                              "Review home, log, nutrition, dashboard, and assistant",
                           onTap: _replayCoreTutorial,
                         ),
                         _buildDivider(context),
@@ -419,7 +419,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           icon: Icons.help_outline_rounded,
                           iconBg: const Color(0xFFEFF6FF),
                           iconColor: const Color(0xFF2563EB),
-                          title: "Help & Support",
+                          title: "Help and support",
                           subtitle: "Contact channels and support details",
                           onTap: () {
                             Navigator.push(
@@ -436,7 +436,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           icon: Icons.article_outlined,
                           iconBg: const Color(0xFFF0FDFA),
                           iconColor: const Color(0xFF0F766E),
-                          title: "Terms & Privacy Policy",
+                          title: "Terms and privacy policy",
                           subtitle: "Review app terms and data practices",
                           onTap: () {
                             Navigator.push(
@@ -552,7 +552,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Settings Center',
+                      'Settings center',
                       style: TextStyle(
                         fontSize: 21,
                         fontWeight: FontWeight.w800,

@@ -1,14 +1,16 @@
-int tabIndexForNotificationPayload(String? payload) {
+import '../navigation/main_tab.dart';
+
+MainTab tabForNotificationPayload(String? payload) {
   final normalized = payload?.toLowerCase().trim() ?? '';
 
   if (normalized.contains('nutrition') || normalized.contains('meal')) {
-    return 2;
+    return MainTab.nutrition;
   }
 
   if (normalized.contains('dashboard') ||
       normalized.contains('adaptive') ||
       normalized.contains('burnout')) {
-    return 3;
+    return MainTab.dashboard;
   }
 
   if (normalized.contains('daily_log') ||
@@ -16,10 +18,10 @@ int tabIndexForNotificationPayload(String? payload) {
       normalized.contains('sleep') ||
       normalized.contains('recovery') ||
       normalized.contains('check_in')) {
-    return 1;
+    return MainTab.log;
   }
 
-  return 0;
+  return MainTab.home;
 }
 
 bool shouldOpenNutritionLog(String? payload) {

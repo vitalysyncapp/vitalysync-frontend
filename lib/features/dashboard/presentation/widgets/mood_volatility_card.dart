@@ -39,7 +39,7 @@ class _MoodVolatilityCardState extends State<MoodVolatilityCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Mood Trend',
+                  'Mood trend',
                   style: TextStyle(
                     fontSize: 15.5,
                     fontWeight: FontWeight.bold,

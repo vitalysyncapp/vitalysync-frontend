@@ -963,7 +963,9 @@ class _PriorityBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(11),
       ),
       child: Text(
-        normalized.toUpperCase(),
+        normalized.isEmpty
+            ? 'Normal'
+            : '${normalized[0].toUpperCase()}${normalized.substring(1)}',
         style: TextStyle(
           color: color,
           fontSize: 10.5,

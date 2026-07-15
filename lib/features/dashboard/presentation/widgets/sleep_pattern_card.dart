@@ -37,7 +37,7 @@ class _SleepPatternCardState extends State<SleepPatternCard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Sleep Pattern',
+                'Sleep pattern',
                 style: TextStyle(
                   fontSize: 15.5,
                   fontWeight: FontWeight.bold,

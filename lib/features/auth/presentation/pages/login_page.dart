@@ -162,16 +162,12 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return AuthScaffold(
       illustrationAsset: authWorkStressAsset,
+      topOverlayAsset: authMeditationAsset,
+      backdropStyle: AuthBackdropStyle.login,
       child: AuthGlassPanel(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const AuthHeroIllustration(
-              asset: authWorkStressAsset,
-              semanticsLabel: 'Stress and recovery illustration',
-              height: 152,
-            ),
-            const SizedBox(height: 12),
             const AuthBrandHeader(
               title: 'Welcome back',
               subtitle:
@@ -199,8 +195,8 @@ class _LoginPageState extends State<LoginPage> {
               child: TextButton(
                 onPressed: () {},
                 child: Text(
-                  'Forgot Password?',
-                  style: GoogleFonts.inter(
+                  'Forgot password?',
+                  style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w700,
                     color: Theme.of(context).colorScheme.primary,
                   ),
@@ -221,7 +217,7 @@ class _LoginPageState extends State<LoginPage> {
               children: [
                 Text(
                   'New to VitalySync? ',
-                  style: GoogleFonts.inter(
+                  style: GoogleFonts.poppins(
                     color: pageSecondaryTextColor(context),
                   ),
                 ),
@@ -234,7 +230,7 @@ class _LoginPageState extends State<LoginPage> {
                   },
                   child: Text(
                     'Create account',
-                    style: GoogleFonts.inter(
+                    style: GoogleFonts.poppins(
                       fontWeight: FontWeight.w800,
                       color: Theme.of(context).colorScheme.primary,
                     ),

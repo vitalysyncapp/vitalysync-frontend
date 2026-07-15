@@ -216,7 +216,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Text(
-                      'Terms & Conditions and Privacy Policy',
+                      'Terms and privacy policy',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 18,
@@ -258,6 +258,9 @@ class _SignUpPageState extends State<SignUpPage> {
 
     return AuthScaffold(
       illustrationAsset: authWorkoutAsset,
+      topOverlayAsset: authHealthyLifestyleAsset,
+      bottomOverlayAssets: const [authMeditationAsset],
+      backdropStyle: AuthBackdropStyle.signUp,
       centerContent: false,
       child: Padding(
         padding: const EdgeInsets.only(top: 18, bottom: 28),
@@ -266,14 +269,8 @@ class _SignUpPageState extends State<SignUpPage> {
             key: _formKey,
             child: Column(
               children: [
-                const AuthHeroIllustration(
-                  asset: authWorkoutAsset,
-                  semanticsLabel: 'Wellness movement illustration',
-                  height: 150,
-                ),
-                const SizedBox(height: 12),
                 const AuthBrandHeader(
-                  title: 'Create your Account',
+                  title: 'Create your account',
                   subtitle: 'Start your wellness journey with VitalySync.',
                   logoSize: 68,
                 ),
@@ -400,7 +397,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   obscureText: _obscureConfirmPassword,
                   style: TextStyle(color: pagePrimaryTextColor(context)),
                   decoration: _inputDecoration(
-                    label: 'Confirm Password',
+                    label: 'Confirm password',
                     icon: Icons.lock_person_outlined,
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -463,7 +460,7 @@ class _SignUpPageState extends State<SignUpPage> {
                             crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
                               Text(
-                                'I agree to the Terms and Conditions and Privacy Policy ',
+                                'I agree to the terms and conditions and the privacy policy ',
                                 style: TextStyle(
                                   fontSize: 13.5,
                                   color: pageSecondaryTextColor(context),
@@ -492,7 +489,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
                 const SizedBox(height: 22),
                 AuthButton.primary(
-                  label: 'Create Account',
+                  label: 'Create account',
                   icon: Icons.person_add_alt_1_rounded,
                   isLoading: _isLoading,
                   onPressed: (_agreeTerms && !_isLoading)
@@ -513,8 +510,8 @@ class _SignUpPageState extends State<SignUpPage> {
                   },
                   icon: const Icon(Icons.arrow_back_rounded, size: 19),
                   label: Text(
-                    'Back to Login',
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                    'Back to log in',
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
                   ),
                   style: TextButton.styleFrom(
                     foregroundColor: Theme.of(context).colorScheme.primary,

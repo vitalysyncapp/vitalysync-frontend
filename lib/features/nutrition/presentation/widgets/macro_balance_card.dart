@@ -25,7 +25,7 @@ class MacroBalanceCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Macro Balance',
+            'Macro balance',
             style: TextStyle(
               fontSize: isCompact ? 15.5 : 16.5,
               fontWeight: FontWeight.w800,

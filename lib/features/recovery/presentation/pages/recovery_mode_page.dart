@@ -376,7 +376,7 @@ class RecoveryModePage extends StatelessWidget {
       return '$score% risk';
     }
 
-    return '${_titleCase(snapshot.riskLevel)} risk';
+    return '${_sentenceCase(snapshot.riskLevel)} risk';
   }
 
   bool get _isCritical {
@@ -831,7 +831,7 @@ String _shortText(String value, int maxChars) {
   return '${text.substring(0, maxChars - 1).trimRight()}...';
 }
 
-String _titleCase(String value) {
+String _sentenceCase(String value) {
   final words = value
       .trim()
       .replaceAll('_', ' ')
@@ -842,7 +842,8 @@ String _titleCase(String value) {
     return 'Elevated';
   }
 
-  return words
-      .map((word) => word[0].toUpperCase() + word.substring(1).toLowerCase())
-      .join(' ');
+  final text = words.map((word) => word.toLowerCase()).join(' ');
+  return text.isEmpty
+      ? 'Elevated'
+      : '${text[0].toUpperCase()}${text.substring(1)}';
 }

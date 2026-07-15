@@ -71,8 +71,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('Create your Account'), findsOneWidget);
-    expect(find.text('Create Account'), findsOneWidget);
+    expect(find.text('Create your account'), findsOneWidget);
+    expect(find.text('Create account'), findsOneWidget);
   });
 
   testWidgets('auth carousel advances to feature slides', (
@@ -115,6 +115,7 @@ void main() {
     expect(find.text('Log'), findsOneWidget);
     expect(find.text('Nutrition'), findsOneWidget);
     expect(find.text('Dashboard'), findsOneWidget);
+    expect(find.text('Profile'), findsOneWidget);
     expect(find.text('Welcome to your VitalySync tour'), findsNothing);
 
     await tester.pumpWidget(const SizedBox.shrink());
@@ -131,6 +132,7 @@ void main() {
     expect(find.text('Welcome to your VitalySync tour'), findsNothing);
 
     CoreTutorialReplayController.instance.requestReplay();
+    await tester.pump();
     await tester.pump();
 
     expect(find.text('Welcome to your VitalySync tour'), findsOneWidget);
@@ -167,17 +169,26 @@ void main() {
     expect(find.text('Nutrition keeps meals in context'), findsNothing);
 
     await tester.tap(find.byKey(const ValueKey('core-tutorial-next-button')));
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 320));
 
     expect(find.text('Home is your daily snapshot'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('core-tutorial-next-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 520));
+
+    expect(find.text('Nutrition keeps meals in context'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('core-tutorial-next-button')));
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 520));
 
     expect(find.text('Log is your daily check-in'), findsOneWidget);
-    expect(find.text('Log Your Day'), findsOneWidget);
+    expect(find.text('Log your day'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('core-tutorial-skip-button')));
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Log is your daily check-in'), findsNothing);

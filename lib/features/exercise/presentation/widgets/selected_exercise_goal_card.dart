@@ -106,7 +106,7 @@ class SelectedExerciseGoalCard extends StatelessWidget {
                 ? '${_formatDistance(distanceMeters)} / ${goal.targetLabel()}'
                 : goal.isCompleted
                 ? 'Done'
-                : 'Tap Done when finished',
+                : 'Tap done when finished',
           ),
           const SizedBox(height: 12),
           ClipRRect(
@@ -173,10 +173,10 @@ class SelectedExerciseGoalCard extends StatelessWidget {
               progress >= 1.0
                   ? goal.isStepTrackedMovement
                         ? 'Distance reached. This will save as complete automatically.'
-                        : 'Distance reached. Tap Done when finished.'
+                        : 'Distance reached. Tap done when finished.'
                   : goal.isStepTrackedMovement
-                  ? 'Walks, jogs, and runs complete automatically when your live distance reaches the target. Tap Done if live tracking is unavailable.'
-                  : 'Tap Done when this exercise is complete.',
+                  ? 'Walks, jogs, and runs complete automatically when your live distance reaches the target. Tap done if live tracking is unavailable.'
+                  : 'Tap done when this exercise is complete.',
               style: TextStyle(
                 fontSize: 12,
                 height: 1.35,
@@ -290,7 +290,7 @@ class _NoneTodayGoalCard extends StatelessWidget {
             child: OutlinedButton.icon(
               onPressed: isSaving ? null : onChooseAgain,
               icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text('Choose Again'),
+              label: const Text('Choose again'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: pagePrimaryTextColor(context),
                 side: BorderSide(color: pageBorderColor(context)),

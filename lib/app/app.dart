@@ -136,7 +136,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     navigator.pushAndRemoveUntil(
       MaterialPageRoute(
         builder: (_) => MainNavigation(
-          initialIndex: tabIndexForNotificationPayload(payload),
+          initialTab: tabForNotificationPayload(payload),
           openNutritionLogOnStart: shouldOpenNutritionLog(payload),
           tutorialUserId: userId,
           showTutorialOnStart: showTutorialOnStart,

@@ -29,7 +29,7 @@ class AppPreferencesPage extends StatelessWidget {
                 onPressed: () => Navigator.pop(context),
               ),
               title: Text(
-                'App Preferences',
+                'App preferences',
                 style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
               ),
             ),
@@ -50,7 +50,7 @@ class AppPreferencesPage extends StatelessWidget {
                         _buildThemeTile(
                           context: context,
                           prefs: prefs,
-                          label: 'Light Mode',
+                          label: 'Light mode',
                           subtitle: 'Bright surfaces and default daytime look',
                           value: ThemeMode.light,
                           icon: Icons.light_mode_rounded,
@@ -60,7 +60,7 @@ class AppPreferencesPage extends StatelessWidget {
                         _buildThemeTile(
                           context: context,
                           prefs: prefs,
-                          label: 'Dark Mode',
+                          label: 'Dark mode',
                           subtitle: 'Low-light colors for evening use',
                           value: ThemeMode.dark,
                           icon: Icons.dark_mode_rounded,
@@ -75,7 +75,7 @@ class AppPreferencesPage extends StatelessWidget {
                       children: [
                         _buildChoiceTile<AppLanguage>(
                           context: context,
-                          title: 'App Language',
+                          title: 'App language',
                           subtitle:
                               'Used for shell display like greetings and date formatting',
                           currentLabel: prefs.languageLabel,
@@ -95,7 +95,7 @@ class AppPreferencesPage extends StatelessWidget {
                       children: [
                         _buildChoiceTile<AppFontSize>(
                           context: context,
-                          title: 'Font Size',
+                          title: 'Font size',
                           subtitle:
                               'Small is a bit smaller, medium matches the default UI, and large is a bit bigger',
                           currentLabel: prefs.fontSizeLabel,

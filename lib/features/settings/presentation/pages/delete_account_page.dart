@@ -4,6 +4,7 @@ import '../../../../shared/preferences/session_reset_service.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../auth/presentation/pages/auth_start_page.dart';
+import '../../../profile/data/profile_avatar.dart';
 
 class DeleteAccountPage extends StatefulWidget {
   final String verifiedPassword;
@@ -52,7 +53,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
             TextButton(
               onPressed: () => Navigator.pop(context, true),
               child: const Text(
-                'Delete Account',
+                'Delete account',
                 style: TextStyle(color: Colors.red),
               ),
             ),
@@ -68,9 +69,19 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
     setState(() => _isDeleting = true);
 
     try {
+      final session = await UserSessionController.instance.load();
+      final userId = session.userId;
       await UserSessionController.instance.deleteAccount(
         password: widget.verifiedPassword,
       );
+      if (userId != null) {
+        try {
+          await ProfileAvatarController.instance.clearForUser(userId);
+        } catch (error, stackTrace) {
+          debugPrint('Unable to clear the local profile avatar: $error');
+          debugPrintStack(stackTrace: stackTrace);
+        }
+      }
       await SessionResetService.instance.resetForLogout();
 
       if (!mounted) {
@@ -114,7 +125,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
-            'Delete Account',
+            'Delete account',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: pagePrimaryTextColor(context),
@@ -131,7 +142,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
             ),
             children: [
               _SectionCard(
-                title: 'Before You Continue',
+                title: 'Before you continue',
                 children: const [
                   _InfoBlock(
                     text:
@@ -157,7 +168,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Final Confirmation',
+                        'Final confirmation',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -227,7 +238,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Text('Delete My Account'),
+                              : const Text('Delete my account'),
                         ),
                       ),
                     ],

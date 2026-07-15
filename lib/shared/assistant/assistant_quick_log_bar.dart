@@ -30,7 +30,7 @@ class _AssistantQuickLogBar extends StatelessWidget {
           Expanded(
             child: _AssistantQuickLogButton(
               icon: Icons.water_drop_rounded,
-              label: isHydrationOpen ? 'Hide Water' : 'Log Water',
+              label: isHydrationOpen ? 'Hide water' : 'Log water',
               selected: isHydrationOpen,
               onTap: onLogWater,
             ),
@@ -39,7 +39,7 @@ class _AssistantQuickLogBar extends StatelessWidget {
           Expanded(
             child: _AssistantQuickLogButton(
               icon: Icons.restaurant_menu_rounded,
-              label: 'Log Meal',
+              label: 'Log meal',
               selected: false,
               onTap: onLogMeal,
             ),
@@ -135,7 +135,7 @@ class _AssistantHydrationQuickLogSection extends StatelessWidget {
     final statusLabel = hasTodayLog
         ? '${_formatLiters(todayHydrationLiters)} logged today'
         : todayHydrationLiters > 0
-        ? '${_formatLiters(todayHydrationLiters)} waiting for Log page'
+        ? '${_formatLiters(todayHydrationLiters)} waiting for log page'
         : 'No daily check-in yet';
 
     return AnimatedContainer(

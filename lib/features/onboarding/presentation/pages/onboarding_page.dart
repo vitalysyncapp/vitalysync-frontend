@@ -65,11 +65,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
     '5+ days',
   ];
   static const _workloadScale = [
-    LikertOption(value: 1, label: 'Very Light'),
+    LikertOption(value: 1, label: 'Very light'),
     LikertOption(value: 2, label: 'Light'),
     LikertOption(value: 3, label: 'Moderate'),
     LikertOption(value: 4, label: 'Heavy'),
-    LikertOption(value: 5, label: 'Very Heavy'),
+    LikertOption(value: 5, label: 'Very heavy'),
   ];
   static const _extraResponsibilityScale = [
     LikertOption(value: 1, label: 'Not demanding'),
@@ -100,7 +100,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   List<_OnboardingStep> get _steps {
     return [
       _OnboardingStep(
-        sectionTitle: '\u{1F464} About You',
+        sectionTitle: '\u{1F464} About you',
         title: 'What best describes you?',
         isComplete: () => _role != null,
         builder: (context) => _buildChoicePage(
@@ -115,7 +115,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ),
       ),
       _OnboardingStep(
-        sectionTitle: '\u{1F464} About You',
+        sectionTitle: '\u{1F464} About you',
         title: 'How would you describe your lifestyle?',
         isComplete: () => _lifestyleType != null,
         builder: (context) => _buildChoicePage(
@@ -131,7 +131,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ),
       ),
       _OnboardingStep(
-        sectionTitle: '\u{1F464} About You',
+        sectionTitle: '\u{1F464} About you',
         title: 'Which wellness goals matter most to you?',
         isComplete: () => _wellnessGoals.isNotEmpty,
         builder: (context) => _buildMultiChoicePage(
@@ -146,7 +146,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ),
       ),
       _OnboardingStep(
-        sectionTitle: '\u{1F319} Routine Defaults',
+        sectionTitle: '\u{1F319} Routine defaults',
         title: 'What time do you usually sleep?',
         isComplete: () => _usualSleepTime != null,
         builder: (context) => _buildTimePage(
@@ -158,7 +158,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ),
       ),
       _OnboardingStep(
-        sectionTitle: '\u{1F319} Routine Defaults',
+        sectionTitle: '\u{1F319} Routine defaults',
         title: 'What time do you usually wake up?',
         isComplete: () => _usualWakeTime != null,
         builder: (context) => _buildTimePage(
@@ -170,7 +170,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ),
       ),
       _OnboardingStep(
-        sectionTitle: '\u{1F319} Routine Defaults',
+        sectionTitle: '\u{1F319} Routine defaults',
         title: 'How many days per week do you want to exercise?',
         isComplete: () => _exerciseGoalDays != null,
         builder: (context) => _buildChoicePage(
@@ -185,7 +185,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ),
       ),
       _OnboardingStep(
-        sectionTitle: '\u{1F319} Routine Defaults',
+        sectionTitle: '\u{1F319} Routine defaults',
         title: 'How heavy is your usual workload?',
         isComplete: () => _workloadLevel != null,
         builder: (context) => _buildLikertPage(
@@ -198,14 +198,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ),
       ),
       _OnboardingStep(
-        sectionTitle: '\u{1F319} Routine Defaults',
+        sectionTitle: '\u{1F319} Routine defaults',
         title: 'Do you usually have extra responsibilities?',
         isComplete: () => _hasExtraResponsibilities != null,
         builder: (context) => _buildYesNoPage(context),
       ),
       if (_hasExtraResponsibilities == true)
         _OnboardingStep(
-          sectionTitle: '\u{1F319} Routine Defaults',
+          sectionTitle: '\u{1F319} Routine defaults',
           title: 'How demanding are those extra responsibilities?',
           isComplete: () => _extraResponsibilityLevel != null,
           builder: (context) => _buildLikertPage(
@@ -219,7 +219,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ),
       ..._burnoutSections.map(
         (section) => _OnboardingStep(
-          sectionTitle: '\u{1F525} Burnout Baseline',
+          sectionTitle: '\u{1F525} Burnout baseline',
           title: section.title,
           isComplete: () => section.questions.every(
             (question) => _burnoutAnswers[question.questionKey] != null,
@@ -544,7 +544,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                     children: [
                                       Text(
                                         _currentStep == steps.length - 1
-                                            ? 'Finish Setup'
+                                            ? 'Finish setup'
                                             : 'Next',
                                       ),
                                       const SizedBox(width: 8),
@@ -830,7 +830,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               const SizedBox(height: 14),
               _QuestionTitle(section.title),
               const SizedBox(height: 8),
-              const _HelperText('Use 1 for Never and 5 for Always.'),
+              const _HelperText('Use 1 for never and 5 for always.'),
               const SizedBox(height: 22),
               ...section.questions.map(
                 (question) => Padding(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/validation_dialog.dart';
+import '../widgets/profile_avatar_image.dart';
 
 typedef EditProfileSaveCallback =
     Future<bool> Function({
@@ -21,6 +22,8 @@ class EditProfilePage extends StatefulWidget {
     required this.initialGender,
     required this.initialUserType,
     required this.onSave,
+    this.userId,
+    this.onEditAvatar,
   });
 
   final String initialUsername;
@@ -29,6 +32,8 @@ class EditProfilePage extends StatefulWidget {
   final String? initialGender;
   final String? initialUserType;
   final EditProfileSaveCallback onSave;
+  final int? userId;
+  final VoidCallback? onEditAvatar;
 
   @override
   State<EditProfilePage> createState() => _EditProfilePageState();
@@ -158,7 +163,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             onPressed: _isSubmitting ? null : () => Navigator.pop(context),
           ),
           title: Text(
-            'Edit Profile',
+            'Edit profile',
             style: TextStyle(
               color: pagePrimaryTextColor(context),
               fontSize: 22,
@@ -177,10 +182,54 @@ class _EditProfilePageState extends State<EditProfilePage> {
             key: _formKey,
             child: Column(
               children: [
+                if (widget.userId != null && widget.onEditAvatar != null) ...[
+                  _SectionCard(
+                    emoji: '\u{1F4F7}',
+                    icon: Icons.account_circle_outlined,
+                    title: 'Profile avatar',
+                    children: [
+                      Center(
+                        child: Column(
+                          children: [
+                            CurrentUserAvatar(
+                              userId: widget.userId,
+                              gender: _selectedGender,
+                              userType: _selectedUserType,
+                              size: 104,
+                              semanticLabel: 'Current profile avatar',
+                            ),
+                            const SizedBox(height: 14),
+                            OutlinedButton.icon(
+                              key: const ValueKey('edit-profile-change-avatar'),
+                              onPressed: _isSubmitting
+                                  ? null
+                                  : widget.onEditAvatar,
+                              icon: const Icon(Icons.edit_rounded),
+                              label: const Text(
+                                'Change avatar',
+                                style: TextStyle(fontWeight: FontWeight.w800),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 22,
+                                  vertical: 13,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                ],
                 _SectionCard(
                   emoji: '\u{1F464}',
                   icon: Icons.person_outline,
-                  title: 'Account Details',
+                  title: 'Account details',
                   children: [
                     _buildTextField(
                       controller: _usernameController,
@@ -236,7 +285,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           setState(() => _selectedGender = value),
                     ),
                     _buildDropdownField(
-                      label: 'Current Role',
+                      label: 'Current role',
                       icon: Icons.work_outline_rounded,
                       value: _selectedUserType,
                       items: _roleOptions,
@@ -261,7 +310,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           )
                         : const Icon(Icons.save_outlined),
                     label: Text(
-                      _isSubmitting ? 'Saving...' : 'Save Changes',
+                      _isSubmitting ? 'Saving...' : 'Save changes',
                       style: const TextStyle(fontWeight: FontWeight.w800),
                     ),
                     style: ElevatedButton.styleFrom(
@@ -321,8 +370,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
         decoration: _fieldDecoration(label: label, icon: icon),
         items: items
             .map(
-              (item) =>
-                  DropdownMenuItem<String>(value: item, child: Text(item)),
+              (item) => DropdownMenuItem<String>(
+                value: item,
+                child: Text(_sentenceCaseOption(item)),
+              ),
             )
             .toList(),
       ),
@@ -360,6 +411,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
       ),
     );
   }
+}
+
+String _sentenceCaseOption(String value) {
+  final text = value.trim();
+  if (text.length < 2) return text;
+  return '${text[0].toUpperCase()}${text.substring(1).toLowerCase()}';
 }
 
 class _SectionCard extends StatelessWidget {

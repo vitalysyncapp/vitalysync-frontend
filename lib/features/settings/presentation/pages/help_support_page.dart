@@ -20,7 +20,7 @@ class HelpSupportPage extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
-            'Help & Support',
+            'Help and support',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: pagePrimaryTextColor(context),
@@ -40,7 +40,7 @@ class HelpSupportPage extends StatelessWidget {
               children: [
                 _buildHeroCard(context),
                 const SizedBox(height: 16),
-                _buildSectionLabel(context, 'Support Channels'),
+                _buildSectionLabel(context, 'Support channels'),
                 const SizedBox(height: 10),
                 _buildContactCard(
                   context: context,
@@ -64,7 +64,7 @@ class HelpSupportPage extends StatelessWidget {
                   context: context,
                   icon: Icons.phone_in_talk_rounded,
                   iconColor: const Color(0xFF16A34A),
-                  title: 'Contact Number',
+                  title: 'Contact number',
                   subtitle: 'Support hotline',
                   value: '+63 917 123 4567',
                 ),

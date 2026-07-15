@@ -363,11 +363,11 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                   ),
                   children: [
                     _SettingsBlock(
-                      title: 'Reminder Preferences',
+                      title: 'Reminder preferences',
                       child: Column(
                         children: [
                           _SwitchTile(
-                            title: 'Daily Reminder',
+                            title: 'Daily reminder',
                             subtitle:
                                 'Controls your main account reminder schedule',
                             value: _prefersDailyReminder,
@@ -380,7 +380,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                           ),
                           _divider(context),
                           _SwitchTile(
-                            title: 'Sleep Reminder',
+                            title: 'Sleep reminder',
                             subtitle: 'Show a nightly prompt to wind down',
                             value:
                                 _prefersDailyReminder && _prefersSleepReminder,
@@ -394,7 +394,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                           ),
                           _divider(context),
                           _SwitchTile(
-                            title: 'Hydration Reminder',
+                            title: 'Hydration reminder',
                             subtitle: 'Show a prompt when hydration is low',
                             value:
                                 _prefersDailyReminder &&
@@ -409,7 +409,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                           ),
                           _divider(context),
                           _SwitchTile(
-                            title: 'Meal Reminders',
+                            title: 'Meal reminders',
                             subtitle:
                                 'Get gentle reminders to log meals and maintain consistency.',
                             value:
@@ -424,7 +424,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                           ),
                           _divider(context),
                           _SwitchTile(
-                            title: 'Exercise Reminder',
+                            title: 'Exercise reminder',
                             subtitle:
                                 'Keep movement prompts aligned with your account preferences',
                             value:
@@ -443,7 +443,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                     ),
                     const SizedBox(height: 16),
                     _SettingsBlock(
-                      title: 'Reminder Schedule',
+                      title: 'Reminder schedule',
                       child: Column(
                         children: [
                           _TimeTile(
@@ -533,7 +533,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                     ),
                     const SizedBox(height: 16),
                     _SettingsBlock(
-                      title: 'Smart Nudge Limits',
+                      title: 'Smart nudge limits',
                       child: Column(
                         children: [
                           _SelectTile<int>(
@@ -569,7 +569,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                     ),
                     const SizedBox(height: 16),
                     _SettingsBlock(
-                      title: 'Synced Defaults',
+                      title: 'Synced defaults',
                       child: Padding(
                         padding: const EdgeInsets.all(18),
                         child: Column(

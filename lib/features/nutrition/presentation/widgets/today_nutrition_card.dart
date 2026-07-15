@@ -53,7 +53,7 @@ class TodayNutritionCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            "Today's Nutrition",
+            "Today's nutrition",
             style: TextStyle(
               color: Colors.white,
               fontSize: 12,

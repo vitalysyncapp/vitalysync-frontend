@@ -159,7 +159,7 @@ class _RetakeBaselineQuestionnairePageState
               onPressed: _isSubmitting ? null : () => Navigator.pop(context),
             ),
             title: Text(
-              'Retake Baseline',
+              'Retake baseline',
               style: TextStyle(
                 color: pagePrimaryTextColor(context),
                 fontSize: 22,
@@ -230,7 +230,7 @@ class _RetakeBaselineQuestionnairePageState
                             _isSubmitting
                                 ? 'Saving...'
                                 : isLast
-                                ? 'Save Baseline'
+                                ? 'Save baseline'
                                 : 'Next',
                           ),
                         ),
@@ -264,7 +264,7 @@ class _RetakeBaselineQuestionnairePageState
               ),
               const SizedBox(height: 8),
               Text(
-                'Use 1 for Never and 5 for Always.',
+                'Use 1 for never and 5 for always.',
                 style: TextStyle(
                   height: 1.35,
                   fontSize: 13.5,

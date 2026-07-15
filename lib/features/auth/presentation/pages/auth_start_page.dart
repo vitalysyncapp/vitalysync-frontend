@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lottie/lottie.dart';
+import 'package:liquid_swipe/liquid_swipe.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
 import '../widgets/auth_chrome.dart';
@@ -20,17 +20,17 @@ class AuthStartPage extends StatefulWidget {
 class _AuthStartPageState extends State<AuthStartPage> {
   static const _disclaimer =
       'VitalySync provides wellness insights for awareness only and does not replace medical advice.';
-  static const _autoSlideInterval = Duration(seconds: 6);
+  static const _autoSlideInterval = Duration(seconds: 7);
 
   static const _slides = <_WelcomeSlideData>[
     _WelcomeSlideData(
       title: 'Feel your rhythm before burnout gets loud',
       subtitle:
           'Check in with sleep, mood, stress, workload, energy, and recovery so your day has a clearer signal.',
-      illustrationAsset: authHealthyLifestyleAsset,
-      animationAsset: 'assets/animations/auth_stress_management.json',
-      semanticsLabel: 'Stress awareness animation',
-      fallbackIcon: Icons.favorite_rounded,
+      illustrationAsset: 'assets/images/welcome_morning.svg',
+      semanticsLabel: 'A calm morning wellness check-in illustration',
+      backgroundColor: Color(0xFFC77D9C),
+      foregroundColor: Colors.white,
       features: [
         _WelcomeFeature(icon: Icons.bedtime_rounded, label: 'Sleep'),
         _WelcomeFeature(icon: Icons.psychology_rounded, label: 'Mood'),
@@ -41,10 +41,10 @@ class _AuthStartPageState extends State<AuthStartPage> {
       title: 'Track the signals that matter',
       subtitle:
           'Daily logs turn small habits like hydration, symptoms, activity, meals, and breaks into useful patterns.',
-      illustrationAsset: authWorkoutAsset,
-      animationAsset: 'assets/animations/auth_hydration.json',
-      semanticsLabel: 'Hydration and wellness animation',
-      fallbackIcon: Icons.water_drop_rounded,
+      illustrationAsset: 'assets/images/welcome_mindfulness.svg',
+      semanticsLabel: 'A mindful daily balance illustration',
+      backgroundColor: Color(0xFFF4A12B),
+      foregroundColor: Color(0xFF3C2711),
       features: [
         _WelcomeFeature(icon: Icons.water_drop_rounded, label: 'Hydration'),
         _WelcomeFeature(icon: Icons.restaurant_rounded, label: 'Nutrition'),
@@ -55,10 +55,10 @@ class _AuthStartPageState extends State<AuthStartPage> {
       title: 'Get nudges that fit your day',
       subtitle:
           'Adaptive reminders and the smart assistant help you notice when to rest, move, drink water, or reset.',
-      illustrationAsset: authMeditationAsset,
-      animationAsset: 'assets/animations/auth_breathing.json',
-      semanticsLabel: 'Breathing reminder animation',
-      fallbackIcon: Icons.self_improvement_rounded,
+      illustrationAsset: 'assets/images/welcome_reminders.svg',
+      semanticsLabel: 'Gentle wellness reminders illustration',
+      backgroundColor: Color(0xFF4969E9),
+      foregroundColor: Colors.white,
       features: [
         _WelcomeFeature(
           icon: Icons.notifications_active_rounded,
@@ -72,10 +72,10 @@ class _AuthStartPageState extends State<AuthStartPage> {
       title: 'See progress over time',
       subtitle:
           'Dashboards make trends easier to understand, from burnout risk and weekly analytics to goal progress.',
-      illustrationAsset: authDashboardAsset,
-      animationAsset: 'assets/animations/auth_dashboard.json',
-      semanticsLabel: 'Wellness dashboard animation',
-      fallbackIcon: Icons.insights_rounded,
+      illustrationAsset: 'assets/images/welcome_insights.svg',
+      semanticsLabel: 'Personal wellness reports illustration',
+      backgroundColor: Color(0xFF43AE91),
+      foregroundColor: Colors.white,
       features: [
         _WelcomeFeature(icon: Icons.show_chart_rounded, label: 'Trends'),
         _WelcomeFeature(icon: Icons.flag_rounded, label: 'Goals'),
@@ -87,43 +87,60 @@ class _AuthStartPageState extends State<AuthStartPage> {
     ),
   ];
 
-  late final PageController _pageController;
+  late final LiquidController _liquidController;
   Timer? _autoSlideTimer;
   int _currentSlide = 0;
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
-    _startAutoSlideTimer();
+    _liquidController = LiquidController();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _autoSlideTimer?.cancel();
+      _autoSlideTimer = null;
+    } else if (_autoSlideTimer == null) {
+      _scheduleAutoSlide();
+    }
   }
 
   @override
   void dispose() {
     _autoSlideTimer?.cancel();
-    _pageController.dispose();
     super.dispose();
   }
 
-  void _startAutoSlideTimer() {
-    if (_slides.length <= 1) return;
+  void _scheduleAutoSlide() {
+    if (_slides.length <= 1 || MediaQuery.disableAnimationsOf(context)) return;
 
-    _autoSlideTimer = Timer.periodic(_autoSlideInterval, (_) {
-      if (!mounted || !_pageController.hasClients) return;
-
-      final nextSlide = (_currentSlide + 1) % _slides.length;
-      _goToSlide(nextSlide);
+    _autoSlideTimer?.cancel();
+    _autoSlideTimer = Timer(_autoSlideInterval, () {
+      if (!mounted || _currentSlide == _slides.length - 1) return;
+      _goToSlide(_currentSlide + 1);
     });
   }
 
   void _goToSlide(int index) {
     final target = index.clamp(0, _slides.length - 1).toInt();
+    if (target == _currentSlide) return;
 
-    _pageController.animateToPage(
-      target,
-      duration: const Duration(milliseconds: 320),
-      curve: Curves.easeOutCubic,
-    );
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _liquidController.jumpToPage(page: target);
+    } else {
+      _liquidController.animateToPage(page: target, duration: 620);
+    }
+
+    _scheduleAutoSlide();
+  }
+
+  void _handlePageChanged(int index) {
+    if (!mounted || index == _currentSlide) return;
+    setState(() => _currentSlide = index);
+    _scheduleAutoSlide();
   }
 
   void _openLogin() {
@@ -146,6 +163,7 @@ class _AuthStartPageState extends State<AuthStartPage> {
       illustrationAsset: authHealthyLifestyleAsset,
       topOverlayAsset: authMeditationAsset,
       bottomOverlayAssets: const [authHealthyLifestyleAsset, authWorkoutAsset],
+      backdropStyle: AuthBackdropStyle.welcome,
       centerContent: false,
       scrollable: false,
       padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
@@ -177,44 +195,53 @@ class _AuthStartPageState extends State<AuthStartPage> {
                             width: panelWidth,
                             height: panelConstraints.maxHeight,
                             child: AuthGlassPanel(
-                              padding: EdgeInsets.fromLTRB(
-                                18,
-                                compact ? 16 : 20,
-                                18,
-                                compact ? 14 : 18,
-                              ),
-                              child: Column(
+                              padding: EdgeInsets.zero,
+                              child: Stack(
+                                fit: StackFit.expand,
                                 children: [
-                                  _WelcomeBrandStrip(compact: compact),
-                                  SizedBox(height: compact ? 10 : 14),
-                                  Expanded(
-                                    child: PageView.builder(
-                                      key: const ValueKey(
-                                        'auth-welcome-carousel',
-                                      ),
-                                      controller: _pageController,
-                                      itemCount: _slides.length,
-                                      onPageChanged: (index) {
-                                        setState(() => _currentSlide = index);
-                                      },
-                                      itemBuilder: (context, index) {
-                                        return _WelcomeSlide(
+                                  LiquidSwipe.builder(
+                                    key: const ValueKey(
+                                      'auth-welcome-carousel',
+                                    ),
+                                    itemCount: _slides.length,
+                                    itemBuilder: (context, index) =>
+                                        _WelcomeSlide(
                                           data: _slides[index],
                                           compact: compact,
-                                        );
-                                      },
-                                    ),
+                                        ),
+                                    liquidController: _liquidController,
+                                    initialPage: _currentSlide,
+                                    onPageChangeCallback: _handlePageChanged,
+                                    waveType: WaveType.liquidReveal,
+                                    fullTransitionValue: 420,
+                                    enableLoop: false,
+                                    enableSideReveal: true,
+                                    preferDragFromRevealedArea: false,
+                                    ignoreUserGestureWhileAnimating: true,
                                   ),
-                                  SizedBox(height: compact ? 8 : 12),
-                                  _CarouselControls(
-                                    currentIndex: _currentSlide,
-                                    itemCount: _slides.length,
-                                    onPrevious: _currentSlide == 0
-                                        ? null
-                                        : () => _goToSlide(_currentSlide - 1),
-                                    onNext: _currentSlide == _slides.length - 1
-                                        ? null
-                                        : () => _goToSlide(_currentSlide + 1),
+                                  Positioned(
+                                    top: compact ? 12 : 16,
+                                    left: 16,
+                                    right: 16,
+                                    child: _WelcomeBrandStrip(compact: compact),
+                                  ),
+                                  Positioned(
+                                    left: 14,
+                                    right: 14,
+                                    bottom: compact ? 10 : 14,
+                                    child: _CarouselControls(
+                                      currentIndex: _currentSlide,
+                                      itemCount: _slides.length,
+                                      foregroundColor: _slides[_currentSlide]
+                                          .foregroundColor,
+                                      onPrevious: _currentSlide == 0
+                                          ? null
+                                          : () => _goToSlide(_currentSlide - 1),
+                                      onNext:
+                                          _currentSlide == _slides.length - 1
+                                          ? null
+                                          : () => _goToSlide(_currentSlide + 1),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -262,18 +289,18 @@ class _WelcomeSlideData {
   final String title;
   final String subtitle;
   final String illustrationAsset;
-  final String animationAsset;
   final String semanticsLabel;
-  final IconData fallbackIcon;
+  final Color backgroundColor;
+  final Color foregroundColor;
   final List<_WelcomeFeature> features;
 
   const _WelcomeSlideData({
     required this.title,
     required this.subtitle,
     required this.illustrationAsset,
-    required this.animationAsset,
     required this.semanticsLabel,
-    required this.fallbackIcon,
+    required this.backgroundColor,
+    required this.foregroundColor,
     required this.features,
   });
 }
@@ -292,43 +319,77 @@ class _WelcomeBrandStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        SizedBox.square(
-          dimension: compact ? 42 : 48,
-          child: Image.asset('assets/images/logo.png', fit: BoxFit.contain),
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.90),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.72)),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF17243A).withValues(alpha: 0.12),
+              blurRadius: 18,
+              offset: const Offset(0, 7),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'VitalySync',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.poppins(
-                  fontSize: compact ? 19 : 21,
-                  fontWeight: FontWeight.w900,
-                  color: pagePrimaryTextColor(context),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            10,
+            compact ? 7 : 8,
+            14,
+            compact ? 7 : 8,
+          ),
+          child: SizedBox(
+            width: compact ? 150 : 250,
+            child: Row(
+              children: [
+                SizedBox.square(
+                  dimension: compact ? 31 : 35,
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    fit: BoxFit.contain,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'Burnout awareness for everyday rhythms',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(
-                  height: 1.2,
-                  fontSize: compact ? 11.5 : 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: pageSecondaryTextColor(context),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'VitalySync',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.poppins(
+                          height: 1.05,
+                          fontSize: compact ? 15.5 : 17,
+                          fontWeight: FontWeight.w900,
+                          color: const Color(0xFF17243A),
+                        ),
+                      ),
+                      if (!compact) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          'Your daily wellness rhythm',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.poppins(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF526176),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -341,63 +402,93 @@ class _WelcomeSlide extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final shortSlide = constraints.maxHeight < 380;
-        final visualHeight = shortSlide
-            ? 120.0
-            : compact
-            ? 142.0
-            : 166.0;
-
-        return SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _WelcomeVisual(data: data, height: visualHeight),
-                SizedBox(height: shortSlide ? 10 : 16),
-                Text(
-                  data.title,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    height: 1.13,
-                    fontSize: shortSlide
-                        ? 21
-                        : compact
-                        ? 23
-                        : 25,
-                    fontWeight: FontWeight.w900,
-                    color: pagePrimaryTextColor(context),
-                  ),
-                ),
-                const SizedBox(height: 9),
-                Text(
-                  data.subtitle,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                    height: 1.42,
-                    fontSize: shortSlide ? 13 : 14,
-                    fontWeight: FontWeight.w600,
-                    color: pageSecondaryTextColor(context),
-                  ),
-                ),
-                SizedBox(height: shortSlide ? 12 : 18),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: data.features
-                      .map((feature) => _FeatureChip(feature: feature))
-                      .toList(),
-                ),
-              ],
+    return ColoredBox(
+      color: data.backgroundColor,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          IgnorePointer(
+            child: CustomPaint(
+              painter: _WellnessContourPainter(color: data.foregroundColor),
             ),
           ),
-        );
-      },
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final shortSlide = constraints.maxHeight < 430;
+              final visualHeight = shortSlide
+                  ? 108.0
+                  : compact
+                  ? 136.0
+                  : 180.0;
+
+              return SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  compact ? 66 : 80,
+                  20,
+                  compact ? 56 : 70,
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight - (compact ? 122 : 150),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _WelcomeVisual(data: data, height: visualHeight),
+                      SizedBox(height: shortSlide ? 10 : 16),
+                      Text(
+                        data.title,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          height: 1.12,
+                          fontSize: shortSlide
+                              ? 20
+                              : compact
+                              ? 22
+                              : 25,
+                          fontWeight: FontWeight.w900,
+                          color: data.foregroundColor,
+                        ),
+                      ),
+                      SizedBox(height: shortSlide ? 6 : 8),
+                      Text(
+                        data.subtitle,
+                        maxLines: shortSlide ? 3 : 4,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          height: 1.38,
+                          fontSize: shortSlide ? 12.2 : 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: data.foregroundColor.withValues(alpha: 0.88),
+                        ),
+                      ),
+                      SizedBox(height: shortSlide ? 9 : 14),
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 7,
+                        runSpacing: 7,
+                        children: data.features
+                            .map(
+                              (feature) => _FeatureChip(
+                                feature: feature,
+                                foregroundColor: data.foregroundColor,
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }
@@ -410,65 +501,32 @@ class _WelcomeVisual extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
-
     return SizedBox(
       height: height,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Positioned.fill(
-            child: Opacity(
-              opacity: Theme.of(context).brightness == Brightness.dark
-                  ? 0.34
-                  : 0.48,
-              child: SvgPicture.asset(
-                data.illustrationAsset,
-                fit: BoxFit.contain,
-                excludeFromSemantics: true,
+      width: double.infinity,
+      child: Center(
+        child: Container(
+          width: height * 1.48,
+          height: height,
+          padding: EdgeInsets.all(height * 0.10),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.94),
+            borderRadius: BorderRadius.circular(height * 0.18),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.72)),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF17243A).withValues(alpha: 0.18),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
               ),
-            ),
+            ],
           ),
-          Container(
-            width: height * 0.74,
-            height: height * 0.74,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.white.withValues(alpha: 0.09)
-                  : Colors.white.withValues(alpha: 0.74),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.62)),
-              boxShadow: [
-                BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withValues(
-                    alpha: Theme.of(context).brightness == Brightness.dark
-                        ? 0.18
-                        : 0.20,
-                  ),
-                  blurRadius: 22,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Semantics(
-              label: data.semanticsLabel,
-              image: true,
-              child: Lottie.asset(
-                data.animationAsset,
-                fit: BoxFit.contain,
-                repeat: !reduceMotion,
-                animate: !reduceMotion,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(
-                    data.fallbackIcon,
-                    color: Theme.of(context).colorScheme.primary,
-                    size: height * 0.34,
-                  );
-                },
-              ),
-            ),
+          child: SvgPicture.asset(
+            data.illustrationAsset,
+            fit: BoxFit.contain,
+            semanticsLabel: data.semanticsLabel,
           ),
-        ],
+        ),
       ),
     );
   }
@@ -476,34 +534,30 @@ class _WelcomeVisual extends StatelessWidget {
 
 class _FeatureChip extends StatelessWidget {
   final _WelcomeFeature feature;
+  final Color foregroundColor;
 
-  const _FeatureChip({required this.feature});
+  const _FeatureChip({required this.feature, required this.foregroundColor});
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.06)
-            : const Color(0xFFF4FBF8).withValues(alpha: 0.86),
+        color: Colors.white.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: pageBorderColor(context)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.32)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(feature.icon, size: 16, color: primary),
-          const SizedBox(width: 6),
+          Icon(feature.icon, size: 15, color: foregroundColor),
+          const SizedBox(width: 5),
           Text(
             feature.label,
-            style: GoogleFonts.inter(
-              fontSize: 12.5,
+            style: GoogleFonts.poppins(
+              fontSize: 11.5,
               fontWeight: FontWeight.w800,
-              color: pagePrimaryTextColor(context),
+              color: foregroundColor,
             ),
           ),
         ],
@@ -512,15 +566,97 @@ class _FeatureChip extends StatelessWidget {
   }
 }
 
+class _WellnessContourPainter extends CustomPainter {
+  final Color color;
+
+  const _WellnessContourPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color.withValues(alpha: 0.12)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.2
+      ..strokeCap = StrokeCap.round;
+
+    final upperPath = Path()
+      ..moveTo(-size.width * 0.08, size.height * 0.18)
+      ..cubicTo(
+        size.width * 0.18,
+        size.height * 0.04,
+        size.width * 0.28,
+        size.height * 0.34,
+        size.width * 0.52,
+        size.height * 0.17,
+      )
+      ..cubicTo(
+        size.width * 0.70,
+        size.height * 0.04,
+        size.width * 0.83,
+        size.height * 0.18,
+        size.width * 1.08,
+        size.height * 0.08,
+      );
+    canvas.drawPath(upperPath, paint);
+
+    final middlePath = Path()
+      ..moveTo(-size.width * 0.05, size.height * 0.58)
+      ..cubicTo(
+        size.width * 0.14,
+        size.height * 0.48,
+        size.width * 0.19,
+        size.height * 0.76,
+        size.width * 0.42,
+        size.height * 0.65,
+      )
+      ..cubicTo(
+        size.width * 0.65,
+        size.height * 0.54,
+        size.width * 0.73,
+        size.height * 0.82,
+        size.width * 1.06,
+        size.height * 0.66,
+      );
+    canvas.drawPath(middlePath, paint);
+
+    final lowerPath = Path()
+      ..moveTo(size.width * 0.12, size.height * 1.05)
+      ..cubicTo(
+        size.width * 0.22,
+        size.height * 0.79,
+        size.width * 0.51,
+        size.height * 1.02,
+        size.width * 0.61,
+        size.height * 0.84,
+      )
+      ..cubicTo(
+        size.width * 0.73,
+        size.height * 0.65,
+        size.width * 0.88,
+        size.height * 0.92,
+        size.width * 1.08,
+        size.height * 0.82,
+      );
+    canvas.drawPath(lowerPath, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _WellnessContourPainter oldDelegate) {
+    return oldDelegate.color != color;
+  }
+}
+
 class _CarouselControls extends StatelessWidget {
   final int currentIndex;
   final int itemCount;
+  final Color foregroundColor;
   final VoidCallback? onPrevious;
   final VoidCallback? onNext;
 
   const _CarouselControls({
     required this.currentIndex,
     required this.itemCount,
+    required this.foregroundColor,
     required this.onPrevious,
     required this.onNext,
   });
@@ -531,9 +667,15 @@ class _CarouselControls extends StatelessWidget {
       children: [
         Tooltip(
           message: 'Previous',
-          child: IconButton.filledTonal(
+          child: IconButton(
             key: const ValueKey('auth-welcome-previous'),
             onPressed: onPrevious,
+            style: IconButton.styleFrom(
+              backgroundColor: foregroundColor.withValues(alpha: 0.14),
+              foregroundColor: foregroundColor,
+              disabledForegroundColor: foregroundColor.withValues(alpha: 0.34),
+              side: BorderSide(color: foregroundColor.withValues(alpha: 0.24)),
+            ),
             icon: const Icon(Icons.arrow_back_rounded),
           ),
         ),
@@ -544,6 +686,7 @@ class _CarouselControls extends StatelessWidget {
               final selected = index == currentIndex;
 
               return AnimatedContainer(
+                key: ValueKey('auth-welcome-dot-$index'),
                 duration: const Duration(milliseconds: 180),
                 curve: Curves.easeOutCubic,
                 margin: const EdgeInsets.symmetric(horizontal: 3),
@@ -551,8 +694,8 @@ class _CarouselControls extends StatelessWidget {
                 height: 8,
                 decoration: BoxDecoration(
                   color: selected
-                      ? Theme.of(context).colorScheme.primary
-                      : pageBorderColor(context),
+                      ? foregroundColor
+                      : foregroundColor.withValues(alpha: 0.36),
                   borderRadius: BorderRadius.circular(999),
                 ),
               );
@@ -561,9 +704,15 @@ class _CarouselControls extends StatelessWidget {
         ),
         Tooltip(
           message: 'Next',
-          child: IconButton.filledTonal(
+          child: IconButton(
             key: const ValueKey('auth-welcome-next'),
             onPressed: onNext,
+            style: IconButton.styleFrom(
+              backgroundColor: foregroundColor.withValues(alpha: 0.14),
+              foregroundColor: foregroundColor,
+              disabledForegroundColor: foregroundColor.withValues(alpha: 0.34),
+              side: BorderSide(color: foregroundColor.withValues(alpha: 0.24)),
+            ),
             icon: const Icon(Icons.arrow_forward_rounded),
           ),
         ),
@@ -603,7 +752,7 @@ class _CompactDisclaimer extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: GoogleFonts.inter(
+              style: GoogleFonts.poppins(
                 height: 1.32,
                 fontSize: 11.5,
                 fontWeight: FontWeight.w600,

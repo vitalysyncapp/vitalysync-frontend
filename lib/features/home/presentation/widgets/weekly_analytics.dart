@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/main_navigation.dart';
 import '../../../../features/dashboard/data/weekly_user_metrics.dart';
+import '../../../../shared/navigation/main_tab.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 
@@ -13,7 +14,7 @@ class WeeklyAnalyticsCard extends StatelessWidget {
 
   const WeeklyAnalyticsCard({
     super.key,
-    this.title = 'This Week',
+    this.title = 'This week',
     required this.items,
     this.onViewAll,
     this.isLoading = false,
@@ -72,15 +73,16 @@ class WeeklyAnalyticsCard extends StatelessWidget {
                             context,
                           );
                           if (controller != null) {
-                            controller.onTabSelected(3);
+                            controller.onTabSelected(MainTab.dashboard);
                             return;
                           }
 
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
-                              builder: (_) =>
-                                  const MainNavigation(initialIndex: 3),
+                              builder: (_) => const MainNavigation(
+                                initialTab: MainTab.dashboard,
+                              ),
                             ),
                           );
                         },
@@ -90,7 +92,7 @@ class WeeklyAnalyticsCard extends StatelessWidget {
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   child: Text(
-                    'View All',
+                    'View all',
                     style: TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w500,
@@ -182,26 +184,26 @@ class _HomeWeeklyAnalyticsCardState extends State<HomeWeeklyAnalyticsCard> {
         final metrics = snapshot.data;
         final items = metrics == null
             ? const [
-                WeeklyStatItem(label: 'Average Sleep', value: 'Loading'),
-                WeeklyStatItem(label: 'Mood Trend', value: 'Loading'),
-                WeeklyStatItem(label: 'Exercise Days', value: 'Loading'),
+                WeeklyStatItem(label: 'Average sleep', value: 'Loading'),
+                WeeklyStatItem(label: 'Mood trend', value: 'Loading'),
+                WeeklyStatItem(label: 'Exercise days', value: 'Loading'),
               ]
             : [
                 WeeklyStatItem(
-                  label: 'Average Sleep',
+                  label: 'Average sleep',
                   value: metrics.averageSleep > 0
                       ? '${metrics.averageSleep.toStringAsFixed(1)} hours'
                       : 'No logs',
                 ),
                 WeeklyStatItem(
-                  label: 'Mood Trend',
+                  label: 'Mood trend',
                   value: metrics.moodTrendLabel,
                   valueColor: metrics.moodTrendLabel == 'Improving'
                       ? const Color(0xFF12A150)
                       : null,
                 ),
                 WeeklyStatItem(
-                  label: 'Exercise Days',
+                  label: 'Exercise days',
                   value: '${metrics.exerciseDays} of 7',
                 ),
               ];

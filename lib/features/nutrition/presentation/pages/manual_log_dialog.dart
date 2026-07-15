@@ -206,7 +206,7 @@ class _ManualLogDialogState extends State<_ManualLogDialog> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Manual Log',
+                              'Manual log',
                               style: TextStyle(
                                 fontSize: isCompact ? 18 : 20,
                                 fontWeight: FontWeight.w800,
@@ -439,7 +439,7 @@ class _ManualMealForm extends StatelessWidget {
             controller: draft.notesController,
             minLines: 2,
             maxLines: 4,
-            decoration: _inputDecoration(context, 'Optional Notes'),
+            decoration: _inputDecoration(context, 'Optional notes'),
           ),
         ],
       ),
@@ -514,7 +514,7 @@ class _MealNameAutocompleteField extends StatelessWidget {
               controller: fieldController,
               focusNode: fieldFocusNode,
               textInputAction: textInputAction,
-              decoration: _inputDecoration(context, 'Meal Name'),
+              decoration: _inputDecoration(context, 'Meal name'),
             );
           },
       optionsViewBuilder: (context, onSelected, options) {

@@ -43,7 +43,7 @@ class EnvironmentalCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Environmental Conditions',
+            'Environmental conditions',
             style: TextStyle(
               fontSize: 14.5,
               fontWeight: FontWeight.bold,
@@ -106,7 +106,7 @@ class EnvironmentalCard extends StatelessWidget {
           context: context,
           icon: Icons.air_rounded,
           iconColor: Colors.blueAccent,
-          label: 'Air Quality',
+          label: 'Air quality',
           value: 'AQI ${snapshot.airQuality.aqi}',
           status: snapshot.airQuality.aqiLabel,
           statusColor: _statusColor(snapshot.airQuality.aqiLabel),

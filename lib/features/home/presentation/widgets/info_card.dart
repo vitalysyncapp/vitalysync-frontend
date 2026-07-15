@@ -137,7 +137,7 @@ Widget sampleInfoCards() {
         icon: Icons.bedtime,
         title: 'Sleep',
         value: '7h 45m',
-        subtitle: 'Last Night',
+        subtitle: 'Last night',
         color: Colors.blueAccent,
       ),
     ],

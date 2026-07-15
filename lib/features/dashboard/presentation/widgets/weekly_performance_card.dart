@@ -53,7 +53,7 @@ class _WeeklyPerformanceCardState extends State<WeeklyPerformanceCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Weekly Performance',
+                      'Weekly performance',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 15,
@@ -72,7 +72,7 @@ class _WeeklyPerformanceCardState extends State<WeeklyPerformanceCard> {
                         Expanded(
                           child: _MetricBlock(
                             value: '$goalsMet/7',
-                            label: 'Movement Days',
+                            label: 'Movement days',
                           ),
                         ),
                       ],
@@ -103,7 +103,7 @@ class _WeeklyPerformanceCardState extends State<WeeklyPerformanceCard> {
                         },
                         icon: const Icon(Icons.history_rounded, size: 18),
                         label: const Text(
-                          'View History',
+                          'View history',
                           style: TextStyle(fontWeight: FontWeight.w800),
                         ),
                         style: OutlinedButton.styleFrom(

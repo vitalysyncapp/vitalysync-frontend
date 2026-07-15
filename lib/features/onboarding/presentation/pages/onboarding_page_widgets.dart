@@ -231,7 +231,7 @@ class _PromptBadge extends StatelessWidget {
           Icon(icon, size: 17, color: primary),
           const SizedBox(width: 7),
           Text(
-            label.toUpperCase(),
+            _sentenceCaseOption(label),
             style: TextStyle(
               fontSize: 11.5,
               fontWeight: FontWeight.w900,
@@ -348,7 +348,7 @@ class _OptionTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      label,
+                      _sentenceCaseOption(label),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
@@ -392,6 +392,12 @@ class _OptionTile extends StatelessWidget {
       ),
     );
   }
+}
+
+String _sentenceCaseOption(String value) {
+  final text = value.trim();
+  if (text.length < 2) return text;
+  return '${text[0].toUpperCase()}${text.substring(1).toLowerCase()}';
 }
 
 class _AnimatedIconBadge extends StatelessWidget {

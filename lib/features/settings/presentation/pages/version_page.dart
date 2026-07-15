@@ -145,7 +145,7 @@ class _DetailsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _VersionSection(
-      title: 'Build Details',
+      title: 'Build details',
       children: const [
         _DetailRow(
           icon: Icons.verified_outlined,
@@ -165,7 +165,7 @@ class _DetailsCard extends StatelessWidget {
         _DetailRow(
           icon: Icons.groups_outlined,
           label: 'Developer',
-          value: 'VitalySync Team',
+          value: 'VitalySync team',
         ),
       ],
     );
@@ -178,12 +178,12 @@ class _ReleaseNotesCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _VersionSection(
-      title: 'Latest Updates',
+      title: 'Latest updates',
       children: const [
-        _ReleaseNote(text: 'Refined Settings layout and section hierarchy.'),
-        _ReleaseNote(text: 'Improved Help & Support contact presentation.'),
+        _ReleaseNote(text: 'Refined settings layout and section hierarchy.'),
+        _ReleaseNote(text: 'Improved help and support contact presentation.'),
         _ReleaseNote(
-          text: 'Polished Terms, Privacy, About, and Version pages.',
+          text: 'Polished terms, privacy, about, and version pages.',
         ),
       ],
     );

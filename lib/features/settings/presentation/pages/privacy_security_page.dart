@@ -26,7 +26,7 @@ class PrivacySecurityPage extends StatelessWidget {
                 onPressed: () => Navigator.pop(context),
               ),
               title: Text(
-                'Privacy & Security',
+                'Privacy and security',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: pagePrimaryTextColor(context),
@@ -43,10 +43,10 @@ class PrivacySecurityPage extends StatelessWidget {
                 ),
                 children: [
                   _SectionCard(
-                    title: 'Privacy Controls',
+                    title: 'Privacy controls',
                     children: [
                       _PrivacySwitchTile(
-                        title: 'Hide Sensitive Content',
+                        title: 'Hide sensitive content',
                         subtitle:
                             'Softens wellness details on shared or public screens',
                         value: prefs.hideSensitiveContent,
@@ -54,7 +54,7 @@ class PrivacySecurityPage extends StatelessWidget {
                       ),
                       _divider(context),
                       _PrivacySwitchTile(
-                        title: 'Biometric Lock',
+                        title: 'Biometric lock',
                         subtitle:
                             'Keep a local lock preference saved for future secure unlock support',
                         value: prefs.biometricLockEnabled,
@@ -64,7 +64,7 @@ class PrivacySecurityPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   _SectionCard(
-                    title: 'About This Section',
+                    title: 'About this section',
                     children: [
                       Padding(
                         padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),

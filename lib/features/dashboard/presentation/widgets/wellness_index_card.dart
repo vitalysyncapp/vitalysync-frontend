@@ -43,7 +43,7 @@ class _WellnessIndexCardState extends State<WellnessIndexCard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Wellness Index',
+                'Wellness index',
                 style: TextStyle(
                   fontSize: 15.5,
                   fontWeight: FontWeight.bold,

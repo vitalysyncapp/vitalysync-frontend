@@ -45,11 +45,33 @@ class BurnoutCard extends StatelessWidget {
   }
 
   IconData getIcon() {
-    if (score <= 20) return Icons.sentiment_very_satisfied;
-    if (score <= 40) return Icons.sentiment_satisfied;
-    if (score <= 60) return Icons.sentiment_neutral;
+    if (score <= 20) return Icons.sentiment_very_satisfied_rounded;
+    if (score <= 40) return Icons.sentiment_satisfied_alt_rounded;
+    if (score <= 50) return Icons.self_improvement_rounded;
+    if (score <= 60) return Icons.sentiment_neutral_rounded;
     if (score <= 80) return Icons.warning_amber_rounded;
-    return Icons.error_outline;
+    if (score <= 90) return Icons.local_fire_department_rounded;
+    return Icons.emergency_rounded;
+  }
+
+  Color getIconColor() {
+    if (score <= 20) return const Color(0xFF0284C7);
+    if (score <= 40) return const Color(0xFF0D9488);
+    if (score <= 50) return const Color(0xFF65A30D);
+    if (score <= 60) return const Color(0xFFD97706);
+    if (score <= 80) return const Color(0xFFEA580C);
+    if (score <= 90) return const Color(0xFFEF4444);
+    return const Color(0xFFB91C1C);
+  }
+
+  String getIconLabel() {
+    if (score <= 20) return 'Very low burnout risk';
+    if (score <= 40) return 'Low burnout risk';
+    if (score <= 50) return 'Mild burnout risk';
+    if (score <= 60) return 'Moderate burnout risk';
+    if (score <= 80) return 'High burnout risk';
+    if (score <= 90) return 'Very high burnout risk';
+    return 'Critical burnout risk';
   }
 
   // Glow color for high-risk scores
@@ -139,7 +161,7 @@ class BurnoutCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Burnout Risk Score',
+                  'Burnout risk score',
                   style: TextStyle(
                     color: textColor.withValues(alpha: 0.7),
                     fontSize: 14,
@@ -179,13 +201,30 @@ class BurnoutCard extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  shape: BoxShape.circle,
+              Semantics(
+                label: getIconLabel(),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.85),
+                      width: 2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.16),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: ExcludeSemantics(
+                    child: Icon(getIcon(), color: getIconColor(), size: 28),
+                  ),
                 ),
-                child: Icon(getIcon(), color: textColor),
               ),
             ],
           ),

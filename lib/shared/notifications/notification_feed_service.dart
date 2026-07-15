@@ -386,7 +386,7 @@ class NotificationFeedService {
       createdAt: event.createdAt,
       updatedAt: event.updatedAt,
       metricChips: [
-        _titleCase(event.status),
+        _sentenceCase(event.status),
         if (event.nudgeType.trim().isNotEmpty) _humanize(event.nudgeType),
       ],
       showAction: event.actionLabel?.trim().isNotEmpty == true,
@@ -446,7 +446,12 @@ List<String> _reportMetricChips(InsightReport report) {
       suffix: '/5',
     );
     if (chips.length <= 1) {
-      _addMetric(chips, 'Avg sleep', metrics['average_sleep_hours'], suffix: 'h');
+      _addMetric(
+        chips,
+        'Avg sleep',
+        metrics['average_sleep_hours'],
+        suffix: 'h',
+      );
       _addMetric(chips, 'Steps', metrics['total_steps'], compactNumber: true);
     }
     _addRiskMetric(chips, metrics['latest_burnout_risk_level']);
@@ -458,7 +463,12 @@ List<String> _reportMetricChips(InsightReport report) {
       suffix: '/5',
     );
     _addMetric(chips, 'Focus', metrics['daily_focus_level'], suffix: '/5');
-    _addMetric(chips, 'Detach', metrics['daily_detachment_level'], suffix: '/5');
+    _addMetric(
+      chips,
+      'Detach',
+      metrics['daily_detachment_level'],
+      suffix: '/5',
+    );
     _addMetric(
       chips,
       'Accomp',
@@ -523,7 +533,7 @@ void _addRiskMetric(List<String> chips, dynamic risk) {
     return;
   }
 
-  chips.add('Risk ${_titleCase(text)}');
+  chips.add('Risk ${_sentenceCase(text)}');
 }
 
 DateTime _parseDate(dynamic value) {
@@ -569,19 +579,17 @@ String _oneSentence(String value, {String fallback = 'Insight available.'}) {
 
 String _humanize(String value) {
   final normalized = value.trim().replaceAll(RegExp(r'[_-]+'), ' ');
-  return _titleCase(normalized);
+  return _sentenceCase(normalized);
 }
 
-String _titleCase(String value) {
-  return value
+String _sentenceCase(String value) {
+  final words = value
       .trim()
       .split(RegExp(r'\s+'))
       .where((part) => part.isNotEmpty)
-      .map((part) {
-        if (part.length == 1) {
-          return part.toUpperCase();
-        }
-        return '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}';
-      })
-      .join(' ');
+      .map((part) => part.toLowerCase())
+      .toList();
+  if (words.isEmpty) return '';
+  final text = words.join(' ');
+  return '${text[0].toUpperCase()}${text.substring(1)}';
 }

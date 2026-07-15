@@ -397,7 +397,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
         _isSavingHydration = false;
         _hydrationHelperText = saved
             ? 'Water added to today\'s check-in.'
-            : 'No daily check-in yet. I prefilled this for the Log page.';
+            : 'No daily check-in yet. I prefilled this for the log page.';
       });
     } catch (error) {
       if (!mounted) return;
@@ -549,12 +549,12 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
       if (appliedToLog) {
         snackBarMessage += ' Today\'s log now shows None.';
       } else if (queuedForLog) {
-        snackBarMessage += ' None will prefill the Log page.';
+        snackBarMessage += ' None will prefill the log page.';
       }
     } else if (appliedToLog) {
       snackBarMessage += ' $exerciseName also updated today\'s log.';
     } else if (queuedForLog) {
-      snackBarMessage += ' $exerciseName will prefill the Log page.';
+      snackBarMessage += ' $exerciseName will prefill the log page.';
     }
 
     ScaffoldMessenger.of(
@@ -730,7 +730,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
         const SizedBox(width: 12),
         Expanded(
           child: Text(
-            'VitalySync Assistant',
+            'VitalySync assistant',
             style: TextStyle(
               color: pagePrimaryTextColor(context),
               fontSize: 18,

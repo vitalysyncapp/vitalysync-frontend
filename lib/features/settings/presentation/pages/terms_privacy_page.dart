@@ -21,7 +21,7 @@ class TermsPrivacyPage extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
-            'Terms & Privacy Policy',
+            'Terms and privacy policy',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: pagePrimaryTextColor(context),
