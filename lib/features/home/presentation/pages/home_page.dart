@@ -68,6 +68,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   String _burnoutStatus = 'Baseline pending';
   BurnoutScoreSnapshot? _latestBurnoutScore;
   BurnoutPatternSummary? _burnoutPatternSummary;
+  bool _isLoadingBurnout = true;
   bool _isLoadingSummary = true;
   bool _isLoadingEnvironment = true;
   _HomeLiveDataIssue? _summaryIssue;
@@ -126,6 +127,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Future<void> _loadBurnoutBaseline() async {
     final loadToken = ++_burnoutLoadToken;
+
+    setState(() {
+      _isLoadingBurnout = true;
+    });
+
     final defaults = await OnboardingService.loadDefaults();
     BurnoutScoreSnapshot? latestScore;
     BurnoutPatternSummary? patternSummary;
@@ -148,6 +154,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     setState(() {
       _latestBurnoutScore = latestScore;
       _burnoutPatternSummary = patternSummary;
+      _isLoadingBurnout = false;
       if (latestScore != null) {
         _burnoutScore = latestScore.overallScore.round();
         _burnoutStatus = _burnoutStatusForRisk(
@@ -343,6 +350,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       child: BurnoutCard(
                         score: _burnoutScore,
                         status: _burnoutStatus,
+                        isLoading: _isLoadingBurnout,
                         latestScore: _latestBurnoutScore,
                         patternSummary: _burnoutPatternSummary,
                       ),

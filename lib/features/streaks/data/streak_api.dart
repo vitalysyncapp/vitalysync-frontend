@@ -64,6 +64,7 @@ class StreakApi {
   static Future<StreakLeaderboard> fetchLeaderboard({
     required String section,
     required String metric,
+    required int limit,
   }) async {
     final session = await UserSessionController.instance.load();
     final userId = session.userId;
@@ -71,11 +72,16 @@ class StreakApi {
       throw Exception('Missing logged-in user');
     }
 
-    final cacheScope = '$userId-$section-$metric';
+    final normalizedLimit = limit.clamp(1, 100).toInt();
+    final cacheScope = '$userId-$section-$metric-$normalizedLimit';
 
     try {
       final uri = Uri.parse(ApiConfig.streaks('/$userId/leaderboard')).replace(
-        queryParameters: {'section': section, 'metric': metric, 'limit': '50'},
+        queryParameters: {
+          'section': section,
+          'metric': metric,
+          'limit': '$normalizedLimit',
+        },
       );
       final response = await http
           .get(uri, headers: await ApiConfig.acceptJsonHeaders())

@@ -11,7 +11,7 @@ import '../../../../shared/widgets/app_skeleton.dart';
 
 enum _HistoryCategory { dailyLogs, burnout, nutrition, activity }
 
-enum _HistoryRange { week, month }
+enum _HistoryRange { all, week, month }
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -22,7 +22,7 @@ class HistoryPage extends StatefulWidget {
 
 class _HistoryPageState extends State<HistoryPage> {
   _HistoryCategory _selectedCategory = _HistoryCategory.dailyLogs;
-  _HistoryRange _selectedRange = _HistoryRange.week;
+  _HistoryRange _selectedRange = _HistoryRange.all;
   DateTime? _selectedDate;
   late Future<_HistorySnapshot> _future;
 
@@ -36,7 +36,7 @@ class _HistoryPageState extends State<HistoryPage> {
     final window = _rangeWindow(_selectedRange);
     final startKey = _dateKey(window.start);
     final endKey = _dateKey(window.end);
-    final limit = window.dayCount;
+    final limit = _selectedRange == _HistoryRange.all ? 90 : window.dayCount;
     final errors = <_HistoryCategory, String>{};
     var dailyLogs = <Map<String, dynamic>>[];
     var burnoutScores = <BurnoutScoreSnapshot>[];
@@ -123,7 +123,7 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   void _setRange(_HistoryRange range) {
-    if (_selectedRange == range) return;
+    if (_selectedRange == range && _selectedDate == null) return;
     setState(() {
       _selectedRange = range;
       _selectedDate = null;
@@ -198,8 +198,10 @@ class _HistoryPageState extends State<HistoryPage> {
                     pageBottomContentPadding(context),
                   ),
                   children: [
-                    _HistoryHeroCard(
-                      rangeLabel: _rangeLabel(data.start, data.end),
+                    _HistoryHeader(
+                      rangeLabel: _selectedRange == _HistoryRange.all
+                          ? 'All time'
+                          : _rangeLabel(data.start, data.end),
                       totalCount: data.totalCount,
                     ),
                     const SizedBox(height: 14),
@@ -236,28 +238,33 @@ class _HistoryPageState extends State<HistoryPage> {
               ? snapshot.countFor(category)
               : snapshot.countForDate(category, dateKey);
           return Padding(
-            padding: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.only(right: 6),
             child: ChoiceChip(
               selected: selected,
               label: Text('${_categoryLabel(category)} $count'),
               avatar: Icon(
                 _categoryIcon(category),
-                size: 17,
+                size: 14,
                 color: selected ? Colors.white : _categoryColor(category),
               ),
               onSelected: (_) => setState(() => _selectedCategory = category),
               selectedColor: _categoryColor(category),
               backgroundColor: pageSurfaceColor(context),
+              labelPadding: const EdgeInsets.symmetric(horizontal: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               side: BorderSide(
                 color: selected
                     ? _categoryColor(category)
                     : pageBorderColor(context),
               ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(16),
               ),
               labelStyle: TextStyle(
                 color: selected ? Colors.white : pagePrimaryTextColor(context),
+                fontSize: 12,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0,
               ),
@@ -269,38 +276,51 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   Widget _buildFilters(BuildContext context, _HistorySnapshot snapshot) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        _FilterButton(
-          label: 'Week',
-          icon: Icons.view_week_outlined,
-          selected: _selectedRange == _HistoryRange.week,
-          onTap: () => _setRange(_HistoryRange.week),
-        ),
-        _FilterButton(
-          label: 'Month',
-          icon: Icons.calendar_month_outlined,
-          selected: _selectedRange == _HistoryRange.month,
-          onTap: () => _setRange(_HistoryRange.month),
-        ),
-        _FilterButton(
-          label: _selectedDate == null
-              ? 'Date'
-              : DateFormat('MMM d').format(_selectedDate!),
-          icon: Icons.event_outlined,
-          selected: _selectedDate != null,
-          onTap: () => _openDateFilter(snapshot),
-        ),
-        if (_selectedDate != null)
+    return SizedBox(
+      width: double.infinity,
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 8,
+        runSpacing: 8,
+        children: [
           _FilterButton(
-            label: 'Clear date',
-            icon: Icons.close_rounded,
-            selected: false,
-            onTap: () => setState(() => _selectedDate = null),
+            label: 'All',
+            icon: Icons.all_inclusive_rounded,
+            selected:
+                _selectedRange == _HistoryRange.all && _selectedDate == null,
+            onTap: () => _setRange(_HistoryRange.all),
           ),
-      ],
+          _FilterButton(
+            label: 'Week',
+            icon: Icons.view_week_outlined,
+            selected:
+                _selectedRange == _HistoryRange.week && _selectedDate == null,
+            onTap: () => _setRange(_HistoryRange.week),
+          ),
+          _FilterButton(
+            label: 'Month',
+            icon: Icons.calendar_month_outlined,
+            selected:
+                _selectedRange == _HistoryRange.month && _selectedDate == null,
+            onTap: () => _setRange(_HistoryRange.month),
+          ),
+          _FilterButton(
+            label: _selectedDate == null
+                ? 'Date'
+                : DateFormat('MMM d').format(_selectedDate!),
+            icon: Icons.event_outlined,
+            selected: _selectedDate != null,
+            onTap: () => _openDateFilter(snapshot),
+          ),
+          if (_selectedDate != null)
+            _FilterButton(
+              label: 'Clear date',
+              icon: Icons.close_rounded,
+              selected: false,
+              onTap: () => setState(() => _selectedDate = null),
+            ),
+        ],
+      ),
     );
   }
 
@@ -398,74 +418,79 @@ class _HistoryListView extends StatelessWidget {
   }
 }
 
-class _HistoryHeroCard extends StatelessWidget {
+class _HistoryHeader extends StatelessWidget {
   final String rangeLabel;
   final int totalCount;
 
-  const _HistoryHeroCard({required this.rangeLabel, required this.totalCount});
+  const _HistoryHeader({required this.rangeLabel, required this.totalCount});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF2F6BFF), Color(0xFF1FB489)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF2F6BFF).withValues(alpha: 0.18),
-            blurRadius: 18,
-            offset: const Offset(0, 9),
-          ),
-        ],
-      ),
-      child: Row(
+    final isCompact = MediaQuery.sizeOf(context).width < 380;
+
+    return Padding(
+      key: const ValueKey('wellness-history-header'),
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
-            ),
-            child: const Icon(
-              Icons.history_rounded,
-              color: Colors.white,
-              size: 29,
-            ),
+          Row(
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF1FB489),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 7),
+              Text(
+                'WELLNESS DATA  •  HISTORY',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: pageSecondaryTextColor(context),
+                  fontSize: isCompact ? 9.5 : 10.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: isCompact ? 0.8 : 1.05,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
+          SizedBox(height: isCompact ? 9 : 11),
+          Row(
+            children: [
+              Icon(
+                Icons.history_rounded,
+                color: Theme.of(context).colorScheme.primary,
+                size: isCompact ? 23 : 26,
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
                   'Wellness history',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '$rangeLabel - $totalCount saved entries',
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    height: 1.3,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: pagePrimaryTextColor(context),
+                    fontSize: isCompact ? 22 : 26,
+                    fontWeight: FontWeight.w800,
+                    height: 1.08,
+                    letterSpacing: -0.55,
                   ),
                 ),
-              ],
+              ),
+            ],
+          ),
+          SizedBox(height: isCompact ? 4 : 5),
+          Text(
+            '$rangeLabel  •  $totalCount saved ${totalCount == 1 ? 'entry' : 'entries'}',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: pageSecondaryTextColor(context),
+              fontSize: isCompact ? 12 : 13,
+              fontWeight: FontWeight.w500,
+              height: 1.35,
             ),
           ),
         ],
@@ -922,11 +947,20 @@ class _DateWindow {
 _DateWindow _rangeWindow(_HistoryRange range) {
   final now = DateTime.now();
   final end = DateTime(now.year, now.month, now.day);
-  final days = range == _HistoryRange.week ? 7 : 30;
-  return _DateWindow(
-    start: end.subtract(Duration(days: days - 1)),
-    end: end,
-  );
+  switch (range) {
+    case _HistoryRange.all:
+      return _DateWindow(start: DateTime(2000), end: end);
+    case _HistoryRange.week:
+      return _DateWindow(
+        start: end.subtract(const Duration(days: 6)),
+        end: end,
+      );
+    case _HistoryRange.month:
+      return _DateWindow(
+        start: end.subtract(const Duration(days: 29)),
+        end: end,
+      );
+  }
 }
 
 String _dateKey(DateTime date) {

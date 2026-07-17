@@ -57,6 +57,7 @@ void main() {
     });
 
     await pumpStartup(tester);
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(
       find.text('Feel your rhythm before burnout gets loud'),
@@ -64,6 +65,10 @@ void main() {
     );
     expect(find.text('Log in'), findsOneWidget);
     expect(find.text('Sign up'), findsOneWidget);
+    expect(
+      tester.getRect(find.byKey(const ValueKey('auth-welcome-sign-up'))).bottom,
+      lessThanOrEqualTo(tester.view.physicalSize.height),
+    );
 
     await tester.ensureVisible(find.text('Sign up'));
     await tester.pump();
@@ -87,21 +92,33 @@ void main() {
       findsOneWidget,
     );
 
-    await tester.tap(find.byKey(const ValueKey('auth-welcome-next')));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 360));
+    expect(find.byKey(const ValueKey('auth-welcome-previous')), findsNothing);
+    expect(find.byKey(const ValueKey('auth-welcome-next')), findsNothing);
+
+    final carousel = find.byKey(const ValueKey('auth-welcome-carousel'));
+    Future<void> swipeToNextSlide() async {
+      await tester.fling(carousel, const Offset(-400, 0), 1200);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 900));
+    }
+
+    await swipeToNextSlide();
 
     expect(find.text('Track the signals that matter'), findsOneWidget);
     expect(find.text('Hydration'), findsOneWidget);
 
-    await tester.drag(
-      find.byKey(const ValueKey('auth-welcome-carousel')),
-      const Offset(-300, 0),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 360));
+    await swipeToNextSlide();
 
     expect(find.text('Get nudges that fit your day'), findsOneWidget);
+
+    await swipeToNextSlide();
+    expect(find.text('See progress over time'), findsOneWidget);
+
+    await swipeToNextSlide();
+    expect(
+      find.text('Feel your rhythm before burnout gets loud'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('uses cached completed session to enter the main app quickly', (

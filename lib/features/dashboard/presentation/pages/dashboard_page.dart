@@ -517,10 +517,8 @@ class _AiBurnoutInsightCard extends StatelessWidget {
       ),
       child: AnalyticsContentSwitcher(
         isLoading: isLoading,
-        loading: const SizedBox(
-          height: 76,
-          child: AppSkeletonRows(count: 2, showLeading: true),
-        ),
+        overlapOutgoing: false,
+        loading: const AppSkeletonRows(count: 2, showLeading: true),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

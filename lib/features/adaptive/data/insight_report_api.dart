@@ -5,6 +5,10 @@ import 'package:http/http.dart' as http;
 import '../../../shared/config/api_config.dart';
 import '../../../shared/offline/offline_cache_store.dart';
 import '../../../shared/preferences/user_session.dart';
+import 'daily_report_schedule.dart';
+
+const String scheduledInsightReportGenerationCacheNamespace =
+    'scheduled_insight_report_generation';
 
 class InsightReport {
   final int insightReportId;
@@ -106,9 +110,36 @@ class InsightReportApi {
     }
   }
 
-  static Future<List<InsightReport>> refreshReports() async {
+  static Future<bool> isScheduledRefreshPending({DateTime? now}) async {
+    final reportDate = DailyReportSchedule.reportDateDueAt(
+      now ?? DateTime.now(),
+    );
+    if (reportDate == null) {
+      return false;
+    }
+
     final userId = await _storedUserId();
     if (userId == null) {
+      return false;
+    }
+
+    return await _lastCompletedReportDate(userId) != reportDate;
+  }
+
+  static Future<List<InsightReport>> refreshReports({DateTime? now}) async {
+    final reportDate = DailyReportSchedule.reportDateDueAt(
+      now ?? DateTime.now(),
+    );
+    if (reportDate == null) {
+      return const [];
+    }
+
+    final userId = await _storedUserId();
+    if (userId == null) {
+      return const [];
+    }
+
+    if (await _lastCompletedReportDate(userId) == reportDate) {
       return const [];
     }
 
@@ -117,7 +148,7 @@ class InsightReportApi {
           .post(
             Uri.parse(ApiConfig.adaptive('/insight-reports/refresh')),
             headers: await ApiConfig.jsonHeaders(),
-            body: jsonEncode({'user_id': userId}),
+            body: jsonEncode({'user_id': userId, 'date': reportDate}),
           )
           .timeout(_requestTimeout);
       final data = _decodeResponseMap(response);
@@ -125,10 +156,31 @@ class InsightReportApi {
         return const [];
       }
 
-      return _reportsFromData(data);
+      final reports = _reportsFromData(data);
+      final hasDailyReport = reports.any(
+        (report) =>
+            report.reportType == 'daily' && report.periodStart == reportDate,
+      );
+      if (hasDailyReport) {
+        await OfflineCacheStore.saveJson(
+          namespace: scheduledInsightReportGenerationCacheNamespace,
+          scope: userId.toString(),
+          data: {'completed_report_date': reportDate},
+        );
+      }
+      return reports;
     } catch (_) {
       return const [];
     }
+  }
+
+  static Future<String?> _lastCompletedReportDate(int userId) async {
+    await OfflineCacheStore.reload();
+    final data = await OfflineCacheStore.readLatestJson(
+      namespace: scheduledInsightReportGenerationCacheNamespace,
+      scope: userId.toString(),
+    );
+    return data?['completed_report_date']?.toString();
   }
 
   static Future<int?> _storedUserId() async {

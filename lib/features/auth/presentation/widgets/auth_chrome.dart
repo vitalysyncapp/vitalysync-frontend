@@ -555,11 +555,13 @@ class _FloatingHealthIcon extends StatelessWidget {
 class AuthGlassPanel extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
+  final double maxWidth;
 
   const AuthGlassPanel({
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(22),
+    this.maxWidth = 440,
   });
 
   @override
@@ -572,7 +574,7 @@ class AuthGlassPanel extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
           width: double.infinity,
-          constraints: const BoxConstraints(maxWidth: 440),
+          constraints: BoxConstraints(maxWidth: maxWidth),
           padding: padding,
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -661,7 +663,7 @@ class AuthBrandHeader extends StatelessWidget {
           Text(
             subtitle!,
             textAlign: TextAlign.center,
-          style: GoogleFonts.poppins(
+            style: GoogleFonts.poppins(
               height: 1.45,
               fontSize: 14.5,
               fontWeight: FontWeight.w500,

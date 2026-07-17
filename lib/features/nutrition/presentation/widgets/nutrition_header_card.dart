@@ -28,19 +28,6 @@ class NutritionHeaderCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            padding: EdgeInsets.all(isCompact ? 7 : 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(isCompact ? 11 : 13),
-            ),
-            child: Icon(
-              Icons.restaurant_menu_rounded,
-              color: Colors.white,
-              size: isCompact ? 20 : 24,
-            ),
-          ),
-          SizedBox(width: isCompact ? 8 : 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,6 +53,19 @@ class NutritionHeaderCard extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+          SizedBox(width: isCompact ? 8 : 10),
+          Container(
+            padding: EdgeInsets.all(isCompact ? 7 : 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(isCompact ? 11 : 13),
+            ),
+            child: Text(
+              '🍎',
+              semanticsLabel: 'Apple',
+              style: TextStyle(fontSize: isCompact ? 20 : 24, height: 1),
             ),
           ),
         ],

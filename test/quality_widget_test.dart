@@ -294,6 +294,8 @@ void main() {
           metricChips: const ['Sleep 7h', 'Hydration 2L'],
           isUnread: true,
           reportType: 'daily',
+          periodStart: '2026-05-20',
+          periodEnd: '2026-05-20',
         ),
         onTap: () {},
       ),
@@ -303,6 +305,7 @@ void main() {
     expect(find.text('Sleep'), findsOneWidget);
     expect(find.text('7h'), findsOneWidget);
     expect(find.text('Medium'), findsOneWidget);
+    expect(find.textContaining('For May 20'), findsOneWidget);
   });
 }
 

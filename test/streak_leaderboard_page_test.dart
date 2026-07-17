@@ -24,8 +24,9 @@ void main() {
     Future<StreakLeaderboard> load({
       required String section,
       required String metric,
+      required int limit,
     }) async {
-      calls.add(_LeaderboardCall(section, metric));
+      calls.add(_LeaderboardCall(section, metric, limit));
       return _leaderboard(
         section: section,
         metric: metric,
@@ -35,12 +36,22 @@ void main() {
 
     await _pumpLeaderboard(tester, load);
 
+    expect(
+      tester.getSize(find.byKey(const ValueKey('leaderboard-hero'))).height,
+      lessThanOrEqualTo(135),
+    );
     expect(find.text('Global'), findsOneWidget);
     expect(find.text('Local'), findsOneWidget);
     expect(find.text('Role'), findsOneWidget);
     expect(find.text('Goal'), findsNothing);
-    expect(find.text('Current'), findsOneWidget);
-    expect(find.text('Best'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('leaderboard-option-current')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('leaderboard-option-longest')),
+      findsOneWidget,
+    );
     expect(find.text('Month'), findsNothing);
 
     final sectionWrap = tester.widget<Wrap>(
@@ -58,10 +69,7 @@ void main() {
     expect(sectionWrap.alignment, WrapAlignment.center);
     expect(metricWrap.alignment, WrapAlignment.center);
 
-    expect(
-      find.byKey(const ValueKey('leaderboard-default-avatar-2')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const ValueKey('leaderboard-avatar-2')), findsOneWidget);
     expect(
       find.byKey(const ValueKey('leaderboard-podium-user-2')),
       findsOneWidget,
@@ -80,6 +88,7 @@ void main() {
     expect(calls.last.metric, 'longest');
     expect(find.text('31 days'), findsOneWidget);
     expect(find.text('Best streak'), findsNothing);
+    expect(calls.first.limit, 50);
 
     await tester.tap(find.byKey(const ValueKey('leaderboard-option-area')));
     await tester.pump();
@@ -94,18 +103,19 @@ void main() {
     expect(calls.last.metric, 'longest');
   });
 
-  testWidgets('uses podium, medal, and number treatments at rank boundaries', (
+  testWidgets('uses a top-three podium and numbered rows through rank 50', (
     tester,
   ) async {
     Future<StreakLeaderboard> load({
       required String section,
       required String metric,
+      required int limit,
     }) async {
       return _leaderboard(
         section: section,
         metric: metric,
         score: 50,
-        ranks: const [1, 5, 6, 10, 11],
+        ranks: const [1, 3, 4, 50, 51],
       );
     }
 
@@ -117,56 +127,44 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('leaderboard-podium-user-6')),
+      find.byKey(const ValueKey('leaderboard-podium-user-4')),
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('leaderboard-medal-row-7')),
+      find.byKey(const ValueKey('leaderboard-ranked-list')),
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('leaderboard-medal-marker-7')),
+      find.byKey(const ValueKey('leaderboard-number-row-5')),
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('leaderboard-medal-row-11')),
+      find.byKey(const ValueKey('leaderboard-number-marker-5')),
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('leaderboard-medal-marker-11')),
+      find.byKey(const ValueKey('leaderboard-number-row-51')),
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('leaderboard-number-row-12')),
+      find.byKey(const ValueKey('leaderboard-number-marker-51')),
       findsOneWidget,
     );
+    expect(find.byKey(const ValueKey('leaderboard-divider-4')), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('leaderboard-number-marker-12')),
-      findsOneWidget,
+      find.byKey(const ValueKey('leaderboard-number-row-52')),
+      findsNothing,
     );
 
     expect(
-      find.byKey(const ValueKey('leaderboard-podium-user-7')),
+      find.byKey(const ValueKey('leaderboard-podium-user-5')),
       findsNothing,
     );
-    expect(
-      find.byKey(const ValueKey('leaderboard-medal-row-12')),
-      findsNothing,
-    );
-    expect(find.text('11'), findsOneWidget);
-    expect(find.text('#11'), findsNothing);
-    expect(
-      find.byKey(const ValueKey('leaderboard-default-avatar-2')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const ValueKey('leaderboard-default-avatar-7')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const ValueKey('leaderboard-default-avatar-12')),
-      findsOneWidget,
-    );
+    expect(find.text('50'), findsOneWidget);
+    expect(find.text('#50'), findsNothing);
+    expect(find.byKey(const ValueKey('leaderboard-avatar-2')), findsOneWidget);
+    expect(find.byKey(const ValueKey('leaderboard-avatar-5')), findsOneWidget);
+    expect(find.byKey(const ValueKey('leaderboard-avatar-51')), findsOneWidget);
     expect(find.textContaining('protected day'), findsNothing);
   });
 
@@ -182,6 +180,7 @@ void main() {
     Future<StreakLeaderboard> load({
       required String section,
       required String metric,
+      required int limit,
     }) async {
       return _leaderboard(
         section: section,
@@ -196,7 +195,7 @@ void main() {
 
     final image = tester.widget<Image>(
       find.descendant(
-        of: find.byKey(const ValueKey('leaderboard-default-avatar-2')),
+        of: find.byKey(const ValueKey('leaderboard-avatar-2')),
         matching: find.byType(Image),
       ),
     );
@@ -205,12 +204,13 @@ void main() {
     expect(provider.assetName, 'assets/images/female Student.png');
   });
 
-  testWidgets('renders a partial top five without assuming missing ranks', (
+  testWidgets('puts rank four in the list below a partial top three', (
     tester,
   ) async {
     Future<StreakLeaderboard> load({
       required String section,
       required String metric,
+      required int limit,
     }) async {
       return _leaderboard(
         section: section,
@@ -222,16 +222,32 @@ void main() {
 
     await _pumpLeaderboard(tester, load);
 
-    for (var userId = 2; userId <= 5; userId++) {
+    for (var userId = 2; userId <= 4; userId++) {
       expect(
         find.byKey(ValueKey('leaderboard-podium-user-$userId')),
         findsOneWidget,
       );
     }
-    expect(find.byKey(const ValueKey('leaderboard-medal-row-6')), findsNothing);
+    final firstPlace = tester.getTopLeft(
+      find.byKey(const ValueKey('leaderboard-podium-user-2')),
+    );
+    final secondPlace = tester.getTopLeft(
+      find.byKey(const ValueKey('leaderboard-podium-user-3')),
+    );
+    final thirdPlace = tester.getTopLeft(
+      find.byKey(const ValueKey('leaderboard-podium-user-4')),
+    );
+    expect(secondPlace.dx, lessThan(firstPlace.dx));
+    expect(firstPlace.dx, lessThan(thirdPlace.dx));
+    expect(firstPlace.dy, lessThan(secondPlace.dy));
+    expect(secondPlace.dy, lessThan(thirdPlace.dy));
     expect(
-      find.byKey(const ValueKey('leaderboard-number-row-6')),
+      find.byKey(const ValueKey('leaderboard-podium-user-5')),
       findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('leaderboard-number-row-5')),
+      findsOneWidget,
     );
     expect(tester.takeException(), isNull);
   });
@@ -244,6 +260,7 @@ void main() {
     Future<StreakLeaderboard> load({
       required String section,
       required String metric,
+      required int limit,
     }) async {
       attempts++;
       if (attempts == 1) {
@@ -277,6 +294,7 @@ void main() {
     Future<StreakLeaderboard> load({
       required String section,
       required String metric,
+      required int limit,
     }) async {
       return _leaderboard(
         section: section,
@@ -297,8 +315,14 @@ void main() {
     expect(find.text('Global'), findsOneWidget);
     expect(find.text('Local'), findsOneWidget);
     expect(find.text('Role'), findsOneWidget);
-    expect(find.text('Current'), findsOneWidget);
-    expect(find.text('Best'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('leaderboard-option-current')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('leaderboard-option-longest')),
+      findsOneWidget,
+    );
     expect(find.text('A very long leaderboard username'), findsOneWidget);
     await tester.ensureVisible(
       find.byKey(const ValueKey('leaderboard-number-row-13')),
@@ -378,8 +402,9 @@ StreakLeaderboard _leaderboard({
 }
 
 class _LeaderboardCall {
-  const _LeaderboardCall(this.section, this.metric);
+  const _LeaderboardCall(this.section, this.metric, this.limit);
 
   final String section;
   final String metric;
+  final int limit;
 }

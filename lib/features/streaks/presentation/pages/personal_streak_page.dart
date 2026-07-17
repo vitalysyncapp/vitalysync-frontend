@@ -7,28 +7,83 @@ import '../../data/streak_models.dart';
 import '../widgets/streak_share_card.dart';
 import 'streak_leaderboard_page.dart';
 
+typedef StreakOverviewLoader = Future<StreakOverview> Function();
+
 class PersonalStreakPage extends StatefulWidget {
-  const PersonalStreakPage({super.key});
+  const PersonalStreakPage({
+    super.key,
+    this.loadOverview,
+    this.loadLeaderboard,
+  });
+
+  final StreakOverviewLoader? loadOverview;
+  final StreakLeaderboardLoader? loadLeaderboard;
 
   @override
   State<PersonalStreakPage> createState() => _PersonalStreakPageState();
 }
 
 class _PersonalStreakPageState extends State<PersonalStreakPage> {
-  late Future<StreakOverview> _future;
+  late Future<StreakOverview> _overviewFuture;
+  late Future<_StreakRanks> _rankFuture;
 
   @override
   void initState() {
     super.initState();
-    _future = StreakApi.fetchOverview();
+    _overviewFuture = _loadOverview();
+    _rankFuture = _loadRanks();
+  }
+
+  @override
+  void didUpdateWidget(PersonalStreakPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.loadOverview != widget.loadOverview) {
+      _overviewFuture = _loadOverview();
+    }
+    if (oldWidget.loadLeaderboard != widget.loadLeaderboard) {
+      _rankFuture = _loadRanks();
+    }
+  }
+
+  Future<StreakOverview> _loadOverview() {
+    return (widget.loadOverview ?? StreakApi.fetchOverview)();
+  }
+
+  Future<StreakLeaderboard> _loadLeaderboard(String section) {
+    final loader = widget.loadLeaderboard ?? StreakApi.fetchLeaderboard;
+    return loader(section: section, metric: 'current', limit: 100);
+  }
+
+  Future<_StreakRanks> _loadRanks() async {
+    Future<StreakLeaderboard?> loadSafely(String section) async {
+      try {
+        return await _loadLeaderboard(section);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    final leaderboards = await Future.wait([
+      loadSafely('global'),
+      loadSafely('area'),
+    ]);
+
+    return _StreakRanks.fromLeaderboards(
+      global: leaderboards[0],
+      local: leaderboards[1],
+    );
   }
 
   Future<void> _refresh() async {
-    final nextFuture = StreakApi.fetchOverview();
-    setState(() => _future = nextFuture);
+    final nextOverview = _loadOverview();
+    final nextRanks = _loadRanks();
+    setState(() {
+      _overviewFuture = nextOverview;
+      _rankFuture = nextRanks;
+    });
 
     try {
-      await nextFuture;
+      await Future.wait<Object>([nextOverview, nextRanks]);
     } catch (_) {
       // FutureBuilder owns the visible error state.
     }
@@ -37,7 +92,10 @@ class _PersonalStreakPageState extends State<PersonalStreakPage> {
   void _openLeaderboard() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const StreakLeaderboardPage()),
+      MaterialPageRoute(
+        builder: (_) =>
+            StreakLeaderboardPage(loadLeaderboard: widget.loadLeaderboard),
+      ),
     );
   }
 
@@ -83,7 +141,7 @@ class _PersonalStreakPageState extends State<PersonalStreakPage> {
           ],
         ),
         body: FutureBuilder<StreakOverview>(
-          future: _future,
+          future: _overviewFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState != ConnectionState.done) {
               return AppSkeletonList(
@@ -119,13 +177,23 @@ class _PersonalStreakPageState extends State<PersonalStreakPage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     RepaintBoundary(
-                      child: StreakShareCard(
-                        displayName: overview.displayName,
-                        currentStreak: overview.streak.currentStreak,
-                        longestStreak: overview.streak.longestStreak,
-                        availableSavers: overview.savers.availableSavers,
-                        protectedDayCount: overview.protectedDayCount,
-                        isOffline: overview.isOffline,
+                      child: FutureBuilder<_StreakRanks>(
+                        future: _rankFuture,
+                        builder: (context, rankSnapshot) {
+                          final ranks =
+                              rankSnapshot.data ?? const _StreakRanks();
+
+                          return StreakShareCard(
+                            displayName: overview.displayName,
+                            currentStreak: overview.streak.currentStreak,
+                            longestStreak: overview.streak.longestStreak,
+                            availableSavers: overview.savers.availableSavers,
+                            protectedDayCount: overview.protectedDayCount,
+                            globalRank: ranks.globalRank,
+                            localRank: ranks.localRank,
+                            isOffline: overview.isOffline,
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -142,6 +210,30 @@ class _PersonalStreakPageState extends State<PersonalStreakPage> {
         ),
       ),
     );
+  }
+}
+
+class _StreakRanks {
+  final int? globalRank;
+  final int? localRank;
+
+  const _StreakRanks({this.globalRank, this.localRank});
+
+  factory _StreakRanks.fromLeaderboards({
+    required StreakLeaderboard? global,
+    required StreakLeaderboard? local,
+  }) {
+    return _StreakRanks(
+      globalRank: _topHundredRank(global),
+      localRank: _topHundredRank(local),
+    );
+  }
+
+  static int? _topHundredRank(StreakLeaderboard? leaderboard) {
+    if (leaderboard?.available != true) return null;
+
+    final rank = leaderboard?.currentUserRank;
+    return rank != null && rank >= 1 && rank <= 100 ? rank : null;
   }
 }
 

@@ -742,7 +742,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                               ),
                               child: Column(
                                 children: [
-                                  RevealOnBuild(child: _buildLogHeaderCard()),
+                                  RevealOnBuild(child: _buildLogHeader()),
                                   const SizedBox(height: 12),
                                   RevealOnBuild(
                                     delay: const Duration(milliseconds: 90),
@@ -1151,131 +1151,168 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildLogHeaderCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: pageSurfaceColor(context),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: pageBorderColor(context)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
+  Widget _buildLogHeader() {
+    final isCompact = MediaQuery.sizeOf(context).width < 380;
+
+    return Padding(
+      key: const ValueKey('log-header'),
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 2),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          Row(
+            children: [
+              Expanded(
+                child: Row(
                   children: [
-                    Expanded(
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF1FB489),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 7),
+                    Flexible(
                       child: Text(
-                        'Log your day',
+                        'DAILY CHECK-IN  •  TODAY',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 18,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: pageSecondaryTextColor(context),
+                          fontSize: isCompact ? 9.5 : 10.5,
                           fontWeight: FontWeight.w800,
-                          color: pagePrimaryTextColor(context),
+                          letterSpacing: isCompact ? 0.8 : 1.05,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    _buildHeaderHelpButton(),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'It is recommended to log after your day or at night.',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    color: pageSecondaryTextColor(context),
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _buildDefaultChip(
-                      Icons.bedtime_outlined,
-                      'Sleep ${defaultSleepHours.toStringAsFixed(defaultSleepHours % 1 == 0 ? 0 : 1)}h',
-                    ),
-                    _buildDefaultChip(
-                      Icons.fitness_center_rounded,
-                      'Goal $exerciseGoalLabel',
-                    ),
-                    if (workloadContext != null)
-                      _buildDefaultChip(
-                        Icons.work_outline_rounded,
-                        'Workload $workloadContext/5',
-                      ),
-                  ],
-                ),
-              ],
+              ),
+              const SizedBox(width: 8),
+              _buildHeaderHelpButton(isCompact: isCompact),
+              const SizedBox(width: 8),
+              _buildHeaderStreakChip(isCompact: isCompact),
+            ],
+          ),
+          SizedBox(height: isCompact ? 9 : 11),
+          Text(
+            'Log your day',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontSize: isCompact ? 22 : 26,
+              fontWeight: FontWeight.w800,
+              height: 1.08,
+              letterSpacing: -0.55,
+              color: pagePrimaryTextColor(context),
             ),
           ),
-          const SizedBox(width: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
-            decoration: BoxDecoration(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? const Color(0xFFFF8A1F).withValues(alpha: 0.12)
-                  : const Color(0xFFFFF7ED),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: const Color(0xFFFF8A1F).withValues(alpha: 0.34),
+          SizedBox(height: isCompact ? 4 : 5),
+          Text(
+            'Reflect on your day—an evening check-in works best.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontSize: isCompact ? 12 : 13,
+              fontWeight: FontWeight.w500,
+              color: pageSecondaryTextColor(context),
+              height: 1.35,
+            ),
+          ),
+          SizedBox(height: isCompact ? 10 : 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildDefaultChip(
+                Icons.bedtime_outlined,
+                'Sleep ${defaultSleepHours.toStringAsFixed(defaultSleepHours % 1 == 0 ? 0 : 1)}h',
               ),
-            ),
-            child: Row(
-              children: [
-                Text(
-                  '$currentStreak',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? const Color(0xFFFBBF24)
-                        : const Color(0xFF9A3412),
-                  ),
+              _buildDefaultChip(
+                Icons.fitness_center_rounded,
+                'Goal $exerciseGoalLabel',
+              ),
+              if (workloadContext != null)
+                _buildDefaultChip(
+                  Icons.work_outline_rounded,
+                  'Workload $workloadContext/5',
                 ),
-                const SizedBox(width: 6),
-                _buildFireAnimation(size: 20),
-              ],
-            ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHeaderHelpButton() {
+  Widget _buildHeaderStreakChip({required bool isCompact}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final streakLabel = '$currentStreak day${currentStreak == 1 ? '' : 's'}';
+
+    return Semantics(
+      label: '$streakLabel streak',
+      child: Container(
+        height: isCompact ? 38 : 40,
+        padding: EdgeInsets.symmetric(horizontal: isCompact ? 9 : 11),
+        decoration: BoxDecoration(
+          color: isDark
+              ? const Color(0xFFFF8A1F).withValues(alpha: 0.12)
+              : const Color(0xFFFFF7ED),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: const Color(0xFFFF8A1F).withValues(alpha: 0.3),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildFireAnimation(size: isCompact ? 18 : 20),
+            const SizedBox(width: 5),
+            Text(
+              streakLabel,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                fontSize: isCompact ? 11.5 : 12.5,
+                fontWeight: FontWeight.w800,
+                color: isDark
+                    ? const Color(0xFFFBBF24)
+                    : const Color(0xFF9A3412),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderHelpButton({required bool isCompact}) {
     final primary = Theme.of(context).colorScheme.primary;
 
     return Tooltip(
       message: 'Log scoring guide',
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: _showLogScoringInfo,
-        child: Container(
-          width: 30,
-          height: 30,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: primary.withValues(alpha: 0.12),
-            shape: BoxShape.circle,
-            border: Border.all(color: primary.withValues(alpha: 0.18)),
+      child: Semantics(
+        button: true,
+        label: 'Open log scoring guide',
+        child: Material(
+          color: Colors.transparent,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: _showLogScoringInfo,
+            customBorder: const CircleBorder(),
+            child: Ink(
+              width: isCompact ? 38 : 40,
+              height: isCompact ? 38 : 40,
+              decoration: BoxDecoration(
+                color: primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+                border: Border.all(color: primary.withValues(alpha: 0.18)),
+              ),
+              child: Icon(
+                Icons.question_mark_rounded,
+                size: isCompact ? 17 : 18,
+                color: primary,
+              ),
+            ),
           ),
-          child: Icon(Icons.question_mark_rounded, size: 16, color: primary),
         ),
       ),
     );
@@ -1301,7 +1338,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
 
   Widget _buildDefaultChip(IconData icon, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
         color: Theme.of(context).brightness == Brightness.dark
             ? Colors.white.withValues(alpha: 0.06)
@@ -1312,7 +1349,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: Theme.of(context).colorScheme.primary),
+          Icon(icon, size: 14, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 5),
           Text(
             label,

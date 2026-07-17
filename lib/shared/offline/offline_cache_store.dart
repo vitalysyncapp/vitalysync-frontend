@@ -24,6 +24,11 @@ class OfflineCacheStore {
 
   const OfflineCacheStore._();
 
+  static Future<void> reload() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.reload();
+  }
+
   static Future<void> saveJson({
     required String namespace,
     required String scope,

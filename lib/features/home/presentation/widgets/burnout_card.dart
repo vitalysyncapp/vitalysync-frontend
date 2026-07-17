@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../dashboard/data/burnout_score_api.dart';
 import '../pages/about_burnout_page.dart';
 import 'burnout_info_dialog.dart';
@@ -7,6 +8,7 @@ import 'burnout_info_dialog.dart';
 class BurnoutCard extends StatelessWidget {
   final int score;
   final String status;
+  final bool isLoading;
   final BurnoutScoreSnapshot? latestScore;
   final BurnoutPatternSummary? patternSummary;
 
@@ -14,6 +16,7 @@ class BurnoutCard extends StatelessWidget {
     super.key,
     required this.score,
     required this.status,
+    this.isLoading = false,
     this.latestScore,
     this.patternSummary,
   });
@@ -154,93 +157,100 @@ class BurnoutCard extends StatelessWidget {
                 ),
               ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Burnout risk score',
+      child: AppSkeleton(
+        enabled: isLoading,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Burnout risk score',
+                    style: TextStyle(
+                      color: textColor.withValues(alpha: 0.7),
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 30,
+                  height: 30,
+                  child: DecoratedBox(
+                    decoration: const BoxDecoration(
+                      color: Colors.white24,
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      tooltip: 'About burnout score',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      iconSize: 13,
+                      color: textColor,
+                      onPressed: () => _showInfoDialog(context),
+                      icon: const Icon(Icons.question_mark_rounded),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '$score/100',
                   style: TextStyle(
-                    color: textColor.withValues(alpha: 0.7),
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 30,
-                height: 30,
-                child: DecoratedBox(
-                  decoration: const BoxDecoration(
-                    color: Colors.white24,
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    tooltip: 'About burnout score',
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    iconSize: 13,
                     color: textColor,
-                    onPressed: () => _showInfoDialog(context),
-                    icon: const Icon(Icons.question_mark_rounded),
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
+                Semantics(
+                  label: getIconLabel(),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.16),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: ExcludeSemantics(
+                      child: Icon(getIcon(), color: getIconColor(), size: 28),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(12),
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '$score/100',
+              child: Text(
+                status,
                 style: TextStyle(
                   color: textColor,
-                  fontSize: 30,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 12.5,
+                  height: 1.25,
                 ),
               ),
-              Semantics(
-                label: getIconLabel(),
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.85),
-                      width: 2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.16),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: ExcludeSemantics(
-                    child: Icon(getIcon(), color: getIconColor(), size: 28),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white24,
-              borderRadius: BorderRadius.circular(12),
             ),
-            child: Text(
-              status,
-              style: TextStyle(color: textColor, fontSize: 12.5, height: 1.25),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -21,6 +21,7 @@ import '../../features/nutrition/data/nutrition_insight_store.dart';
 import '../../features/nutrition/data/nutrition_reminder_engine.dart';
 import '../learning/first_week_learning_service.dart';
 import '../theme/app_page_style.dart';
+import '../widgets/app_skeleton.dart';
 import '../widgets/first_week_learning_pill.dart';
 
 part 'assistant_bubbles.dart';
@@ -476,34 +477,38 @@ class _FloatingSmartNudgeAssistantState
         barrierColor: Colors.black.withValues(alpha: 0.42),
         transitionDuration: const Duration(milliseconds: 260),
         pageBuilder: (dialogContext, _, _) {
-          final screenSize = MediaQuery.sizeOf(dialogContext);
-          return Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: min(460, screenSize.width - 24),
-                maxHeight: screenSize.height * 0.84,
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: AssistantExperiencePanel(
-                  message: widget.message,
-                  emoji: widget.emoji,
-                  recommendations: _recommendations,
-                  adaptiveNudges: _adaptiveNudges,
-                  nutritionInsight: _nutritionInsight,
-                  hasLoadedAdaptiveNudges: _hasLoadedAdaptiveNudges,
-                  hasLoadedNutritionInsight: _hasLoadedNutritionInsight,
-                  initialSectionIndex: initialSectionIndex,
-                  onRefreshRecommendations: _loadRecommendations,
-                  onRefreshAdaptiveNudges: _loadAdaptiveNudges,
-                  onRefreshNutritionInsight: _loadNutritionInsight,
-                  onRefreshEnvironment: _loadEnvironmentSnapshot,
-                  onLogMealRequested: widget.onLogMealRequested,
-                  onLogPageRequested: widget.onLogPageRequested,
-                  useSafeAreaPadding: false,
-                  onClose: () => Navigator.of(dialogContext).pop(),
-                ),
-              ),
+          return SafeArea(
+            minimum: const EdgeInsets.all(8),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Center(
+                  child: SizedBox(
+                    width: constraints.maxWidth,
+                    height: constraints.maxHeight,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: AssistantExperiencePanel(
+                        message: widget.message,
+                        emoji: widget.emoji,
+                        recommendations: _recommendations,
+                        adaptiveNudges: _adaptiveNudges,
+                        nutritionInsight: _nutritionInsight,
+                        hasLoadedAdaptiveNudges: _hasLoadedAdaptiveNudges,
+                        hasLoadedNutritionInsight: _hasLoadedNutritionInsight,
+                        initialSectionIndex: initialSectionIndex,
+                        onRefreshRecommendations: _loadRecommendations,
+                        onRefreshAdaptiveNudges: _loadAdaptiveNudges,
+                        onRefreshNutritionInsight: _loadNutritionInsight,
+                        onRefreshEnvironment: _loadEnvironmentSnapshot,
+                        onLogMealRequested: widget.onLogMealRequested,
+                        onLogPageRequested: widget.onLogPageRequested,
+                        useSafeAreaPadding: false,
+                        onClose: () => Navigator.of(dialogContext).pop(),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           );
         },

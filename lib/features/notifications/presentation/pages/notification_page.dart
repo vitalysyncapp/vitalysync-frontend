@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../adaptive/data/daily_report_schedule.dart';
 import '../../../../shared/notifications/notification_feed_service.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
@@ -23,6 +24,7 @@ class _NotificationPageState extends State<NotificationPage> {
   ];
 
   NotificationFeedResult? _feed;
+  Timer? _morningRefreshTimer;
   bool _isLoading = true;
   bool _isRefreshing = false;
   String _selectedFilter = 'all';
@@ -30,7 +32,14 @@ class _NotificationPageState extends State<NotificationPage> {
   @override
   void initState() {
     super.initState();
+    _scheduleMorningRefresh();
     unawaited(_loadCachedThenRefresh());
+  }
+
+  @override
+  void dispose() {
+    _morningRefreshTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -72,7 +81,7 @@ class _NotificationPageState extends State<NotificationPage> {
                             pageBottomContentPadding(context),
                           ),
                           children: [
-                            _buildSummaryCard(context, feed),
+                            _buildSummaryHeader(context, feed),
                             const SizedBox(height: 16),
                             _buildFilters(context, feed?.items ?? const []),
                             const SizedBox(height: 18),
@@ -124,6 +133,31 @@ class _NotificationPageState extends State<NotificationPage> {
     }
 
     await _refreshFeed(force: cached == null);
+  }
+
+  void _scheduleMorningRefresh() {
+    final now = DateTime.now();
+    var cutoff = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      DailyReportSchedule.generationHour,
+    );
+    if (!cutoff.isAfter(now)) {
+      cutoff = DateTime(
+        now.year,
+        now.month,
+        now.day + 1,
+        DailyReportSchedule.generationHour,
+      );
+    }
+
+    _morningRefreshTimer = Timer(cutoff.difference(now), () {
+      if (mounted) {
+        unawaited(_refreshFeed(force: true));
+        _scheduleMorningRefresh();
+      }
+    });
   }
 
   Future<void> _refreshFeed({bool force = false}) async {
@@ -217,67 +251,77 @@ class _NotificationPageState extends State<NotificationPage> {
     );
   }
 
-  Widget _buildSummaryCard(BuildContext context, NotificationFeedResult? feed) {
-    final items = feed?.items ?? const <AppNotificationItem>[];
-    final dailyCount = _countFor(items, 'daily');
-    final weeklyCount = _countFor(items, 'weekly');
-    final nudgeCount = _countFor(items, 'nudges');
+  Widget _buildSummaryHeader(
+    BuildContext context,
+    NotificationFeedResult? feed,
+  ) {
+    final isCompact = MediaQuery.sizeOf(context).width < 380;
     final refreshedAt = feed?.refreshedAt;
     final refreshedText = refreshedAt == null
         ? 'Waiting for first sync'
         : 'Updated ${DateFormat('MMM d, h:mm a').format(refreshedAt)}';
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF246BFF), Color(0xFF10A7A7)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF246BFF).withValues(alpha: 0.22),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
+    return Padding(
+      key: const ValueKey('insight-history-header'),
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.insights_rounded, color: Colors.white, size: 24),
-              SizedBox(width: 10),
+              Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF10A7A7),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 7),
               Text(
-                'Insight history',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 17,
+                'PERSONALIZED INSIGHTS  •  HISTORY',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: pageSecondaryTextColor(context),
+                  fontSize: isCompact ? 9.5 : 10.5,
                   fontWeight: FontWeight.w800,
+                  letterSpacing: isCompact ? 0.8 : 1.05,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+          SizedBox(height: isCompact ? 9 : 11),
+          Row(
             children: [
-              _SummaryPill(label: 'Daily', value: dailyCount),
-              _SummaryPill(label: 'Weekly', value: weeklyCount),
-              _SummaryPill(label: 'Nudges', value: nudgeCount),
+              Icon(
+                Icons.insights_rounded,
+                color: Theme.of(context).colorScheme.primary,
+                size: isCompact ? 23 : 26,
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  'Insight history',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: pagePrimaryTextColor(context),
+                    fontSize: isCompact ? 22 : 26,
+                    fontWeight: FontWeight.w800,
+                    height: 1.08,
+                    letterSpacing: -0.55,
+                  ),
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: isCompact ? 4 : 5),
           Text(
             refreshedText,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.86),
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: pageSecondaryTextColor(context),
+              fontSize: isCompact ? 12 : 13,
+              fontWeight: FontWeight.w500,
+              height: 1.35,
             ),
           ),
         ],
@@ -286,31 +330,36 @@ class _NotificationPageState extends State<NotificationPage> {
   }
 
   Widget _buildFilters(BuildContext context, List<AppNotificationItem> items) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
+    return SizedBox(
+      width: double.infinity,
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 6,
+        runSpacing: 6,
         children: _filters.map((filter) {
           final selected = _selectedFilter == filter.key;
           final count = filter.key == 'all'
               ? items.length
               : items.where((item) => item.filterKey == filter.key).length;
 
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: ChoiceChip(
-              selected: selected,
-              label: Text('${filter.label} $count'),
-              onSelected: (_) => setState(() => _selectedFilter = filter.key),
-              selectedColor: const Color(0xFF246BFF),
-              labelStyle: TextStyle(
-                color: selected ? Colors.white : pagePrimaryTextColor(context),
-                fontWeight: FontWeight.w700,
-              ),
-              backgroundColor: pageSurfaceColor(context),
-              side: BorderSide(color: pageBorderColor(context)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
+          return ChoiceChip(
+            selected: selected,
+            label: Text('${filter.label} $count'),
+            onSelected: (_) => setState(() => _selectedFilter = filter.key),
+            selectedColor: const Color(0xFF246BFF),
+            labelPadding: const EdgeInsets.symmetric(horizontal: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+            visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            labelStyle: TextStyle(
+              color: selected ? Colors.white : pagePrimaryTextColor(context),
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+            backgroundColor: pageSurfaceColor(context),
+            side: BorderSide(color: pageBorderColor(context)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
           );
         }).toList(),
@@ -333,10 +382,6 @@ class _NotificationPageState extends State<NotificationPage> {
     return items.where((item) => item.filterKey == _selectedFilter).toList();
   }
 
-  int _countFor(List<AppNotificationItem> items, String filterKey) {
-    return items.where((item) => item.filterKey == filterKey).length;
-  }
-
   bool _sameFeed(NotificationFeedResult? left, NotificationFeedResult right) {
     final leftItems = left?.items ?? const <AppNotificationItem>[];
     if (leftItems.length != right.items.length) {
@@ -349,7 +394,9 @@ class _NotificationPageState extends State<NotificationPage> {
       if (leftItem.id != rightItem.id ||
           leftItem.updatedAt != rightItem.updatedAt ||
           leftItem.isUnread != rightItem.isUnread ||
-          leftItem.message != rightItem.message) {
+          leftItem.message != rightItem.message ||
+          leftItem.periodStart != rightItem.periodStart ||
+          leftItem.periodEnd != rightItem.periodEnd) {
         return false;
       }
     }
@@ -383,7 +430,7 @@ class _NotificationPageState extends State<NotificationPage> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Daily and weekly reports appear after wellness, activity, nutrition, or nudge data is available.',
+            "Daily reports arrive after 7:00 AM with yesterday's wellness data. Weekly reports and smart nudges appear here too.",
             textAlign: TextAlign.center,
             style: TextStyle(
               color: pageSecondaryTextColor(context),
@@ -415,9 +462,11 @@ class NotificationCard extends StatelessWidget {
       return _buildReportCard(context);
     }
 
+    final isSmartNudge = item.filterKey == 'nudges';
+
     return InkWell(
       borderRadius: BorderRadius.circular(18),
-      onTap: onTap,
+      onTap: isSmartNudge ? null : onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -443,15 +492,22 @@ class NotificationCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: item.iconBg,
-                borderRadius: BorderRadius.circular(14),
+            if (isSmartNudge)
+              _SmartNudgeIcon(
+                icon: item.icon,
+                backgroundColor: item.iconBg,
+                color: item.iconColor,
+              )
+            else
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: item.iconBg,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(item.icon, color: item.iconColor, size: 25),
               ),
-              child: Icon(item.icon, color: item.iconColor, size: 25),
-            ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -490,27 +546,40 @@ class NotificationCard extends StatelessWidget {
                       spacing: 6,
                       runSpacing: 6,
                       children: item.metricChips
-                          .map((chip) => _MetricChip(label: chip))
+                          .map(
+                            (chip) => _MetricChip(
+                              label: chip,
+                              accent: isSmartNudge ? item.iconColor : null,
+                            ),
+                          )
                           .toList(),
                     ),
                   ],
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Flexible(
+                      if (isSmartNudge) ...[
+                        Icon(
+                          Icons.schedule_rounded,
+                          size: 15,
+                          color: pageSecondaryTextColor(context),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      Expanded(
                         child: Text(
-                          '${item.sourceLabel} - ${item.time}',
-                          maxLines: 1,
+                          '${item.sourceLabel} \u2022 ${item.time}',
+                          maxLines: isSmartNudge ? 2 : 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12.5,
-                            color: Color(0xFF98A2B3),
+                            color: pageSecondaryTextColor(context),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
-                      const Spacer(),
-                      if (item.showAction)
+                      if (item.showAction && !isSmartNudge) ...[
+                        const SizedBox(width: 10),
                         GestureDetector(
                           onTap: onActionTap,
                           child: const Text(
@@ -522,6 +591,7 @@ class NotificationCard extends StatelessWidget {
                             ),
                           ),
                         ),
+                      ],
                     ],
                   ),
                 ],
@@ -547,6 +617,7 @@ class NotificationCard extends StatelessWidget {
   Widget _buildReportCard(BuildContext context) {
     final isWeekly = item.filterKey == 'weekly';
     final accent = item.iconColor;
+    final periodLabel = item.reportPeriodLabel;
     final title = item.title.trim().isEmpty
         ? (isWeekly ? 'Weekly wellness report' : 'Daily wellness report')
         : item.title.trim();
@@ -647,15 +718,7 @@ class NotificationCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: accent.withValues(alpha: 0.14)),
               ),
-              child: Text(
-                item.message,
-                style: TextStyle(
-                  fontSize: 14,
-                  height: 1.5,
-                  color: pageSecondaryTextColor(context),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              child: _ReportSummaryText(message: item.message, accent: accent),
             ),
             if (item.metricChips.isNotEmpty) ...[
               const SizedBox(height: 14),
@@ -681,7 +744,11 @@ class NotificationCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    '${item.sourceLabel} - ${item.time}',
+                    [
+                      item.sourceLabel,
+                      periodLabel,
+                      item.time,
+                    ].whereType<String>().join(' \u2022 '),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -727,28 +794,100 @@ class _NotificationFilter {
   const _NotificationFilter(this.key, this.label);
 }
 
-class _SummaryPill extends StatelessWidget {
-  final String label;
-  final int value;
+class _SmartNudgeIcon extends StatefulWidget {
+  final IconData icon;
+  final Color backgroundColor;
+  final Color color;
 
-  const _SummaryPill({required this.label, required this.value});
+  const _SmartNudgeIcon({
+    required this.icon,
+    required this.backgroundColor,
+    required this.color,
+  });
+
+  @override
+  State<_SmartNudgeIcon> createState() => _SmartNudgeIconState();
+}
+
+class _SmartNudgeIconState extends State<_SmartNudgeIcon>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.of(context).disableAnimations) {
+      _controller.stop();
+    } else if (!_controller.isAnimating) {
+      _controller.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+    if (MediaQuery.of(context).disableAnimations) {
+      return _buildIcon(0.5, animateGlow: false);
+    }
+
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, _) =>
+            _buildIcon(_controller.value, animateGlow: true),
       ),
-      child: Text(
-        '$label $value',
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 12.5,
-          fontWeight: FontWeight.w800,
-        ),
+    );
+  }
+
+  Widget _buildIcon(double progress, {required bool animateGlow}) {
+    final glowProgress = 1 - ((progress * 2) - 1).abs();
+
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        color: widget.backgroundColor,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: animateGlow
+            ? [
+                BoxShadow(
+                  color: widget.color.withValues(
+                    alpha: 0.08 + (glowProgress * 0.16),
+                  ),
+                  blurRadius: 7 + (glowProgress * 7),
+                  spreadRadius: glowProgress * 0.8,
+                ),
+              ]
+            : null,
+      ),
+      child: ShaderMask(
+        blendMode: BlendMode.srcIn,
+        shaderCallback: (bounds) => LinearGradient(
+          colors: [
+            widget.color,
+            const Color(0xFFFFF3B0),
+            Colors.white,
+            widget.color,
+          ],
+          stops: const [0, 0.38, 0.52, 1],
+          begin: Alignment(-2.4 + (progress * 4.8), -1),
+          end: Alignment(-1.2 + (progress * 4.8), 1),
+        ).createShader(bounds),
+        child: Icon(widget.icon, color: Colors.white, size: 25),
       ),
     );
   }
@@ -756,25 +895,51 @@ class _SummaryPill extends StatelessWidget {
 
 class _MetricChip extends StatelessWidget {
   final String label;
+  final Color? accent;
 
-  const _MetricChip({required this.label});
+  const _MetricChip({required this.label, this.accent});
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final chipAccent = accent;
+    final textColor = chipAccent == null
+        ? pageSecondaryTextColor(context)
+        : Color.lerp(
+            chipAccent,
+            isDark ? Colors.white : Colors.black,
+            isDark ? 0.32 : 0.38,
+          )!;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
-        color: itemChipColor(context),
+        color: chipAccent == null
+            ? itemChipColor(context)
+            : chipAccent.withValues(alpha: isDark ? 0.16 : 0.12),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: pageBorderColor(context)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: pageSecondaryTextColor(context),
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
+        border: Border.all(
+          color: chipAccent == null
+              ? pageBorderColor(context)
+              : chipAccent.withValues(alpha: isDark ? 0.42 : 0.32),
         ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (chipAccent != null) ...[
+            Icon(Icons.auto_awesome_rounded, size: 12, color: textColor),
+            const SizedBox(width: 5),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              color: textColor,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -810,6 +975,85 @@ class _ReportTypePill extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ReportSummaryText extends StatelessWidget {
+  final String message;
+  final Color accent;
+
+  const _ReportSummaryText({required this.message, required this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    final paragraphs = _splitReportSummary(message);
+    final primaryText = pagePrimaryTextColor(context);
+    final secondaryText = pageSecondaryTextColor(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          paragraphs.first,
+          style: TextStyle(
+            fontSize: 14.25,
+            height: 1.45,
+            color: primaryText,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        for (final paragraph in paragraphs.skip(1)) ...[
+          const SizedBox(height: 9),
+          Container(
+            width: 28,
+            height: 2,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.38),
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            paragraph,
+            style: TextStyle(
+              fontSize: 13.75,
+              height: 1.55,
+              color: secondaryText,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+List<String> _splitReportSummary(String message) {
+  final normalized = message.trim().replaceAll(RegExp(r'\s+'), ' ');
+  if (normalized.isEmpty) {
+    return const ['Report details are not available yet.'];
+  }
+
+  final paragraphs = <String>[];
+  final sentenceBoundary = RegExp(r'[.!?](?:\s+|$)');
+  var start = 0;
+
+  for (final match in sentenceBoundary.allMatches(normalized)) {
+    final sentenceEnd = match.start + 1;
+    final sentence = normalized.substring(start, sentenceEnd).trim();
+    if (sentence.isNotEmpty) {
+      paragraphs.add(sentence);
+    }
+    start = match.end;
+  }
+
+  if (start < normalized.length) {
+    final remainder = normalized.substring(start).trim();
+    if (remainder.isNotEmpty) {
+      paragraphs.add(remainder);
+    }
+  }
+
+  return paragraphs.isEmpty ? [normalized] : paragraphs;
 }
 
 class _ReportMetricGrid extends StatelessWidget {

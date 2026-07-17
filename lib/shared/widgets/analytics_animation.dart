@@ -10,6 +10,7 @@ class AnalyticsContentSwitcher extends StatelessWidget {
   final Widget child;
   final Object? contentKey;
   final Duration duration;
+  final bool overlapOutgoing;
 
   const AnalyticsContentSwitcher({
     super.key,
@@ -18,6 +19,7 @@ class AnalyticsContentSwitcher extends StatelessWidget {
     required this.child,
     this.contentKey,
     this.duration = const Duration(milliseconds: 320),
+    this.overlapOutgoing = true,
   });
 
   @override
@@ -31,6 +33,9 @@ class AnalyticsContentSwitcher extends StatelessWidget {
           : const Duration(milliseconds: 180),
       switchInCurve: Curves.easeOutCubic,
       switchOutCurve: Curves.easeInCubic,
+      layoutBuilder: overlapOutgoing
+          ? AnimatedSwitcher.defaultLayoutBuilder
+          : (currentChild, _) => currentChild ?? const SizedBox.shrink(),
       transitionBuilder: (child, animation) {
         final scale = Tween<double>(begin: 0.985, end: 1).animate(animation);
         return FadeTransition(

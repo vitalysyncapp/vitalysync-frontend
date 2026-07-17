@@ -33,29 +33,89 @@ class LogNewMealCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isCompact = screenWidth < 380;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cornerRadius = isCompact ? 18.0 : 22.0;
 
     return WhiteCard(
+      borderRadius: BorderRadius.only(
+        topLeft: Radius.circular(cornerRadius),
+        topRight: Radius.circular(isCompact ? 50 : 62),
+        bottomLeft: Radius.circular(cornerRadius),
+        bottomRight: Radius.circular(cornerRadius),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Log new meal',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: pagePrimaryTextColor(context),
-            ),
+          Row(
+            children: [
+              Container(
+                width: isCompact ? 34 : 38,
+                height: isCompact ? 34 : 38,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF1D9696), Color(0xFF5DB8F0)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(isCompact ? 11 : 13),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF1D9696).withValues(alpha: 0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.restaurant_rounded,
+                  color: Colors.white,
+                  size: isCompact ? 18 : 20,
+                ),
+              ),
+              SizedBox(width: isCompact ? 9 : 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Log new meal',
+                      style: TextStyle(
+                        fontSize: isCompact ? 15.5 : 17,
+                        height: 1.15,
+                        fontWeight: FontWeight.w800,
+                        color: pagePrimaryTextColor(context),
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Choose a meal type, then add a photo',
+                      style: TextStyle(
+                        fontSize: isCompact ? 10.5 : 11.5,
+                        color: pageSecondaryTextColor(context),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: isCompact ? 7 : 8),
+          SizedBox(height: isCompact ? 11 : 14),
           MealTypeChoices(
             selectedMealType: selectedMealType,
             onMealTypeChanged: onMealTypeChanged,
             canSelectMealType: canSelectMealType,
             onLockedMealTypeTap: onLockedMealTypeTap,
           ),
-          SizedBox(height: isCompact ? 7 : 8),
+          SizedBox(height: isCompact ? 10 : 12),
           InkWell(
-            borderRadius: BorderRadius.circular(isCompact ? 13 : 15),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(isCompact ? 14 : 17),
+              topRight: Radius.circular(isCompact ? 30 : 38),
+              bottomLeft: Radius.circular(isCompact ? 14 : 17),
+              bottomRight: Radius.circular(isCompact ? 14 : 17),
+            ),
             onTap: onTakePhoto,
             child: Container(
               width: double.infinity,
@@ -64,17 +124,27 @@ class LogNewMealCard extends StatelessWidget {
                 horizontal: isCompact ? 10 : 12,
               ),
               decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? const Color(0xFF2563EB).withValues(alpha: 0.12)
-                    : const Color(0xFFF3F7FF),
-                borderRadius: BorderRadius.circular(isCompact ? 13 : 15),
+                gradient: LinearGradient(
+                  colors: isDark
+                      ? [
+                          const Color(0xFF2563EB).withValues(alpha: 0.16),
+                          const Color(0xFF1D9696).withValues(alpha: 0.08),
+                        ]
+                      : const [Color(0xFFF2F7FF), Color(0xFFF2FBF8)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(isCompact ? 14 : 17),
+                  topRight: Radius.circular(isCompact ? 30 : 38),
+                  bottomLeft: Radius.circular(isCompact ? 14 : 17),
+                  bottomRight: Radius.circular(isCompact ? 14 : 17),
+                ),
                 border: Border.all(
-                  color: const Color(0xFF82B5FF).withValues(
-                    alpha: Theme.of(context).brightness == Brightness.dark
-                        ? 0.38
-                        : 1,
-                  ),
-                  width: 1.4,
+                  color: const Color(
+                    0xFF5B9CF6,
+                  ).withValues(alpha: isDark ? 0.42 : 0.78),
+                  width: 1.25,
                 ),
               ),
               child: Column(
@@ -94,9 +164,22 @@ class LogNewMealCard extends StatelessWidget {
                     Container(
                       width: isCompact ? 38 : 46,
                       height: isCompact ? 38 : 46,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF2563EB),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF2563EB), Color(0xFF3B82F6)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                         shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(
+                              0xFF2563EB,
+                            ).withValues(alpha: 0.24),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: Icon(
                         Icons.camera_alt_outlined,
@@ -129,7 +212,7 @@ class LogNewMealCard extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(height: isCompact ? 7 : 8),
+          SizedBox(height: isCompact ? 8 : 10),
           InkWell(
             borderRadius: BorderRadius.circular(isCompact ? 12 : 13),
             onTap: onChooseFromGallery,
@@ -149,7 +232,9 @@ class LogNewMealCard extends StatelessWidget {
                 children: [
                   Icon(
                     Icons.photo_library_outlined,
-                    color: const Color(0xFF475569),
+                    color: isDark
+                        ? const Color(0xFF93C5FD)
+                        : const Color(0xFF475569),
                     size: isCompact ? 17 : 19,
                   ),
                   SizedBox(width: isCompact ? 6 : 8),
@@ -165,7 +250,7 @@ class LogNewMealCard extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(height: isCompact ? 7 : 8),
+          SizedBox(height: isCompact ? 9 : 11),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -184,7 +269,16 @@ class LogNewMealCard extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF16A34A),
                 foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: isCompact ? 8 : 10),
+                disabledBackgroundColor: const Color(
+                  0xFF16A34A,
+                ).withValues(alpha: 0.55),
+                elevation: 2,
+                shadowColor: const Color(0xFF16A34A).withValues(alpha: 0.32),
+                padding: EdgeInsets.symmetric(vertical: isCompact ? 10 : 12),
+                textStyle: TextStyle(
+                  fontSize: isCompact ? 12.5 : 13.5,
+                  fontWeight: FontWeight.w700,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(isCompact ? 11 : 12),
                 ),

@@ -23,6 +23,8 @@ class AppNotificationItem {
   final bool showAction;
   final bool isUnread;
   final String? reportType;
+  final String? periodStart;
+  final String? periodEnd;
 
   const AppNotificationItem({
     required this.id,
@@ -37,9 +39,29 @@ class AppNotificationItem {
     required this.isUnread,
     this.showAction = false,
     this.reportType,
+    this.periodStart,
+    this.periodEnd,
   });
 
   String get time => _timeAgo(updatedAt);
+
+  String? get reportPeriodLabel {
+    final start = DateTime.tryParse(periodStart ?? '');
+    if (start == null) {
+      return null;
+    }
+
+    if (filterKey == 'daily') {
+      return 'For ${DateFormat('MMM d').format(start)}';
+    }
+
+    final end = DateTime.tryParse(periodEnd ?? '');
+    if (filterKey == 'weekly' && end != null) {
+      return '${DateFormat('MMM d').format(start)}-${DateFormat('MMM d').format(end)}';
+    }
+
+    return DateFormat('MMM d').format(start);
+  }
 
   String get filterKey {
     if (category == 'daily' || reportType == 'daily') {
@@ -107,6 +129,8 @@ class AppNotificationItem {
       isUnread: isUnread ?? this.isUnread,
       showAction: showAction,
       reportType: reportType,
+      periodStart: periodStart,
+      periodEnd: periodEnd,
     );
   }
 
@@ -127,6 +151,8 @@ class AppNotificationItem {
       isUnread: json['is_unread'] == true,
       showAction: json['show_action'] == true,
       reportType: json['report_type']?.toString(),
+      periodStart: json['period_start']?.toString(),
+      periodEnd: json['period_end']?.toString(),
     );
   }
 
@@ -143,6 +169,8 @@ class AppNotificationItem {
       'metric_chips': metricChips,
       'show_action': showAction,
       'report_type': reportType,
+      'period_start': periodStart,
+      'period_end': periodEnd,
     };
   }
 }
@@ -198,6 +226,7 @@ class NotificationFeedService {
       return null;
     }
 
+    await OfflineCacheStore.reload();
     final data = await OfflineCacheStore.readLatestJson(
       namespace: notificationFeedCacheNamespace,
       scope: userId.toString(),
@@ -275,6 +304,10 @@ class NotificationFeedService {
   Future<bool> shouldRefreshCachedFeed() async {
     final cached = await loadCachedFeed();
     if (cached == null) {
+      return true;
+    }
+
+    if (await InsightReportApi.isScheduledRefreshPending()) {
       return true;
     }
 
@@ -364,6 +397,8 @@ class NotificationFeedService {
       metricChips: _reportMetricChips(report),
       isUnread: !readIds.contains(id),
       reportType: report.reportType,
+      periodStart: report.periodStart,
+      periodEnd: report.periodEnd,
     );
   }
 

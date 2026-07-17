@@ -90,6 +90,29 @@ void main() {
     expect(feed.items.map((item) => item.id), ['report_1']);
     expect(feed.items.any((item) => item.filterKey == 'reminders'), isFalse);
   });
+
+  test('daily report cache preserves the summarized date', () {
+    final original = AppNotificationItem(
+      id: 'report_1',
+      category: 'daily',
+      title: 'Daily wellness report',
+      message: "Yesterday's wellness summary.",
+      sourceLabel: 'Daily report',
+      priority: 'low',
+      createdAt: DateTime(2026, 7, 16, 7),
+      updatedAt: DateTime(2026, 7, 16, 7),
+      metricChips: const [],
+      isUnread: true,
+      reportType: 'daily',
+      periodStart: '2026-07-15',
+      periodEnd: '2026-07-15',
+    );
+
+    final restored = AppNotificationItem.fromJson(original.toJson());
+
+    expect(restored.periodStart, '2026-07-15');
+    expect(restored.reportPeriodLabel, 'For Jul 15');
+  });
 }
 
 Map<String, dynamic> _itemJson({

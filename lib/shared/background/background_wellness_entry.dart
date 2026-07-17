@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import '../../features/activity/data/activity_service.dart';
 import '../../features/home/data/device_location_service.dart';
 import '../../features/home/data/environment_api.dart';
+import '../notifications/notification_feed_service.dart';
 import '../preferences/app_preferences.dart';
 import '../preferences/user_session.dart';
 
@@ -32,6 +33,7 @@ Future<void> runBackgroundWellnessCollection() async {
     await Future.wait([
       ActivityService.instance.primeStepTrackingSnapshot(),
       _refreshEnvironmentSnapshot(),
+      NotificationFeedService.instance.refreshFeed(),
     ]);
   } finally {
     await _notifyNativeComplete();

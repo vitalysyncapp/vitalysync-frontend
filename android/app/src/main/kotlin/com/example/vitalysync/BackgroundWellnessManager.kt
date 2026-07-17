@@ -18,8 +18,8 @@ object BackgroundWellnessManager {
     const val actionCollect = "com.example.vitalysync.action.BACKGROUND_WELLNESS_COLLECT"
     private const val channelName = "vitalysync/background_wellness"
     private const val requestCode = 4206
-    private const val collectionHour = 6
-    private const val collectionMinute = 30
+    private const val collectionHour = 7
+    private const val collectionMinute = 0
     private const val collectionWindowMillis = 30 * 60 * 1000L
     private const val maxRunMillis = 45 * 1000L
 

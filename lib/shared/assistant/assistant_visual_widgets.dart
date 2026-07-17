@@ -5,15 +5,11 @@ class _AssistantLoadingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      alignment: Alignment.center,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: pageSurfaceColor(context),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: pageBorderColor(context)),
-      ),
-      child: const CircularProgressIndicator(),
+    return const AppSkeletonCard(
+      height: 240,
+      lineCount: 4,
+      padding: EdgeInsets.all(18),
+      radius: 24,
     );
   }
 }

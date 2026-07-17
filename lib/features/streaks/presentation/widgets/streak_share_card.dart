@@ -7,6 +7,8 @@ class StreakShareCard extends StatelessWidget {
   final int longestStreak;
   final int availableSavers;
   final int protectedDayCount;
+  final int? globalRank;
+  final int? localRank;
   final bool isOffline;
 
   const StreakShareCard({
@@ -16,12 +18,17 @@ class StreakShareCard extends StatelessWidget {
     required this.longestStreak,
     required this.availableSavers,
     required this.protectedDayCount,
+    this.globalRank,
+    this.localRank,
     this.isOffline = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final visibleGlobalRank = _topHundredRank(globalRank);
+    final visibleLocalRank = _topHundredRank(localRank);
+    final hasRankBadges = visibleGlobalRank != null || visibleLocalRank != null;
 
     return Container(
       width: double.infinity,
@@ -92,69 +99,43 @@ class StreakShareCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 62,
-                        height: 62,
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.25),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(
-                                0xFFFF9F1C,
-                              ).withValues(alpha: 0.24),
-                              blurRadius: 18,
-                            ),
-                          ],
-                        ),
-                        child: Semantics(
-                          label: 'Animated burning fire',
-                          child: ExcludeSemantics(
-                            child: Lottie.asset(
-                              'assets/animations/streak_fire.json',
-                              animate: !MediaQuery.disableAnimationsOf(context),
-                              repeat: true,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final identity = _StreakIdentity(
+                        displayName: displayName,
+                        isOffline: isOffline,
+                      );
+
+                      if (!hasRankBadges) return identity;
+
+                      final badges = _RankBadges(
+                        globalRank: visibleGlobalRank,
+                        localRank: visibleLocalRank,
+                        direction: constraints.maxWidth >= 290
+                            ? Axis.vertical
+                            : Axis.horizontal,
+                      );
+
+                      if (constraints.maxWidth >= 290) {
+                        return Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              displayName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.3,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              isOffline
-                                  ? 'VitalySync streak snapshot'
-                                  : 'VitalySync streak',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.82),
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+                            Expanded(child: identity),
+                            const SizedBox(width: 10),
+                            badges,
                           ],
-                        ),
-                      ),
-                    ],
+                        );
+                      }
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          identity,
+                          const SizedBox(height: 10),
+                          badges,
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 24),
                   Row(
@@ -202,7 +183,6 @@ class StreakShareCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 7),
                   Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
                         width: 7,
@@ -213,12 +193,16 @@ class StreakShareCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 7),
-                      Text(
-                        'Keep your momentum going',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.82),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
+                      Flexible(
+                        child: Text(
+                          'Keep your momentum going',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.82),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ],
@@ -296,6 +280,176 @@ class StreakShareCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _StreakIdentity extends StatelessWidget {
+  final String displayName;
+  final bool isOffline;
+
+  const _StreakIdentity({required this.displayName, required this.isOffline});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 62,
+          height: 62,
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFF9F1C).withValues(alpha: 0.24),
+                blurRadius: 18,
+              ),
+            ],
+          ),
+          child: Semantics(
+            label: 'Animated burning fire',
+            child: ExcludeSemantics(
+              child: Lottie.asset(
+                'assets/animations/streak_fire.json',
+                animate: !MediaQuery.disableAnimationsOf(context),
+                repeat: true,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                displayName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                isOffline ? 'VitalySync streak snapshot' : 'VitalySync streak',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.82),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RankBadges extends StatelessWidget {
+  final int? globalRank;
+  final int? localRank;
+  final Axis direction;
+
+  const _RankBadges({
+    required this.globalRank,
+    required this.localRank,
+    required this.direction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      key: const ValueKey('personal-streak-ranks'),
+      container: true,
+      explicitChildNodes: true,
+      child: Wrap(
+        direction: direction,
+        alignment: WrapAlignment.end,
+        crossAxisAlignment: WrapCrossAlignment.end,
+        spacing: 6,
+        runSpacing: 6,
+        children: [
+          if (globalRank case final rank?)
+            _RankBadge(
+              key: const ValueKey('personal-streak-global-rank'),
+              label: 'Global',
+              rank: rank,
+              icon: Icons.public_rounded,
+              accent: const Color(0xFFFFD166),
+            ),
+          if (localRank case final rank?)
+            _RankBadge(
+              key: const ValueKey('personal-streak-local-rank'),
+              label: 'Local',
+              rank: rank,
+              icon: Icons.location_on_rounded,
+              accent: const Color(0xFFB9FBC0),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RankBadge extends StatelessWidget {
+  final String label;
+  final int rank;
+  final IconData icon;
+  final Color accent;
+
+  const _RankBadge({
+    super.key,
+    required this.label,
+    required this.rank,
+    required this.icon,
+    required this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: '$label streak rank $rank',
+      child: ExcludeSemantics(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.16),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: accent.withValues(alpha: 0.5)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: accent, size: 13),
+              const SizedBox(width: 4),
+              Text(
+                '$label #$rank',
+                maxLines: 1,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+int? _topHundredRank(int? rank) {
+  return rank != null && rank >= 1 && rank <= 100 ? rank : null;
 }
 
 class _ShareMetric extends StatelessWidget {

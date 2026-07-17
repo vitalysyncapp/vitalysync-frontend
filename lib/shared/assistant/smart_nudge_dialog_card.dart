@@ -278,6 +278,15 @@ class _SmartNudgeInsightCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final recommendation = primary;
+    if (isLoading && recommendation == null) {
+      return const AppSkeletonCard(
+        height: 220,
+        lineCount: 4,
+        padding: EdgeInsets.all(16),
+        radius: 24,
+      );
+    }
+
     final nudgeTitle = recommendation?.title.trim() ?? '';
     final body = _expandedAssistantText(
       recommendation?.message ?? fallbackMessage,
@@ -711,6 +720,15 @@ class _NutritionInsightEmptyCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = isDark ? const Color(0xFF8BE0BC) : const Color(0xFF178B57);
 
+    if (isLoading) {
+      return const AppSkeletonCard(
+        height: 150,
+        lineCount: 2,
+        padding: EdgeInsets.all(16),
+        radius: 22,
+      );
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -754,9 +772,7 @@ class _NutritionInsightEmptyCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            isLoading
-                ? 'Checking today\'s nutrition pattern...'
-                : 'No nutrition nudge right now. Keep meals simple and steady today.',
+            'No nutrition nudge right now. Keep meals simple and steady today.',
             style: TextStyle(
               color: pageSecondaryTextColor(context),
               fontSize: 13.5,
@@ -764,14 +780,6 @@ class _NutritionInsightEmptyCard extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          if (isLoading) ...[
-            const SizedBox(height: 14),
-            LinearProgressIndicator(
-              minHeight: 4,
-              color: accent,
-              backgroundColor: accent.withValues(alpha: 0.16),
-            ),
-          ],
         ],
       ),
     );

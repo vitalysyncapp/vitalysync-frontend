@@ -181,3 +181,16 @@ String _sentenceCaseCategory(String value) {
   if (text.length < 2) return text;
   return '${text[0].toUpperCase()}${text.substring(1).toLowerCase()}';
 }
+
+String _titleCaseCategory(String value) {
+  return value
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((word) => word.isNotEmpty)
+      .map(
+        (word) => word.length == 1
+            ? word.toUpperCase()
+            : '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}',
+      )
+      .join(' ');
+}

@@ -18,6 +18,7 @@ typedef StreakLeaderboardLoader =
     Future<StreakLeaderboard> Function({
       required String section,
       required String metric,
+      required int limit,
     });
 
 class StreakLeaderboardPage extends StatefulWidget {
@@ -67,7 +68,7 @@ class _StreakLeaderboardPageState extends State<StreakLeaderboardPage> {
 
   Future<StreakLeaderboard> _load() {
     final loader = widget.loadLeaderboard ?? StreakApi.fetchLeaderboard;
-    return loader(section: _section, metric: _metric);
+    return loader(section: _section, metric: _metric, limit: 50);
   }
 
   Future<void> _loadSessionProfile() async {
@@ -238,11 +239,12 @@ class _LeaderboardHero extends StatelessWidget {
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     final subtitle = metric == 'longest'
-        ? 'Ranked by each user\'s all-time best streak.'
-        : 'Ranked by active streaks and privacy-safe profiles.';
+        ? 'Best-ever streak rankings.'
+        : 'Active streak rankings.';
 
     return Container(
-      constraints: const BoxConstraints(minHeight: 174),
+      key: const ValueKey('leaderboard-hero'),
+      constraints: const BoxConstraints(minHeight: 128),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF137C8B), Color(0xFF26A69A), Color(0xFF61C7E8)],
@@ -263,11 +265,11 @@ class _LeaderboardHero extends StatelessWidget {
         child: Stack(
           children: [
             Positioned(
-              right: -32,
+              right: -26,
               top: -42,
               child: Container(
-                width: 148,
-                height: 148,
+                width: 112,
+                height: 112,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.white.withValues(alpha: 0.09),
@@ -275,15 +277,15 @@ class _LeaderboardHero extends StatelessWidget {
               ),
             ),
             Positioned(
-              right: 2,
-              bottom: -10,
+              right: 4,
+              bottom: -7,
               child: IgnorePointer(
                 child: Opacity(
                   opacity: 0.94,
                   child: Lottie.asset(
                     _streakFireAnimationPath,
-                    width: 128,
-                    height: 128,
+                    width: 92,
+                    height: 92,
                     fit: BoxFit.contain,
                     repeat: !reduceMotion,
                     animate: !reduceMotion,
@@ -291,7 +293,7 @@ class _LeaderboardHero extends StatelessWidget {
                       return const Icon(
                         Icons.local_fire_department_rounded,
                         color: Color(0xFFFFC857),
-                        size: 82,
+                        size: 62,
                       );
                     },
                   ),
@@ -299,7 +301,7 @@ class _LeaderboardHero extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 104, 20),
+              padding: const EdgeInsets.fromLTRB(16, 12, 82, 12),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 250),
                 child: Column(
@@ -310,18 +312,19 @@ class _LeaderboardHero extends StatelessWidget {
                       'Small wins.\nStrong streaks.',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 24,
-                        height: 1.05,
+                        fontSize: 20,
+                        height: 1.02,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 5),
                     Text(
                       subtitle,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.86),
+                        fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        height: 1.3,
+                        height: 1.25,
                       ),
                     ),
                   ],
@@ -428,42 +431,38 @@ class _LeaderboardContent extends StatelessWidget {
       );
     }
 
-    final orderedRows = [...leaderboard.rows]
-      ..sort((left, right) => left.rank.compareTo(right.rank));
-    final podiumRows = orderedRows
-        .where((row) => row.rank >= 1 && row.rank <= 5)
-        .toList();
-    final remainingRows = orderedRows
-        .where((row) => row.rank < 1 || row.rank > 5)
-        .toList();
+    final orderedRows =
+        leaderboard.rows
+            .where((row) => row.rank >= 1 && row.rank <= 50)
+            .toList()
+          ..sort((left, right) => left.rank.compareTo(right.rank));
+    final podiumRows = orderedRows.where((row) => row.rank <= 3).toList();
+    final remainingRows = orderedRows.where((row) => row.rank >= 4).toList();
 
     return Column(
       key: const ValueKey('leaderboard-list'),
       children: [
         if (podiumRows.isNotEmpty)
-          _TopFivePodium(
+          _TopThreePodium(
             rows: podiumRows,
             metric: metric,
             currentUserSession: currentUserSession,
           ),
         if (podiumRows.isNotEmpty && remainingRows.isNotEmpty)
-          const SizedBox(height: 14),
-        for (final row in remainingRows)
-          _LeaderboardRow(
-            row: row,
+          const SizedBox(height: 16),
+        if (remainingRows.isNotEmpty)
+          _RankedLeaderboardList(
+            rows: remainingRows,
             metric: metric,
             currentUserSession: currentUserSession,
-            presentation: row.rank >= 6 && row.rank <= 10
-                ? _RankPresentation.medal
-                : _RankPresentation.number,
           ),
       ],
     );
   }
 }
 
-class _TopFivePodium extends StatelessWidget {
-  const _TopFivePodium({
+class _TopThreePodium extends StatelessWidget {
+  const _TopThreePodium({
     required this.rows,
     required this.metric,
     required this.currentUserSession,
@@ -473,19 +472,21 @@ class _TopFivePodium extends StatelessWidget {
   final String metric;
   final UserSessionSnapshot currentUserSession;
 
-  List<StreakLeaderboardRow> _inRankOrder(List<int> ranks) {
+  List<StreakLeaderboardRow> get _displayRows {
     final rowsByRank = {for (final row in rows) row.rank: row};
-    return [for (final rank in ranks) ?rowsByRank[rank]];
+    return [
+      for (final rank in const [2, 1, 3]) ?rowsByRank[rank],
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       key: const ValueKey('leaderboard-podium'),
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
       decoration: BoxDecoration(
         color: pageSurfaceColor(context),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: pageBorderColor(context)),
         boxShadow: pageCardShadow(context),
       ),
@@ -498,19 +499,19 @@ class _TopFivePodium extends StatelessWidget {
                 width: 34,
                 height: 34,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFACC15).withValues(alpha: 0.16),
+                  color: const Color(0xFFFFB800).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(11),
                 ),
                 child: const Icon(
                   Icons.emoji_events_rounded,
-                  color: Color(0xFFF59E0B),
+                  color: Color(0xFFFFB800),
                   size: 20,
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Top 5 streaks',
+                  'Top 3 streaks',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -520,47 +521,50 @@ class _TopFivePodium extends StatelessWidget {
                   ),
                 ),
               ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.09),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  metric == 'longest' ? 'Best' : 'Current',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           LayoutBuilder(
             builder: (context, constraints) {
-              if (constraints.maxWidth >= 560) {
-                return _PodiumLine(
-                  rows: _inRankOrder(const [4, 2, 1, 3, 5]),
-                  metric: metric,
-                  currentUserSession: currentUserSession,
-                  maxWidth: constraints.maxWidth,
-                  maxTileWidth: 108,
-                  spacing: 8,
-                );
-              }
+              final displayRows = _displayRows;
+              final gaps = 6.0 * (displayRows.length - 1);
+              final tileWidth =
+                  ((constraints.maxWidth - gaps) / displayRows.length)
+                      .clamp(72.0, 118.0)
+                      .toDouble();
 
-              final upperRows = _inRankOrder(const [2, 1, 3]);
-              final lowerRows = _inRankOrder(const [4, 5]);
-
-              return Column(
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  if (upperRows.isNotEmpty)
-                    _PodiumLine(
-                      rows: upperRows,
-                      metric: metric,
-                      currentUserSession: currentUserSession,
-                      maxWidth: constraints.maxWidth,
-                      maxTileWidth: 118,
-                      spacing: 8,
+                  for (var index = 0; index < displayRows.length; index++) ...[
+                    if (index > 0) const SizedBox(width: 6),
+                    SizedBox(
+                      width: tileWidth,
+                      child: _TopThreeTile(
+                        row: displayRows[index],
+                        metric: metric,
+                        currentUserSession: currentUserSession,
+                      ),
                     ),
-                  if (upperRows.isNotEmpty && lowerRows.isNotEmpty)
-                    const SizedBox(height: 10),
-                  if (lowerRows.isNotEmpty)
-                    _PodiumLine(
-                      rows: lowerRows,
-                      metric: metric,
-                      currentUserSession: currentUserSession,
-                      maxWidth: constraints.maxWidth,
-                      maxTileWidth: 138,
-                      spacing: 8,
-                    ),
+                  ],
                 ],
               );
             },
@@ -571,56 +575,8 @@ class _TopFivePodium extends StatelessWidget {
   }
 }
 
-class _PodiumLine extends StatelessWidget {
-  const _PodiumLine({
-    required this.rows,
-    required this.metric,
-    required this.currentUserSession,
-    required this.maxWidth,
-    required this.maxTileWidth,
-    required this.spacing,
-  });
-
-  final List<StreakLeaderboardRow> rows;
-  final String metric;
-  final UserSessionSnapshot currentUserSession;
-  final double maxWidth;
-  final double maxTileWidth;
-  final double spacing;
-
-  @override
-  Widget build(BuildContext context) {
-    if (rows.isEmpty) return const SizedBox.shrink();
-
-    final gaps = spacing * (rows.length - 1);
-    final availableTileWidth = (maxWidth - gaps) / rows.length;
-    final tileWidth = availableTileWidth.clamp(64.0, maxTileWidth).toDouble();
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        for (var index = 0; index < rows.length; index++) ...[
-          if (index > 0) SizedBox(width: spacing),
-          SizedBox(
-            width: tileWidth,
-            child: Padding(
-              padding: EdgeInsets.only(top: _podiumTopInset(rows[index].rank)),
-              child: _PodiumTile(
-                row: rows[index],
-                metric: metric,
-                currentUserSession: currentUserSession,
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _PodiumTile extends StatelessWidget {
-  const _PodiumTile({
+class _TopThreeTile extends StatelessWidget {
+  const _TopThreeTile({
     required this.row,
     required this.metric,
     required this.currentUserSession,
@@ -634,31 +590,28 @@ class _PodiumTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = _podiumAccent(context, row.rank);
     final isWinner = row.rank == 1;
-    final avatarSize = switch (row.rank) {
-      1 => 48.0,
-      2 || 3 => 43.0,
-      _ => 40.0,
-    };
-    final pedestalHeight = switch (row.rank) {
-      1 => 30.0,
-      2 => 26.0,
-      3 => 23.0,
-      _ => 20.0,
-    };
+    final isCurrentUser = _isCurrentUser(row, currentUserSession);
     final score = _scoreLabel(row.score);
     final streakKind = metric == 'longest' ? 'Best streak' : 'Current streak';
+    final tileHeight = switch (row.rank) {
+      1 => 158.0,
+      2 => 142.0,
+      _ => 136.0,
+    };
+    final avatarSize = isWinner ? 56.0 : 49.0;
 
     return Semantics(
       container: true,
       label: 'Rank ${row.rank}, ${row.displayName}, $score, $streakKind',
       child: Container(
         key: ValueKey('leaderboard-podium-user-${row.userId}'),
-        clipBehavior: Clip.antiAlias,
+        height: tileHeight,
+        padding: const EdgeInsets.fromLTRB(7, 8, 7, 10),
         decoration: BoxDecoration(
           gradient: isWinner
               ? LinearGradient(
                   colors: [
-                    const Color(0xFFFACC15).withValues(alpha: 0.2),
+                    const Color(0xFFFFB800).withValues(alpha: 0.2),
                     Theme.of(
                       context,
                     ).colorScheme.primary.withValues(alpha: 0.08),
@@ -668,78 +621,84 @@ class _PodiumTile extends StatelessWidget {
                 )
               : null,
           color: isWinner ? null : pageSubtleSurfaceColor(context),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(19),
           border: Border.all(
-            color: row.isCurrentUser
+            color: isCurrentUser
                 ? Theme.of(context).colorScheme.primary
-                : accent.withValues(alpha: 0.5),
-            width: row.isCurrentUser ? 2 : 1,
+                : accent.withValues(alpha: 0.58),
+            width: isCurrentUser ? 2 : 1,
           ),
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(6, 8, 6, 7),
-              child: Column(
-                children: [
-                  Icon(
-                    isWinner
-                        ? Icons.workspace_premium_rounded
-                        : Icons.leaderboard_rounded,
-                    color: accent,
-                    size: isWinner ? 23 : 19,
-                  ),
-                  const SizedBox(height: 5),
-                  _DefaultAvatar(
-                    key: ValueKey('leaderboard-default-avatar-${row.userId}'),
-                    semanticLabel: 'Default avatar for ${row.displayName}',
-                    assetPath: _leaderboardAvatarAsset(row, currentUserSession),
-                    size: avatarSize,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    row.displayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: pagePrimaryTextColor(context),
-                      fontSize: row.rank <= 3 ? 12.5 : 12,
-                      fontWeight: FontWeight.w900,
+            if (isWinner) ...[
+              Icon(Icons.workspace_premium_rounded, color: accent, size: 21),
+              const SizedBox(height: 2),
+            ],
+            Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                _LeaderboardAvatar(
+                  key: ValueKey('leaderboard-avatar-${row.userId}'),
+                  row: row,
+                  currentUserSession: currentUserSession,
+                  size: avatarSize,
+                  borderColor: accent,
+                ),
+                Positioned(
+                  bottom: -6,
+                  child: Container(
+                    key: ValueKey('leaderboard-podium-rank-${row.userId}'),
+                    constraints: const BoxConstraints(minWidth: 21),
+                    height: 21,
+                    padding: const EdgeInsets.symmetric(horizontal: 5),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: accent,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: pageSurfaceColor(context),
+                        width: 1.5,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        score,
-                        maxLines: 1,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w900,
-                        ),
+                    child: Text(
+                      '${row.rank}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        height: 1,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
                   ),
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              row.displayName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: pagePrimaryTextColor(context),
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
               ),
             ),
-            Container(
+            const SizedBox(height: 3),
+            SizedBox(
               width: double.infinity,
-              height: pedestalHeight,
-              alignment: Alignment.center,
-              color: accent.withValues(alpha: isWinner ? 0.3 : 0.2),
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
-                  '${row.rank}',
+                  score,
+                  maxLines: 1,
                   style: TextStyle(
-                    color: pagePrimaryTextColor(context),
-                    fontSize: 12,
+                    color: accent,
+                    fontSize: 13.5,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -752,71 +711,137 @@ class _PodiumTile extends StatelessWidget {
   }
 }
 
-enum _RankPresentation { medal, number }
+class _RankedLeaderboardList extends StatelessWidget {
+  const _RankedLeaderboardList({
+    required this.rows,
+    required this.metric,
+    required this.currentUserSession,
+  });
 
-class _LeaderboardRow extends StatelessWidget {
-  const _LeaderboardRow({
+  final List<StreakLeaderboardRow> rows;
+  final String metric;
+  final UserSessionSnapshot currentUserSession;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const ValueKey('leaderboard-ranked-list'),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      decoration: BoxDecoration(
+        color: pageSurfaceColor(context),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: pageBorderColor(context)),
+        boxShadow: pageCardShadow(context),
+      ),
+      child: Column(
+        children: [
+          for (var index = 0; index < rows.length; index++) ...[
+            _LeaderboardListRow(
+              row: rows[index],
+              metric: metric,
+              currentUserSession: currentUserSession,
+            ),
+            if (index < rows.length - 1)
+              Divider(
+                key: ValueKey('leaderboard-divider-${rows[index].rank}'),
+                height: 1,
+                indent: 42,
+                color: pageBorderColor(context),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _LeaderboardListRow extends StatelessWidget {
+  const _LeaderboardListRow({
     required this.row,
     required this.metric,
     required this.currentUserSession,
-    required this.presentation,
   });
 
   final StreakLeaderboardRow row;
   final String metric;
   final UserSessionSnapshot currentUserSession;
-  final _RankPresentation presentation;
 
   @override
   Widget build(BuildContext context) {
-    final isBest = metric == 'longest';
-    final streakKind = isBest ? 'Best streak' : 'Current streak';
+    final streakKind = metric == 'longest' ? 'Best streak' : 'Current streak';
     final score = _scoreLabel(row.score);
+    final primary = Theme.of(context).colorScheme.primary;
+    final isCurrentUser = _isCurrentUser(row, currentUserSession);
 
     return Semantics(
       container: true,
       label: 'Rank ${row.rank}, ${row.displayName}, $score, $streakKind',
       child: Container(
-        key: ValueKey(
-          presentation == _RankPresentation.medal
-              ? 'leaderboard-medal-row-${row.userId}'
-              : 'leaderboard-number-row-${row.userId}',
-        ),
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        key: ValueKey('leaderboard-number-row-${row.userId}'),
+        margin: const EdgeInsets.symmetric(vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 9),
         decoration: BoxDecoration(
-          color: row.isCurrentUser
-              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
-              : pageSurfaceColor(context),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: row.isCurrentUser
-                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.34)
-                : pageBorderColor(context),
-          ),
-          boxShadow: pageCardShadow(context),
+          color: isCurrentUser
+              ? primary.withValues(alpha: 0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(15),
+          border: isCurrentUser
+              ? Border.all(color: primary.withValues(alpha: 0.28))
+              : null,
         ),
         child: Row(
           children: [
-            _RankMarker(row: row, presentation: presentation),
-            const SizedBox(width: 8),
-            _DefaultAvatar(
-              key: ValueKey('leaderboard-default-avatar-${row.userId}'),
-              semanticLabel: 'Default avatar for ${row.displayName}',
-              assetPath: _leaderboardAvatarAsset(row, currentUserSession),
-              size: 44,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
+            SizedBox(
+              key: ValueKey('leaderboard-number-marker-${row.userId}'),
+              width: 31,
               child: Text(
-                row.displayName,
+                '${row.rank}',
                 maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: pagePrimaryTextColor(context),
-                  fontSize: 16,
+                  color: isCurrentUser
+                      ? primary
+                      : pageSecondaryTextColor(context),
+                  fontSize: 14,
                   fontWeight: FontWeight.w900,
                 ),
+              ),
+            ),
+            const SizedBox(width: 7),
+            _LeaderboardAvatar(
+              key: ValueKey('leaderboard-avatar-${row.userId}'),
+              row: row,
+              currentUserSession: currentUserSession,
+              size: 43,
+              borderColor: _avatarColor(row.avatarColor),
+            ),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    row.displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: pagePrimaryTextColor(context),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    isCurrentUser ? '$streakKind - You' : streakKind,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: pageSecondaryTextColor(context),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(width: 8),
@@ -829,8 +854,10 @@ class _LeaderboardRow extends StatelessWidget {
                   score,
                   maxLines: 1,
                   style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontSize: 15,
+                    color: isCurrentUser
+                        ? primary
+                        : pagePrimaryTextColor(context),
+                    fontSize: 14,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -843,60 +870,68 @@ class _LeaderboardRow extends StatelessWidget {
   }
 }
 
-class _RankMarker extends StatelessWidget {
-  const _RankMarker({required this.row, required this.presentation});
+class _LeaderboardAvatar extends StatelessWidget {
+  const _LeaderboardAvatar({
+    super.key,
+    required this.row,
+    required this.currentUserSession,
+    required this.size,
+    required this.borderColor,
+  });
 
   final StreakLeaderboardRow row;
-  final _RankPresentation presentation;
+  final UserSessionSnapshot currentUserSession;
+  final double size;
+  final Color borderColor;
 
   @override
   Widget build(BuildContext context) {
-    if (presentation == _RankPresentation.medal) {
-      return Container(
-        key: ValueKey('leaderboard-medal-marker-${row.userId}'),
-        width: 40,
-        height: 46,
+    final isCurrentUser = _isCurrentUser(row, currentUserSession);
+
+    return Semantics(
+      image: true,
+      label: 'Avatar for ${row.displayName}',
+      child: Container(
+        width: size,
+        height: size,
+        padding: const EdgeInsets.all(2.5),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.military_tech_rounded,
-              color: Color(0xFFF59E0B),
-              size: 23,
-            ),
-            Text(
-              '${row.rank}',
-              style: TextStyle(
-                color: pagePrimaryTextColor(context),
-                fontSize: 9.5,
-                height: 1,
-                fontWeight: FontWeight.w900,
-              ),
+          shape: BoxShape.circle,
+          color: borderColor,
+          boxShadow: [
+            BoxShadow(
+              color: borderColor.withValues(alpha: 0.22),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
-      );
-    }
-
-    return SizedBox(
-      key: ValueKey('leaderboard-number-marker-${row.userId}'),
-      width: 40,
-      child: Text(
-        '${row.rank}',
-        maxLines: 1,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: pagePrimaryTextColor(context),
-          fontSize: 15,
-          fontWeight: FontWeight.w900,
-        ),
+        child: isCurrentUser
+            ? ExcludeSemantics(
+                child: _DefaultAvatar(
+                  semanticLabel: 'Avatar for ${row.displayName}',
+                  assetPath: _leaderboardAvatarAsset(row, currentUserSession),
+                  size: size - 5,
+                ),
+              )
+            : ExcludeSemantics(
+                child: Container(
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: borderColor.withValues(alpha: 0.2),
+                  ),
+                  child: Text(
+                    row.initials,
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: borderColor,
+                      fontSize: size * 0.29,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ),
       ),
     );
   }
@@ -904,7 +939,6 @@ class _RankMarker extends StatelessWidget {
 
 class _DefaultAvatar extends StatelessWidget {
   const _DefaultAvatar({
-    super.key,
     required this.semanticLabel,
     required this.assetPath,
     this.size = 48,
@@ -949,11 +983,9 @@ String _leaderboardAvatarAsset(
   StreakLeaderboardRow row,
   UserSessionSnapshot currentUserSession,
 ) {
-  final currentUserId = currentUserSession.userId;
-  final isCurrentUser =
-      row.isCurrentUser ||
-      (currentUserId != null && row.userId == currentUserId);
-  if (!isCurrentUser) return _defaultLeaderboardAvatarPath;
+  if (!_isCurrentUser(row, currentUserSession)) {
+    return _defaultLeaderboardAvatarPath;
+  }
 
   return suggestedProfileAvatarAsset(
     currentUserSession.gender,
@@ -961,23 +993,37 @@ String _leaderboardAvatarAsset(
   );
 }
 
-double _podiumTopInset(int rank) {
-  return switch (rank) {
-    1 => 0,
-    2 => 14,
-    3 => 22,
-    4 => 18,
-    _ => 26,
-  };
+bool _isCurrentUser(
+  StreakLeaderboardRow row,
+  UserSessionSnapshot currentUserSession,
+) {
+  final currentUserId = currentUserSession.userId;
+  return row.isCurrentUser ||
+      (currentUserId != null && row.userId == currentUserId);
+}
+
+Color _avatarColor(String value) {
+  final hex = value.trim().replaceFirst('#', '');
+  try {
+    if (hex.length == 6) {
+      return Color(int.parse('FF$hex', radix: 16));
+    }
+    if (hex.length == 8) {
+      return Color(int.parse(hex, radix: 16));
+    }
+  } catch (_) {
+    // Use the leaderboard default below.
+  }
+
+  return const Color(0xFF1D8CA8);
 }
 
 Color _podiumAccent(BuildContext context, int rank) {
   return switch (rank) {
-    1 => const Color(0xFFF5B700),
-    2 => const Color(0xFF94A3B8),
-    3 => const Color(0xFFC26A2E),
-    4 => Theme.of(context).colorScheme.primary,
-    _ => const Color(0xFF38A7C4),
+    1 => const Color(0xFFFFB800),
+    2 => const Color(0xFF0EA5E9),
+    3 => const Color(0xFF10B981),
+    _ => Theme.of(context).colorScheme.primary,
   };
 }
 

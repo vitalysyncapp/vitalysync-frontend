@@ -1074,54 +1074,53 @@ class _AssistantContextMetric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 30,
-          height: 30,
-          decoration: BoxDecoration(
-            color: const Color(0xFF1FB489).withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(11),
+    return AppSkeleton(
+      enabled: isLoading,
+      ignorePointers: false,
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1FB489).withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(icon, size: 17, color: const Color(0xFF1FB489)),
           ),
-          child: isLoading
-              ? const Padding(
-                  padding: EdgeInsets.all(7),
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Icon(icon, size: 17, color: const Color(0xFF1FB489)),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: pagePrimaryTextColor(context),
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              if (value != null && value!.isNotEmpty) ...[
-                const SizedBox(height: 1),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(
-                  value!,
-                  maxLines: 1,
+                  label,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: pageSecondaryTextColor(context),
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
+                    color: pagePrimaryTextColor(context),
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
+                if (value != null && value!.isNotEmpty) ...[
+                  const SizedBox(height: 1),
+                  Text(
+                    value!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: pageSecondaryTextColor(context),
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

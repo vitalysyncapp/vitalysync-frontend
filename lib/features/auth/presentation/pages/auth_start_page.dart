@@ -5,7 +5,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:liquid_swipe/liquid_swipe.dart';
 
-import '../../../../shared/theme/app_page_style.dart';
 import '../widgets/auth_chrome.dart';
 import 'login_page.dart';
 import 'sign_up_page.dart';
@@ -119,16 +118,17 @@ class _AuthStartPageState extends State<AuthStartPage> {
 
     _autoSlideTimer?.cancel();
     _autoSlideTimer = Timer(_autoSlideInterval, () {
-      if (!mounted || _currentSlide == _slides.length - 1) return;
-      _goToSlide(_currentSlide + 1);
+      if (!mounted) return;
+      _goToSlide((_currentSlide + 1) % _slides.length);
     });
   }
 
   void _goToSlide(int index) {
-    final target = index.clamp(0, _slides.length - 1).toInt();
+    final target = index % _slides.length;
     if (target == _currentSlide) return;
 
-    if (MediaQuery.disableAnimationsOf(context)) {
+    if (MediaQuery.disableAnimationsOf(context) ||
+        (_currentSlide == _slides.length - 1 && target == 0)) {
       _liquidController.jumpToPage(page: target);
     } else {
       _liquidController.animateToPage(page: target, duration: 620);
@@ -166,116 +166,63 @@ class _AuthStartPageState extends State<AuthStartPage> {
       backdropStyle: AuthBackdropStyle.welcome,
       centerContent: false,
       scrollable: false,
-      padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final compact = constraints.maxHeight < 710;
-          final panelHeight =
-              (constraints.maxHeight - (compact ? 260.0 : 198.0))
-                  .clamp(300.0, compact ? 410.0 : 560.0)
-                  .toDouble();
+          final compact = constraints.maxHeight < 720;
+          final panelWidth = constraints.maxWidth > 560
+              ? 560.0
+              : constraints.maxWidth;
 
-          return SingleChildScrollView(
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    height: panelHeight,
-                    child: LayoutBuilder(
-                      builder: (context, panelConstraints) {
-                        final panelWidth = panelConstraints.maxWidth > 440
-                            ? 440.0
-                            : panelConstraints.maxWidth;
-
-                        return Center(
-                          child: SizedBox(
-                            width: panelWidth,
-                            height: panelConstraints.maxHeight,
-                            child: AuthGlassPanel(
-                              padding: EdgeInsets.zero,
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  LiquidSwipe.builder(
-                                    key: const ValueKey(
-                                      'auth-welcome-carousel',
-                                    ),
-                                    itemCount: _slides.length,
-                                    itemBuilder: (context, index) =>
-                                        _WelcomeSlide(
-                                          data: _slides[index],
-                                          compact: compact,
-                                        ),
-                                    liquidController: _liquidController,
-                                    initialPage: _currentSlide,
-                                    onPageChangeCallback: _handlePageChanged,
-                                    waveType: WaveType.liquidReveal,
-                                    fullTransitionValue: 420,
-                                    enableLoop: false,
-                                    enableSideReveal: true,
-                                    preferDragFromRevealedArea: false,
-                                    ignoreUserGestureWhileAnimating: true,
-                                  ),
-                                  Positioned(
-                                    top: compact ? 12 : 16,
-                                    left: 16,
-                                    right: 16,
-                                    child: _WelcomeBrandStrip(compact: compact),
-                                  ),
-                                  Positioned(
-                                    left: 14,
-                                    right: 14,
-                                    bottom: compact ? 10 : 14,
-                                    child: _CarouselControls(
-                                      currentIndex: _currentSlide,
-                                      itemCount: _slides.length,
-                                      foregroundColor: _slides[_currentSlide]
-                                          .foregroundColor,
-                                      onPrevious: _currentSlide == 0
-                                          ? null
-                                          : () => _goToSlide(_currentSlide - 1),
-                                      onNext:
-                                          _currentSlide == _slides.length - 1
-                                          ? null
-                                          : () => _goToSlide(_currentSlide + 1),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
+          return Center(
+            child: SizedBox(
+              width: panelWidth,
+              height: constraints.maxHeight,
+              child: AuthGlassPanel(
+                maxWidth: 560,
+                padding: EdgeInsets.zero,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    LiquidSwipe.builder(
+                      key: const ValueKey('auth-welcome-carousel'),
+                      itemCount: _slides.length,
+                      itemBuilder: (context, index) => _WelcomeSlide(
+                        data: _slides[index],
+                        compact: compact,
+                        bottomContentInset: compact ? 210 : 224,
+                      ),
+                      liquidController: _liquidController,
+                      initialPage: _currentSlide,
+                      onPageChangeCallback: _handlePageChanged,
+                      waveType: WaveType.liquidReveal,
+                      fullTransitionValue: 420,
+                      enableLoop: true,
+                      enableSideReveal: true,
+                      preferDragFromRevealedArea: false,
+                      ignoreUserGestureWhileAnimating: true,
                     ),
-                  ),
-                  SizedBox(height: compact ? 10 : 12),
-                  Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 440),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const _CompactDisclaimer(text: _disclaimer),
-                          const SizedBox(height: 12),
-                          AuthButton.primary(
-                            label: 'Sign up',
-                            icon: Icons.person_add_alt_1_rounded,
-                            onPressed: _openSignUp,
-                          ),
-                          const SizedBox(height: 10),
-                          AuthButton.secondary(
-                            label: 'Log in',
-                            icon: Icons.login_rounded,
-                            onPressed: _openLogin,
-                          ),
-                        ],
+                    Positioned(
+                      top: compact ? 12 : 16,
+                      left: 16,
+                      right: 16,
+                      child: _WelcomeBrandStrip(compact: compact),
+                    ),
+                    Positioned(
+                      left: compact ? 12 : 16,
+                      right: compact ? 12 : 16,
+                      bottom: compact ? 12 : 16,
+                      child: _CarouselFooter(
+                        currentIndex: _currentSlide,
+                        itemCount: _slides.length,
+                        foregroundColor: _slides[_currentSlide].foregroundColor,
+                        disclaimer: _disclaimer,
+                        onSignUp: _openSignUp,
+                        onLogin: _openLogin,
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           );
@@ -397,8 +344,13 @@ class _WelcomeBrandStrip extends StatelessWidget {
 class _WelcomeSlide extends StatelessWidget {
   final _WelcomeSlideData data;
   final bool compact;
+  final double bottomContentInset;
 
-  const _WelcomeSlide({required this.data, required this.compact});
+  const _WelcomeSlide({
+    required this.data,
+    required this.compact,
+    required this.bottomContentInset,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -420,18 +372,24 @@ class _WelcomeSlide extends StatelessWidget {
                   : compact
                   ? 136.0
                   : 180.0;
+              final topContentInset = compact ? 66.0 : 80.0;
 
               return SingleChildScrollView(
                 physics: const ClampingScrollPhysics(),
                 padding: EdgeInsets.fromLTRB(
                   20,
-                  compact ? 66 : 80,
+                  topContentInset,
                   20,
-                  compact ? 56 : 70,
+                  bottomContentInset,
                 ),
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
-                    minHeight: constraints.maxHeight - (compact ? 122 : 150),
+                    minHeight:
+                        (constraints.maxHeight -
+                                topContentInset -
+                                bottomContentInset)
+                            .clamp(0.0, double.infinity)
+                            .toDouble(),
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -646,75 +604,64 @@ class _WellnessContourPainter extends CustomPainter {
   }
 }
 
-class _CarouselControls extends StatelessWidget {
+class _CarouselFooter extends StatelessWidget {
   final int currentIndex;
   final int itemCount;
   final Color foregroundColor;
-  final VoidCallback? onPrevious;
-  final VoidCallback? onNext;
+  final String disclaimer;
+  final VoidCallback onSignUp;
+  final VoidCallback onLogin;
 
-  const _CarouselControls({
+  const _CarouselFooter({
     required this.currentIndex,
     required this.itemCount,
     required this.foregroundColor,
-    required this.onPrevious,
-    required this.onNext,
+    required this.disclaimer,
+    required this.onSignUp,
+    required this.onLogin,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Tooltip(
-          message: 'Previous',
-          child: IconButton(
-            key: const ValueKey('auth-welcome-previous'),
-            onPressed: onPrevious,
-            style: IconButton.styleFrom(
-              backgroundColor: foregroundColor.withValues(alpha: 0.14),
-              foregroundColor: foregroundColor,
-              disabledForegroundColor: foregroundColor.withValues(alpha: 0.34),
-              side: BorderSide(color: foregroundColor.withValues(alpha: 0.24)),
-            ),
-            icon: const Icon(Icons.arrow_back_rounded),
-          ),
-        ),
-        Expanded(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(itemCount, (index) {
-              final selected = index == currentIndex;
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(itemCount, (index) {
+            final selected = index == currentIndex;
 
-              return AnimatedContainer(
-                key: ValueKey('auth-welcome-dot-$index'),
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOutCubic,
-                margin: const EdgeInsets.symmetric(horizontal: 3),
-                width: selected ? 22 : 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: selected
-                      ? foregroundColor
-                      : foregroundColor.withValues(alpha: 0.36),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              );
-            }),
-          ),
+            return AnimatedContainer(
+              key: ValueKey('auth-welcome-dot-$index'),
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: selected ? 22 : 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: selected
+                    ? foregroundColor
+                    : foregroundColor.withValues(alpha: 0.36),
+                borderRadius: BorderRadius.circular(999),
+              ),
+            );
+          }),
         ),
-        Tooltip(
-          message: 'Next',
-          child: IconButton(
-            key: const ValueKey('auth-welcome-next'),
-            onPressed: onNext,
-            style: IconButton.styleFrom(
-              backgroundColor: foregroundColor.withValues(alpha: 0.14),
-              foregroundColor: foregroundColor,
-              disabledForegroundColor: foregroundColor.withValues(alpha: 0.34),
-              side: BorderSide(color: foregroundColor.withValues(alpha: 0.24)),
-            ),
-            icon: const Icon(Icons.arrow_forward_rounded),
-          ),
+        const SizedBox(height: 10),
+        _CompactDisclaimer(text: disclaimer),
+        const SizedBox(height: 8),
+        AuthButton.primary(
+          key: const ValueKey('auth-welcome-sign-up'),
+          label: 'Sign up',
+          icon: Icons.person_add_alt_1_rounded,
+          onPressed: onSignUp,
+        ),
+        const SizedBox(height: 8),
+        AuthButton.secondary(
+          key: const ValueKey('auth-welcome-login'),
+          label: 'Log in',
+          icon: Icons.login_rounded,
+          onPressed: onLogin,
         ),
       ],
     );
@@ -728,17 +675,13 @@ class _CompactDisclaimer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : Colors.white.withValues(alpha: 0.70),
+        color: Colors.white.withValues(alpha: 0.88),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: pageBorderColor(context)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.72)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -753,10 +696,10 @@ class _CompactDisclaimer extends StatelessWidget {
             child: Text(
               text,
               style: GoogleFonts.poppins(
-                height: 1.32,
-                fontSize: 11.5,
+                height: 1.28,
+                fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: pageSecondaryTextColor(context),
+                color: const Color(0xFF526176),
               ),
             ),
           ),
