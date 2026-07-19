@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/validation_dialog.dart';
@@ -9,6 +10,8 @@ typedef EditWellnessProfileSaveCallback =
       required String lifestyleType,
       required String workIntensity,
       required String sleepSchedule,
+      required double? heightCm,
+      required double? weightKg,
     });
 
 class EditWellnessProfilePage extends StatefulWidget {
@@ -18,6 +21,8 @@ class EditWellnessProfilePage extends StatefulWidget {
     required this.initialLifestyle,
     required this.initialWorkIntensity,
     required this.initialSleepSchedule,
+    required this.initialHeightCm,
+    required this.initialWeightKg,
     required this.onSave,
   });
 
@@ -25,6 +30,8 @@ class EditWellnessProfilePage extends StatefulWidget {
   final String initialLifestyle;
   final String initialWorkIntensity;
   final String initialSleepSchedule;
+  final double? initialHeightCm;
+  final double? initialWeightKg;
   final EditWellnessProfileSaveCallback onSave;
 
   @override
@@ -48,9 +55,15 @@ class _EditWellnessProfilePageState extends State<EditWellnessProfilePage> {
     'Very Active',
   ];
   static const List<String> _workIntensityOptions = ['Low', 'Medium', 'High'];
+  static const double _heightMinCm = 100;
+  static const double _heightMaxCm = 250;
+  static const double _weightMinKg = 20;
+  static const double _weightMaxKg = 500;
 
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _sleepController;
+  late final TextEditingController _heightController;
+  late final TextEditingController _weightController;
   late String? _selectedRole;
   late String _selectedLifestyle;
   late String _selectedIntensity;
@@ -60,6 +73,12 @@ class _EditWellnessProfilePageState extends State<EditWellnessProfilePage> {
   void initState() {
     super.initState();
     _sleepController = TextEditingController(text: widget.initialSleepSchedule);
+    _heightController = TextEditingController(
+      text: _formatMetric(widget.initialHeightCm),
+    );
+    _weightController = TextEditingController(
+      text: _formatMetric(widget.initialWeightKg),
+    );
     _selectedRole = widget.initialRole;
     _selectedLifestyle = widget.initialLifestyle;
     _selectedIntensity = widget.initialWorkIntensity;
@@ -68,6 +87,8 @@ class _EditWellnessProfilePageState extends State<EditWellnessProfilePage> {
   @override
   void dispose() {
     _sleepController.dispose();
+    _heightController.dispose();
+    _weightController.dispose();
     super.dispose();
   }
 
@@ -89,6 +110,8 @@ class _EditWellnessProfilePageState extends State<EditWellnessProfilePage> {
         lifestyleType: _selectedLifestyle,
         workIntensity: _selectedIntensity,
         sleepSchedule: _sleepController.text.trim(),
+        heightCm: _parseOptionalMetric(_heightController.text),
+        weightKg: _parseOptionalMetric(_weightController.text),
       );
 
       if (!mounted) return;
@@ -186,6 +209,48 @@ class _EditWellnessProfilePageState extends State<EditWellnessProfilePage> {
                   },
                 ),
                 _buildTextField(
+                  key: const ValueKey('profile-height-field'),
+                  controller: _heightController,
+                  label: 'Height',
+                  icon: Icons.height_rounded,
+                  suffixText: 'cm',
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                  ],
+                  validator: (value) => _validateMetric(
+                    value,
+                    pairedValue: _weightController.text,
+                    label: 'Height',
+                    unit: 'cm',
+                    min: _heightMinCm,
+                    max: _heightMaxCm,
+                  ),
+                ),
+                _buildTextField(
+                  key: const ValueKey('profile-weight-field'),
+                  controller: _weightController,
+                  label: 'Weight',
+                  icon: Icons.monitor_weight_rounded,
+                  suffixText: 'kg',
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                  ],
+                  validator: (value) => _validateMetric(
+                    value,
+                    pairedValue: _heightController.text,
+                    label: 'Weight',
+                    unit: 'kg',
+                    min: _weightMinKg,
+                    max: _weightMaxKg,
+                  ),
+                ),
+                _buildTextField(
                   controller: _sleepController,
                   label: 'Sleep schedule',
                   icon: Icons.bedtime_outlined,
@@ -236,23 +301,70 @@ class _EditWellnessProfilePageState extends State<EditWellnessProfilePage> {
   }
 
   Widget _buildTextField({
+    Key? key,
     required TextEditingController controller,
     required String label,
     required IconData icon,
     String? Function(String?)? validator,
+    String? suffixText,
+    TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
+        key: key,
         controller: controller,
         validator: validator,
+        keyboardType: keyboardType,
+        inputFormatters: inputFormatters,
         style: TextStyle(
           color: pagePrimaryTextColor(context),
           fontWeight: FontWeight.w600,
         ),
-        decoration: _fieldDecoration(label: label, icon: icon),
+        decoration: _fieldDecoration(
+          label: label,
+          icon: icon,
+          suffixText: suffixText,
+        ),
       ),
     );
+  }
+
+  String? _validateMetric(
+    String? value, {
+    required String pairedValue,
+    required String label,
+    required String unit,
+    required double min,
+    required double max,
+  }) {
+    final text = value?.trim() ?? '';
+    final pairedText = pairedValue.trim();
+    if (text.isEmpty && pairedText.isEmpty) {
+      return null;
+    }
+
+    if (text.isEmpty) {
+      return 'Enter your ${label.toLowerCase()}';
+    }
+
+    final parsed = double.tryParse(text);
+    if (parsed == null) {
+      return 'Enter a valid ${label.toLowerCase()}';
+    }
+
+    if (parsed < min || parsed > max) {
+      return '$label must be between ${min.round()} and ${max.round()} $unit';
+    }
+
+    return null;
+  }
+
+  double? _parseOptionalMetric(String value) {
+    final text = value.trim();
+    if (text.isEmpty) return null;
+    return double.parse(text);
   }
 
   Widget _buildDropdownField({
@@ -285,12 +397,14 @@ class _EditWellnessProfilePageState extends State<EditWellnessProfilePage> {
   InputDecoration _fieldDecoration({
     required String label,
     required IconData icon,
+    String? suffixText,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return InputDecoration(
       labelText: label,
       prefixIcon: Icon(icon),
+      suffixText: suffixText,
       filled: true,
       fillColor: isDark
           ? Colors.white.withValues(alpha: 0.05)
@@ -308,6 +422,12 @@ class _EditWellnessProfilePageState extends State<EditWellnessProfilePage> {
         borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
       ),
     );
+  }
+
+  String _formatMetric(double? value) {
+    if (value == null) return '';
+    if (value == value.roundToDouble()) return value.round().toString();
+    return value.toStringAsFixed(2).replaceFirst(RegExp(r'0+$'), '');
   }
 }
 

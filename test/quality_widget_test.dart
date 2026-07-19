@@ -8,6 +8,7 @@ import 'package:vitalysync/features/nutrition/presentation/widgets/today_nutriti
 import 'package:vitalysync/features/onboarding/data/burnout_baseline_questions.dart';
 import 'package:vitalysync/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:vitalysync/features/profile/presentation/pages/profile_page.dart';
+import 'package:vitalysync/features/profile/presentation/pages/edit_wellness_profile_page.dart';
 import 'package:vitalysync/features/profile/presentation/pages/retake_baseline_questionnaire_page.dart';
 import 'package:vitalysync/features/profile/presentation/widgets/wellness_profile_card.dart';
 import 'package:vitalysync/shared/goals/user_goals.dart';
@@ -38,6 +39,50 @@ void main() {
     expect(find.text('What best describes you?'), findsWidgets);
     expect(find.text('Student'), findsOneWidget);
     expect(find.text('Next'), findsOneWidget);
+  });
+
+  testWidgets('onboarding requires valid height and weight on one step', (
+    tester,
+  ) async {
+    configureLoggedInSession(onboardingCompleted: false);
+
+    await pumpTestApp(tester, const OnboardingPage(userId: 1));
+    await tester.pump();
+
+    await _selectOnboardingOptionAndContinue(tester, 'Student');
+    await _selectOnboardingOptionAndContinue(tester, 'Lightly active');
+    await _selectOnboardingOptionAndContinue(tester, 'Improve sleep');
+
+    final heightField = find.byKey(const ValueKey('onboarding-height-field'));
+    final weightField = find.byKey(const ValueKey('onboarding-weight-field'));
+
+    expect(find.text('What are your height and weight?'), findsWidgets);
+    expect(heightField, findsOneWidget);
+    expect(weightField, findsOneWidget);
+    expect(find.text('cm'), findsOneWidget);
+    expect(find.text('kg'), findsOneWidget);
+    expect(_onboardingNextButton(tester).onPressed, isNull);
+
+    await tester.enterText(heightField, '99');
+    await tester.enterText(weightField, '501');
+    await tester.pump();
+
+    expect(find.text('Height must be between 100 and 250 cm'), findsOneWidget);
+    expect(find.text('Weight must be between 20 and 500 kg'), findsOneWidget);
+    expect(_onboardingNextButton(tester).onPressed, isNull);
+
+    await tester.enterText(heightField, '');
+    await tester.pump();
+
+    expect(find.text('Enter your height'), findsOneWidget);
+
+    await tester.enterText(heightField, '170.5');
+    await tester.enterText(weightField, '65.2');
+    await tester.pump();
+
+    expect(find.text('Enter your height'), findsNothing);
+    expect(find.textContaining('must be between'), findsNothing);
+    expect(_onboardingNextButton(tester).onPressed, isNotNull);
   });
 
   testWidgets('logging widgets render daily check-in sections', (tester) async {
@@ -173,6 +218,114 @@ void main() {
     expect(find.text('Activity goal'), findsOneWidget);
     expect(find.text('Daily steps'), findsOneWidget);
     expect(find.text('Nutrition goal'), findsOneWidget);
+  });
+
+  testWidgets('edit wellness validates and saves height and weight', (
+    tester,
+  ) async {
+    double? savedHeightCm;
+    double? savedWeightKg;
+
+    await pumpTestApp(
+      tester,
+      EditWellnessProfilePage(
+        initialRole: 'Student',
+        initialLifestyle: 'Moderately Active',
+        initialWorkIntensity: 'Medium',
+        initialSleepSchedule: '10:30 PM - 6:30 AM',
+        initialHeightCm: 170,
+        initialWeightKg: 65,
+        onSave:
+            ({
+              required role,
+              required lifestyleType,
+              required workIntensity,
+              required sleepSchedule,
+              required heightCm,
+              required weightKg,
+            }) async {
+              savedHeightCm = heightCm;
+              savedWeightKg = weightKg;
+              return true;
+            },
+      ),
+    );
+
+    final heightField = find.byKey(const ValueKey('profile-height-field'));
+    final weightField = find.byKey(const ValueKey('profile-weight-field'));
+    final saveButton = find.text('Save changes');
+
+    expect(heightField, findsOneWidget);
+    expect(weightField, findsOneWidget);
+    expect(find.text('cm'), findsOneWidget);
+    expect(find.text('kg'), findsOneWidget);
+
+    await tester.enterText(heightField, '99');
+    await tester.enterText(weightField, '501');
+    await tester.ensureVisible(saveButton);
+    await tester.tap(saveButton);
+    await tester.pump();
+
+    expect(find.text('Height must be between 100 and 250 cm'), findsOneWidget);
+    expect(find.text('Weight must be between 20 and 500 kg'), findsOneWidget);
+    expect(savedHeightCm, isNull);
+    expect(savedWeightKg, isNull);
+
+    await tester.pump(const Duration(seconds: 2));
+    await tester.enterText(heightField, '171.5');
+    await tester.enterText(weightField, '66.2');
+    await tester.ensureVisible(saveButton);
+    await tester.tap(saveButton);
+    await tester.pump();
+
+    expect(savedHeightCm, 171.5);
+    expect(savedWeightKg, 66.2);
+    await tester.pump(const Duration(seconds: 2));
+  });
+
+  testWidgets('edit wellness allows legacy profiles without metrics', (
+    tester,
+  ) async {
+    var saved = false;
+    double? savedHeightCm = -1;
+    double? savedWeightKg = -1;
+
+    await pumpTestApp(
+      tester,
+      EditWellnessProfilePage(
+        initialRole: 'Student',
+        initialLifestyle: 'Moderately Active',
+        initialWorkIntensity: 'Medium',
+        initialSleepSchedule: '10:30 PM - 6:30 AM',
+        initialHeightCm: null,
+        initialWeightKg: null,
+        onSave:
+            ({
+              required role,
+              required lifestyleType,
+              required workIntensity,
+              required sleepSchedule,
+              required heightCm,
+              required weightKg,
+            }) async {
+              saved = true;
+              savedHeightCm = heightCm;
+              savedWeightKg = weightKg;
+              return true;
+            },
+      ),
+    );
+
+    final saveButton = find.text('Save changes');
+    await tester.ensureVisible(saveButton);
+    await tester.tap(saveButton);
+    await tester.pump();
+
+    expect(saved, isTrue);
+    expect(savedHeightCm, isNull);
+    expect(savedWeightKg, isNull);
+    expect(find.text('Check wellness details'), findsNothing);
+    await tester.pump(const Duration(seconds: 2));
   });
 
   testWidgets('wellness profile card triggers retake baseline action', (
@@ -319,6 +472,30 @@ Map<String, int> _answersForSection(int sectionIndex, int value) {
 final Finder _retakePrimaryButton = find.byKey(
   const ValueKey('retake-baseline-primary-button'),
 );
+
+ElevatedButton _onboardingNextButton(WidgetTester tester) {
+  return tester.widget<ElevatedButton>(
+    find.widgetWithText(ElevatedButton, 'Next'),
+  );
+}
+
+Future<void> _selectOnboardingOptionAndContinue(
+  WidgetTester tester,
+  String option,
+) async {
+  await tester.tap(find.text(option));
+  await tester.pump();
+  final nextButton = _onboardingNextButton(tester);
+  final pageController = tester
+      .widget<PageView>(find.byType(PageView))
+      .controller!;
+  final nextPage = (pageController.page ?? 0).round() + 1;
+  expect(nextButton.onPressed, isNotNull);
+  nextButton.onPressed!();
+  await tester.pump();
+  pageController.jumpToPage(nextPage);
+  await tester.pump();
+}
 
 Future<void> _answerSection(
   WidgetTester tester, {

@@ -5,6 +5,9 @@ class OnboardingDefaults {
   final String? lifestyleType;
   final String? wellnessGoal;
   final List<String> wellnessGoals;
+  final double? heightCm;
+  final double? weightKg;
+  final double? bmi;
   final String? usualSleepTime;
   final String? usualWakeTime;
   final String? exerciseGoalDays;
@@ -17,6 +20,9 @@ class OnboardingDefaults {
     this.lifestyleType,
     this.wellnessGoal,
     this.wellnessGoals = const <String>[],
+    this.heightCm,
+    this.weightKg,
+    this.bmi,
     this.usualSleepTime,
     this.usualWakeTime,
     this.exerciseGoalDays,
@@ -48,6 +54,9 @@ class OnboardingService {
   static const String lifestyleTypeKey = 'onboarding_lifestyle_type';
   static const String wellnessGoalKey = 'onboarding_wellness_goal';
   static const String wellnessGoalsKey = 'onboarding_wellness_goals';
+  static const String heightCmKey = 'onboarding_height_cm';
+  static const String weightKgKey = 'onboarding_weight_kg';
+  static const String bmiKey = 'onboarding_bmi';
   static const String usualSleepTimeKey = 'onboarding_usual_sleep_time';
   static const String usualWakeTimeKey = 'onboarding_usual_wake_time';
   static const String exerciseGoalDaysKey = 'onboarding_exercise_goal_days';
@@ -92,6 +101,9 @@ class OnboardingService {
           ? _normalizeStringList(profile['wellness_goal'])
           : wellnessGoals,
     );
+    await _setDoubleOrRemove(prefs, heightCmKey, profile['height_cm']);
+    await _setDoubleOrRemove(prefs, weightKgKey, profile['weight_kg']);
+    await _setDoubleOrRemove(prefs, bmiKey, profile['bmi']);
     await _setStringOrRemove(
       prefs,
       usualSleepTimeKey,
@@ -128,6 +140,9 @@ class OnboardingService {
       lifestyleType: prefs.getString(lifestyleTypeKey),
       wellnessGoal: prefs.getString(wellnessGoalKey),
       wellnessGoals: prefs.getStringList(wellnessGoalsKey) ?? const <String>[],
+      heightCm: prefs.getDouble(heightCmKey),
+      weightKg: prefs.getDouble(weightKgKey),
+      bmi: prefs.getDouble(bmiKey),
       usualSleepTime: prefs.getString(usualSleepTimeKey),
       usualWakeTime: prefs.getString(usualWakeTimeKey),
       exerciseGoalDays: prefs.getString(exerciseGoalDaysKey),
@@ -144,6 +159,9 @@ class OnboardingService {
       lifestyleTypeKey,
       wellnessGoalKey,
       wellnessGoalsKey,
+      heightCmKey,
+      weightKgKey,
+      bmiKey,
       usualSleepTimeKey,
       usualWakeTimeKey,
       exerciseGoalDaysKey,

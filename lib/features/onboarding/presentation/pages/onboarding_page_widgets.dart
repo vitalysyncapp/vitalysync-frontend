@@ -394,6 +394,74 @@ class _OptionTile extends StatelessWidget {
   }
 }
 
+class _MetricInput extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final String suffix;
+  final IconData icon;
+  final TextInputAction textInputAction;
+  final FormFieldValidator<String> validator;
+  final ValueChanged<String> onChanged;
+  final ValueChanged<String> onSubmitted;
+
+  const _MetricInput({
+    super.key,
+    required this.controller,
+    required this.label,
+    required this.suffix,
+    required this.icon,
+    required this.textInputAction,
+    required this.validator,
+    required this.onChanged,
+    required this.onSubmitted,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return TextFormField(
+      controller: controller,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      textInputAction: textInputAction,
+      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      validator: validator,
+      onChanged: onChanged,
+      onFieldSubmitted: onSubmitted,
+      decoration: InputDecoration(
+        labelText: label,
+        suffixText: suffix,
+        prefixIcon: Icon(icon),
+        filled: true,
+        fillColor: isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : const Color(0xFFF6FBF9),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: pageBorderColor(context)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: pageBorderColor(context)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(
+            width: 1.6,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+      ),
+      style: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.w800,
+        color: pagePrimaryTextColor(context),
+      ),
+    );
+  }
+}
+
 String _sentenceCaseOption(String value) {
   final text = value.trim();
   if (text.length < 2) return text;

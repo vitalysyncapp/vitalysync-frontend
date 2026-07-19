@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../../../app/main_navigation.dart';
@@ -80,8 +81,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
   ];
   static const _burnoutScale = kBurnoutBaselineScale;
   static const _burnoutSections = kBurnoutBaselineSections;
+  static const double _heightMinCm = 100;
+  static const double _heightMaxCm = 250;
+  static const double _weightMinKg = 20;
+  static const double _weightMaxKg = 500;
 
   final PageController _pageController = PageController();
+  final TextEditingController _heightController = TextEditingController();
+  final TextEditingController _weightController = TextEditingController();
   final Map<String, int> _burnoutAnswers = {};
 
   int _currentStep = 0;
@@ -144,6 +151,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
           values: _wellnessGoals,
           onChanged: _toggleWellnessGoal,
         ),
+      ),
+      _OnboardingStep(
+        sectionTitle: '\u{1F464} About you',
+        title: 'What are your height and weight?',
+        isComplete: _bodyMetricsComplete,
+        builder: (context) => _buildBodyMetricsPage(context),
       ),
       _OnboardingStep(
         sectionTitle: '\u{1F319} Routine defaults',
@@ -246,6 +259,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
   @override
   void dispose() {
     _pageController.dispose();
+    _heightController.dispose();
+    _weightController.dispose();
     super.dispose();
   }
 
@@ -257,6 +272,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
       'lifestyle_type': _lifestyleType,
       'wellness_goal': _wellnessGoals.join(', '),
       'wellness_goals': _wellnessGoals,
+      'height_cm': _heightCm,
+      'weight_kg': _weightKg,
       'usual_sleep_time': _formatTimeForApi(_usualSleepTime!),
       'usual_wake_time': _formatTimeForApi(_usualWakeTime!),
       'exercise_goal_days': _exerciseGoalDays,
@@ -398,6 +415,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
         return Icons.directions_walk_rounded;
       case 'wellness_goal':
         return Icons.favorite_rounded;
+      case 'body_metrics':
+        return Icons.monitor_weight_rounded;
       case 'exercise_goal_days':
         return Icons.fitness_center_rounded;
       default:
@@ -458,6 +477,47 @@ class _OnboardingPageState extends State<OnboardingPage> {
       return 'Set defaults that make daily logs faster.';
     }
     return 'Answer honestly so insights start from your real rhythm.';
+  }
+
+  double? get _heightCm => _parseMetric(_heightController.text);
+
+  double? get _weightKg => _parseMetric(_weightController.text);
+
+  bool _bodyMetricsComplete() {
+    return _metricInRange(_heightCm, _heightMinCm, _heightMaxCm) &&
+        _metricInRange(_weightKg, _weightMinKg, _weightMaxKg);
+  }
+
+  double? _parseMetric(String value) {
+    return double.tryParse(value.trim());
+  }
+
+  bool _metricInRange(double? value, double min, double max) {
+    return value != null && value >= min && value <= max;
+  }
+
+  String? _metricError({
+    required String? rawValue,
+    required String label,
+    required String unit,
+    required double min,
+    required double max,
+  }) {
+    final trimmed = rawValue?.trim() ?? '';
+    if (trimmed.isEmpty) {
+      return 'Enter your ${label.toLowerCase()}';
+    }
+
+    final parsed = double.tryParse(trimmed);
+    if (parsed == null) {
+      return 'Enter a valid ${label.toLowerCase()}';
+    }
+
+    if (!_metricInRange(parsed, min, max)) {
+      return '$label must be between ${min.round()} and ${max.round()} $unit';
+    }
+
+    return null;
   }
 
   @override
@@ -649,6 +709,65 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     onTap: () => onChanged(option),
                   ),
                 ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBodyMetricsPage(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+      children: [
+        OnboardingCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _PromptBadge(
+                icon: _iconForQuestion('body_metrics'),
+                label: 'body metrics',
+              ),
+              const SizedBox(height: 14),
+              const _QuestionTitle('What are your height and weight?'),
+              const SizedBox(height: 8),
+              const _HelperText('Approximate values are okay.'),
+              const SizedBox(height: 22),
+              _MetricInput(
+                key: const ValueKey('onboarding-height-field'),
+                controller: _heightController,
+                label: 'Height',
+                suffix: 'cm',
+                icon: Icons.height_rounded,
+                textInputAction: TextInputAction.next,
+                validator: (value) => _metricError(
+                  rawValue: value,
+                  label: 'Height',
+                  unit: 'cm',
+                  min: _heightMinCm,
+                  max: _heightMaxCm,
+                ),
+                onChanged: (_) => setState(() {}),
+                onSubmitted: (_) => FocusScope.of(context).nextFocus(),
+              ),
+              const SizedBox(height: 14),
+              _MetricInput(
+                key: const ValueKey('onboarding-weight-field'),
+                controller: _weightController,
+                label: 'Weight',
+                suffix: 'kg',
+                icon: Icons.monitor_weight_rounded,
+                textInputAction: TextInputAction.done,
+                validator: (value) => _metricError(
+                  rawValue: value,
+                  label: 'Weight',
+                  unit: 'kg',
+                  min: _weightMinKg,
+                  max: _weightMaxKg,
+                ),
+                onChanged: (_) => setState(() {}),
+                onSubmitted: (_) => FocusScope.of(context).unfocus(),
               ),
             ],
           ),

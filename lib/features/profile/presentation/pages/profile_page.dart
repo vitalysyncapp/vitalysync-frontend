@@ -74,6 +74,7 @@ class _ProfilePageState extends State<ProfilePage> {
       _initialBurnoutLevel = 'Not set';
   int _initialBurnoutScore = 0;
   int _currentStreak = 0, _longestStreak = 0;
+  double? _heightCm, _weightKg;
   UserGoalsSnapshot _goals = UserGoalsSnapshot.defaults();
   Map<String, int> _baselineAnswers = {};
 
@@ -97,6 +98,7 @@ class _ProfilePageState extends State<ProfilePage> {
         usualWakeTime = '--',
         initialBurnoutLevel = 'Not set';
     var initialBurnoutScore = 0;
+    double? heightCm, weightKg;
     var userType = _emptyToNull(session.userType);
     var goals = UserGoalsSnapshot.defaults();
     var baselineAnswers = <String, int>{};
@@ -160,6 +162,8 @@ class _ProfilePageState extends State<ProfilePage> {
             _emptyToNull(profile['initial_burnout_level']?.toString()) ??
             'Not set';
         initialBurnoutScore = _parseIntValue(profile['initial_burnout_score']);
+        heightCm = _parseDoubleValue(profile['height_cm']);
+        weightKg = _parseDoubleValue(profile['weight_kg']);
         sleepSchedule = _buildSleepSchedule(
           sleepTime: profileSleepTime ?? preferenceSleepTime,
           wakeTime: profileWakeTime ?? preferenceWakeTime,
@@ -209,6 +213,8 @@ class _ProfilePageState extends State<ProfilePage> {
       _usualWakeTime = usualWakeTime;
       _initialBurnoutLevel = initialBurnoutLevel;
       _initialBurnoutScore = initialBurnoutScore;
+      _heightCm = heightCm;
+      _weightKg = weightKg;
       _currentStreak = prefs.getInt('log_streak') ?? 0;
       _longestStreak = prefs.getInt('longest_log_streak') ?? 0;
       _goals = goals;
@@ -259,6 +265,8 @@ class _ProfilePageState extends State<ProfilePage> {
     required String lifestyleType,
     required String workIntensity,
     required String sleepSchedule,
+    required double? heightCm,
+    required double? weightKg,
   }) async {
     if (_userId == null) {
       return false;
@@ -273,15 +281,21 @@ class _ProfilePageState extends State<ProfilePage> {
     final prefs = await SharedPreferences.getInstance();
 
     try {
+      final profilePayload = <String, dynamic>{
+        'role': role,
+        'lifestyle_type': lifestyleType,
+        'usual_sleep_time': scheduleParts['sleep'],
+        'usual_wake_time': scheduleParts['wake'],
+        'workload_level': _workloadLevelFromIntensity(workIntensity),
+      };
+      if (heightCm != null && weightKg != null) {
+        profilePayload['height_cm'] = heightCm;
+        profilePayload['weight_kg'] = weightKg;
+      }
+
       final response = await OnboardingApi.updateWellnessProfile(
         userId: _userId!,
-        profile: {
-          'role': role,
-          'lifestyle_type': lifestyleType,
-          'usual_sleep_time': scheduleParts['sleep'],
-          'usual_wake_time': scheduleParts['wake'],
-          'workload_level': _workloadLevelFromIntensity(workIntensity),
-        },
+        profile: profilePayload,
       );
       final profile = Map<String, dynamic>.from(
         response['profile'] as Map? ?? {},
@@ -293,6 +307,10 @@ class _ProfilePageState extends State<ProfilePage> {
         userType: role,
       );
       await prefs.setString(_sleepScheduleKey, sleepSchedule);
+      final savedGoals = await UserGoalsService.fetch(
+        userId: _userId!,
+        defaults: _goals,
+      );
 
       if (!mounted) return false;
       setState(() {
@@ -302,7 +320,11 @@ class _ProfilePageState extends State<ProfilePage> {
         _sleepSchedule = sleepSchedule;
         _usualSleepTime = _formatTimeForDisplay(scheduleParts['sleep']!);
         _usualWakeTime = _formatTimeForDisplay(scheduleParts['wake']!);
+        _heightCm = _parseDoubleValue(profile['height_cm']) ?? heightCm;
+        _weightKg = _parseDoubleValue(profile['weight_kg']) ?? weightKg;
+        _goals = savedGoals;
       });
+      UserGoalsService.refreshSignal.value++;
       return true;
     } catch (_) {
       return false;
@@ -475,18 +497,24 @@ class _ProfilePageState extends State<ProfilePage> {
               _dropdownValueOrNull(_workIntensity, _workIntensityOptions) ??
               'Medium',
           initialSleepSchedule: _sleepSchedule,
+          initialHeightCm: _heightCm,
+          initialWeightKg: _weightKg,
           onSave:
               ({
                 required String role,
                 required String lifestyleType,
                 required String workIntensity,
                 required String sleepSchedule,
+                required double? heightCm,
+                required double? weightKg,
               }) {
                 return _saveWellnessProfileChanges(
                   role: role,
                   lifestyleType: lifestyleType,
                   workIntensity: workIntensity,
                   sleepSchedule: sleepSchedule,
+                  heightCm: heightCm,
+                  weightKg: weightKg,
                 );
               },
         ),

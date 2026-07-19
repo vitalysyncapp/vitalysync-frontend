@@ -40,6 +40,11 @@ int _parseIntValue(dynamic value) {
   return double.tryParse('${value ?? ''}')?.round() ?? 0;
 }
 
+double? _parseDoubleValue(dynamic value) {
+  if (value is num) return value.toDouble();
+  return double.tryParse('${value ?? ''}');
+}
+
 String? _dropdownValueOrNull(
   String? value,
   List<String> options, {

@@ -841,6 +841,7 @@ class _CarouselFooter extends StatelessWidget {
               _CompactDisclaimer(text: disclaimer),
               const SizedBox(height: 10),
               _GradientPrimaryCta(
+                key: const ValueKey('auth-welcome-sign-up'),
                 label: 'Sign up',
                 icon: Icons.person_add_alt_1_rounded,
                 accentColor: accentColor,
@@ -919,6 +920,7 @@ class _GradientPrimaryCta extends StatelessWidget {
   final VoidCallback onPressed;
 
   const _GradientPrimaryCta({
+    super.key,
     required this.label,
     required this.icon,
     required this.accentColor,
