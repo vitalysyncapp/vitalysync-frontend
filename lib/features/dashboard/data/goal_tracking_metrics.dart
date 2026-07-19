@@ -33,6 +33,7 @@ class GoalTrackingMetric {
   final String valueLabel;
   final String targetLabel;
   final String detailLabel;
+  final String? balanceLabel;
   final double progress;
   final double focusScore;
   final bool isOnTrack;
@@ -48,6 +49,7 @@ class GoalTrackingMetric {
     required this.valueLabel,
     required this.targetLabel,
     required this.detailLabel,
+    this.balanceLabel,
     required this.progress,
     required this.focusScore,
     required this.isOnTrack,
@@ -294,6 +296,7 @@ class GoalTrackingMetricsService {
         : ratio > 1.1
         ? 'Your logged average is above ${goals.nutritionLabel}; try balancing portions and snacks over the next day.'
         : 'Your logged average is below ${goals.nutritionLabel}; add steady meals or snacks that support your energy.';
+    final balancedNutritionLabel = goals.balancedNutritionLabel;
 
     return GoalTrackingMetric(
       id: 'nutrition',
@@ -305,6 +308,9 @@ class GoalTrackingMetricsService {
       detailLabel: hasData
           ? '${nutrition.loggedDays}/7 meal-log days this week'
           : 'Log meals to compare calories with your target.',
+      balanceLabel: balancedNutritionLabel == null
+          ? null
+          : 'Balanced kcal: $balancedNutritionLabel',
       progress: hasData ? min(ratio, 1).clamp(0.0, 1.0).toDouble() : 0,
       focusScore: focusScore,
       isOnTrack: isOnTrack,

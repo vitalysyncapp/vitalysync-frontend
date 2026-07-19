@@ -104,6 +104,7 @@ class _NutritionPageState extends State<NutritionPage> {
   List<String> _manualMealSuggestions = [];
   DailyNutritionSummary _dailySummary = DailyNutritionSummary.empty();
   int _nutritionCalorieGoal = 2000;
+  int? _balancedNutritionCalorieGoal;
 
   @override
   void initState() {
@@ -153,6 +154,7 @@ class _NutritionPageState extends State<NutritionPage> {
     if (!mounted) return;
     setState(() {
       _nutritionCalorieGoal = goals.nutritionCalories;
+      _balancedNutritionCalorieGoal = goals.balancedNutritionCalories;
     });
   }
 
@@ -653,6 +655,7 @@ class _NutritionPageState extends State<NutritionPage> {
                       carbsG: _dailySummary.totalCarbsG,
                       fatG: _dailySummary.totalFatG,
                       calorieGoal: _nutritionCalorieGoal,
+                      balancedCalorieGoal: _balancedNutritionCalorieGoal,
                     ),
                   ),
                 ),

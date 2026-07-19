@@ -8,6 +8,7 @@ class TodayNutritionCard extends StatelessWidget {
   final double carbsG;
   final double fatG;
   final int calorieGoal;
+  final int? balancedCalorieGoal;
 
   const TodayNutritionCard({
     super.key,
@@ -16,11 +17,16 @@ class TodayNutritionCard extends StatelessWidget {
     required this.carbsG,
     required this.fatG,
     required this.calorieGoal,
+    this.balancedCalorieGoal,
   });
 
   @override
   Widget build(BuildContext context) {
     final goal = calorieGoal <= 0 ? 2000.0 : calorieGoal.toDouble();
+    final balancedGoal =
+        balancedCalorieGoal == null || balancedCalorieGoal! <= 0
+        ? null
+        : balancedCalorieGoal!;
     final progress = (calories / goal).clamp(0.0, 1.0);
     final remaining = (goal - calories).clamp(0.0, double.infinity);
     final screenWidth = MediaQuery.sizeOf(context).width;
@@ -33,7 +39,7 @@ class TodayNutritionCard extends StatelessWidget {
     return Semantics(
       container: true,
       label:
-          "Today's nutrition. ${calories.round()} calories eaten of ${goal.round()}. ${remaining.round()} calories left.",
+          "Today's nutrition. ${calories.round()} calories eaten of ${goal.round()}. ${remaining.round()} calories left.${balancedGoal == null ? '' : ' Balanced profile target $balancedGoal calories.'}",
       child: Container(
         key: const ValueKey('today-nutrition-summary'),
         width: double.infinity,
@@ -127,6 +133,13 @@ class TodayNutritionCard extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
+                      if (balancedGoal != null) ...[
+                        SizedBox(height: isCompact ? 8 : 9),
+                        _BalancedCalorieIndicator(
+                          calories: balancedGoal,
+                          isCompact: isCompact,
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -174,6 +187,54 @@ class TodayNutritionCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _BalancedCalorieIndicator extends StatelessWidget {
+  final int calories;
+  final bool isCompact;
+
+  const _BalancedCalorieIndicator({
+    required this.calories,
+    required this.isCompact,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const color = Color(0xFF1EAD83);
+
+    return Container(
+      key: const ValueKey('balanced-calories-indicator'),
+      constraints: const BoxConstraints(maxWidth: 210),
+      padding: EdgeInsets.symmetric(
+        horizontal: isCompact ? 7 : 8,
+        vertical: isCompact ? 5 : 6,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.24)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.balance_rounded, color: color, size: 14),
+          const SizedBox(width: 5),
+          Flexible(
+            child: Text(
+              'Balanced kcal: ${_formatInt(calories)}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: color,
+                fontSize: isCompact ? 10.2 : 11,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

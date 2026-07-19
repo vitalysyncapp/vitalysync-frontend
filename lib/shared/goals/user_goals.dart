@@ -25,6 +25,7 @@ class UserGoalsSnapshot {
   final int dailySteps;
   final int nutritionCalories;
   final String nutritionCaloriesSource;
+  final int? balancedNutritionCalories;
 
   const UserGoalsSnapshot({
     required this.wellnessGoal,
@@ -35,6 +36,7 @@ class UserGoalsSnapshot {
     required this.dailySteps,
     required this.nutritionCalories,
     required this.nutritionCaloriesSource,
+    required this.balancedNutritionCalories,
   });
 
   factory UserGoalsSnapshot.defaults({
@@ -46,6 +48,7 @@ class UserGoalsSnapshot {
     int dailySteps = 5000,
     int nutritionCalories = 2000,
     String nutritionCaloriesSource = 'default',
+    int? balancedNutritionCalories,
   }) {
     final selectedWellnessGoals = _normalizeWellnessGoals(
       wellnessGoals ?? _wellnessGoalsFromText(wellnessGoal),
@@ -63,6 +66,9 @@ class UserGoalsSnapshot {
       dailySteps: dailySteps.clamp(1000, 50000).toInt(),
       nutritionCalories: nutritionCalories.clamp(800, 6000).toInt(),
       nutritionCaloriesSource: nutritionCaloriesSource,
+      balancedNutritionCalories: balancedNutritionCalories
+          ?.clamp(800, 6000)
+          .toInt(),
     );
   }
 
@@ -96,6 +102,9 @@ class UserGoalsSnapshot {
       nutritionCaloriesSource:
           _goalSource(rawGoals['nutrition_calories']) ??
           defaults.nutritionCaloriesSource,
+      balancedNutritionCalories:
+          _goalMetadataInt(rawGoals['nutrition_calories'], 'balanced_kcal') ??
+          defaults.balancedNutritionCalories,
     );
   }
 
@@ -108,6 +117,7 @@ class UserGoalsSnapshot {
     int? dailySteps,
     int? nutritionCalories,
     String? nutritionCaloriesSource,
+    int? balancedNutritionCalories,
   }) {
     return UserGoalsSnapshot.defaults(
       wellnessGoal: wellnessGoal ?? this.wellnessGoal,
@@ -119,6 +129,8 @@ class UserGoalsSnapshot {
       nutritionCalories: nutritionCalories ?? this.nutritionCalories,
       nutritionCaloriesSource:
           nutritionCaloriesSource ?? this.nutritionCaloriesSource,
+      balancedNutritionCalories:
+          balancedNutritionCalories ?? this.balancedNutritionCalories,
     );
   }
 
@@ -175,6 +187,15 @@ class UserGoalsSnapshot {
   String get dailyStepsLabel => '${_formatInt(dailySteps)} steps';
 
   String get nutritionLabel => '${_formatInt(nutritionCalories)} kcal';
+
+  String? get balancedNutritionLabel {
+    final calories = balancedNutritionCalories;
+    if (calories == null) {
+      return null;
+    }
+
+    return '${_formatInt(calories)} kcal';
+  }
 
   bool get nutritionCaloriesIsAutoManaged {
     return nutritionCaloriesSource == 'system_default' ||
@@ -402,6 +423,26 @@ String? _goalSource(dynamic rawGoal) {
 
   final source = rawGoal['source']?.toString().trim() ?? '';
   return source.isEmpty ? null : source;
+}
+
+int? _goalMetadataInt(dynamic rawGoal, String key) {
+  if (rawGoal is! Map) {
+    return null;
+  }
+
+  final goal = Map<String, dynamic>.from(rawGoal);
+  final rawMetadata = goal['metadata'];
+  if (rawMetadata is! Map) {
+    return null;
+  }
+
+  final metadata = Map<String, dynamic>.from(rawMetadata);
+  final value = metadata[key];
+  if (value is num) {
+    return value.round();
+  }
+
+  return int.tryParse('${value ?? ''}');
 }
 
 String _formatNumber(double value) {

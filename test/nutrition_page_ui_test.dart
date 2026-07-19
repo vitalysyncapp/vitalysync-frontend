@@ -21,11 +21,17 @@ void main() {
         carbsG: 180,
         fatG: 42,
         calorieGoal: 2200,
+        balancedCalorieGoal: 2150,
       ),
     );
 
     expect(find.text('1,450 kcal'), findsOneWidget);
     expect(find.text('2,200 kcal'), findsOneWidget);
+    expect(find.text('Balanced kcal: 2,150'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('balanced-calories-indicator')),
+      findsOneWidget,
+    );
     expect(find.byKey(const ValueKey('calories-remaining')), findsOneWidget);
     expect(
       tester

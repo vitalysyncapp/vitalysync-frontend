@@ -249,10 +249,58 @@ class _GoalMetricRow extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
+                if (metric.balanceLabel != null) ...[
+                  const SizedBox(height: 7),
+                  _BalanceKcalPill(label: metric.balanceLabel!),
+                ],
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _BalanceKcalPill extends StatelessWidget {
+  final String label;
+
+  const _BalanceKcalPill({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    const color = Color(0xFF1EAD83);
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        key: const ValueKey('dashboard-balanced-kcal-indicator'),
+        constraints: const BoxConstraints(maxWidth: 220),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: color.withValues(alpha: 0.24)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.balance_rounded, color: color, size: 14),
+            const SizedBox(width: 5),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: color,
+                  fontSize: 10.8,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
