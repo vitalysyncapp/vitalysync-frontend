@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -28,8 +29,10 @@ class _AuthStartPageState extends State<AuthStartPage> {
           'Check in with sleep, mood, stress, workload, energy, and recovery so your day has a clearer signal.',
       illustrationAsset: 'assets/images/welcome_morning.svg',
       semanticsLabel: 'A calm morning wellness check-in illustration',
-      backgroundColor: Color(0xFFC77D9C),
-      foregroundColor: Colors.white,
+      gradientStart: Color(0xFFE8D5E0),
+      gradientEnd: Color(0xFFF5E6EE),
+      foregroundColor: Color(0xFF4A2D3F),
+      accentColor: Color(0xFFBF7BA0),
       features: [
         _WelcomeFeature(icon: Icons.bedtime_rounded, label: 'Sleep'),
         _WelcomeFeature(icon: Icons.psychology_rounded, label: 'Mood'),
@@ -42,12 +45,17 @@ class _AuthStartPageState extends State<AuthStartPage> {
           'Daily logs turn small habits like hydration, symptoms, activity, meals, and breaks into useful patterns.',
       illustrationAsset: 'assets/images/welcome_mindfulness.svg',
       semanticsLabel: 'A mindful daily balance illustration',
-      backgroundColor: Color(0xFFF4A12B),
-      foregroundColor: Color(0xFF3C2711),
+      gradientStart: Color(0xFFF5E6D0),
+      gradientEnd: Color(0xFFFAF0E4),
+      foregroundColor: Color(0xFF4A3520),
+      accentColor: Color(0xFFD4A060),
       features: [
         _WelcomeFeature(icon: Icons.water_drop_rounded, label: 'Hydration'),
         _WelcomeFeature(icon: Icons.restaurant_rounded, label: 'Nutrition'),
-        _WelcomeFeature(icon: Icons.directions_walk_rounded, label: 'Activity'),
+        _WelcomeFeature(
+          icon: Icons.directions_walk_rounded,
+          label: 'Activity',
+        ),
       ],
     ),
     _WelcomeSlideData(
@@ -56,8 +64,10 @@ class _AuthStartPageState extends State<AuthStartPage> {
           'Adaptive reminders and the smart assistant help you notice when to rest, move, drink water, or reset.',
       illustrationAsset: 'assets/images/welcome_reminders.svg',
       semanticsLabel: 'Gentle wellness reminders illustration',
-      backgroundColor: Color(0xFF4969E9),
-      foregroundColor: Colors.white,
+      gradientStart: Color(0xFFD6DFF0),
+      gradientEnd: Color(0xFFE8EEF8),
+      foregroundColor: Color(0xFF293B54),
+      accentColor: Color(0xFF7090C0),
       features: [
         _WelcomeFeature(
           icon: Icons.notifications_active_rounded,
@@ -73,8 +83,10 @@ class _AuthStartPageState extends State<AuthStartPage> {
           'Dashboards make trends easier to understand, from burnout risk and weekly analytics to goal progress.',
       illustrationAsset: 'assets/images/welcome_insights.svg',
       semanticsLabel: 'Personal wellness reports illustration',
-      backgroundColor: Color(0xFF43AE91),
-      foregroundColor: Colors.white,
+      gradientStart: Color(0xFFCDE8E0),
+      gradientEnd: Color(0xFFE2F4EE),
+      foregroundColor: Color(0xFF1E3F34),
+      accentColor: Color(0xFF5EAE90),
       features: [
         _WelcomeFeature(icon: Icons.show_chart_rounded, label: 'Trends'),
         _WelcomeFeature(icon: Icons.flag_rounded, label: 'Goals'),
@@ -170,9 +182,8 @@ class _AuthStartPageState extends State<AuthStartPage> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxHeight < 720;
-          final panelWidth = constraints.maxWidth > 560
-              ? 560.0
-              : constraints.maxWidth;
+          final panelWidth =
+              constraints.maxWidth > 560 ? 560.0 : constraints.maxWidth;
 
           return Center(
             child: SizedBox(
@@ -215,6 +226,7 @@ class _AuthStartPageState extends State<AuthStartPage> {
                       child: _CarouselFooter(
                         currentIndex: _currentSlide,
                         itemCount: _slides.length,
+                        accentColor: _slides[_currentSlide].accentColor,
                         foregroundColor: _slides[_currentSlide].foregroundColor,
                         disclaimer: _disclaimer,
                         onSignUp: _openSignUp,
@@ -232,13 +244,19 @@ class _AuthStartPageState extends State<AuthStartPage> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Data models
+// ---------------------------------------------------------------------------
+
 class _WelcomeSlideData {
   final String title;
   final String subtitle;
   final String illustrationAsset;
   final String semanticsLabel;
-  final Color backgroundColor;
+  final Color gradientStart;
+  final Color gradientEnd;
   final Color foregroundColor;
+  final Color accentColor;
   final List<_WelcomeFeature> features;
 
   const _WelcomeSlideData({
@@ -246,8 +264,10 @@ class _WelcomeSlideData {
     required this.subtitle,
     required this.illustrationAsset,
     required this.semanticsLabel,
-    required this.backgroundColor,
+    required this.gradientStart,
+    required this.gradientEnd,
     required this.foregroundColor,
+    required this.accentColor,
     required this.features,
   });
 }
@@ -259,6 +279,10 @@ class _WelcomeFeature {
   const _WelcomeFeature({required this.icon, required this.label});
 }
 
+// ---------------------------------------------------------------------------
+// Brand strip — frosted glass
+// ---------------------------------------------------------------------------
+
 class _WelcomeBrandStrip extends StatelessWidget {
   final bool compact;
 
@@ -268,71 +292,85 @@ class _WelcomeBrandStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Align(
       alignment: Alignment.centerLeft,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.90),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.72)),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF17243A).withValues(alpha: 0.12),
-              blurRadius: 18,
-              offset: const Offset(0, 7),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+          child: Container(
+            padding: EdgeInsets.fromLTRB(
+              10,
+              compact ? 7 : 9,
+              14,
+              compact ? 7 : 9,
             ),
-          ],
-        ),
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            10,
-            compact ? 7 : 8,
-            14,
-            compact ? 7 : 8,
-          ),
-          child: SizedBox(
-            width: compact ? 150 : 250,
-            child: Row(
-              children: [
-                SizedBox.square(
-                  dimension: compact ? 31 : 35,
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    fit: BoxFit.contain,
-                  ),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: 0.82),
+                  Colors.white.withValues(alpha: 0.58),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.50),
+                width: 1.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF17243A).withValues(alpha: 0.08),
+                  blurRadius: 20,
+                  offset: const Offset(0, 6),
                 ),
-                const SizedBox(width: 9),
-                Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'VitalySync',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(
-                          height: 1.05,
-                          fontSize: compact ? 15.5 : 17,
-                          fontWeight: FontWeight.w900,
-                          color: const Color(0xFF17243A),
-                        ),
-                      ),
-                      if (!compact) ...[
-                        const SizedBox(height: 2),
+              ],
+            ),
+            child: SizedBox(
+              width: compact ? 150 : 250,
+              child: Row(
+                children: [
+                  SizedBox.square(
+                    dimension: compact ? 30 : 34,
+                    child: Image.asset(
+                      'assets/images/logo.png',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          'Your daily wellness rhythm',
+                          'VitalySync',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.poppins(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF526176),
+                            height: 1.05,
+                            fontSize: compact ? 15 : 16.5,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF1E2D3E),
                           ),
                         ),
+                        if (!compact) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            'Your daily wellness rhythm',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF6B7D90),
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -340,6 +378,10 @@ class _WelcomeBrandStrip extends StatelessWidget {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Slide — soft gradient background
+// ---------------------------------------------------------------------------
 
 class _WelcomeSlide extends StatelessWidget {
   final _WelcomeSlideData data;
@@ -354,32 +396,44 @@ class _WelcomeSlide extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: data.backgroundColor,
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [data.gradientStart, data.gradientEnd],
+        ),
+      ),
       child: Stack(
         fit: StackFit.expand,
         children: [
           IgnorePointer(
             child: CustomPaint(
-              painter: _WellnessContourPainter(color: data.foregroundColor),
+              painter: _WellnessContourPainter(color: data.accentColor),
+            ),
+          ),
+          IgnorePointer(
+            child: CustomPaint(
+              painter: _BokehDotsPainter(color: data.accentColor),
             ),
           ),
           LayoutBuilder(
             builder: (context, constraints) {
               final shortSlide = constraints.maxHeight < 430;
-              final visualHeight = shortSlide
-                  ? 108.0
-                  : compact
-                  ? 136.0
-                  : 180.0;
-              final topContentInset = compact ? 66.0 : 80.0;
+              final visualHeight =
+                  shortSlide
+                      ? 116.0
+                      : compact
+                          ? 148.0
+                          : 195.0;
+              final topContentInset = compact ? 68.0 : 82.0;
 
               return SingleChildScrollView(
                 physics: const ClampingScrollPhysics(),
                 padding: EdgeInsets.fromLTRB(
-                  20,
+                  22,
                   topContentInset,
-                  20,
+                  22,
                   bottomContentInset,
                 ),
                 child: ConstrainedBox(
@@ -395,46 +449,48 @@ class _WelcomeSlide extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _WelcomeVisual(data: data, height: visualHeight),
-                      SizedBox(height: shortSlide ? 10 : 16),
+                      SizedBox(height: shortSlide ? 12 : 20),
                       Text(
                         data.title,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(
-                          height: 1.12,
-                          fontSize: shortSlide
-                              ? 20
-                              : compact
-                              ? 22
-                              : 25,
-                          fontWeight: FontWeight.w900,
+                          height: 1.15,
+                          fontSize:
+                              shortSlide
+                                  ? 20
+                                  : compact
+                                      ? 22
+                                      : 26,
+                          fontWeight: FontWeight.w800,
                           color: data.foregroundColor,
                         ),
                       ),
-                      SizedBox(height: shortSlide ? 6 : 8),
+                      SizedBox(height: shortSlide ? 7 : 10),
                       Text(
                         data.subtitle,
                         maxLines: shortSlide ? 3 : 4,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(
-                          height: 1.38,
-                          fontSize: shortSlide ? 12.2 : 13.5,
-                          fontWeight: FontWeight.w600,
-                          color: data.foregroundColor.withValues(alpha: 0.88),
+                          height: 1.45,
+                          fontSize: shortSlide ? 12.5 : 13.8,
+                          fontWeight: FontWeight.w500,
+                          color: data.foregroundColor.withValues(alpha: 0.76),
                         ),
                       ),
-                      SizedBox(height: shortSlide ? 9 : 14),
+                      SizedBox(height: shortSlide ? 10 : 16),
                       Wrap(
                         alignment: WrapAlignment.center,
-                        spacing: 7,
-                        runSpacing: 7,
+                        spacing: 8,
+                        runSpacing: 8,
                         children: data.features
                             .map(
                               (feature) => _FeatureChip(
                                 feature: feature,
                                 foregroundColor: data.foregroundColor,
+                                accentColor: data.accentColor,
                               ),
                             )
                             .toList(),
@@ -451,6 +507,10 @@ class _WelcomeSlide extends StatelessWidget {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Illustration frame — frosted glass
+// ---------------------------------------------------------------------------
+
 class _WelcomeVisual extends StatelessWidget {
   final _WelcomeSlideData data;
   final double height;
@@ -463,26 +523,48 @@ class _WelcomeVisual extends StatelessWidget {
       height: height,
       width: double.infinity,
       child: Center(
-        child: Container(
-          width: height * 1.48,
-          height: height,
-          padding: EdgeInsets.all(height * 0.10),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.94),
-            borderRadius: BorderRadius.circular(height * 0.18),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.72)),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF17243A).withValues(alpha: 0.18),
-                blurRadius: 24,
-                offset: const Offset(0, 12),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(height * 0.20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Container(
+              width: height * 1.55,
+              height: height,
+              padding: EdgeInsets.all(height * 0.10),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withValues(alpha: 0.80),
+                    Colors.white.withValues(alpha: 0.50),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(height * 0.20),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.55),
+                  width: 1.0,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: data.accentColor.withValues(alpha: 0.15),
+                    blurRadius: 32,
+                    offset: const Offset(0, 14),
+                  ),
+                  BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.60),
+                    blurRadius: 1,
+                    spreadRadius: 0,
+                    offset: const Offset(0, -1),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: SvgPicture.asset(
-            data.illustrationAsset,
-            fit: BoxFit.contain,
-            semanticsLabel: data.semanticsLabel,
+              child: SvgPicture.asset(
+                data.illustrationAsset,
+                fit: BoxFit.contain,
+                semanticsLabel: data.semanticsLabel,
+              ),
+            ),
           ),
         ),
       ),
@@ -490,39 +572,68 @@ class _WelcomeVisual extends StatelessWidget {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Feature chips — glassmorphism pills
+// ---------------------------------------------------------------------------
+
 class _FeatureChip extends StatelessWidget {
   final _WelcomeFeature feature;
   final Color foregroundColor;
+  final Color accentColor;
 
-  const _FeatureChip({required this.feature, required this.foregroundColor});
+  const _FeatureChip({
+    required this.feature,
+    required this.foregroundColor,
+    required this.accentColor,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.32)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(feature.icon, size: 15, color: foregroundColor),
-          const SizedBox(width: 5),
-          Text(
-            feature.label,
-            style: GoogleFonts.poppins(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w800,
-              color: foregroundColor,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withValues(alpha: 0.60),
+                Colors.white.withValues(alpha: 0.30),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.45),
+              width: 0.8,
             ),
           ),
-        ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(feature.icon, size: 15, color: accentColor),
+              const SizedBox(width: 6),
+              Text(
+                feature.label,
+                style: GoogleFonts.poppins(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color: foregroundColor.withValues(alpha: 0.88),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Background decoration — delicate contour lines
+// ---------------------------------------------------------------------------
 
 class _WellnessContourPainter extends CustomPainter {
   final Color color;
@@ -532,68 +643,68 @@ class _WellnessContourPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = color.withValues(alpha: 0.12)
+      ..color = color.withValues(alpha: 0.14)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.2
+      ..strokeWidth = 1.2
       ..strokeCap = StrokeCap.round;
 
     final upperPath = Path()
-      ..moveTo(-size.width * 0.08, size.height * 0.18)
+      ..moveTo(-size.width * 0.10, size.height * 0.15)
       ..cubicTo(
-        size.width * 0.18,
-        size.height * 0.04,
-        size.width * 0.28,
-        size.height * 0.34,
-        size.width * 0.52,
-        size.height * 0.17,
+        size.width * 0.15,
+        size.height * 0.02,
+        size.width * 0.30,
+        size.height * 0.30,
+        size.width * 0.54,
+        size.height * 0.14,
       )
       ..cubicTo(
-        size.width * 0.70,
-        size.height * 0.04,
-        size.width * 0.83,
-        size.height * 0.18,
-        size.width * 1.08,
-        size.height * 0.08,
+        size.width * 0.72,
+        size.height * 0.01,
+        size.width * 0.85,
+        size.height * 0.20,
+        size.width * 1.10,
+        size.height * 0.06,
       );
     canvas.drawPath(upperPath, paint);
 
     final middlePath = Path()
-      ..moveTo(-size.width * 0.05, size.height * 0.58)
+      ..moveTo(-size.width * 0.06, size.height * 0.55)
       ..cubicTo(
-        size.width * 0.14,
-        size.height * 0.48,
-        size.width * 0.19,
-        size.height * 0.76,
-        size.width * 0.42,
-        size.height * 0.65,
+        size.width * 0.12,
+        size.height * 0.44,
+        size.width * 0.22,
+        size.height * 0.72,
+        size.width * 0.44,
+        size.height * 0.62,
       )
       ..cubicTo(
-        size.width * 0.65,
-        size.height * 0.54,
-        size.width * 0.73,
-        size.height * 0.82,
-        size.width * 1.06,
-        size.height * 0.66,
+        size.width * 0.66,
+        size.height * 0.52,
+        size.width * 0.75,
+        size.height * 0.78,
+        size.width * 1.08,
+        size.height * 0.63,
       );
     canvas.drawPath(middlePath, paint);
 
     final lowerPath = Path()
-      ..moveTo(size.width * 0.12, size.height * 1.05)
+      ..moveTo(size.width * 0.08, size.height * 1.04)
       ..cubicTo(
-        size.width * 0.22,
-        size.height * 0.79,
-        size.width * 0.51,
-        size.height * 1.02,
-        size.width * 0.61,
-        size.height * 0.84,
+        size.width * 0.20,
+        size.height * 0.82,
+        size.width * 0.48,
+        size.height * 1.00,
+        size.width * 0.60,
+        size.height * 0.85,
       )
       ..cubicTo(
-        size.width * 0.73,
-        size.height * 0.65,
-        size.width * 0.88,
-        size.height * 0.92,
-        size.width * 1.08,
-        size.height * 0.82,
+        size.width * 0.74,
+        size.height * 0.68,
+        size.width * 0.90,
+        size.height * 0.94,
+        size.width * 1.10,
+        size.height * 0.80,
       );
     canvas.drawPath(lowerPath, paint);
   }
@@ -604,9 +715,75 @@ class _WellnessContourPainter extends CustomPainter {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Background decoration — bokeh dots for depth
+// ---------------------------------------------------------------------------
+
+class _BokehDotsPainter extends CustomPainter {
+  final Color color;
+
+  const _BokehDotsPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final softPaint = Paint()
+      ..color = color.withValues(alpha: 0.08)
+      ..style = PaintingStyle.fill;
+
+    final ringPaint = Paint()
+      ..color = color.withValues(alpha: 0.06)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    // Soft filled circles
+    canvas.drawCircle(
+      Offset(size.width * 0.88, size.height * 0.12),
+      18,
+      softPaint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.08, size.height * 0.38),
+      12,
+      softPaint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.72, size.height * 0.78),
+      22,
+      softPaint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.25, size.height * 0.88),
+      10,
+      softPaint,
+    );
+
+    // Ring outlines
+    canvas.drawCircle(
+      Offset(size.width * 0.14, size.height * 0.22),
+      size.width * 0.08,
+      ringPaint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.90, size.height * 0.50),
+      size.width * 0.12,
+      ringPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _BokehDotsPainter oldDelegate) {
+    return oldDelegate.color != color;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Footer — frosted glass container
+// ---------------------------------------------------------------------------
+
 class _CarouselFooter extends StatelessWidget {
   final int currentIndex;
   final int itemCount;
+  final Color accentColor;
   final Color foregroundColor;
   final String disclaimer;
   final VoidCallback onSignUp;
@@ -615,6 +792,7 @@ class _CarouselFooter extends StatelessWidget {
   const _CarouselFooter({
     required this.currentIndex,
     required this.itemCount,
+    required this.accentColor,
     required this.foregroundColor,
     required this.disclaimer,
     required this.onSignUp,
@@ -623,50 +801,185 @@ class _CarouselFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(itemCount, (index) {
-            final selected = index == currentIndex;
-
-            return AnimatedContainer(
-              key: ValueKey('auth-welcome-dot-$index'),
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOutCubic,
-              margin: const EdgeInsets.symmetric(horizontal: 3),
-              width: selected ? 22 : 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: selected
-                    ? foregroundColor
-                    : foregroundColor.withValues(alpha: 0.36),
-                borderRadius: BorderRadius.circular(999),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.white.withValues(alpha: 0.78),
+                Colors.white.withValues(alpha: 0.62),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.55),
+              width: 1.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF17243A).withValues(alpha: 0.08),
+                blurRadius: 24,
+                offset: const Offset(0, -4),
               ),
-            );
-          }),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _PageIndicator(
+                currentIndex: currentIndex,
+                itemCount: itemCount,
+                accentColor: accentColor,
+              ),
+              const SizedBox(height: 10),
+              _CompactDisclaimer(text: disclaimer),
+              const SizedBox(height: 10),
+              _GradientPrimaryCta(
+                label: 'Sign up',
+                icon: Icons.person_add_alt_1_rounded,
+                accentColor: accentColor,
+                onPressed: onSignUp,
+              ),
+              const SizedBox(height: 8),
+              AuthButton.secondary(
+                key: const ValueKey('auth-welcome-login'),
+                label: 'Log in',
+                icon: Icons.login_rounded,
+                onPressed: onLogin,
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 10),
-        _CompactDisclaimer(text: disclaimer),
-        const SizedBox(height: 8),
-        AuthButton.primary(
-          key: const ValueKey('auth-welcome-sign-up'),
-          label: 'Sign up',
-          icon: Icons.person_add_alt_1_rounded,
-          onPressed: onSignUp,
-        ),
-        const SizedBox(height: 8),
-        AuthButton.secondary(
-          key: const ValueKey('auth-welcome-login'),
-          label: 'Log in',
-          icon: Icons.login_rounded,
-          onPressed: onLogin,
-        ),
-      ],
+      ),
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Page indicator — gradient active dot
+// ---------------------------------------------------------------------------
+
+class _PageIndicator extends StatelessWidget {
+  final int currentIndex;
+  final int itemCount;
+  final Color accentColor;
+
+  const _PageIndicator({
+    required this.currentIndex,
+    required this.itemCount,
+    required this.accentColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(itemCount, (index) {
+        final selected = index == currentIndex;
+
+        return AnimatedContainer(
+          key: ValueKey('auth-welcome-dot-$index'),
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOutCubic,
+          margin: const EdgeInsets.symmetric(horizontal: 3.5),
+          width: selected ? 26 : 8,
+          height: 8,
+          decoration: BoxDecoration(
+            gradient: selected
+                ? LinearGradient(
+                    colors: [
+                      accentColor,
+                      accentColor.withValues(alpha: 0.60),
+                    ],
+                  )
+                : null,
+            color: selected ? null : const Color(0xFFCDD5DE),
+            borderRadius: BorderRadius.circular(999),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Gradient primary CTA button
+// ---------------------------------------------------------------------------
+
+class _GradientPrimaryCta extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color accentColor;
+  final VoidCallback onPressed;
+
+  const _GradientPrimaryCta({
+    required this.label,
+    required this.icon,
+    required this.accentColor,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [primary, primary.withValues(alpha: 0.82)],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: primary.withValues(alpha: 0.30),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: onPressed,
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: 20, color: Colors.white),
+                  const SizedBox(width: 9),
+                  Text(
+                    label,
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Disclaimer — frosted glass row
+// ---------------------------------------------------------------------------
 
 class _CompactDisclaimer extends StatelessWidget {
   final String text;
@@ -677,29 +990,32 @@ class _CompactDisclaimer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.88),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.72)),
+        color: const Color(0xFFF5F7FA).withValues(alpha: 0.70),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: const Color(0xFFE2E8F0).withValues(alpha: 0.60),
+          width: 0.8,
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
             Icons.health_and_safety_rounded,
-            size: 17,
-            color: Theme.of(context).colorScheme.primary,
+            size: 16,
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.70),
           ),
           const SizedBox(width: 9),
           Expanded(
             child: Text(
               text,
               style: GoogleFonts.poppins(
-                height: 1.28,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF526176),
+                height: 1.32,
+                fontSize: 10.8,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF6B7D90),
               ),
             ),
           ),

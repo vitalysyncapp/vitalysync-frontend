@@ -51,10 +51,10 @@ class _AnimatedGradientBackgroundState extends State<AnimatedGradientBackground>
             Color(0xFF0A1630),
           ]
         : const [
-            Color(0xFF52F9FF),
-            Color(0xFFD9B5FF),
-            Color(0xFF7FD6FF),
-            Color(0xFFFFC7E4),
+            Color(0xFFE8F4EE),
+            Color(0xFFEDE6F4),
+            Color(0xFFF0F6FB),
+            Color(0xFFFAF0E8),
           ];
 
     return AnimatedBuilder(
@@ -79,24 +79,24 @@ class _AnimatedGradientBackgroundState extends State<AnimatedGradientBackground>
                 top: -120 + (shift * 40),
                 left: -80 + (shift * 30),
                 child: _GlowOrb(
-                  size: 260,
-                  color: Colors.white.withValues(alpha: isDark ? 0.08 : 0.22),
+                  size: 280,
+                  color: Colors.white.withValues(alpha: isDark ? 0.08 : 0.32),
                 ),
               ),
               Positioned(
                 right: -100 - (shift * 35),
                 bottom: -120 + (shift * 45),
                 child: _GlowOrb(
-                  size: 300,
-                  color: colors[1].withValues(alpha: isDark ? 0.18 : 0.28),
+                  size: 320,
+                  color: colors[1].withValues(alpha: isDark ? 0.18 : 0.36),
                 ),
               ),
               Positioned(
                 top: 140 - (shift * 28),
                 right: -60 + (shift * 24),
                 child: _GlowOrb(
-                  size: 180,
-                  color: colors[2].withValues(alpha: isDark ? 0.14 : 0.22),
+                  size: 200,
+                  color: colors[2].withValues(alpha: isDark ? 0.14 : 0.28),
                 ),
               ),
               if (widget.padding != null)
@@ -121,7 +121,7 @@ class _GlowOrb extends StatelessWidget {
   Widget build(BuildContext context) {
     return IgnorePointer(
       child: ImageFiltered(
-        imageFilter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+        imageFilter: ImageFilter.blur(sigmaX: 32, sigmaY: 32),
         child: Container(
           width: size,
           height: size,
