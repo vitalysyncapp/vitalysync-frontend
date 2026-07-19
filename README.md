@@ -75,6 +75,18 @@ Use the same flag with other Flutter commands when needed:
 flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:3000
 ```
 
+For Flutter web against the deployed Render API, keep the browser port stable:
+
+```bash
+flutter run -d chrome --web-port 57763 --dart-define=API_BASE_URL=https://vitalysync-backend.onrender.com
+```
+
+Then include the local web origin in the backend `CORS_ALLOWED_ORIGINS` setting:
+
+```text
+https://vitalysync-frontend.onrender.com,http://localhost:*,http://127.0.0.1:*
+```
+
 ## Setup
 
 Install dependencies:
