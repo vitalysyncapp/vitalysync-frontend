@@ -343,9 +343,13 @@ class _ProfilePageState extends State<ProfilePage> {
 
     try {
       final previousStepGoal = _goals.dailySteps;
+      final includeNutritionCalories =
+          goals.nutritionCalories != _goals.nutritionCalories ||
+          !_goals.nutritionCaloriesIsAutoManaged;
       final savedGoals = await UserGoalsService.save(
         userId: _userId!,
         goals: goals,
+        includeNutritionCalories: includeNutritionCalories,
       );
 
       if (savedGoals.dailySteps != previousStepGoal) {
@@ -699,6 +703,8 @@ class _ProfilePageState extends State<ProfilePage> {
                       workIntensity: _workIntensity,
                       burnoutLevel: _initialBurnoutLevel,
                       burnoutScore: _initialBurnoutScore,
+                      heightCm: _heightCm,
+                      weightKg: _weightKg,
                       isSaving: _isSavingWellness,
                       isSavingBaseline: _isSavingBaseline,
                       onEdit: _openEditWellnessProfilePage,

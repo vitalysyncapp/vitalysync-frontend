@@ -302,6 +302,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         userType: _role,
       );
       await CoreTutorialService.instance.markPendingForUser(widget.userId);
+      await _refreshGoalsAfterOnboarding();
 
       if (!mounted) return;
 
@@ -334,6 +335,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
         setState(() => _isSaving = false);
       }
     }
+  }
+
+  Future<void> _refreshGoalsAfterOnboarding() async {
+    await UserGoalsService.fetch(userId: widget.userId);
+    UserGoalsService.refreshSignal.value++;
   }
 
   List<Map<String, dynamic>> _buildBurnoutAnswerPayload() {

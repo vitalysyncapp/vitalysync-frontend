@@ -24,6 +24,7 @@ class UserGoalsSnapshot {
   final int activityDaysPerWeek;
   final int dailySteps;
   final int nutritionCalories;
+  final String nutritionCaloriesSource;
 
   const UserGoalsSnapshot({
     required this.wellnessGoal,
@@ -33,6 +34,7 @@ class UserGoalsSnapshot {
     required this.activityDaysPerWeek,
     required this.dailySteps,
     required this.nutritionCalories,
+    required this.nutritionCaloriesSource,
   });
 
   factory UserGoalsSnapshot.defaults({
@@ -43,6 +45,7 @@ class UserGoalsSnapshot {
     int activityDaysPerWeek = 3,
     int dailySteps = 5000,
     int nutritionCalories = 2000,
+    String nutritionCaloriesSource = 'default',
   }) {
     final selectedWellnessGoals = _normalizeWellnessGoals(
       wellnessGoals ?? _wellnessGoalsFromText(wellnessGoal),
@@ -59,6 +62,7 @@ class UserGoalsSnapshot {
       activityDaysPerWeek: activityDaysPerWeek.clamp(0, 7).toInt(),
       dailySteps: dailySteps.clamp(1000, 50000).toInt(),
       nutritionCalories: nutritionCalories.clamp(800, 6000).toInt(),
+      nutritionCaloriesSource: nutritionCaloriesSource,
     );
   }
 
@@ -89,6 +93,9 @@ class UserGoalsSnapshot {
       nutritionCalories:
           _goalInt(rawGoals['nutrition_calories']) ??
           defaults.nutritionCalories,
+      nutritionCaloriesSource:
+          _goalSource(rawGoals['nutrition_calories']) ??
+          defaults.nutritionCaloriesSource,
     );
   }
 
@@ -100,6 +107,7 @@ class UserGoalsSnapshot {
     int? activityDaysPerWeek,
     int? dailySteps,
     int? nutritionCalories,
+    String? nutritionCaloriesSource,
   }) {
     return UserGoalsSnapshot.defaults(
       wellnessGoal: wellnessGoal ?? this.wellnessGoal,
@@ -109,11 +117,13 @@ class UserGoalsSnapshot {
       activityDaysPerWeek: activityDaysPerWeek ?? this.activityDaysPerWeek,
       dailySteps: dailySteps ?? this.dailySteps,
       nutritionCalories: nutritionCalories ?? this.nutritionCalories,
+      nutritionCaloriesSource:
+          nutritionCaloriesSource ?? this.nutritionCaloriesSource,
     );
   }
 
-  Map<String, dynamic> toApiGoals() {
-    return {
+  Map<String, dynamic> toApiGoals({bool includeNutritionCalories = true}) {
+    final goals = {
       'wellness': {
         'target_text': wellnessGoal,
         'source': 'profile',
@@ -139,12 +149,17 @@ class UserGoalsSnapshot {
         'unit': 'steps',
         'source': 'profile',
       },
-      'nutrition_calories': {
+    };
+
+    if (includeNutritionCalories) {
+      goals['nutrition_calories'] = {
         'target_value': nutritionCalories,
         'unit': 'kcal',
         'source': 'profile',
-      },
-    };
+      };
+    }
+
+    return goals;
   }
 
   Map<String, dynamic> toCacheJson() {
@@ -160,6 +175,11 @@ class UserGoalsSnapshot {
   String get dailyStepsLabel => '${_formatInt(dailySteps)} steps';
 
   String get nutritionLabel => '${_formatInt(nutritionCalories)} kcal';
+
+  bool get nutritionCaloriesIsAutoManaged {
+    return nutritionCaloriesSource == 'system_default' ||
+        nutritionCaloriesSource == 'default';
+  }
 }
 
 class UserGoalsService {
@@ -225,8 +245,14 @@ class UserGoalsService {
   static Future<UserGoalsSnapshot> save({
     required int userId,
     required UserGoalsSnapshot goals,
+    bool includeNutritionCalories = true,
   }) {
-    return updateGoals(userId: userId, goals: goals.toApiGoals());
+    return updateGoals(
+      userId: userId,
+      goals: goals.toApiGoals(
+        includeNutritionCalories: includeNutritionCalories,
+      ),
+    );
   }
 
   static Future<UserGoalsSnapshot> updateDailySteps({
@@ -367,6 +393,15 @@ double? _goalDouble(dynamic rawGoal) {
 int? _goalInt(dynamic rawGoal) {
   final value = _goalDouble(rawGoal);
   return value?.round();
+}
+
+String? _goalSource(dynamic rawGoal) {
+  if (rawGoal is! Map) {
+    return null;
+  }
+
+  final source = rawGoal['source']?.toString().trim() ?? '';
+  return source.isEmpty ? null : source;
 }
 
 String _formatNumber(double value) {

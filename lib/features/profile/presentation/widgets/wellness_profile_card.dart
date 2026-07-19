@@ -10,6 +10,8 @@ class WellnessProfileCard extends StatelessWidget {
   final String workIntensity;
   final String burnoutLevel;
   final int burnoutScore;
+  final double? heightCm;
+  final double? weightKg;
   final bool isSaving;
   final bool isSavingBaseline;
   final VoidCallback onEdit;
@@ -24,6 +26,8 @@ class WellnessProfileCard extends StatelessWidget {
     required this.workIntensity,
     required this.burnoutLevel,
     required this.burnoutScore,
+    required this.heightCm,
+    required this.weightKg,
     required this.isSaving,
     required this.isSavingBaseline,
     required this.onEdit,
@@ -126,6 +130,24 @@ class WellnessProfileCard extends StatelessWidget {
             icon: Icons.wb_sunny_outlined,
             label: 'Usual wake time',
             value: usualWakeTime,
+          ),
+          _rowItem(
+            emoji: '\u{1F4CF}',
+            icon: Icons.height_rounded,
+            label: 'Height',
+            value: _formatMetric(heightCm, unit: 'cm'),
+          ),
+          _rowItem(
+            emoji: '\u{1F4AA}',
+            icon: Icons.monitor_weight_rounded,
+            label: 'Weight',
+            value: _formatMetric(weightKg, unit: 'kg'),
+          ),
+          _rowItem(
+            emoji: '\u{1F4CA}',
+            icon: Icons.calculate_outlined,
+            label: 'BMI',
+            value: _formatBmi(heightCm: heightCm, weightKg: weightKg),
           ),
           _rowItemWithBadge(
             emoji: '\u26A1',
@@ -269,6 +291,23 @@ String _sentenceCaseCategory(String value) {
   final text = value.trim();
   if (text.length < 2) return text;
   return '${text[0].toUpperCase()}${text.substring(1).toLowerCase()}';
+}
+
+String _formatMetric(double? value, {required String unit}) {
+  if (value == null) return 'Not set';
+  final formatted = value == value.roundToDouble()
+      ? value.round().toString()
+      : value.toStringAsFixed(1);
+  return '$formatted $unit';
+}
+
+String _formatBmi({required double? heightCm, required double? weightKg}) {
+  if (heightCm == null || weightKg == null || heightCm <= 0 || weightKg <= 0) {
+    return 'Not set';
+  }
+
+  final heightM = heightCm / 100;
+  return (weightKg / (heightM * heightM)).toStringAsFixed(1);
 }
 
 class _WellnessDataRow extends StatelessWidget {

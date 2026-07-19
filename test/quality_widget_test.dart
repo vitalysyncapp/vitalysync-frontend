@@ -183,6 +183,8 @@ void main() {
               workIntensity: 'Medium',
               burnoutLevel: 'Low',
               burnoutScore: 24,
+              heightCm: 170,
+              weightKg: 65,
               isSaving: false,
               isSavingBaseline: false,
               onEdit: () {},
@@ -208,6 +210,12 @@ void main() {
     expect(find.text('Wellness profile'), findsOneWidget);
     expect(find.text('Edit wellness profile'), findsOneWidget);
     expect(find.text('Retake baseline'), findsOneWidget);
+    expect(find.text('Height'), findsOneWidget);
+    expect(find.text('170 cm'), findsOneWidget);
+    expect(find.text('Weight'), findsOneWidget);
+    expect(find.text('65 kg'), findsOneWidget);
+    expect(find.text('BMI'), findsOneWidget);
+    expect(find.text('22.5'), findsOneWidget);
     expect(find.text('Daily water goal'), findsNothing);
     expect(find.text('Exercise target'), findsNothing);
 
@@ -344,6 +352,8 @@ void main() {
           workIntensity: 'Medium',
           burnoutLevel: 'Low',
           burnoutScore: 24,
+          heightCm: 171.5,
+          weightKg: 66.2,
           isSaving: false,
           isSavingBaseline: false,
           onEdit: () {},
