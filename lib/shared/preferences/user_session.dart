@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/api_config.dart';
+import 'auth_token_store.dart';
 
 class UserSessionSnapshot {
   final int? userId;
@@ -53,7 +54,6 @@ class UserSessionController {
   static const String _userTypeKey = 'user_type';
   static const String _genderKey = 'gender';
   static const String _ageKey = 'age';
-  static const String _authTokenKey = 'auth_access_token';
   static const String _onboardingCompletedKey = 'onboarding_completed';
   static const String _legacyDemoModeKey = 'demo_mode_enabled';
 
@@ -71,7 +71,7 @@ class UserSessionController {
       age: prefs.getInt(_ageKey),
       gender: prefs.getString(_genderKey),
       userType: prefs.getString(_userTypeKey),
-      authToken: prefs.getString(_authTokenKey),
+      authToken: await AuthTokenStore.instance.readToken(),
       onboardingCompleted: prefs.getBool(_onboardingCompletedKey) ?? false,
     );
   }
@@ -120,7 +120,7 @@ class UserSessionController {
     await prefs.remove(_legacyDemoModeKey);
 
     if (authToken != null && authToken.trim().isNotEmpty) {
-      await prefs.setString(_authTokenKey, authToken.trim());
+      await AuthTokenStore.instance.saveToken(authToken.trim());
     }
   }
 
@@ -135,7 +135,7 @@ class UserSessionController {
     await prefs.remove(_userTypeKey);
     await prefs.remove(_genderKey);
     await prefs.remove(_ageKey);
-    await prefs.remove(_authTokenKey);
+    await AuthTokenStore.instance.clearToken();
     await prefs.remove(_onboardingCompletedKey);
     await prefs.remove(_legacyDemoModeKey);
   }

@@ -1,4 +1,4 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import '../preferences/auth_token_store.dart';
 
 class ApiConfig {
   static const String _configuredBaseUrl = String.fromEnvironment(
@@ -56,8 +56,7 @@ class ApiConfig {
   }
 
   static Future<Map<String, String>> authHeaders() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_access_token')?.trim();
+    final token = await AuthTokenStore.instance.readToken();
 
     if (token == null || token.isEmpty) {
       return const <String, String>{};
