@@ -86,7 +86,7 @@ class _ProfileHeaderPalette {
   final double watermarkOpacity;
 }
 
-class _ProfileHeaderCard extends StatelessWidget {
+class _ProfileHeaderCard extends StatefulWidget {
   final int? userId;
   final String username;
   final String email;
@@ -110,168 +110,276 @@ class _ProfileHeaderCard extends StatelessWidget {
   });
 
   @override
+  State<_ProfileHeaderCard> createState() => _ProfileHeaderCardState();
+}
+
+class _ProfileHeaderCardState extends State<_ProfileHeaderCard>
+    with TickerProviderStateMixin {
+  late final AnimationController _entranceController;
+  late final AnimationController _shimmerController;
+  late final Animation<double> _cardFade;
+  late final Animation<Offset> _cardSlide;
+  late final List<Animation<double>> _statFades;
+  late final List<Animation<Offset>> _statSlides;
+
+  @override
+  void initState() {
+    super.initState();
+    _entranceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat();
+
+    _cardFade = CurvedAnimation(
+      parent: _entranceController,
+      curve: const Interval(0.0, 0.45, curve: Curves.easeOut),
+    );
+    _cardSlide = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _entranceController,
+      curve: const Interval(0.0, 0.5, curve: Curves.easeOutCubic),
+    ));
+
+    _statFades = List.generate(4, (i) {
+      final start = 0.3 + i * 0.1;
+      return CurvedAnimation(
+        parent: _entranceController,
+        curve: Interval(start, (start + 0.3).clamp(0.0, 1.0),
+            curve: Curves.easeOut),
+      );
+    });
+    _statSlides = List.generate(4, (i) {
+      final start = 0.3 + i * 0.1;
+      return Tween<Offset>(
+        begin: const Offset(0, 0.18),
+        end: Offset.zero,
+      ).animate(CurvedAnimation(
+        parent: _entranceController,
+        curve: Interval(start, (start + 0.35).clamp(0.0, 1.0),
+            curve: Curves.easeOutCubic),
+      ));
+    });
+
+    _entranceController.forward();
+  }
+
+  @override
+  void dispose() {
+    _entranceController.dispose();
+    _shimmerController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final palette = _ProfileHeaderPalette.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
-      key: const ValueKey('profile-header-card'),
-      width: double.infinity,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: palette.gradientColors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: palette.border),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(
-              0xFF164E63,
-            ).withValues(alpha: isDark ? 0.22 : 0.09),
-            blurRadius: 28,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: -76,
-            right: -54,
-            child: IgnorePointer(
-              child: _ProfileSoftOrb(size: 196, color: palette.secondaryOrb),
+    return SlideTransition(
+      position: _cardSlide,
+      child: FadeTransition(
+        opacity: _cardFade,
+        child: Container(
+          key: const ValueKey('profile-header-card'),
+          width: double.infinity,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: palette.gradientColors,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-          ),
-          Positioned(
-            bottom: -92,
-            left: -48,
-            child: IgnorePointer(
-              child: _ProfileSoftOrb(size: 184, color: palette.primaryOrb),
-            ),
-          ),
-          Positioned(
-            top: 20,
-            right: 20,
-            child: IgnorePointer(
-              child: _ProfileLogoWatermark(
-                opacity: palette.watermarkOpacity,
-                size: 76,
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: palette.border),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(
+                  0xFF164E63,
+                ).withValues(alpha: isDark ? 0.22 : 0.09),
+                blurRadius: 28,
+                offset: const Offset(0, 14),
               ),
-            ),
+              BoxShadow(
+                color: palette.accent.withValues(alpha: isDark ? 0.06 : 0.04),
+                blurRadius: 48,
+                spreadRadius: 2,
+                offset: const Offset(0, 18),
+              ),
+            ],
           ),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final useStackedIdentity = constraints.maxWidth < 304;
-              final horizontalPadding = useStackedIdentity ? 18.0 : 22.0;
-              final avatar = _ProfileAvatarButton(
-                userId: userId,
-                gender: gender,
-                role: role,
-                palette: palette,
-                onEditAvatar: onEditAvatar,
-              );
-              final identity = _ProfileIdentity(
-                username: username,
-                email: email,
-                role: role,
-                centered: useStackedIdentity,
-                palette: palette,
-              );
-
-              return Padding(
-                padding: EdgeInsets.fromLTRB(
-                  horizontalPadding,
-                  22,
-                  horizontalPadding,
-                  22,
+          child: Stack(
+            children: [
+              Positioned(
+                top: -76,
+                right: -54,
+                child: IgnorePointer(
+                  child:
+                      _ProfileSoftOrb(size: 196, color: palette.secondaryOrb),
                 ),
-                child: Column(
-                  children: [
-                    if (useStackedIdentity)
-                      Column(
-                        children: [
-                          avatar,
-                          const SizedBox(height: 15),
-                          identity,
-                        ],
-                      )
-                    else
-                      Row(
-                        children: [
-                          avatar,
-                          const SizedBox(width: 18),
-                          Expanded(child: identity),
-                        ],
-                      ),
-                    const SizedBox(height: 20),
-                    Divider(color: palette.divider, height: 1, thickness: 1),
-                    const SizedBox(height: 16),
-                    LayoutBuilder(
-                      builder: (context, statConstraints) {
-                        final columns = statConstraints.maxWidth >= 620 ? 4 : 2;
-                        const spacing = 11.0;
-                        final tileWidth =
-                            (statConstraints.maxWidth -
-                                (spacing * (columns - 1))) /
-                            columns;
+              ),
+              Positioned(
+                bottom: -92,
+                left: -48,
+                child: IgnorePointer(
+                  child:
+                      _ProfileSoftOrb(size: 184, color: palette.primaryOrb),
+                ),
+              ),
+              Positioned(
+                top: -40,
+                left: -40,
+                child: IgnorePointer(
+                  child: _ProfileSoftOrb(
+                    size: 120,
+                    color: palette.accent.withValues(alpha: isDark ? 0.04 : 0.06),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 20,
+                right: 20,
+                child: IgnorePointer(
+                  child: _ProfileLogoWatermark(
+                    opacity: palette.watermarkOpacity,
+                    size: 76,
+                  ),
+                ),
+              ),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final useStackedIdentity = constraints.maxWidth < 304;
+                  final horizontalPadding = useStackedIdentity ? 18.0 : 22.0;
+                  final avatar = _ProfileAvatarButton(
+                    userId: widget.userId,
+                    gender: widget.gender,
+                    role: widget.role,
+                    palette: palette,
+                    onEditAvatar: widget.onEditAvatar,
+                    shimmerAnimation: _shimmerController,
+                  );
+                  final identity = _ProfileIdentity(
+                    username: widget.username,
+                    email: widget.email,
+                    role: widget.role,
+                    centered: useStackedIdentity,
+                    palette: palette,
+                    shimmerAnimation: _shimmerController,
+                  );
 
-                        return Wrap(
-                          spacing: spacing,
-                          runSpacing: spacing,
-                          children: [
-                            _ProfileStatTile(
-                              width: tileWidth,
-                              accent: const Color(0xFFF08A35),
-                              icon: const _ProfileFireAnimation(size: 24),
-                              label: 'Current streak',
-                              value: _daysValue(currentStreak),
-                            ),
-                            _ProfileStatTile(
-                              width: tileWidth,
-                              accent: const Color(0xFFF3A51F),
-                              icon: const Icon(
-                                Icons.emoji_events_rounded,
-                                size: 20,
-                                color: Color(0xFFE99A16),
-                              ),
-                              label: 'Best',
-                              value: _daysValue(longestStreak),
-                            ),
-                            _ProfileStatTile(
-                              width: tileWidth,
-                              accent: const Color(0xFF4C9BE8),
-                              icon: const Icon(
-                                Icons.cake_outlined,
-                                size: 20,
-                                color: Color(0xFF3E8EDC),
-                              ),
-                              label: 'Age',
-                              value: age == null ? '--' : '$age yrs',
-                            ),
-                            _ProfileStatTile(
-                              width: tileWidth,
-                              accent: const Color(0xFF9672D8),
-                              icon: const Icon(
-                                Icons.wc_rounded,
-                                size: 21,
-                                color: Color(0xFF8863CC),
-                              ),
-                              label: 'Gender',
-                              value: gender ?? '--',
-                            ),
-                          ],
-                        );
-                      },
+                  return Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      22,
+                      horizontalPadding,
+                      22,
                     ),
-                  ],
-                ),
-              );
-            },
+                    child: Column(
+                      children: [
+                        if (useStackedIdentity)
+                          Column(
+                            children: [
+                              avatar,
+                              const SizedBox(height: 15),
+                              identity,
+                            ],
+                          )
+                        else
+                          Row(
+                            children: [
+                              avatar,
+                              const SizedBox(width: 18),
+                              Expanded(child: identity),
+                            ],
+                          ),
+                        const SizedBox(height: 20),
+                        Divider(
+                            color: palette.divider, height: 1, thickness: 1),
+                        const SizedBox(height: 16),
+                        LayoutBuilder(
+                          builder: (context, statConstraints) {
+                            final columns =
+                                statConstraints.maxWidth >= 620 ? 4 : 2;
+                            const spacing = 11.0;
+                            final tileWidth =
+                                (statConstraints.maxWidth -
+                                    (spacing * (columns - 1))) /
+                                columns;
+
+                            final statTiles = [
+                              _ProfileStatTile(
+                                width: tileWidth,
+                                accent: const Color(0xFFF08A35),
+                                icon:
+                                    const _ProfileFireAnimation(size: 24),
+                                label: 'Current streak',
+                                value: _daysValue(widget.currentStreak),
+                              ),
+                              _ProfileStatTile(
+                                width: tileWidth,
+                                accent: const Color(0xFFF3A51F),
+                                icon: const Icon(
+                                  Icons.emoji_events_rounded,
+                                  size: 20,
+                                  color: Color(0xFFE99A16),
+                                ),
+                                label: 'Best',
+                                value: _daysValue(widget.longestStreak),
+                              ),
+                              _ProfileStatTile(
+                                width: tileWidth,
+                                accent: const Color(0xFF4C9BE8),
+                                icon: const Icon(
+                                  Icons.cake_outlined,
+                                  size: 20,
+                                  color: Color(0xFF3E8EDC),
+                                ),
+                                label: 'Age',
+                                value: widget.age == null
+                                    ? '--'
+                                    : '${widget.age} yrs',
+                              ),
+                              _ProfileStatTile(
+                                width: tileWidth,
+                                accent: const Color(0xFF9672D8),
+                                icon: const Icon(
+                                  Icons.wc_rounded,
+                                  size: 21,
+                                  color: Color(0xFF8863CC),
+                                ),
+                                label: 'Gender',
+                                value: widget.gender ?? '--',
+                              ),
+                            ];
+
+                            return Wrap(
+                              spacing: spacing,
+                              runSpacing: spacing,
+                              children: List.generate(statTiles.length, (i) {
+                                return SlideTransition(
+                                  position: _statSlides[i],
+                                  child: FadeTransition(
+                                    opacity: _statFades[i],
+                                    child: statTiles[i],
+                                  ),
+                                );
+                              }),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -288,6 +396,7 @@ class _ProfileAvatarButton extends StatelessWidget {
     required this.role,
     required this.palette,
     required this.onEditAvatar,
+    required this.shimmerAnimation,
   });
 
   final int? userId;
@@ -295,9 +404,12 @@ class _ProfileAvatarButton extends StatelessWidget {
   final String? role;
   final _ProfileHeaderPalette palette;
   final VoidCallback onEditAvatar;
+  final Animation<double> shimmerAnimation;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Semantics(
       button: true,
       label: 'Change profile avatar',
@@ -310,42 +422,83 @@ class _ProfileAvatarButton extends StatelessWidget {
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              Container(
-                width: 96,
-                height: 96,
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: palette.avatarRingColors,
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: palette.accent.withValues(alpha: 0.16),
-                      blurRadius: 18,
-                      offset: const Offset(0, 7),
+              // Ambient glow behind the avatar
+              Positioned(
+                top: -6,
+                left: -6,
+                right: -6,
+                bottom: -6,
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: palette.avatarRingColors[0]
+                              .withValues(alpha: isDark ? 0.18 : 0.14),
+                          blurRadius: 32,
+                          spreadRadius: 4,
+                        ),
+                        BoxShadow(
+                          color: palette.avatarRingColors[1]
+                              .withValues(alpha: isDark ? 0.10 : 0.08),
+                          blurRadius: 48,
+                          spreadRadius: 8,
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
+              ),
+              // Animated rotating gradient ring
+              AnimatedBuilder(
+                animation: shimmerAnimation,
+                builder: (context, child) {
+                  return Container(
+                    width: 100,
+                    height: 100,
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: SweepGradient(
+                        startAngle: shimmerAnimation.value * 6.2832,
+                        colors: [
+                          palette.avatarRingColors[0],
+                          palette.avatarRingColors[1],
+                          palette.avatarRingColors[2],
+                          palette.avatarRingColors[0],
+                        ],
+                        stops: const [0.0, 0.33, 0.67, 1.0],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: palette.accent.withValues(alpha: 0.16),
+                          blurRadius: 18,
+                          offset: const Offset(0, 7),
+                        ),
+                      ],
+                    ),
+                    child: child,
+                  );
+                },
                 child: Container(
-                  padding: const EdgeInsets.all(3),
+                  padding: const EdgeInsets.all(3.5),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Theme.of(context).brightness == Brightness.dark
+                    color: isDark
                         ? const Color(0xFF193044)
-                        : Colors.white.withValues(alpha: 0.94),
+                        : Colors.white.withValues(alpha: 0.96),
                   ),
                   child: CurrentUserAvatar(
                     userId: userId,
                     gender: gender,
                     userType: role,
-                    size: 82,
+                    size: 86,
                     semanticLabel: 'Current profile avatar',
                   ),
                 ),
               ),
+              // Edit badge
               Positioned(
                 right: -1,
                 bottom: -1,
@@ -353,13 +506,25 @@ class _ProfileAvatarButton extends StatelessWidget {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: palette.editButton,
+                    gradient: LinearGradient(
+                      colors: [
+                        palette.editButton,
+                        palette.editButton.withValues(alpha: 0.85),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2.5),
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF193044)
+                          : Colors.white,
+                      width: 2.5,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF123A4A).withValues(alpha: 0.2),
-                        blurRadius: 8,
+                        color: palette.editButton.withValues(alpha: 0.3),
+                        blurRadius: 10,
                         offset: const Offset(0, 3),
                       ),
                     ],
@@ -386,6 +551,7 @@ class _ProfileIdentity extends StatelessWidget {
     required this.role,
     required this.centered,
     required this.palette,
+    required this.shimmerAnimation,
   });
 
   final String username;
@@ -393,9 +559,12 @@ class _ProfileIdentity extends StatelessWidget {
   final String? role;
   final bool centered;
   final _ProfileHeaderPalette palette;
+  final Animation<double> shimmerAnimation;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: centered
           ? CrossAxisAlignment.center
@@ -407,52 +576,99 @@ class _ProfileIdentity extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           textAlign: centered ? TextAlign.center : TextAlign.start,
           style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
+            fontSize: 21,
+            fontWeight: FontWeight.w900,
             color: palette.primaryText,
-            letterSpacing: -0.35,
+            letterSpacing: -0.4,
+            height: 1.2,
           ),
         ),
-        const SizedBox(height: 5),
-        Text(
-          email,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: centered ? TextAlign.center : TextAlign.start,
-          style: TextStyle(
-            fontSize: 13.5,
-            color: palette.secondaryText,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          constraints: const BoxConstraints(maxWidth: 220),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-          decoration: BoxDecoration(
-            color: palette.glassSurface,
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: palette.glassBorder),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.badge_outlined, size: 16, color: palette.accent),
-              const SizedBox(width: 7),
-              Flexible(
-                child: Text(
-                  role == null ? 'Role not set' : _titleCaseCategory(role!),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    color: palette.primaryText,
-                    fontWeight: FontWeight.w700,
-                  ),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.mail_outline_rounded,
+              size: 14,
+              color: palette.secondaryText.withValues(alpha: 0.7),
+            ),
+            const SizedBox(width: 5),
+            Flexible(
+              child: Text(
+                email,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: centered ? TextAlign.center : TextAlign.start,
+                style: TextStyle(
+                  fontSize: 13.5,
+                  color: palette.secondaryText,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.1,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        AnimatedBuilder(
+          animation: shimmerAnimation,
+          builder: (context, child) {
+            return Container(
+              constraints: const BoxConstraints(maxWidth: 220),
+              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+              decoration: BoxDecoration(
+                color: palette.glassSurface,
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(color: palette.glassBorder),
+                boxShadow: [
+                  BoxShadow(
+                    color: palette.accent
+                        .withValues(alpha: isDark ? 0.08 : 0.06),
+                    blurRadius: 12,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: ShaderMask(
+                shaderCallback: (bounds) {
+                  final shimmerPos = shimmerAnimation.value;
+                  return LinearGradient(
+                    begin: Alignment(-1.0 + 2.0 * shimmerPos, 0),
+                    end: Alignment(0.0 + 2.0 * shimmerPos, 0),
+                    colors: [
+                      Colors.white,
+                      Colors.white.withValues(alpha: 0.5),
+                      Colors.white,
+                    ],
+                    stops: const [0.0, 0.5, 1.0],
+                  ).createShader(bounds);
+                },
+                blendMode: BlendMode.modulate,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.badge_outlined, size: 16, color: palette.accent),
+                    const SizedBox(width: 7),
+                    Flexible(
+                      child: Text(
+                        role == null
+                            ? 'Role not set'
+                            : _titleCaseCategory(role!),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: palette.primaryText,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       ],
     );
@@ -639,20 +855,26 @@ class _ProfileStatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = _ProfileHeaderPalette.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       width: width,
-      constraints: const BoxConstraints(minHeight: 90),
-      padding: const EdgeInsets.fromLTRB(11, 10, 11, 11),
+      constraints: const BoxConstraints(minHeight: 92),
+      padding: const EdgeInsets.fromLTRB(12, 11, 12, 12),
       decoration: BoxDecoration(
         color: palette.glassSurface,
-        borderRadius: BorderRadius.circular(19),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: palette.glassBorder),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF164E63).withValues(alpha: 0.035),
             blurRadius: 10,
             offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: accent.withValues(alpha: isDark ? 0.06 : 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -663,11 +885,18 @@ class _ProfileStatTile extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 30,
-                height: 30,
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
+                  gradient: LinearGradient(
+                    colors: [
+                      accent.withValues(alpha: 0.15),
+                      accent.withValues(alpha: 0.08),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(11),
                 ),
                 child: Center(child: icon),
               ),
@@ -681,12 +910,13 @@ class _ProfileStatTile extends StatelessWidget {
                     fontSize: 11.2,
                     color: palette.secondaryText,
                     fontWeight: FontWeight.w700,
+                    letterSpacing: 0.15,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 7),
+          const SizedBox(height: 8),
           SizedBox(
             height: 26,
             width: double.infinity,
@@ -697,10 +927,10 @@ class _ProfileStatTile extends StatelessWidget {
                 value,
                 maxLines: 1,
                 style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
                   color: palette.primaryText,
-                  letterSpacing: -0.2,
+                  letterSpacing: -0.25,
                 ),
               ),
             ),

@@ -576,53 +576,156 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   ),
                   child: Row(
                     children: [
+                      // Frosted glass Back button.
                       Expanded(
-                        child: OutlinedButton(
-                          onPressed: _isSaving || _currentStep == 0
-                              ? null
-                              : () => _goToStep(_currentStep - 1),
-                          child: const Icon(Icons.arrow_back_rounded),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              decoration: BoxDecoration(
+                                color: (_isSaving || _currentStep == 0)
+                                    ? Colors.grey.withValues(alpha: 0.08)
+                                    : pageSurfaceColor(context),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: pageBorderColor(context),
+                                ),
+                              ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(16),
+                                  onTap: _isSaving || _currentStep == 0
+                                      ? null
+                                      : () {
+                                          HapticFeedback.lightImpact();
+                                          _goToStep(_currentStep - 1);
+                                        },
+                                  child: SizedBox(
+                                    height: 52,
+                                    child: Center(
+                                      child: Icon(
+                                        Icons.arrow_back_rounded,
+                                        color: (_isSaving || _currentStep == 0)
+                                            ? pageSecondaryTextColor(
+                                                context,
+                                              ).withValues(alpha: 0.4)
+                                            : pagePrimaryTextColor(context),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
+                      // Gradient Next / Finish button.
                       Expanded(
                         flex: 2,
-                        child: ElevatedButton(
-                          onPressed: canContinue
-                              ? () => _handleNext(steps)
-                              : null,
-                          child: _isSaving
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.4,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 180),
-                                  child: Row(
-                                    key: ValueKey(
-                                      _currentStep == steps.length - 1,
+                        child: AnimatedScale(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOutBack,
+                          scale: canContinue ? 1.0 : 0.97,
+                          child: AnimatedOpacity(
+                            duration: const Duration(milliseconds: 200),
+                            opacity: canContinue ? 1.0 : 0.55,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(16),
+                                  onTap: canContinue
+                                      ? () {
+                                          HapticFeedback.mediumImpact();
+                                          _handleNext(steps);
+                                        }
+                                      : null,
+                                  child: Ink(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Theme.of(context).colorScheme.primary,
+                                          const Color(0xFF56CCF2),
+                                        ],
+                                        begin: Alignment.centerLeft,
+                                        end: Alignment.centerRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: canContinue
+                                          ? [
+                                              BoxShadow(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .primary
+                                                    .withValues(alpha: 0.3),
+                                                blurRadius: 16,
+                                                offset: const Offset(0, 6),
+                                              ),
+                                            ]
+                                          : null,
                                     ),
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        _currentStep == steps.length - 1
-                                            ? 'Finish setup'
-                                            : 'Next',
+                                    child: SizedBox(
+                                      height: 52,
+                                      child: Center(
+                                        child: _isSaving
+                                            ? const SizedBox(
+                                                height: 20,
+                                                width: 20,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                  strokeWidth: 2.4,
+                                                  color: Colors.white,
+                                                ),
+                                              )
+                                            : AnimatedSwitcher(
+                                                duration: const Duration(
+                                                  milliseconds: 180,
+                                                ),
+                                                child: Row(
+                                                  key: ValueKey(
+                                                    _currentStep ==
+                                                        steps.length - 1,
+                                                  ),
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    Text(
+                                                      _currentStep ==
+                                                              steps.length - 1
+                                                          ? 'Finish setup'
+                                                          : 'Next',
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontWeight:
+                                                            FontWeight.w800,
+                                                        fontSize: 16,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Icon(
+                                                      _currentStep ==
+                                                              steps.length - 1
+                                                          ? Icons.check_rounded
+                                                          : Icons
+                                                              .arrow_forward_rounded,
+                                                      size: 20,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
                                       ),
-                                      const SizedBox(width: 8),
-                                      Icon(
-                                        _currentStep == steps.length - 1
-                                            ? Icons.check_rounded
-                                            : Icons.arrow_forward_rounded,
-                                        size: 20,
-                                      ),
-                                    ],
+                                    ),
                                   ),
                                 ),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ],

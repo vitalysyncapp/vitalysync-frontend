@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -651,7 +650,7 @@ class _FloatingSmartNudgeAssistantState
   Offset _defaultButtonOffset(Size bounds, EdgeInsets padding) {
     return Offset(
       max(padding.left, bounds.width - padding.right - widget.buttonSize),
-      max(padding.top, bounds.height - padding.bottom - widget.buttonSize),
+      padding.top + 112,
     );
   }
 
@@ -712,22 +711,6 @@ class _FloatingSmartNudgeAssistantState
     return _snapButtonOffsetToEdge(_buttonOffset, bounds, padding, _dockEdge);
   }
 
-  double _bubbleLeft(
-    Offset buttonOffset,
-    double bubbleWidth,
-    Size bounds,
-    EdgeInsets padding,
-  ) {
-    final minLeft = padding.left;
-    final maxLeft = max(minLeft, bounds.width - padding.right - bubbleWidth);
-    final preferredLeft = buttonOffset.dx + widget.buttonSize - bubbleWidth;
-
-    return preferredLeft.clamp(minLeft, maxLeft).toDouble();
-  }
-
-  bool _shouldShowBubbleBelow(Offset buttonOffset, EdgeInsets padding) {
-    return buttonOffset.dy < padding.top + 172;
-  }
 
   void _handlePanStart(Size bounds, EdgeInsets padding) {
     _bubbleSwitchTimer?.cancel();
@@ -773,7 +756,10 @@ class _FloatingSmartNudgeAssistantState
     }
   }
 
-  Widget _buildActiveBubble(ExerciseGoalState goalState) {
+  Widget _buildActiveBubble(
+    ExerciseGoalState goalState, {
+    required bool tailOnRight,
+  }) {
     final primaryNudge = _adaptiveNudges.isEmpty ? null : _adaptiveNudges.first;
 
     switch (_activeBubbleKind) {
@@ -786,10 +772,15 @@ class _FloatingSmartNudgeAssistantState
               primaryNudge?.message ?? widget.message,
             ),
             onClose: _hideBubble,
+            tailOnRight: tailOnRight,
           );
         }
 
-        return _NutritionNudgeBubble(insight: insight, onClose: _hideBubble);
+        return _NutritionNudgeBubble(
+          insight: insight,
+          onClose: _hideBubble,
+          tailOnRight: tailOnRight,
+        );
       case _AssistantBubbleKind.exercise:
         return _ExercisePreviewBubble(
           goalState: goalState,
@@ -797,12 +788,14 @@ class _FloatingSmartNudgeAssistantState
           onClose: _hideBubble,
           onChoose: _openExerciseDialog,
           onAccept: _acceptExercisePreview,
+          tailOnRight: tailOnRight,
         );
       case _AssistantBubbleKind.smartNudge:
         return _SmartNudgeBubble(
           emoji: widget.emoji,
           message: _shortAssistantText(primaryNudge?.message ?? widget.message),
           onClose: _hideBubble,
+          tailOnRight: tailOnRight,
         );
     }
   }
@@ -827,37 +820,34 @@ class _FloatingSmartNudgeAssistantState
 
         final padding = _dragPadding(context, bounds);
         final buttonOffset = _effectiveButtonOffset(bounds, padding);
-        final maxBubbleWidth = min(
-          max(bounds.width - padding.horizontal, widget.buttonSize),
-          326.0,
-        );
-        final bubbleLeft = _bubbleLeft(
-          buttonOffset,
-          maxBubbleWidth,
-          bounds,
-          padding,
-        );
-        final showBubbleBelow = _shouldShowBubbleBelow(buttonOffset, padding);
-        final bubbleSlideOffset = showBubbleBelow
-            ? const Offset(0, -0.08)
-            : const Offset(0, 0.08);
+        final isDockedRight = _dockEdge == _AssistantDockEdge.right;
+        const bubbleGap = 10.0;
+        // Bubble sits beside the button, on the opposite side of the dock.
+        final availableWidth = isDockedRight
+            ? buttonOffset.dx - padding.left - bubbleGap
+            : bounds.width - padding.right - buttonOffset.dx -
+                widget.buttonSize - bubbleGap;
+        final maxBubbleWidth = min(max(availableWidth, 200.0), 356.0);
+        final bubbleLeft = isDockedRight
+            ? max(padding.left, buttonOffset.dx - bubbleGap - maxBubbleWidth)
+            : buttonOffset.dx + widget.buttonSize + bubbleGap;
+        // Horizontal slide animation toward the button.
+        final bubbleSlideOffset = isDockedRight
+            ? const Offset(0.08, 0)
+            : const Offset(-0.08, 0);
         final moveDuration = _isDragging
             ? Duration.zero
             : _moveAnimationDuration;
 
         return SizedBox.expand(
           child: Stack(
+            clipBehavior: Clip.none,
             children: [
               AnimatedPositioned(
                 duration: moveDuration,
                 curve: Curves.easeOutCubic,
                 left: bubbleLeft,
-                top: showBubbleBelow
-                    ? buttonOffset.dy + widget.buttonSize + 10
-                    : null,
-                bottom: showBubbleBelow
-                    ? null
-                    : bounds.height - buttonOffset.dy + 10,
+                top: buttonOffset.dy,
                 width: maxBubbleWidth,
                 child: IgnorePointer(
                   ignoring: !_isBubbleVisible,
@@ -872,7 +862,10 @@ class _FloatingSmartNudgeAssistantState
                       child: ValueListenableBuilder<ExerciseGoalState>(
                         valueListenable: ExerciseGoalService.instance.notifier,
                         builder: (context, goalState, _) =>
-                            _buildActiveBubble(goalState),
+                            _buildActiveBubble(
+                              goalState,
+                              tailOnRight: isDockedRight,
+                            ),
                       ),
                     ),
                   ),

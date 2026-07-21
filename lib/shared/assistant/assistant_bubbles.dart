@@ -4,11 +4,13 @@ class _SmartNudgeBubble extends StatelessWidget {
   final String emoji;
   final String message;
   final VoidCallback onClose;
+  final bool tailOnRight;
 
   const _SmartNudgeBubble({
     required this.emoji,
     required this.message,
     required this.onClose,
+    this.tailOnRight = true,
   });
 
   @override
@@ -16,6 +18,7 @@ class _SmartNudgeBubble extends StatelessWidget {
     return _AssistantBubbleShell(
       title: 'Smart nudge',
       onClose: onClose,
+      tailOnRight: tailOnRight,
       icon: _AssistantLottieIcon(emoji: emoji, size: 30, fallbackFontSize: 18),
       child: Text(
         message,
@@ -23,8 +26,8 @@ class _SmartNudgeBubble extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
           color: pageSecondaryTextColor(context),
-          fontSize: 13.5,
-          height: 1.38,
+          fontSize: 14.5,
+          height: 1.4,
           fontWeight: FontWeight.w700,
           letterSpacing: 0,
         ),
@@ -36,14 +39,20 @@ class _SmartNudgeBubble extends StatelessWidget {
 class _NutritionNudgeBubble extends StatelessWidget {
   final NutritionInsight insight;
   final VoidCallback onClose;
+  final bool tailOnRight;
 
-  const _NutritionNudgeBubble({required this.insight, required this.onClose});
+  const _NutritionNudgeBubble({
+    required this.insight,
+    required this.onClose,
+    this.tailOnRight = true,
+  });
 
   @override
   Widget build(BuildContext context) {
     return _AssistantBubbleShell(
       title: 'Nutrition nudge',
       onClose: onClose,
+      tailOnRight: tailOnRight,
       icon: const Icon(
         Icons.restaurant_menu_rounded,
         color: Colors.white,
@@ -56,8 +65,8 @@ class _NutritionNudgeBubble extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
           color: pageSecondaryTextColor(context),
-          fontSize: 13.5,
-          height: 1.38,
+          fontSize: 14.5,
+          height: 1.4,
           fontWeight: FontWeight.w700,
           letterSpacing: 0,
         ),
@@ -72,6 +81,7 @@ class _ExercisePreviewBubble extends StatelessWidget {
   final VoidCallback onClose;
   final VoidCallback onChoose;
   final ValueChanged<ExerciseRecommendationModel> onAccept;
+  final bool tailOnRight;
 
   const _ExercisePreviewBubble({
     required this.goalState,
@@ -79,6 +89,7 @@ class _ExercisePreviewBubble extends StatelessWidget {
     required this.onClose,
     required this.onChoose,
     required this.onAccept,
+    this.tailOnRight = true,
   });
 
   @override
@@ -93,6 +104,7 @@ class _ExercisePreviewBubble extends StatelessWidget {
       return _AssistantBubbleShell(
         title: 'Rest saved',
         onClose: onClose,
+        tailOnRight: tailOnRight,
         icon: const Icon(
           Icons.self_improvement_rounded,
           color: Colors.white,
@@ -144,6 +156,7 @@ class _ExercisePreviewBubble extends StatelessWidget {
       return _AssistantBubbleShell(
         title: isCompleted ? 'Exercise done' : 'Exercise saved',
         onClose: onClose,
+        tailOnRight: tailOnRight,
         icon: Icon(
           isCompleted ? Icons.check_rounded : Icons.flag_rounded,
           color: Colors.white,
@@ -203,6 +216,7 @@ class _ExercisePreviewBubble extends StatelessWidget {
     return _AssistantBubbleShell(
       title: 'Exercise',
       onClose: onClose,
+      tailOnRight: tailOnRight,
       icon: const Icon(
         Icons.directions_run_rounded,
         color: Colors.white,
@@ -218,7 +232,7 @@ class _ExercisePreviewBubble extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: pagePrimaryTextColor(context),
-              fontSize: 16,
+              fontSize: 17,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -229,8 +243,8 @@ class _ExercisePreviewBubble extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: pageSecondaryTextColor(context),
-              fontSize: 13,
-              height: 1.35,
+              fontSize: 14,
+              height: 1.4,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -273,12 +287,19 @@ class _ExercisePreviewBubble extends StatelessWidget {
   }
 }
 
+/// Chat-style speech bubble shell with a triangular tail on the left or
+/// right side that visually connects to the floating assistant icon,
+/// matching the tutorial overlay bubble design.
 class _AssistantBubbleShell extends StatelessWidget {
   final String title;
   final Widget icon;
   final Widget child;
   final VoidCallback onClose;
   final List<Color> iconColors;
+
+  /// When true the tail points right (toward a button docked on the right).
+  /// When false the tail points left (toward a button docked on the left).
+  final bool tailOnRight;
 
   const _AssistantBubbleShell({
     required this.title,
@@ -289,41 +310,52 @@ class _AssistantBubbleShell extends StatelessWidget {
       Color.fromARGB(255, 156, 96, 234),
       Color(0xFF59B7EF),
     ],
+    this.tailOnRight = true,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surfaceColor = isDark
-        ? const Color(0xFF122033).withValues(alpha: 0.92)
-        : Colors.white.withValues(alpha: 0.92);
-    final borderColor = isDark
-        ? const Color(0xFFE2C269).withValues(alpha: 0.34)
-        : const Color(0xFFE4C56A).withValues(alpha: 0.72);
+        ? const Color(0xFF132438).withValues(alpha: 0.98)
+        : Colors.white.withValues(alpha: 0.98);
+        
+    final goldAccent = isDark ? const Color(0xFFF3C04F) : const Color(0xFFE2A829);
+    final borderColor = goldAccent.withValues(alpha: 0.4);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(14, 12, 10, 14),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // Main bubble body — painted first.
+        Container(
+          padding: const EdgeInsets.fromLTRB(16, 14, 12, 16),
           decoration: BoxDecoration(
-            color: surfaceColor,
             borderRadius: BorderRadius.circular(22),
+            gradient: LinearGradient(
+              colors: isDark
+                  ? [
+                      const Color(0xFF132438).withValues(alpha: 0.98),
+                      const Color(0xFF0C1828).withValues(alpha: 0.98),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.98),
+                      const Color(0xFFF1FBF7).withValues(alpha: 0.98),
+                    ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
             border: Border.all(color: borderColor),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.32 : 0.12),
-                blurRadius: 24,
-                offset: const Offset(0, 14),
+                color: Colors.black.withValues(alpha: isDark ? 0.36 : 0.2),
+                blurRadius: 34,
+                offset: const Offset(0, 18),
               ),
               BoxShadow(
-                color: const Color(
-                  0xFF36B7C6,
-                ).withValues(alpha: isDark ? 0.12 : 0.18),
-                blurRadius: 26,
-                spreadRadius: -12,
-                offset: const Offset(0, 10),
+                color: goldAccent.withValues(alpha: 0.16),
+                blurRadius: 28,
+                spreadRadius: -8,
+                offset: const Offset(0, 12),
               ),
             ],
           ),
@@ -334,8 +366,8 @@ class _AssistantBubbleShell extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    width: 34,
-                    height: 34,
+                    width: 38,
+                    height: 38,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
@@ -354,7 +386,7 @@ class _AssistantBubbleShell extends StatelessWidget {
                     ),
                     child: icon,
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       title,
@@ -362,15 +394,15 @@ class _AssistantBubbleShell extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: pagePrimaryTextColor(context),
-                        fontSize: 14,
+                        fontSize: 15,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0,
                       ),
                     ),
                   ),
                   SizedBox(
-                    width: 34,
-                    height: 34,
+                    width: 38,
+                    height: 38,
                     child: IconButton(
                       tooltip: 'Dismiss',
                       onPressed: onClose,
@@ -389,7 +421,38 @@ class _AssistantBubbleShell extends StatelessWidget {
             ],
           ),
         ),
-      ),
+        // Tail (arrow) — on the left or right side of the bubble,
+        // pointing horizontally toward the assistant icon.
+        // Painted on top so it is not hidden by the body's shadow.
+        Positioned(
+          right: tailOnRight ? -6 : null,
+          left: tailOnRight ? null : -6,
+          top: 22,
+          child: Transform.rotate(
+            angle: 3.14159265 / 4,
+            child: Stack(
+              children: [
+                Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: surfaceColor,
+                    border: Border.all(color: borderColor),
+                  ),
+                ),
+                // Inner fill to hide the border seam against the card edge.
+                Positioned(
+                  top: 1,
+                  bottom: 1,
+                  left: tailOnRight ? 1 : 4,
+                  right: tailOnRight ? 4 : 1,
+                  child: Container(color: surfaceColor),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

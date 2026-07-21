@@ -14,6 +14,10 @@ class _OnboardingStep {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Header
+// ---------------------------------------------------------------------------
+
 class _OnboardingHeader extends StatelessWidget {
   final _OnboardingStep step;
   final IconData icon;
@@ -33,28 +37,48 @@ class _OnboardingHeader extends StatelessWidget {
     required this.totalSteps,
   });
 
+  /// Section-aware accent color for the gradient border tint.
+  Color _sectionAccent() {
+    if (step.sectionTitle.contains('About')) return const Color(0xFF56CCF2);
+    if (step.sectionTitle.contains('Routine')) return const Color(0xFF9B7DFF);
+    return const Color(0xFFFF7E5F);
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
+    final accent = _sectionAccent();
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 260),
+          duration: const Duration(milliseconds: 360),
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: pageSurfaceColor(context),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: pageBorderColor(context)),
+            border: Border.all(
+              color: Color.lerp(
+                    pageBorderColor(context),
+                    accent.withValues(alpha: 0.35),
+                    0.5,
+                  ) ??
+                  pageBorderColor(context),
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.08),
                 blurRadius: 22,
                 offset: const Offset(0, 12),
+              ),
+              BoxShadow(
+                color: accent.withValues(alpha: isDark ? 0.06 : 0.04),
+                blurRadius: 32,
+                spreadRadius: 1,
               ),
             ],
           ),
@@ -62,52 +86,31 @@ class _OnboardingHeader extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [
-                          primary.withValues(alpha: isDark ? 0.32 : 0.18),
-                          const Color(
-                            0xFF56CCF2,
-                          ).withValues(alpha: isDark ? 0.22 : 0.28),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.5),
-                      ),
-                    ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Lottie.asset(
-                          animationPath,
-                          width: 68,
-                          height: 68,
-                          fit: BoxFit.contain,
-                          repeat: true,
-                          animate: true,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Icon(icon, color: primary, size: 34);
-                          },
-                        ),
-                        Positioned(
-                          right: 7,
-                          bottom: 7,
-                          child: Icon(icon, color: primary, size: 16),
-                        ),
-                      ],
-                    ),
+                  // Lottie avatar with pulse.
+                  _PulsingLottieAvatar(
+                    animationPath: animationPath,
+                    icon: icon,
+                    primary: primary,
+                    accent: accent,
+                    isDark: isDark,
                   ),
                   const SizedBox(width: 14),
                   Expanded(
                     child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 240),
+                      duration: const Duration(milliseconds: 280),
                       switchInCurve: Curves.easeOutCubic,
+                      transitionBuilder: (child, animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0, 0.12),
+                              end: Offset.zero,
+                            ).animate(animation),
+                            child: child,
+                          ),
+                        );
+                      },
                       child: Column(
                         key: ValueKey(step.sectionTitle),
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -141,6 +144,7 @@ class _OnboardingHeader extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 14),
+              // Gradient progress bar.
               Row(
                 children: [
                   Expanded(
@@ -151,11 +155,37 @@ class _OnboardingHeader extends StatelessWidget {
                         duration: const Duration(milliseconds: 420),
                         curve: Curves.easeOutCubic,
                         builder: (context, value, _) {
-                          return LinearProgressIndicator(
-                            value: value,
-                            minHeight: 10,
-                            backgroundColor: pageBorderColor(context),
-                            color: primary,
+                          return Stack(
+                            children: [
+                              Container(
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  color: pageBorderColor(context),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                              ),
+                              FractionallySizedBox(
+                                widthFactor: value.clamp(0.0, 1.0),
+                                child: Container(
+                                  height: 10,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(999),
+                                    gradient: LinearGradient(
+                                      colors: [primary, accent],
+                                      begin: Alignment.centerLeft,
+                                      end: Alignment.centerRight,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: primary.withValues(alpha: 0.3),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                           );
                         },
                       ),
@@ -165,7 +195,7 @@ class _OnboardingHeader extends StatelessWidget {
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 180),
                     child: Text(
-                      'Step $currentStep of $totalSteps',
+                      '$currentStep / $totalSteps',
                       key: ValueKey(currentStep),
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
@@ -183,6 +213,107 @@ class _OnboardingHeader extends StatelessWidget {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Pulsing Lottie avatar for the header
+// ---------------------------------------------------------------------------
+
+class _PulsingLottieAvatar extends StatefulWidget {
+  final String animationPath;
+  final IconData icon;
+  final Color primary;
+  final Color accent;
+  final bool isDark;
+
+  const _PulsingLottieAvatar({
+    required this.animationPath,
+    required this.icon,
+    required this.primary,
+    required this.accent,
+    required this.isDark,
+  });
+
+  @override
+  State<_PulsingLottieAvatar> createState() => _PulsingLottieAvatarState();
+}
+
+class _PulsingLottieAvatarState extends State<_PulsingLottieAvatar>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (context, child) {
+        final scale = 1.0 + (_pulse.value * 0.04);
+        return Transform.scale(scale: scale, child: child);
+      },
+      child: Container(
+        width: 72,
+        height: 72,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            colors: [
+              widget.primary.withValues(
+                alpha: widget.isDark ? 0.32 : 0.18,
+              ),
+              widget.accent.withValues(
+                alpha: widget.isDark ? 0.22 : 0.28,
+              ),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.5),
+          ),
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Lottie.asset(
+              widget.animationPath,
+              width: 68,
+              height: 68,
+              fit: BoxFit.contain,
+              repeat: true,
+              animate: true,
+              errorBuilder: (context, error, stackTrace) {
+                return Icon(widget.icon, color: widget.primary, size: 34);
+              },
+            ),
+            Positioned(
+              right: 7,
+              bottom: 7,
+              child: Icon(widget.icon, color: widget.primary, size: 16),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Step entrance animation
+// ---------------------------------------------------------------------------
+
 class _StepEntrance extends StatelessWidget {
   final Widget child;
 
@@ -192,14 +323,18 @@ class _StepEntrance extends StatelessWidget {
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 360),
+      duration: const Duration(milliseconds: 420),
       curve: Curves.easeOutCubic,
       builder: (context, value, child) {
         return Opacity(
           opacity: value,
           child: Transform.translate(
-            offset: Offset(0, 20 * (1 - value)),
-            child: child,
+            offset: Offset(16 * (1 - value), 18 * (1 - value)),
+            child: Transform.scale(
+              scale: 0.96 + (0.04 * value),
+              alignment: Alignment.center,
+              child: child,
+            ),
           ),
         );
       },
@@ -207,6 +342,10 @@ class _StepEntrance extends StatelessWidget {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Prompt badge (category pill at top of each question card)
+// ---------------------------------------------------------------------------
 
 class _PromptBadge extends StatelessWidget {
   final IconData icon;
@@ -219,11 +358,18 @@ class _PromptBadge extends StatelessWidget {
     final primary = Theme.of(context).colorScheme.primary;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: primary.withValues(alpha: 0.12),
+        gradient: LinearGradient(
+          colors: [
+            primary.withValues(alpha: 0.14),
+            primary.withValues(alpha: 0.06),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: primary.withValues(alpha: 0.18)),
+        border: Border.all(color: primary.withValues(alpha: 0.20)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -235,6 +381,7 @@ class _PromptBadge extends StatelessWidget {
             style: TextStyle(
               fontSize: 11.5,
               fontWeight: FontWeight.w900,
+              letterSpacing: 0.3,
               color: primary,
             ),
           ),
@@ -243,6 +390,10 @@ class _PromptBadge extends StatelessWidget {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Question title
+// ---------------------------------------------------------------------------
 
 class _QuestionTitle extends StatelessWidget {
   final String text;
@@ -254,14 +405,19 @@ class _QuestionTitle extends StatelessWidget {
     return Text(
       text,
       style: TextStyle(
-        height: 1.22,
-        fontSize: 25,
+        height: 1.2,
+        fontSize: 26,
         fontWeight: FontWeight.w900,
+        letterSpacing: -0.3,
         color: pagePrimaryTextColor(context),
       ),
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Helper text
+// ---------------------------------------------------------------------------
 
 class _HelperText extends StatelessWidget {
   final String text;
@@ -280,6 +436,10 @@ class _HelperText extends StatelessWidget {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Option tile (single/multi select)
+// ---------------------------------------------------------------------------
 
 class _OptionTile extends StatelessWidget {
   final String label;
@@ -301,40 +461,54 @@ class _OptionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(18),
-      onTap: onTap,
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
       child: AnimatedScale(
-        duration: const Duration(milliseconds: 180),
+        duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutBack,
-        scale: selected ? 1.018 : 1,
+        scale: selected ? 1.025 : 1,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+          duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutCubic,
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
+            gradient: selected
+                ? LinearGradient(
+                    colors: [
+                      primary.withValues(alpha: 0.16),
+                      primary.withValues(alpha: 0.08),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
             color: selected
-                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.14)
+                ? null
                 : isDark
-                ? Colors.white.withValues(alpha: 0.05)
-                : const Color(0xFFF6FBF9),
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : const Color(0xFFF6FBF9),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               width: selected ? 1.6 : 1,
-              color: selected
-                  ? Theme.of(context).colorScheme.primary
-                  : pageBorderColor(context),
+              color: selected ? primary : pageBorderColor(context),
             ),
             boxShadow: selected
                 ? [
                     BoxShadow(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withValues(alpha: 0.18),
-                      blurRadius: 18,
+                      color: primary.withValues(alpha: 0.16),
+                      blurRadius: 20,
                       offset: const Offset(0, 10),
+                    ),
+                    BoxShadow(
+                      color: primary.withValues(alpha: 0.06),
+                      blurRadius: 4,
+                      spreadRadius: 0,
                     ),
                   ]
                 : null,
@@ -371,19 +545,21 @@ class _OptionTile extends StatelessWidget {
                 ),
               ),
               AnimatedSwitcher(
-                duration: const Duration(milliseconds: 160),
+                duration: const Duration(milliseconds: 200),
+                switchInCurve: Curves.easeOutBack,
+                transitionBuilder: (child, animation) {
+                  return ScaleTransition(scale: animation, child: child);
+                },
                 child: Icon(
                   selected
                       ? multiSelect
-                            ? Icons.check_box_rounded
-                            : Icons.check_circle_rounded
+                          ? Icons.check_box_rounded
+                          : Icons.check_circle_rounded
                       : multiSelect
-                      ? Icons.check_box_outline_blank_rounded
-                      : Icons.radio_button_unchecked_rounded,
-                  key: ValueKey(selected),
-                  color: selected
-                      ? Theme.of(context).colorScheme.primary
-                      : pageSecondaryTextColor(context),
+                          ? Icons.check_box_outline_blank_rounded
+                          : Icons.radio_button_unchecked_rounded,
+                  key: ValueKey('$selected-$multiSelect'),
+                  color: selected ? primary : pageSecondaryTextColor(context),
                 ),
               ),
             ],
@@ -393,6 +569,10 @@ class _OptionTile extends StatelessWidget {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Metric input (height/weight)
+// ---------------------------------------------------------------------------
 
 class _MetricInput extends StatelessWidget {
   final TextEditingController controller;
@@ -462,11 +642,19 @@ class _MetricInput extends StatelessWidget {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
 String _sentenceCaseOption(String value) {
   final text = value.trim();
   if (text.length < 2) return text;
   return '${text[0].toUpperCase()}${text.substring(1).toLowerCase()}';
 }
+
+// ---------------------------------------------------------------------------
+// Animated icon badge (circle beside each option)
+// ---------------------------------------------------------------------------
 
 class _AnimatedIconBadge extends StatelessWidget {
   final IconData icon;
@@ -479,23 +667,44 @@ class _AnimatedIconBadge extends StatelessWidget {
     final primary = Theme.of(context).colorScheme.primary;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
+    return AnimatedRotation(
+      turns: selected ? 1 : 0,
+      duration: const Duration(milliseconds: 400),
       curve: Curves.easeOutCubic,
-      width: 38,
-      height: 38,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: selected
-            ? primary
-            : isDark
-            ? Colors.white.withValues(alpha: 0.07)
-            : Colors.white.withValues(alpha: 0.72),
-        border: Border.all(
-          color: selected ? primary : pageBorderColor(context),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: selected
+              ? LinearGradient(
+                  colors: [primary, primary.withValues(alpha: 0.78)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          color: selected
+              ? null
+              : isDark
+                  ? Colors.white.withValues(alpha: 0.07)
+                  : Colors.white.withValues(alpha: 0.72),
+          border: Border.all(
+            color: selected ? primary : pageBorderColor(context),
+          ),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: primary.withValues(alpha: 0.25),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
         ),
+        child: Icon(icon, size: 21, color: selected ? Colors.white : primary),
       ),
-      child: Icon(icon, size: 20, color: selected ? Colors.white : primary),
     );
   }
 }

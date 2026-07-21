@@ -237,61 +237,105 @@ class _WeeklyPulseSavedView extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : Colors.white.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(22),
+        gradient: LinearGradient(
+          colors: isDark
+              ? [
+                  const Color(0xFF0F2922).withValues(alpha: 0.5),
+                  const Color(0xFF0A1B16).withValues(alpha: 0.3),
+                ]
+              : [
+                  const Color(0xFFF0FDF4),
+                  const Color(0xFFF8FAFC),
+                ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : const Color(0xFFD7F5E7),
+              ? const Color(0xFF22C55E).withValues(alpha: 0.15)
+              : const Color(0xFFBBF7D0),
         ),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: const Color(0xFF22C55E).withValues(alpha: 0.05),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+        ],
       ),
       child: Column(
         children: [
-          Container(
-            width: 58,
-            height: 58,
+          Stack(
             alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xFFDCFCE7),
-              border: Border.all(color: const Color(0xFF86EFAC)),
-            ),
-            child: const Text('\u{2705}', style: TextStyle(fontSize: 28)),
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF22C55E).withValues(alpha: isDark ? 0.1 : 0.15),
+                ),
+              ),
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF22C55E), Color(0xFF15803D)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF22C55E).withValues(alpha: 0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.check_rounded, color: Colors.white, size: 32),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Text(
             'Weekly pulse saved',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: pagePrimaryTextColor(context),
-              fontSize: 18,
+              fontSize: 20,
               fontWeight: FontWeight.w900,
+              letterSpacing: -0.3,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
-            'You are set for this week. A fresh pulse opens again next Monday.',
+            'You are set for this week. A fresh pulse\nopens again next Monday.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: pageSecondaryTextColor(context),
-              fontSize: 13.5,
-              height: 1.38,
+              fontSize: 14,
+              height: 1.4,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 14),
-          OutlinedButton.icon(
+          const SizedBox(height: 20),
+          FilledButton.icon(
             onPressed: onRedo,
-            icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Redo weekly pulse'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF15803D),
-              side: const BorderSide(color: Color(0xFF86EFAC)),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            label: const Text('Redo weekly pulse', style: TextStyle(fontWeight: FontWeight.w700)),
+            style: FilledButton.styleFrom(
+              backgroundColor: isDark 
+                  ? Colors.white.withValues(alpha: 0.1) 
+                  : const Color(0xFFDCFCE7),
+              foregroundColor: isDark ? Colors.white : const Color(0xFF166534),
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
