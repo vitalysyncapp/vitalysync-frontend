@@ -6,72 +6,60 @@ import '../../../../shared/widgets/analytics_animation.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../data/weekly_user_metrics.dart';
 
-class WellnessIndexCard extends StatefulWidget {
-  const WellnessIndexCard({super.key});
+class WellnessIndexCard extends StatelessWidget {
+  final WeeklyUserMetrics? metrics;
+  final bool isLoading;
 
-  @override
-  State<WellnessIndexCard> createState() => _WellnessIndexCardState();
-}
-
-class _WellnessIndexCardState extends State<WellnessIndexCard> {
-  late Future<WeeklyUserMetrics> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _future = WeeklyUserMetricsService.loadCurrentWeek();
-  }
+  const WellnessIndexCard({
+    super.key,
+    required this.metrics,
+    required this.isLoading,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<WeeklyUserMetrics>(
-      future: _future,
-      builder: (context, snapshot) {
-        final metrics = snapshot.data;
-        final entries = [
-          metrics?.sleepIndex ?? 0,
-          metrics?.moodIndex ?? 0,
-          metrics?.energyIndex ?? 0,
-          metrics?.hydrationIndex ?? 0,
-          metrics?.exerciseIndex ?? 0,
-          metrics?.recoveryIndex ?? 0,
-        ];
+    final entries = [
+      metrics?.sleepIndex ?? 0,
+      metrics?.moodIndex ?? 0,
+      metrics?.energyIndex ?? 0,
+      metrics?.hydrationIndex ?? 0,
+      metrics?.exerciseIndex ?? 0,
+      metrics?.recoveryIndex ?? 0,
+    ];
 
-        return Container(
-          padding: const EdgeInsets.all(14),
-          decoration: _cardDecoration(context),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Wellness index',
-                style: TextStyle(
-                  fontSize: 15.5,
-                  fontWeight: FontWeight.bold,
-                  color: pagePrimaryTextColor(context),
-                ),
-              ),
-              const SizedBox(height: 12),
-              AnalyticsContentSwitcher(
-                isLoading: snapshot.connectionState == ConnectionState.waiting,
-                loading: const SizedBox(
-                  height: 230,
-                  child: AppSkeletonChart(height: 220, barCount: 6),
-                ),
-                child: SizedBox(
-                  height: 230,
-                  child: AnalyticsChartReveal(
-                    builder: (context, progress) => RadarChart(
-                      _chartData(context, entries, progress),
-                      duration: Duration.zero,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: _cardDecoration(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Wellness index',
+            style: TextStyle(
+              fontSize: 15.5,
+              fontWeight: FontWeight.bold,
+              color: pagePrimaryTextColor(context),
+            ),
           ),
-        );
-      },
+          const SizedBox(height: 12),
+          AnalyticsContentSwitcher(
+            isLoading: isLoading,
+            loading: const SizedBox(
+              height: 230,
+              child: AppSkeletonChart(height: 220, barCount: 6),
+            ),
+            child: SizedBox(
+              height: 230,
+              child: AnalyticsChartReveal(
+                builder: (context, progress) => RadarChart(
+                  _chartData(context, entries, progress),
+                  duration: Duration.zero,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

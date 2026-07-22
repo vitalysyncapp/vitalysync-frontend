@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../config/api_config.dart';
+import '../offline/fetch_policy.dart';
 import '../preferences/user_session.dart';
 
 class NotificationEventRecord {
@@ -50,7 +51,7 @@ class NotificationEventRecord {
 }
 
 class NotificationEventApi {
-  static const Duration _requestTimeout = Duration(seconds: 8);
+  static const Duration _requestTimeout = ApiRequestTimeouts.fastRead;
 
   static Future<void> createEvent({
     required String notificationType,
@@ -117,8 +118,9 @@ class NotificationEventApi {
       return (data['events'] as List<dynamic>? ?? const [])
           .whereType<Map>()
           .map(
-            (item) =>
-                NotificationEventRecord.fromJson(Map<String, dynamic>.from(item)),
+            (item) => NotificationEventRecord.fromJson(
+              Map<String, dynamic>.from(item),
+            ),
           )
           .toList();
     } catch (_) {

@@ -3,11 +3,12 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../../../shared/config/api_config.dart';
+import '../../../shared/offline/fetch_policy.dart';
 import '../../../shared/offline/offline_cache_store.dart';
 import 'exercise_goal_model.dart';
 
 class ExerciseGoalApi {
-  static const Duration _requestTimeout = Duration(seconds: 8);
+  static const Duration _requestTimeout = ApiRequestTimeouts.fastRead;
   static const String _historyCache = 'exercise_goal_history';
 
   static Future<ExerciseGoalModel?> fetchToday({
@@ -92,7 +93,19 @@ class ExerciseGoalApi {
     required int userId,
     required String startDate,
     required String endDate,
+    bool forceRefresh = false,
   }) async {
+    final cachedSnapshot = await OfflineCacheStore.readLatestJsonSnapshot(
+      namespace: _historyCache,
+      scope: _historyScope(userId, startDate, endDate),
+    );
+    if (!forceRefresh &&
+        cachedSnapshot?.isFresh(FetchPolicy.fiveMinutes.maxAge) == true) {
+      return _parseGoals(
+        cachedSnapshot!.data['goals'] as List<dynamic>? ?? const [],
+      );
+    }
+
     try {
       final response = await http
           .get(
@@ -148,6 +161,7 @@ class ExerciseGoalApi {
 
     final goal = data['goal'];
     if (goal is Map) {
+      await OfflineCacheStore.removeNamespace(namespace: _historyCache);
       return ExerciseGoalModel.fromJson(Map<String, dynamic>.from(goal));
     }
 

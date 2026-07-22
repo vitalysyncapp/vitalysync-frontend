@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -6,6 +7,7 @@ import 'package:intl/intl.dart';
 
 import '../../../shared/config/api_config.dart';
 import '../../../shared/notifications/notification_feed_cache.dart';
+import '../../../shared/offline/fetch_policy.dart';
 import '../../../shared/offline/offline_cache_store.dart';
 import '../../../shared/preferences/user_session.dart';
 
@@ -232,7 +234,8 @@ class NutritionHistoryDay {
 }
 
 class NutritionApi {
-  static const Duration _requestTimeout = Duration(seconds: 8);
+  static const Duration _requestTimeout = ApiRequestTimeouts.fastRead;
+  static const Duration _analysisTimeout = ApiRequestTimeouts.aiAnalysis;
   static const String _dailyNutritionCache = 'nutrition_daily_summary';
   static const String _nutritionHistoryCache = 'nutrition_history';
 
@@ -268,32 +271,24 @@ class NutritionApi {
     request.headers.addAll(await ApiConfig.acceptJsonHeaders());
     request.files.add(await http.MultipartFile.fromPath('image', image.path));
 
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
-    final data = _decodeBody(
-      response,
-      fallbackMessage: 'Food analysis failed.',
-    );
+    try {
+      final streamedResponse = await request.send().timeout(_analysisTimeout);
+      final response = await http.Response.fromStream(streamedResponse);
+      final data = _decodeBody(
+        response,
+        fallbackMessage: 'Food analysis failed.',
+      );
 
-    if (response.statusCode != 200) {
-      throw Exception(data['message'] ?? 'Food analysis failed.');
+      if (response.statusCode != 200) {
+        throw Exception(data['message'] ?? 'Food analysis failed.');
+      }
+
+      return _analysisResultFromData(data);
+    } on TimeoutException {
+      throw Exception(
+        'Nutrition analysis is taking longer than usual. Please try again in a moment.',
+      );
     }
-
-    final rawAttempt = data['attempt'] is Map
-        ? Map<String, dynamic>.from(data['attempt'] as Map)
-        : const <String, dynamic>{};
-    final rawItems = data['items'] is List ? data['items'] as List : const [];
-
-    return NutritionAnalysisResult(
-      attemptId: _parseInt(rawAttempt['attempt_id']),
-      items: rawItems
-          .whereType<Map>()
-          .map(
-            (item) =>
-                NutritionReviewItem.fromJson(Map<String, dynamic>.from(item)),
-          )
-          .toList(),
-    );
   }
 
   static Future<NutritionAnalysisResult> analyzeManualMeal({
@@ -302,44 +297,38 @@ class NutritionApi {
     required String logDate,
   }) async {
     final userId = await _currentUserId();
-    final response = await http.post(
-      Uri.parse(ApiConfig.nutrition('/analyze')),
-      headers: await ApiConfig.jsonHeaders(),
-      body: jsonEncode({
-        'user_id': userId,
-        'input_type': 'manual',
-        'meal_type': mealType,
-        'log_date': logDate,
-        'meal_name': meals.isEmpty ? '' : meals.first.mealName.trim(),
-        'quantity': meals.isEmpty ? '' : meals.first.quantity.trim(),
-        'notes': meals.isEmpty ? '' : meals.first.notes.trim(),
-        'manual_items': meals.map((meal) => meal.toJson()).toList(),
-      }),
-    );
-    final data = _decodeBody(
-      response,
-      fallbackMessage: 'Manual food analysis failed.',
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception(data['message'] ?? 'Manual food analysis failed.');
-    }
-
-    final rawAttempt = data['attempt'] is Map
-        ? Map<String, dynamic>.from(data['attempt'] as Map)
-        : const <String, dynamic>{};
-    final rawItems = data['items'] is List ? data['items'] as List : const [];
-
-    return NutritionAnalysisResult(
-      attemptId: _parseInt(rawAttempt['attempt_id']),
-      items: rawItems
-          .whereType<Map>()
-          .map(
-            (item) =>
-                NutritionReviewItem.fromJson(Map<String, dynamic>.from(item)),
+    try {
+      final response = await http
+          .post(
+            Uri.parse(ApiConfig.nutrition('/analyze')),
+            headers: await ApiConfig.jsonHeaders(),
+            body: jsonEncode({
+              'user_id': userId,
+              'input_type': 'manual',
+              'meal_type': mealType,
+              'log_date': logDate,
+              'meal_name': meals.isEmpty ? '' : meals.first.mealName.trim(),
+              'quantity': meals.isEmpty ? '' : meals.first.quantity.trim(),
+              'notes': meals.isEmpty ? '' : meals.first.notes.trim(),
+              'manual_items': meals.map((meal) => meal.toJson()).toList(),
+            }),
           )
-          .toList(),
-    );
+          .timeout(_analysisTimeout);
+      final data = _decodeBody(
+        response,
+        fallbackMessage: 'Manual food analysis failed.',
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception(data['message'] ?? 'Manual food analysis failed.');
+      }
+
+      return _analysisResultFromData(data);
+    } on TimeoutException {
+      throw Exception(
+        'Nutrition analysis is taking longer than usual. Please try again in a moment.',
+      );
+    }
   }
 
   static Future<void> confirmMeal({
@@ -350,18 +339,20 @@ class NutritionApi {
     String notes = '',
   }) async {
     final userId = await _currentUserId();
-    final response = await http.post(
-      Uri.parse(ApiConfig.nutrition('/confirm')),
-      headers: await ApiConfig.jsonHeaders(),
-      body: jsonEncode({
-        'user_id': userId,
-        'attempt_id': attemptId,
-        'meal_type': mealType,
-        'log_date': logDate,
-        'items': items.map((item) => item.toJson()).toList(),
-        'notes': notes,
-      }),
-    );
+    final response = await http
+        .post(
+          Uri.parse(ApiConfig.nutrition('/confirm')),
+          headers: await ApiConfig.jsonHeaders(),
+          body: jsonEncode({
+            'user_id': userId,
+            'attempt_id': attemptId,
+            'meal_type': mealType,
+            'log_date': logDate,
+            'items': items.map((item) => item.toJson()).toList(),
+            'notes': notes,
+          }),
+        )
+        .timeout(_requestTimeout);
     final data = _decodeBody(
       response,
       fallbackMessage: 'Failed to save nutrition log.',
@@ -372,15 +363,24 @@ class NutritionApi {
     }
 
     await invalidateNotificationFeedCache();
+    await Future.wait([
+      OfflineCacheStore.remove(
+        namespace: _dailyNutritionCache,
+        scope: _dailyScope(userId, logDate),
+      ),
+      OfflineCacheStore.removeNamespace(namespace: _nutritionHistoryCache),
+    ]);
   }
 
   static Future<void> discardAttempt(int attemptId) async {
     final userId = await _currentUserId();
-    final response = await http.post(
-      Uri.parse(ApiConfig.nutrition('/discard-attempt')),
-      headers: await ApiConfig.jsonHeaders(),
-      body: jsonEncode({'user_id': userId, 'attempt_id': attemptId}),
-    );
+    final response = await http
+        .post(
+          Uri.parse(ApiConfig.nutrition('/discard-attempt')),
+          headers: await ApiConfig.jsonHeaders(),
+          body: jsonEncode({'user_id': userId, 'attempt_id': attemptId}),
+        )
+        .timeout(_requestTimeout);
     final data = _decodeBody(
       response,
       fallbackMessage: 'Failed to cancel nutrition attempt.',
@@ -391,9 +391,21 @@ class NutritionApi {
     }
   }
 
-  static Future<DailyNutritionSummary> fetchDaily({String? date}) async {
+  static Future<DailyNutritionSummary> fetchDaily({
+    String? date,
+    bool forceRefresh = false,
+  }) async {
     final userId = await _currentUserId();
     final logDate = date ?? todayKey();
+    final cachedSnapshot = await OfflineCacheStore.readLatestJsonSnapshot(
+      namespace: _dailyNutritionCache,
+      scope: _dailyScope(userId, logDate),
+    );
+    if (!forceRefresh &&
+        cachedSnapshot?.isFresh(FetchPolicy.perMinute.maxAge) == true) {
+      return DailyNutritionSummary.fromJson(cachedSnapshot!.data);
+    }
+
     try {
       final response = await http
           .get(
@@ -433,8 +445,18 @@ class NutritionApi {
   static Future<List<NutritionHistoryDay>> fetchHistory({
     required String start,
     required String end,
+    bool forceRefresh = false,
   }) async {
     final userId = await _currentUserId();
+    final cachedSnapshot = await OfflineCacheStore.readLatestJsonSnapshot(
+      namespace: _nutritionHistoryCache,
+      scope: _historyScope(userId, start, end),
+    );
+    if (!forceRefresh &&
+        cachedSnapshot?.isFresh(FetchPolicy.fiveMinutes.maxAge) == true) {
+      return _parseHistoryDays(cachedSnapshot!.data);
+    }
+
     try {
       final response = await http
           .get(
@@ -477,6 +499,26 @@ class NutritionApi {
     }
 
     return DailyNutritionSummary.fromJson(data);
+  }
+
+  static NutritionAnalysisResult _analysisResultFromData(
+    Map<String, dynamic> data,
+  ) {
+    final rawAttempt = data['attempt'] is Map
+        ? Map<String, dynamic>.from(data['attempt'] as Map)
+        : const <String, dynamic>{};
+    final rawItems = data['items'] is List ? data['items'] as List : const [];
+
+    return NutritionAnalysisResult(
+      attemptId: _parseInt(rawAttempt['attempt_id']),
+      items: rawItems
+          .whereType<Map>()
+          .map(
+            (item) =>
+                NutritionReviewItem.fromJson(Map<String, dynamic>.from(item)),
+          )
+          .toList(),
+    );
   }
 
   static Future<List<NutritionHistoryDay>> _readCachedHistory(

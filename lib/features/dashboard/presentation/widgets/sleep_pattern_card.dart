@@ -6,92 +6,80 @@ import '../../../../shared/widgets/analytics_animation.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../data/weekly_user_metrics.dart';
 
-class SleepPatternCard extends StatefulWidget {
-  const SleepPatternCard({super.key});
+class SleepPatternCard extends StatelessWidget {
+  final WeeklyUserMetrics? metrics;
+  final bool isLoading;
 
-  @override
-  State<SleepPatternCard> createState() => _SleepPatternCardState();
-}
-
-class _SleepPatternCardState extends State<SleepPatternCard> {
-  late Future<WeeklyUserMetrics> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _future = WeeklyUserMetricsService.loadCurrentWeek();
-  }
+  const SleepPatternCard({
+    super.key,
+    required this.metrics,
+    required this.isLoading,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<WeeklyUserMetrics>(
-      future: _future,
-      builder: (context, snapshot) {
-        final metrics = snapshot.data;
-        final days = metrics?.days ?? const <DailyUserMetric>[];
-        final average = metrics?.averageSleep ?? 0;
+    final days = metrics?.days ?? const <DailyUserMetric>[];
+    final average = metrics?.averageSleep ?? 0;
 
-        return Container(
-          padding: const EdgeInsets.all(14),
-          decoration: _cardDecoration(context),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: _cardDecoration(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Sleep pattern',
+            style: TextStyle(
+              fontSize: 15.5,
+              fontWeight: FontWeight.bold,
+              color: pagePrimaryTextColor(context),
+            ),
+          ),
+          const SizedBox(height: 12),
+          AnalyticsContentSwitcher(
+            isLoading: isLoading,
+            loading: const SizedBox(
+              height: 200,
+              child: AppSkeletonChart(height: 190),
+            ),
+            child: SizedBox(
+              height: 200,
+              child: AnalyticsChartReveal(
+                builder: (context, progress) => BarChart(
+                  _chartData(context, days, progress),
+                  duration: Duration.zero,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Divider(color: pageBorderColor(context)),
+          const SizedBox(height: 9),
+          Row(
             children: [
+              Expanded(
+                child: Text(
+                  'Recommended: 7-9 hours',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: pageSecondaryTextColor(context),
+                  ),
+                ),
+              ),
               Text(
-                'Sleep pattern',
-                style: TextStyle(
-                  fontSize: 15.5,
+                average > 0
+                    ? 'Average: ${average.toStringAsFixed(1)}h'
+                    : 'No logs yet',
+                style: const TextStyle(
+                  fontSize: 12.5,
                   fontWeight: FontWeight.bold,
-                  color: pagePrimaryTextColor(context),
+                  color: Color(0xFF2F66F3),
                 ),
-              ),
-              const SizedBox(height: 12),
-              AnalyticsContentSwitcher(
-                isLoading: snapshot.connectionState == ConnectionState.waiting,
-                loading: const SizedBox(
-                  height: 200,
-                  child: AppSkeletonChart(height: 190),
-                ),
-                child: SizedBox(
-                  height: 200,
-                  child: AnalyticsChartReveal(
-                    builder: (context, progress) => BarChart(
-                      _chartData(context, days, progress),
-                      duration: Duration.zero,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Divider(color: pageBorderColor(context)),
-              const SizedBox(height: 9),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Recommended: 7-9 hours',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: pageSecondaryTextColor(context),
-                      ),
-                    ),
-                  ),
-                  Text(
-                    average > 0
-                        ? 'Average: ${average.toStringAsFixed(1)}h'
-                        : 'No logs yet',
-                    style: const TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2F66F3),
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 

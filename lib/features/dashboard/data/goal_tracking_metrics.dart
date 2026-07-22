@@ -78,7 +78,10 @@ class GoalFocusRecommendation {
 class GoalTrackingMetricsService {
   GoalTrackingMetricsService._();
 
-  static Future<DashboardGoalTrackingSnapshot> loadCurrentWeek() async {
+  static Future<DashboardGoalTrackingSnapshot> loadCurrentWeek({
+    WeeklyUserMetrics? weeklyMetrics,
+    bool forceRefresh = false,
+  }) async {
     final session = await UserSessionController.instance.load();
     final userId = session.userId ?? 0;
     final now = DateTime.now();
@@ -89,25 +92,29 @@ class GoalTrackingMetricsService {
       userId > 0
           ? UserGoalsService.fetch(userId: userId)
           : Future.value(UserGoalsSnapshot.defaults()),
-      WeeklyUserMetricsService.loadCurrentWeek(),
+      weeklyMetrics != null
+          ? Future.value(weeklyMetrics)
+          : WeeklyUserMetricsService.loadCurrentWeek(
+              forceRefresh: forceRefresh,
+            ),
       _loadNutritionHistory(userId: userId, start: start, end: today),
     ]);
 
     final goals = results[0] as UserGoalsSnapshot;
-    final weeklyMetrics = results[1] as WeeklyUserMetrics;
+    final resolvedWeeklyMetrics = results[1] as WeeklyUserMetrics;
     final nutritionResult = results[2] as _NutritionHistoryResult;
     final nutritionSnapshot = _WeeklyNutritionSnapshot.fromHistory(
       history: nutritionResult.days,
     );
     final metrics = _buildMetrics(
       goals: goals,
-      weeklyMetrics: weeklyMetrics,
+      weeklyMetrics: resolvedWeeklyMetrics,
       nutrition: nutritionSnapshot,
     );
 
     return DashboardGoalTrackingSnapshot(
       goals: goals,
-      weeklyMetrics: weeklyMetrics,
+      weeklyMetrics: resolvedWeeklyMetrics,
       nutritionDays: nutritionResult.days,
       metrics: metrics,
       recommendations: _buildRecommendations(goals: goals, metrics: metrics),

@@ -117,9 +117,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   Future<void> _handleNotificationPayload(String payload) async {
     final session = await UserSessionController.instance.load();
-    if (!session.isLoggedIn ||
-        !session.hasAuthToken ||
-        session.userId == null) {
+    if (!session.isLoggedIn || session.userId == null) {
       return;
     }
 

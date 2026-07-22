@@ -24,9 +24,7 @@ Future<void> runBackgroundWellnessCollection() async {
   try {
     await AppPreferencesController.instance.load();
     final session = await UserSessionController.instance.load();
-    if (!session.isLoggedIn ||
-        !session.hasAuthToken ||
-        session.userId == null) {
+    if (!session.isLoggedIn || session.userId == null) {
       return;
     }
 

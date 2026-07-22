@@ -462,6 +462,10 @@ class _NutritionPageState extends State<NutritionPage> {
 
   String _friendlyError(Object error) {
     final message = error.toString().replaceFirst('Exception: ', '').trim();
+    if (error is TimeoutException ||
+        message.toLowerCase().contains('timeoutexception')) {
+      return 'VitalySync is taking longer than usual. Please try again in a moment.';
+    }
     if (message.isEmpty) {
       return 'Something went wrong. Please try again.';
     }

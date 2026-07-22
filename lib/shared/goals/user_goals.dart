@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/api_config.dart';
+import '../offline/fetch_policy.dart';
 import '../offline/offline_cache_store.dart';
 
 const List<String> kWellnessGoalOptions = [
@@ -206,16 +207,29 @@ class UserGoalsSnapshot {
 class UserGoalsService {
   UserGoalsService._();
 
-  static const Duration _requestTimeout = Duration(seconds: 8);
+  static const Duration _requestTimeout = ApiRequestTimeouts.fastRead;
   static const String _cacheNamespace = 'user_goals';
   static final ValueNotifier<int> refreshSignal = ValueNotifier<int>(0);
 
   static Future<UserGoalsSnapshot> fetch({
     required int userId,
     UserGoalsSnapshot? defaults,
+    bool forceRefresh = false,
   }) async {
     if (userId <= 0) {
       return defaults ?? UserGoalsSnapshot.defaults();
+    }
+
+    final cachedSnapshot = await OfflineCacheStore.readLatestJsonSnapshot(
+      namespace: _cacheNamespace,
+      scope: userId.toString(),
+    );
+    if (!forceRefresh &&
+        cachedSnapshot?.isFresh(FetchPolicy.perMinute.maxAge) == true) {
+      return UserGoalsSnapshot.fromApi(
+        cachedSnapshot!.data,
+        fallback: defaults,
+      );
     }
 
     try {

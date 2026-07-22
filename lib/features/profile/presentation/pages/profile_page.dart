@@ -310,6 +310,7 @@ class _ProfilePageState extends State<ProfilePage> {
       final savedGoals = await UserGoalsService.fetch(
         userId: _userId!,
         defaults: _goals,
+        forceRefresh: true,
       );
 
       if (!mounted) return false;

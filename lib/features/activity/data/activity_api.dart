@@ -3,19 +3,32 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../../../shared/config/api_config.dart';
+import '../../../shared/offline/fetch_policy.dart';
 import '../../../shared/offline/offline_cache_store.dart';
 import '../../dashboard/data/burnout_score_api.dart';
 import 'activity_log.dart';
 
 class ActivityApi {
-  static const Duration _requestTimeout = Duration(seconds: 8);
+  static const Duration _requestTimeout = ApiRequestTimeouts.fastRead;
   static const String _todayCache = 'activity_today';
   static const String _historyCache = 'activity_history';
 
   static Future<ActivityLog?> fetchToday({
     required int userId,
     required String logDate,
+    bool forceRefresh = false,
   }) async {
+    final cachedSnapshot = await OfflineCacheStore.readLatestJsonSnapshot(
+      namespace: _todayCache,
+      scope: _todayScope(userId, logDate),
+    );
+    final cachedLog = cachedSnapshot?.data['log'];
+    if (!forceRefresh &&
+        cachedLog is Map &&
+        cachedSnapshot?.isFresh(FetchPolicy.perMinute.maxAge) == true) {
+      return ActivityLog.fromJson(Map<String, dynamic>.from(cachedLog));
+    }
+
     try {
       final response = await http
           .get(
@@ -78,7 +91,19 @@ class ActivityApi {
     required int userId,
     required String startDate,
     required String endDate,
+    bool forceRefresh = false,
   }) async {
+    final cachedSnapshot = await OfflineCacheStore.readLatestJsonSnapshot(
+      namespace: _historyCache,
+      scope: _historyScope(userId, startDate, endDate),
+    );
+    if (!forceRefresh &&
+        cachedSnapshot?.isFresh(FetchPolicy.fiveMinutes.maxAge) == true) {
+      return _parseLogs(
+        cachedSnapshot!.data['logs'] as List<dynamic>? ?? const [],
+      );
+    }
+
     try {
       final response = await http
           .get(
@@ -146,6 +171,7 @@ class ActivityApi {
         scope: _todayScope(userId, log.logDate),
         data: {'log': logMap},
       );
+      await OfflineCacheStore.removeNamespace(namespace: _historyCache);
       return ActivityLog.fromJson(logMap);
     }
 
@@ -154,6 +180,7 @@ class ActivityApi {
       scope: _todayScope(userId, log.logDate),
       data: {'log': log.toJson()},
     );
+    await OfflineCacheStore.removeNamespace(namespace: _historyCache);
     return log;
   }
 

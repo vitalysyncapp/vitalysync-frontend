@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../../../shared/config/api_config.dart';
+import '../../../shared/offline/fetch_policy.dart';
 import '../../../shared/offline/offline_cache_store.dart';
 import '../../../shared/preferences/user_session.dart';
 import 'streak_models.dart';
@@ -11,15 +12,26 @@ import 'streak_models.dart';
 class StreakApi {
   StreakApi._();
 
-  static const Duration _requestTimeout = Duration(seconds: 12);
+  static const Duration _requestTimeout = ApiRequestTimeouts.fastRead;
   static const String _overviewCache = 'streak_overview';
   static const String _leaderboardCache = 'streak_leaderboard';
 
-  static Future<StreakOverview> fetchOverview() async {
+  static Future<StreakOverview> fetchOverview({
+    bool forceRefresh = false,
+  }) async {
     final session = await UserSessionController.instance.load();
     final userId = session.userId;
     if (userId == null) {
       throw Exception('Missing logged-in user');
+    }
+
+    final cachedSnapshot = await OfflineCacheStore.readLatestJsonSnapshot(
+      namespace: _overviewCache,
+      scope: userId.toString(),
+    );
+    if (!forceRefresh &&
+        cachedSnapshot?.isFresh(FetchPolicy.tenMinutesPlus.maxAge) == true) {
+      return StreakOverview.fromJson(cachedSnapshot!.data);
     }
 
     try {
@@ -65,6 +77,7 @@ class StreakApi {
     required String section,
     required String metric,
     required int limit,
+    bool forceRefresh = false,
   }) async {
     final session = await UserSessionController.instance.load();
     final userId = session.userId;
@@ -74,6 +87,15 @@ class StreakApi {
 
     final normalizedLimit = limit.clamp(1, 100).toInt();
     final cacheScope = '$userId-$section-$metric-$normalizedLimit';
+
+    final cachedSnapshot = await OfflineCacheStore.readLatestJsonSnapshot(
+      namespace: _leaderboardCache,
+      scope: cacheScope,
+    );
+    if (!forceRefresh &&
+        cachedSnapshot?.isFresh(FetchPolicy.tenMinutesPlus.maxAge) == true) {
+      return StreakLeaderboard.fromJson(cachedSnapshot!.data);
+    }
 
     try {
       final uri = Uri.parse(ApiConfig.streaks('/$userId/leaderboard')).replace(

@@ -26,9 +26,9 @@ class LikertQuestion extends StatelessWidget {
     // Find selected option label for the animated caption.
     final selectedLabel = value != null
         ? options
-            .cast<LikertOption?>()
-            .firstWhere((o) => o!.value == value, orElse: () => null)
-            ?.label
+              .cast<LikertOption?>()
+              .firstWhere((o) => o!.value == value, orElse: () => null)
+              ?.label
         : null;
 
     return Column(
@@ -75,7 +75,7 @@ class LikertQuestion extends StatelessWidget {
                   child: Padding(
                     padding: EdgeInsets.only(right: isLast ? 0 : 6),
                     child: Tooltip(
-                      message: '${option.value} – ${option.label}',
+                      message: '${option.value} - ${option.label}',
                       child: GestureDetector(
                         onTap: () {
                           HapticFeedback.selectionClick();
@@ -104,8 +104,8 @@ class LikertQuestion extends StatelessWidget {
                               color: selected
                                   ? null
                                   : isDark
-                                      ? Colors.white.withValues(alpha: 0.06)
-                                      : const Color(0xFFF5FBF9),
+                                  ? Colors.white.withValues(alpha: 0.06)
+                                  : const Color(0xFFF5FBF9),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 width: selected ? 1.5 : 1,

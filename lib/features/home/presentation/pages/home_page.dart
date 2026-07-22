@@ -119,7 +119,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       ActivityService.instance.refresh(),
       _loadBurnoutBaseline(),
       _loadLatestSummary(showLoader: false),
-      _loadEnvironment(showLoader: false),
+      _loadEnvironment(showLoader: false, forceRefresh: true),
       refreshAppBarStreak(),
       refreshNotificationFeed(),
     ]);
@@ -269,7 +269,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _loadEnvironment({bool showLoader = true}) async {
+  Future<void> _loadEnvironment({
+    bool showLoader = true,
+    bool forceRefresh = false,
+  }) async {
     if (!mounted) return;
 
     setState(() {
@@ -284,6 +287,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       final snapshot = await EnvironmentApi.fetchEnvironment(
         lat: coordinates?.latitude ?? _fallbackLatitude,
         lon: coordinates?.longitude ?? _fallbackLongitude,
+        forceRefresh: forceRefresh,
       );
 
       if (!mounted) return;

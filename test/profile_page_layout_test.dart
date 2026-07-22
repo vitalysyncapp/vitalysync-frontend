@@ -110,5 +110,6 @@ Future<void> _pumpProfile(
       ),
     ),
   );
-  await tester.pumpAndSettle();
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 950));
 }

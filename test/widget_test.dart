@@ -46,39 +46,37 @@ void main() {
     expect(find.text('Create account'), findsOneWidget);
   });
 
-  testWidgets('returns to auth start when a saved session has no token', (
-    WidgetTester tester,
-  ) async {
-    SharedPreferences.setMockInitialValues({
-      'email': 'tester@example.com',
-      'user_id': 1,
-      'username': 'Tester',
-      'onboarding_completed': true,
-    });
+  testWidgets(
+    'keeps a saved account active when a startup token read is empty',
+    (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({
+        'email': 'tester@example.com',
+        'user_id': 1,
+        'username': 'Tester',
+        'onboarding_completed': true,
+        'cached_environment_snapshot': '{"condition":"clear"}',
+        'notifications_enabled': true,
+        'assistant_overlay_enabled': true,
+      });
 
-    await pumpStartup(tester);
-    await tester.pump(const Duration(milliseconds: 500));
+      await pumpStartup(tester);
+      await tester.pump(const Duration(milliseconds: 500));
 
-    expect(
-      find.text('Feel your rhythm before burnout gets loud'),
-      findsOneWidget,
-    );
-    expect(find.text('Log in'), findsOneWidget);
-    expect(find.text('Sign up'), findsOneWidget);
-    expect(
-      tester.getRect(find.byKey(const ValueKey('auth-welcome-sign-up'))).bottom,
-      lessThanOrEqualTo(tester.view.physicalSize.height),
-    );
+      expect(find.text('Home'), findsOneWidget);
+      expect(find.text('Nutrition'), findsOneWidget);
+      expect(find.text('Profile'), findsOneWidget);
 
-    await tester.ensureVisible(find.text('Sign up'));
-    await tester.pump();
-    await tester.tap(find.text('Sign up'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('email'), 'tester@example.com');
+      expect(prefs.getInt('user_id'), 1);
+      expect(prefs.getString('cached_environment_snapshot'), isNotNull);
+      expect(prefs.getBool('notifications_enabled'), isTrue);
+      expect(prefs.getBool('assistant_overlay_enabled'), isTrue);
 
-    expect(find.text('Create your account'), findsOneWidget);
-    expect(find.text('Create account'), findsOneWidget);
-  });
+      await tester.pumpWidget(const SizedBox.shrink());
+      await ActivityService.instance.disposeTracking();
+    },
+  );
 
   testWidgets('auth carousel advances to feature slides', (
     WidgetTester tester,

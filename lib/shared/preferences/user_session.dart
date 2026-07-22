@@ -27,7 +27,8 @@ class UserSessionSnapshot {
     required this.onboardingCompleted,
   });
 
-  bool get isLoggedIn => userId != null && email != null && email!.isNotEmpty;
+  bool get isLoggedIn =>
+      userId != null && userId! > 0 && email?.trim().isNotEmpty == true;
   bool get hasAuthToken => authToken != null && authToken!.trim().isNotEmpty;
 
   static const empty = UserSessionSnapshot(

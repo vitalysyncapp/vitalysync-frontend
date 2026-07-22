@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../features/adaptive/data/adaptive_nudge_api.dart';
 import '../../features/adaptive/data/insight_report_api.dart';
+import '../offline/fetch_policy.dart';
 import '../offline/offline_cache_store.dart';
 import '../preferences/user_session.dart';
 import 'notification_feed_cache.dart';
@@ -202,7 +203,7 @@ class NotificationFeedService {
 
   static final NotificationFeedService instance = NotificationFeedService._();
   static const String _readIdsKeyPrefix = 'notification_feed_read_ids_v2';
-  static const Duration _freshnessWindow = Duration(minutes: 10);
+  static final Duration _freshnessWindow = FetchPolicy.tenMinutesPlus.maxAge;
 
   Future<int> unreadCount() async {
     final result = await loadFeed();

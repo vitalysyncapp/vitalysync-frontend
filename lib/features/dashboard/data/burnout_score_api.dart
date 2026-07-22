@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../shared/config/api_config.dart';
+import '../../../shared/offline/fetch_policy.dart';
 import '../../../shared/offline/offline_cache_store.dart';
 
 class BurnoutScoreSnapshot {
@@ -290,7 +291,8 @@ class BurnoutPatternSummary {
 }
 
 class BurnoutScoreApi {
-  static const Duration _requestTimeout = Duration(seconds: 30);
+  static const Duration _requestTimeout = ApiRequestTimeouts.standard;
+  static const Duration _calculationTimeout = ApiRequestTimeouts.coldStart;
   static const String _latestScoreCache = 'burnout_latest_score';
   static const String _scoreHistoryCache = 'burnout_score_history';
   static const String _patternSummaryCache = 'burnout_pattern_summary';
@@ -300,6 +302,18 @@ class BurnoutScoreApi {
     final userId = await _storedUserId();
     if (userId == null) {
       return null;
+    }
+
+    final cachedSnapshot = await OfflineCacheStore.readLatestJsonSnapshot(
+      namespace: _latestScoreCache,
+      scope: userId.toString(),
+    );
+    final cachedScore = cachedSnapshot?.data['score'];
+    if (cachedScore is Map &&
+        cachedSnapshot?.isFresh(FetchPolicy.fiveMinutes.maxAge) == true) {
+      return BurnoutScoreSnapshot.fromJson(
+        Map<String, dynamic>.from(cachedScore),
+      );
     }
 
     try {
@@ -321,7 +335,9 @@ class BurnoutScoreApi {
       }
 
       final scoreMap = Map<String, dynamic>.from(score);
-      await _cacheJson(_latestScoreCache, userId, {'score': scoreMap});
+      await _cacheJson(_latestScoreCache, userId.toString(), {
+        'score': scoreMap,
+      });
       return BurnoutScoreSnapshot.fromJson(scoreMap);
     } catch (_) {
       return _readCachedLatestScore(userId);
@@ -341,7 +357,7 @@ class BurnoutScoreApi {
             headers: await ApiConfig.jsonHeaders(),
             body: jsonEncode({'user_id': userId, 'score_date': _todayKey()}),
           )
-          .timeout(_requestTimeout);
+          .timeout(_calculationTimeout);
 
       final data = _decodeResponseMap(response);
       if (response.statusCode != 200) {
@@ -354,7 +370,9 @@ class BurnoutScoreApi {
       }
 
       final scoreMap = Map<String, dynamic>.from(score);
-      await _cacheJson(_latestScoreCache, userId, {'score': scoreMap});
+      await _cacheJson(_latestScoreCache, userId.toString(), {
+        'score': scoreMap,
+      });
       return BurnoutScoreSnapshot.fromJson(scoreMap);
     } catch (_) {
       return _readCachedLatestScore(userId);
@@ -384,6 +402,21 @@ class BurnoutScoreApi {
     final uri = Uri.parse(
       ApiConfig.burnout('/scores/history'),
     ).replace(queryParameters: query);
+    final cacheScope = _historyScope(
+      userId: userId,
+      startDate: startDate,
+      endDate: endDate,
+      limit: limit,
+    );
+
+    final cachedSnapshot = await OfflineCacheStore.readLatestJsonSnapshot(
+      namespace: _scoreHistoryCache,
+      scope: cacheScope,
+    );
+    if (cachedSnapshot?.isFresh(FetchPolicy.fiveMinutes.maxAge) == true) {
+      return _parseHistory(cachedSnapshot!.data);
+    }
+
     try {
       final response = await http
           .get(uri, headers: await ApiConfig.jsonHeaders())
@@ -391,11 +424,11 @@ class BurnoutScoreApi {
 
       final data = _decodeResponseMap(response);
       if (response.statusCode != 200) {
-        return await _readCachedHistory(userId);
+        return await _readCachedHistory(cacheScope);
       }
 
       final rawScores = data['scores'] as List<dynamic>? ?? const [];
-      await _cacheJson(_scoreHistoryCache, userId, {'scores': rawScores});
+      await _cacheJson(_scoreHistoryCache, cacheScope, {'scores': rawScores});
       return rawScores
           .whereType<Map>()
           .map(
@@ -404,7 +437,7 @@ class BurnoutScoreApi {
           )
           .toList();
     } catch (_) {
-      return _readCachedHistory(userId);
+      return _readCachedHistory(cacheScope);
     }
   }
 
@@ -416,11 +449,21 @@ class BurnoutScoreApi {
       return null;
     }
 
+    final effectiveEndDate = endDate ?? _todayKey();
+    final cacheScope = _patternScope(userId: userId, endDate: effectiveEndDate);
+    final cachedSnapshot = await OfflineCacheStore.readLatestJsonSnapshot(
+      namespace: _patternSummaryCache,
+      scope: cacheScope,
+    );
+    if (cachedSnapshot?.isFresh(FetchPolicy.fiveMinutes.maxAge) == true) {
+      return BurnoutPatternSummary.fromJson(cachedSnapshot!.data);
+    }
+
     try {
       final uri = Uri.parse(ApiConfig.burnout('/patterns/summary')).replace(
         queryParameters: {
           'user_id': userId.toString(),
-          'end': endDate ?? _todayKey(),
+          'end': effectiveEndDate,
         },
       );
       final response = await http
@@ -429,19 +472,19 @@ class BurnoutScoreApi {
 
       final data = _decodeResponseMap(response);
       if (response.statusCode != 200) {
-        return await _readCachedPatternSummary(userId);
+        return await _readCachedPatternSummary(cacheScope);
       }
 
-      await _cacheJson(_patternSummaryCache, userId, data);
+      await _cacheJson(_patternSummaryCache, cacheScope, data);
       final latestScore = data['latest_score'];
       if (latestScore is Map) {
-        await _cacheJson(_latestScoreCache, userId, {
+        await _cacheJson(_latestScoreCache, userId.toString(), {
           'score': Map<String, dynamic>.from(latestScore),
         });
       }
       return BurnoutPatternSummary.fromJson(data);
     } catch (_) {
-      return _readCachedPatternSummary(userId);
+      return _readCachedPatternSummary(cacheScope);
     }
   }
 
@@ -455,13 +498,13 @@ class BurnoutScoreApi {
     }
 
     await Future.wait([
-      OfflineCacheStore.remove(
+      OfflineCacheStore.removeScopePrefix(
         namespace: _scoreHistoryCache,
-        scope: userId.toString(),
+        scopePrefix: '${userId}_',
       ),
-      OfflineCacheStore.remove(
+      OfflineCacheStore.removeScopePrefix(
         namespace: _patternSummaryCache,
-        scope: userId.toString(),
+        scopePrefix: '${userId}_',
       ),
       if (clearLatestScore && latestScore == null)
         OfflineCacheStore.remove(
@@ -471,7 +514,9 @@ class BurnoutScoreApi {
     ]);
 
     if (latestScore != null) {
-      await _cacheJson(_latestScoreCache, userId, {'score': latestScore});
+      await _cacheJson(_latestScoreCache, userId.toString(), {
+        'score': latestScore,
+      });
     }
 
     refreshSignal.value++;
@@ -479,12 +524,12 @@ class BurnoutScoreApi {
 
   static Future<void> _cacheJson(
     String namespace,
-    int userId,
+    String scope,
     Map<String, dynamic> data,
   ) {
     return OfflineCacheStore.saveJson(
       namespace: namespace,
-      scope: userId.toString(),
+      scope: scope,
       data: data,
     );
   }
@@ -500,7 +545,7 @@ class BurnoutScoreApi {
     if (score is! Map) {
       final patternData = await OfflineCacheStore.readLatestJson(
         namespace: _patternSummaryCache,
-        scope: userId.toString(),
+        scope: _patternScope(userId: userId, endDate: _todayKey()),
       );
       score = patternData?['latest_score'];
     }
@@ -513,13 +558,21 @@ class BurnoutScoreApi {
   }
 
   static Future<List<BurnoutScoreSnapshot>> _readCachedHistory(
-    int userId,
+    String scope,
   ) async {
     final data = await OfflineCacheStore.readLatestJson(
       namespace: _scoreHistoryCache,
-      scope: userId.toString(),
+      scope: scope,
     );
-    final scores = data?['scores'];
+    if (data == null) {
+      return const [];
+    }
+
+    return _parseHistory(data);
+  }
+
+  static List<BurnoutScoreSnapshot> _parseHistory(Map<String, dynamic> data) {
+    final scores = data['scores'];
     if (scores is! List) {
       return const [];
     }
@@ -534,11 +587,11 @@ class BurnoutScoreApi {
   }
 
   static Future<BurnoutPatternSummary?> _readCachedPatternSummary(
-    int userId,
+    String scope,
   ) async {
     final data = await OfflineCacheStore.readLatestJson(
       namespace: _patternSummaryCache,
-      scope: userId.toString(),
+      scope: scope,
     );
     if (data == null) {
       return null;
@@ -557,6 +610,19 @@ class BurnoutScoreApi {
     final month = now.month.toString().padLeft(2, '0');
     final day = now.day.toString().padLeft(2, '0');
     return '${now.year}-$month-$day';
+  }
+
+  static String _historyScope({
+    required int userId,
+    required String? startDate,
+    required String? endDate,
+    required int limit,
+  }) {
+    return '${userId}_${startDate ?? 'any'}_${endDate ?? 'any'}_$limit';
+  }
+
+  static String _patternScope({required int userId, required String endDate}) {
+    return '${userId}_$endDate';
   }
 
   static Map<String, dynamic> _decodeResponseMap(http.Response response) {

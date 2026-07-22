@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../../../shared/config/api_config.dart';
 import '../../../shared/notifications/local_notification_service.dart';
+import '../../../shared/offline/fetch_policy.dart';
 import '../../../shared/preferences/app_preferences.dart';
 import '../../../shared/preferences/user_session.dart';
 import 'nutrition_analyzer.dart';
@@ -211,7 +212,7 @@ class NutritionReminderEngine {
     );
     final response = await http
         .get(uri, headers: await ApiConfig.acceptJsonHeaders())
-        .timeout(const Duration(seconds: 25));
+        .timeout(ApiRequestTimeouts.coldStart);
 
     if (response.statusCode != 200) {
       throw Exception('Nutrition nudge unavailable');

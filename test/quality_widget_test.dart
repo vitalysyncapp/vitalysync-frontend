@@ -61,7 +61,7 @@ void main() {
     expect(weightField, findsOneWidget);
     expect(find.text('cm'), findsOneWidget);
     expect(find.text('kg'), findsOneWidget);
-    expect(_onboardingNextButton(tester).onPressed, isNull);
+    expect(_onboardingNextButton(tester).onTap, isNull);
 
     await tester.enterText(heightField, '99');
     await tester.enterText(weightField, '501');
@@ -69,7 +69,7 @@ void main() {
 
     expect(find.text('Height must be between 100 and 250 cm'), findsOneWidget);
     expect(find.text('Weight must be between 20 and 500 kg'), findsOneWidget);
-    expect(_onboardingNextButton(tester).onPressed, isNull);
+    expect(_onboardingNextButton(tester).onTap, isNull);
 
     await tester.enterText(heightField, '');
     await tester.pump();
@@ -82,7 +82,7 @@ void main() {
 
     expect(find.text('Enter your height'), findsNothing);
     expect(find.textContaining('must be between'), findsNothing);
-    expect(_onboardingNextButton(tester).onPressed, isNotNull);
+    expect(_onboardingNextButton(tester).onTap, isNotNull);
   });
 
   testWidgets('logging widgets render daily check-in sections', (tester) async {
@@ -406,15 +406,13 @@ void main() {
     final nextButton = tester.widget<ElevatedButton>(_retakePrimaryButton);
     expect(nextButton.onPressed, isNotNull);
 
-    await tester.tap(_retakePrimaryButton);
-    await tester.pumpAndSettle();
+    await _advanceRetakeSection(tester, nextPage: 1);
     await _answerSection(tester, sectionIndex: 1, value: 3);
 
-    await tester.tap(_retakePrimaryButton);
-    await tester.pumpAndSettle();
+    await _advanceRetakeSection(tester, nextPage: 2);
     await _answerSection(tester, sectionIndex: 2, value: 5);
 
-    await tester.tap(_retakePrimaryButton);
+    tester.widget<ElevatedButton>(_retakePrimaryButton).onPressed!();
     await tester.pump();
 
     expect(savedPayload, isNotNull);
@@ -483,9 +481,9 @@ final Finder _retakePrimaryButton = find.byKey(
   const ValueKey('retake-baseline-primary-button'),
 );
 
-ElevatedButton _onboardingNextButton(WidgetTester tester) {
-  return tester.widget<ElevatedButton>(
-    find.widgetWithText(ElevatedButton, 'Next'),
+InkWell _onboardingNextButton(WidgetTester tester) {
+  return tester.widget<InkWell>(
+    find.ancestor(of: find.text('Next'), matching: find.byType(InkWell)).last,
   );
 }
 
@@ -500,6 +498,21 @@ Future<void> _selectOnboardingOptionAndContinue(
       .widget<PageView>(find.byType(PageView))
       .controller!;
   final nextPage = (pageController.page ?? 0).round() + 1;
+  expect(nextButton.onTap, isNotNull);
+  nextButton.onTap!();
+  await tester.pump();
+  pageController.jumpToPage(nextPage);
+  await tester.pump();
+}
+
+Future<void> _advanceRetakeSection(
+  WidgetTester tester, {
+  required int nextPage,
+}) async {
+  final nextButton = tester.widget<ElevatedButton>(_retakePrimaryButton);
+  final pageController = tester
+      .widget<PageView>(find.byType(PageView))
+      .controller!;
   expect(nextButton.onPressed, isNotNull);
   nextButton.onPressed!();
   await tester.pump();

@@ -25,7 +25,9 @@ class AuthTokenStore {
     if (_useSecureStorage) {
       final secureToken = await _readSecureToken();
       if (_hasValue(secureToken)) {
-        return secureToken!.trim();
+        final normalizedSecureToken = secureToken!.trim();
+        await _saveFallbackToken(normalizedSecureToken);
+        return normalizedSecureToken;
       }
     }
 
@@ -45,13 +47,11 @@ class AuthTokenStore {
       return;
     }
 
-    final prefs = await SharedPreferences.getInstance();
-    if (_useSecureStorage && await _tryWriteSecureToken(normalizedToken)) {
-      await prefs.remove(tokenKey);
-      return;
-    }
+    await _saveFallbackToken(normalizedToken);
 
-    await prefs.setString(tokenKey, normalizedToken);
+    if (_useSecureStorage) {
+      await _tryWriteSecureToken(normalizedToken);
+    }
   }
 
   Future<void> clearToken() async {
@@ -102,6 +102,13 @@ class AuthTokenStore {
     } on TimeoutException {
       return;
     }
+  }
+
+  Future<void> _saveFallbackToken(String token) async {
+    // Keep a fallback for cold starts and background entry points where secure
+    // storage can be temporarily unavailable.
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(tokenKey, token);
   }
 
   bool _hasValue(String? value) {

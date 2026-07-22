@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -22,12 +23,12 @@ import 'overlay_assistant_controller.dart';
 
 Future<void> runOverlayAssistantApp() async {
   WidgetsFlutterBinding.ensureInitialized();
+  DartPluginRegistrant.ensureInitialized();
   await AppPreferencesController.instance.load();
   final prefs = AppPreferencesController.instance.notifier.value;
   final session = await UserSessionController.instance.load();
   if (!prefs.assistantOverlayEnabled ||
       !session.isLoggedIn ||
-      !session.hasAuthToken ||
       session.userId == null) {
     await OverlayAssistantController.instance.disableForLogout();
     runApp(const SizedBox.shrink());

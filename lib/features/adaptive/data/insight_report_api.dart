@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../../../shared/config/api_config.dart';
+import '../../../shared/offline/fetch_policy.dart';
 import '../../../shared/offline/offline_cache_store.dart';
 import '../../../shared/preferences/user_session.dart';
 import 'daily_report_schedule.dart';
@@ -75,7 +76,8 @@ class InsightReport {
 }
 
 class InsightReportApi {
-  static const Duration _requestTimeout = Duration(seconds: 10);
+  static const Duration _requestTimeout = ApiRequestTimeouts.standard;
+  static const Duration _refreshTimeout = ApiRequestTimeouts.coldStart;
   static const String _reportsCache = 'insight_reports';
 
   static Future<List<InsightReport>> listReports({int limit = 30}) async {
@@ -150,7 +152,7 @@ class InsightReportApi {
             headers: await ApiConfig.jsonHeaders(),
             body: jsonEncode({'user_id': userId, 'date': reportDate}),
           )
-          .timeout(_requestTimeout);
+          .timeout(_refreshTimeout);
       final data = _decodeResponseMap(response);
       if (response.statusCode != 200) {
         return const [];

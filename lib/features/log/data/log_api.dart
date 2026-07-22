@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 
 import '../../../shared/config/api_config.dart';
 import '../../../shared/notifications/notification_feed_cache.dart';
+import '../../../shared/offline/fetch_policy.dart';
 import '../../../shared/offline/offline_cache_store.dart';
 import '../../dashboard/data/burnout_score_api.dart';
 import '../../exercise/data/exercise_goal_model.dart';
@@ -49,7 +50,7 @@ class LogApi {
   static const String _exercisePrefillKeyPrefix = 'assistant_exercise_prefill';
   static const String _weeklyPulseStatusCache = 'weekly_pulse_status';
   static const String _weeklyPulsePendingCache = 'weekly_pulse_pending';
-  static const Duration _requestTimeout = Duration(seconds: 30);
+  static const Duration _requestTimeout = ApiRequestTimeouts.standard;
   static const String liveDataIssueOffline = 'offline';
   static const String liveDataIssueUnavailable = 'unavailable';
 

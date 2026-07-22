@@ -548,7 +548,7 @@ class LocalNotificationService {
 
   Future<bool> _hasActiveSession() async {
     final session = await UserSessionController.instance.load();
-    return session.isLoggedIn && session.hasAuthToken && session.userId != null;
+    return session.isLoggedIn && session.userId != null;
   }
 
   NotificationDetails _notificationDetails({required String notificationType}) {

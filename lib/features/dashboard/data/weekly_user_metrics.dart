@@ -1,11 +1,32 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+
 import '../../activity/data/activity_api.dart';
 import '../../activity/data/activity_log.dart';
 import '../../log/data/log_api.dart';
+import '../../../shared/offline/fetch_policy.dart';
 
 class WeeklyUserMetrics {
   final List<DailyUserMetric> days;
 
   const WeeklyUserMetrics({required this.days});
+
+  factory WeeklyUserMetrics.fromJson(Map<String, dynamic> json) {
+    final rawDays = json['days'] as List<dynamic>? ?? const [];
+    return WeeklyUserMetrics(
+      days: rawDays
+          .whereType<Map>()
+          .map(
+            (item) => DailyUserMetric.fromJson(Map<String, dynamic>.from(item)),
+          )
+          .toList(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'days': days.map((day) => day.toJson()).toList()};
+  }
 
   int get loggedDays => days.where((day) => day.hasLog).length;
 
@@ -186,6 +207,36 @@ class DailyUserMetric {
     required this.activity,
   });
 
+  factory DailyUserMetric.fromJson(Map<String, dynamic> json) {
+    final dateKey = json['date_key']?.toString() ?? '';
+    final date =
+        DateTime.tryParse(json['date']?.toString() ?? '') ??
+        DateTime.tryParse(dateKey) ??
+        DateTime.now();
+    final rawLog = json['log'];
+    final rawActivity = json['activity'];
+
+    return DailyUserMetric(
+      date: date,
+      dateKey: dateKey,
+      dayLabel: json['day_label']?.toString() ?? '',
+      log: rawLog is Map ? Map<String, dynamic>.from(rawLog) : null,
+      activity: rawActivity is Map
+          ? ActivityLog.fromJson(Map<String, dynamic>.from(rawActivity))
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'date': date.toIso8601String(),
+      'date_key': dateKey,
+      'day_label': dayLabel,
+      'log': log,
+      'activity': activity?.toJson(),
+    };
+  }
+
   bool get hasLog => log != null;
 
   double get sleepHours => LogApi.parseDouble(log?['sleep_hours']);
@@ -213,19 +264,66 @@ class DailyUserMetric {
 }
 
 class WeeklyUserMetricsService {
-  static Future<WeeklyUserMetrics> loadCurrentWeek() async {
+  static const String _cacheNamespace = 'weekly_user_metrics';
+  static final ValueNotifier<int> refreshSignal = ValueNotifier<int>(0);
+
+  static Future<WeeklyUserMetrics> loadCurrentWeek({
+    bool forceRefresh = false,
+  }) async {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final start = today.subtract(const Duration(days: 6));
-    return loadRange(start: start, end: today);
+    return loadRange(start: start, end: today, forceRefresh: forceRefresh);
   }
 
   static Future<WeeklyUserMetrics> loadRange({
     required DateTime start,
     required DateTime end,
+    bool forceRefresh = false,
   }) async {
     final startKey = _dateKey(start);
     final endKey = _dateKey(end);
+    final scope = '${startKey}_$endKey';
+    final result = await CachedJsonFetch.load<WeeklyUserMetrics>(
+      namespace: _cacheNamespace,
+      scope: scope,
+      policy: FetchPolicy.fiveMinutes,
+      parser: WeeklyUserMetrics.fromJson,
+      fetcher: () async {
+        final metrics = await _loadRangeFromNetwork(
+          startKey: startKey,
+          endKey: endKey,
+          start: start,
+        );
+        return metrics.toJson();
+      },
+      forceRefresh: forceRefresh,
+    );
+
+    final refresh = result?.refresh;
+    if (refresh != null) {
+      unawaited(
+        refresh
+            .then((_) {
+              refreshSignal.value++;
+            })
+            .catchError((_) {}),
+      );
+    }
+
+    return result?.data ??
+        await _loadRangeFromNetwork(
+          startKey: startKey,
+          endKey: endKey,
+          start: start,
+        );
+  }
+
+  static Future<WeeklyUserMetrics> _loadRangeFromNetwork({
+    required String startKey,
+    required String endKey,
+    required DateTime start,
+  }) async {
     final logs = await LogApi.fetchHistory(
       startDate: startKey,
       endDate: endKey,
@@ -267,6 +365,21 @@ class WeeklyUserMetricsService {
     });
 
     return WeeklyUserMetrics(days: days);
+  }
+
+  static WeeklyUserMetrics empty({required DateTime start}) {
+    return WeeklyUserMetrics(
+      days: List.generate(7, (index) {
+        final date = start.add(Duration(days: index));
+        return DailyUserMetric(
+          date: date,
+          dateKey: _dateKey(date),
+          dayLabel: _dayLabel(date),
+          log: null,
+          activity: null,
+        );
+      }),
+    );
   }
 
   static String _dateKey(DateTime date) {

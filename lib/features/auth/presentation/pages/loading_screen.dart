@@ -12,7 +12,6 @@ import '../../../../features/onboarding/services/onboarding_service.dart';
 import '../../../../features/tutorial/services/core_tutorial_service.dart';
 import '../../../../shared/notifications/local_notification_service.dart';
 import '../../../../shared/notifications/notification_payload_router.dart';
-import '../../../../shared/preferences/session_reset_service.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/animated_gradient_background.dart';
 import 'auth_start_page.dart';
@@ -48,15 +47,10 @@ class _LoadingScreenState extends State<LoadingScreen>
 
   Future<void> _checkLoginStatus() async {
     final session = await UserSessionController.instance.load();
-    final email = session.email;
     final userId = session.userId;
     final signedInUserId = userId ?? 0;
     final onboardingCompleted = session.onboardingCompleted;
-    final hasSignedInAccount =
-        session.isLoggedIn &&
-        session.hasAuthToken &&
-        email?.trim().isNotEmpty == true &&
-        signedInUserId > 0;
+    final hasSignedInAccount = session.isLoggedIn && signedInUserId > 0;
 
     if (hasSignedInAccount) {
       unawaited(_refreshStartupData(signedInUserId));
@@ -87,15 +81,6 @@ class _LoadingScreenState extends State<LoadingScreen>
         ),
       );
       return;
-    }
-
-    if (session.isLoggedIn || session.hasAuthToken || userId != null) {
-      try {
-        await SessionResetService.instance.resetForLogout();
-      } catch (error, stackTrace) {
-        debugPrint('Unable to fully reset invalid startup session: $error');
-        debugPrintStack(stackTrace: stackTrace);
-      }
     }
 
     if (!mounted) return;

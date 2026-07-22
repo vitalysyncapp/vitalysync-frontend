@@ -41,9 +41,13 @@ class _DashboardState extends State<Dashboard> {
       const FirstWeekLearningState.hidden();
   bool _isLoadingBurnoutPatterns = true;
   bool _isLoadingAiInsight = true;
+  bool _isLoadingWeeklyMetrics = true;
+  WeeklyUserMetrics? _currentWeekMetrics;
+  WeeklyUserMetrics? _previousWeekMetrics;
   int _refreshVersion = 0;
   int _burnoutLoadToken = 0;
   int _firstWeekLoadToken = 0;
+  int _weeklyMetricsLoadToken = 0;
 
   @override
   void initState() {
@@ -51,6 +55,7 @@ class _DashboardState extends State<Dashboard> {
     BurnoutScoreApi.refreshSignal.addListener(_handleBurnoutInputsChanged);
     UserGoalsService.refreshSignal.addListener(_handleGoalsChanged);
     _loadBurnoutPatterns();
+    unawaited(_loadWeeklyMetrics());
     unawaited(_loadFirstWeekLearning());
   }
 
@@ -128,6 +133,62 @@ class _DashboardState extends State<Dashboard> {
     });
   }
 
+  Future<void> _loadWeeklyMetrics({bool forceRefresh = false}) async {
+    final loadToken = ++_weeklyMetricsLoadToken;
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingWeeklyMetrics = true;
+    });
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final currentStart = today.subtract(const Duration(days: 6));
+    final previousEnd = currentStart.subtract(const Duration(days: 1));
+    final previousStart = previousEnd.subtract(const Duration(days: 6));
+
+    try {
+      final results = await Future.wait([
+        WeeklyUserMetricsService.loadRange(
+          start: currentStart,
+          end: today,
+          forceRefresh: forceRefresh,
+        ),
+        WeeklyUserMetricsService.loadRange(
+          start: previousStart,
+          end: previousEnd,
+          forceRefresh: forceRefresh,
+        ),
+      ]);
+
+      if (!mounted || loadToken != _weeklyMetricsLoadToken) {
+        return;
+      }
+
+      setState(() {
+        _currentWeekMetrics = results[0];
+        _previousWeekMetrics = results[1];
+        _isLoadingWeeklyMetrics = false;
+      });
+    } catch (_) {
+      if (!mounted || loadToken != _weeklyMetricsLoadToken) {
+        return;
+      }
+
+      setState(() {
+        _currentWeekMetrics ??= WeeklyUserMetricsService.empty(
+          start: currentStart,
+        );
+        _previousWeekMetrics ??= WeeklyUserMetricsService.empty(
+          start: previousStart,
+        );
+        _isLoadingWeeklyMetrics = false;
+      });
+    }
+  }
+
   Future<void> _refreshDashboard() async {
     setState(() {
       _refreshVersion++;
@@ -136,6 +197,7 @@ class _DashboardState extends State<Dashboard> {
     await Future.wait([
       ActivityService.instance.refresh(),
       _loadBurnoutPatterns(),
+      _loadWeeklyMetrics(forceRefresh: true),
       _loadFirstWeekLearning(),
       refreshAppBarStreak(),
       refreshNotificationFeed(),
@@ -234,7 +296,9 @@ class _DashboardState extends State<Dashboard> {
                         ),
                         const SizedBox(width: 10),
                         _AvgSleepStatCard(
-                          key: ValueKey('avg-sleep-$_refreshVersion'),
+                          currentWeek: _currentWeekMetrics,
+                          previousWeek: _previousWeekMetrics,
+                          isLoading: _isLoadingWeeklyMetrics,
                         ),
                       ],
                     ),
@@ -281,42 +345,49 @@ class _DashboardState extends State<Dashboard> {
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 380),
                     child: SleepPatternCard(
-                      key: ValueKey('sleep-pattern-$_refreshVersion'),
+                      metrics: _currentWeekMetrics,
+                      isLoading: _isLoadingWeeklyMetrics,
                     ),
                   ),
                   const SizedBox(height: 12),
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 440),
                     child: WellnessIndexCard(
-                      key: ValueKey('wellness-index-$_refreshVersion'),
+                      metrics: _currentWeekMetrics,
+                      isLoading: _isLoadingWeeklyMetrics,
                     ),
                   ),
                   const SizedBox(height: 12),
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 500),
                     child: MoodVolatilityCard(
-                      key: ValueKey('mood-volatility-$_refreshVersion'),
+                      metrics: _currentWeekMetrics,
+                      isLoading: _isLoadingWeeklyMetrics,
                     ),
                   ),
                   const SizedBox(height: 12),
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 560),
                     child: SymptomFrequencyCard(
-                      key: ValueKey('symptom-frequency-$_refreshVersion'),
+                      metrics: _currentWeekMetrics,
+                      isLoading: _isLoadingWeeklyMetrics,
                     ),
                   ),
                   const SizedBox(height: 12),
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 620),
                     child: DashboardGoalTrackingCard(
-                      key: ValueKey('goal-tracking-$_refreshVersion'),
+                      weeklyMetrics: _currentWeekMetrics,
+                      isLoadingWeeklyMetrics: _isLoadingWeeklyMetrics,
+                      refreshVersion: _refreshVersion,
                     ),
                   ),
                   const SizedBox(height: 12),
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 680),
                     child: WeeklyPerformanceCard(
-                      key: ValueKey('weekly-performance-$_refreshVersion'),
+                      metrics: _currentWeekMetrics,
+                      isLoading: _isLoadingWeeklyMetrics,
                     ),
                   ),
                 ],
@@ -329,82 +400,50 @@ class _DashboardState extends State<Dashboard> {
   }
 }
 
-class _AvgSleepStatCard extends StatefulWidget {
-  const _AvgSleepStatCard({super.key});
+class _AvgSleepStatCard extends StatelessWidget {
+  final WeeklyUserMetrics? currentWeek;
+  final WeeklyUserMetrics? previousWeek;
+  final bool isLoading;
 
-  @override
-  State<_AvgSleepStatCard> createState() => _AvgSleepStatCardState();
-}
-
-class _AvgSleepStatCardState extends State<_AvgSleepStatCard> {
-  late Future<_SleepStatSnapshot> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _future = _loadSleepSnapshot();
-  }
-
-  Future<_SleepStatSnapshot> _loadSleepSnapshot() async {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final currentStart = today.subtract(const Duration(days: 6));
-    final previousEnd = currentStart.subtract(const Duration(days: 1));
-    final previousStart = previousEnd.subtract(const Duration(days: 6));
-
-    final results = await Future.wait([
-      WeeklyUserMetricsService.loadCurrentWeek(),
-      WeeklyUserMetricsService.loadRange(
-        start: previousStart,
-        end: previousEnd,
-      ),
-    ]);
-
-    return _SleepStatSnapshot(
-      currentWeek: results[0],
-      previousWeek: results[1],
-    );
-  }
+  const _AvgSleepStatCard({
+    required this.currentWeek,
+    required this.previousWeek,
+    required this.isLoading,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<_SleepStatSnapshot>(
-      future: _future,
-      builder: (context, snapshot) {
-        final sleepSnapshot = snapshot.data;
-        final currentAverage = sleepSnapshot?.currentWeek.averageSleep ?? 0;
-        final previousAverage = sleepSnapshot?.previousWeek.averageSleep ?? 0;
-        final delta = currentAverage - previousAverage;
+    final currentAverage = currentWeek?.averageSleep ?? 0;
+    final previousAverage = previousWeek?.averageSleep ?? 0;
+    final delta = currentAverage - previousAverage;
 
-        return DashboardStatCard(
-          title: "Average sleep",
-          value: currentAverage > 0
-              ? "${currentAverage.toStringAsFixed(1)}h"
-              : "--",
-          subtitle: _subtitle(
-            isLoading: snapshot.connectionState == ConnectionState.waiting,
-            currentAverage: currentAverage,
-            previousAverage: previousAverage,
-            delta: delta,
-          ),
-          subtitleColor: _subtitleColor(
-            isLoading: snapshot.connectionState == ConnectionState.waiting,
-            currentAverage: currentAverage,
-            delta: delta,
-          ),
-          icon: _trendIcon(
-            isLoading: snapshot.connectionState == ConnectionState.waiting,
-            currentAverage: currentAverage,
-            delta: delta,
-          ),
-          iconColor: _subtitleColor(
-            isLoading: snapshot.connectionState == ConnectionState.waiting,
-            currentAverage: currentAverage,
-            delta: delta,
-          ),
-          isLoading: snapshot.connectionState == ConnectionState.waiting,
-        );
-      },
+    return DashboardStatCard(
+      title: "Average sleep",
+      value: currentAverage > 0
+          ? "${currentAverage.toStringAsFixed(1)}h"
+          : "--",
+      subtitle: _subtitle(
+        isLoading: isLoading,
+        currentAverage: currentAverage,
+        previousAverage: previousAverage,
+        delta: delta,
+      ),
+      subtitleColor: _subtitleColor(
+        isLoading: isLoading,
+        currentAverage: currentAverage,
+        delta: delta,
+      ),
+      icon: _trendIcon(
+        isLoading: isLoading,
+        currentAverage: currentAverage,
+        delta: delta,
+      ),
+      iconColor: _subtitleColor(
+        isLoading: isLoading,
+        currentAverage: currentAverage,
+        delta: delta,
+      ),
+      isLoading: isLoading,
     );
   }
 
@@ -463,16 +502,6 @@ class _AvgSleepStatCardState extends State<_AvgSleepStatCard> {
 
     return Icons.trending_flat;
   }
-}
-
-class _SleepStatSnapshot {
-  final WeeklyUserMetrics currentWeek;
-  final WeeklyUserMetrics previousWeek;
-
-  const _SleepStatSnapshot({
-    required this.currentWeek,
-    required this.previousWeek,
-  });
 }
 
 class _AiBurnoutInsightCard extends StatelessWidget {

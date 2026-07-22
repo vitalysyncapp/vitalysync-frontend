@@ -4,9 +4,19 @@ import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/analytics_animation.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../data/goal_tracking_metrics.dart';
+import '../../data/weekly_user_metrics.dart';
 
 class DashboardGoalTrackingCard extends StatefulWidget {
-  const DashboardGoalTrackingCard({super.key});
+  final WeeklyUserMetrics? weeklyMetrics;
+  final bool isLoadingWeeklyMetrics;
+  final int refreshVersion;
+
+  const DashboardGoalTrackingCard({
+    super.key,
+    required this.weeklyMetrics,
+    required this.isLoadingWeeklyMetrics,
+    required this.refreshVersion,
+  });
 
   @override
   State<DashboardGoalTrackingCard> createState() =>
@@ -14,31 +24,43 @@ class DashboardGoalTrackingCard extends StatefulWidget {
 }
 
 class _DashboardGoalTrackingCardState extends State<DashboardGoalTrackingCard> {
-  late Future<DashboardGoalTrackingSnapshot> _future;
+  Future<DashboardGoalTrackingSnapshot>? _future;
 
   @override
   void initState() {
     super.initState();
-    _future = GoalTrackingMetricsService.loadCurrentWeek();
+    _future = _loadIfReady();
+  }
+
+  @override
+  void didUpdateWidget(covariant DashboardGoalTrackingCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.weeklyMetrics != widget.weeklyMetrics ||
+        oldWidget.isLoadingWeeklyMetrics != widget.isLoadingWeeklyMetrics ||
+        oldWidget.refreshVersion != widget.refreshVersion) {
+      _future = _loadIfReady();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final future = _future;
+    if (widget.isLoadingWeeklyMetrics || future == null) {
+      return _GoalTrackingSurface(
+        child: const SizedBox(
+          height: 190,
+          child: AppSkeletonRows(count: 4, showLeading: true),
+        ),
+      );
+    }
+
     return FutureBuilder<DashboardGoalTrackingSnapshot>(
-      future: _future,
+      future: future,
       builder: (context, snapshot) {
         final isLoading = snapshot.connectionState == ConnectionState.waiting;
         final data = snapshot.data;
 
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: pageSurfaceColor(context),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: pageBorderColor(context)),
-            boxShadow: pageCardShadow(context),
-          ),
+        return _GoalTrackingSurface(
           child: AnalyticsContentSwitcher(
             isLoading: isLoading,
             loading: const SizedBox(
@@ -58,8 +80,43 @@ class _DashboardGoalTrackingCardState extends State<DashboardGoalTrackingCard> {
 
   void _reload() {
     setState(() {
-      _future = GoalTrackingMetricsService.loadCurrentWeek();
+      _future = _loadIfReady(forceRefresh: true);
     });
+  }
+
+  Future<DashboardGoalTrackingSnapshot>? _loadIfReady({
+    bool forceRefresh = false,
+  }) {
+    final weeklyMetrics = widget.weeklyMetrics;
+    if (widget.isLoadingWeeklyMetrics || weeklyMetrics == null) {
+      return null;
+    }
+
+    return GoalTrackingMetricsService.loadCurrentWeek(
+      weeklyMetrics: weeklyMetrics,
+      forceRefresh: forceRefresh,
+    );
+  }
+}
+
+class _GoalTrackingSurface extends StatelessWidget {
+  final Widget child;
+
+  const _GoalTrackingSurface({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: pageSurfaceColor(context),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: pageBorderColor(context)),
+        boxShadow: pageCardShadow(context),
+      ),
+      child: child,
+    );
   }
 }
 

@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../shared/config/api_config.dart';
+import '../../../shared/offline/fetch_policy.dart';
 import '../../../shared/offline/offline_cache_store.dart';
 
 class AdaptiveNudgeRecommendation {
@@ -166,9 +167,10 @@ class AdaptiveNudgeEvent {
 }
 
 class AdaptiveNudgeApi {
-  static const Duration _requestTimeout = Duration(seconds: 8);
-  static const Duration _aiRequestTimeout = Duration(seconds: 25);
-  static const Duration _assistantCacheMaxAge = Duration(minutes: 30);
+  static const Duration _requestTimeout = ApiRequestTimeouts.fastRead;
+  static const Duration _aiRequestTimeout = ApiRequestTimeouts.coldStart;
+  static final Duration _assistantCacheMaxAge =
+      FetchPolicy.tenMinutesPlus.maxAge;
   static const String _recommendationsCache = 'adaptive_nudge_recommendations';
   static const String _assistantRecommendationsCache =
       'assistant_nudge_recommendations';

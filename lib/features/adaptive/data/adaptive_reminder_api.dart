@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../shared/config/api_config.dart';
+import '../../../shared/offline/fetch_policy.dart';
 
 class AdaptiveReminderPreferences {
   final String dailyLogReminderTime;
@@ -133,7 +134,7 @@ class AdaptiveReminderPreferences {
 }
 
 class AdaptiveReminderApi {
-  static const Duration _requestTimeout = Duration(seconds: 8);
+  static const Duration _requestTimeout = ApiRequestTimeouts.fastRead;
 
   static Future<AdaptiveReminderPreferences> fetchPreferences() async {
     final userId = await _storedUserId();

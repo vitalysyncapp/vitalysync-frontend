@@ -105,6 +105,29 @@ class OfflineCacheStore {
     await prefs.remove(_cacheKey(namespace, scope));
   }
 
+  static Future<void> removeNamespace({required String namespace}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final prefix = _namespacePrefix(namespace);
+    final keys = prefs.getKeys().where((key) => key.startsWith(prefix));
+
+    for (final key in keys.toList()) {
+      await prefs.remove(key);
+    }
+  }
+
+  static Future<void> removeScopePrefix({
+    required String namespace,
+    required String scopePrefix,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final prefix = '${_namespacePrefix(namespace)}$scopePrefix';
+    final keys = prefs.getKeys().where((key) => key.startsWith(prefix));
+
+    for (final key in keys.toList()) {
+      await prefs.remove(key);
+    }
+  }
+
   static Future<List<Map<String, dynamic>>> _readSnapshots({
     required String namespace,
     required String scope,
@@ -149,7 +172,11 @@ class OfflineCacheStore {
   }
 
   static String _cacheKey(String namespace, String scope) {
-    return '${_keyPrefix}_${namespace}_$scope';
+    return '${_namespacePrefix(namespace)}$scope';
+  }
+
+  static String _namespacePrefix(String namespace) {
+    return '${_keyPrefix}_${namespace}_';
   }
 
   static bool _sameJson(dynamic first, dynamic second) {
