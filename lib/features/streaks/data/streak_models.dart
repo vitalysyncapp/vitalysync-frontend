@@ -144,6 +144,9 @@ class StreakLeaderboardRow {
   final String displayName;
   final String initials;
   final String avatarColor;
+  final String? gender;
+  final String? userType;
+  final String avatarAsset;
   final int score;
   final int protectedDayCount;
   final bool isCurrentUser;
@@ -154,6 +157,9 @@ class StreakLeaderboardRow {
     required this.displayName,
     required this.initials,
     required this.avatarColor,
+    this.gender,
+    this.userType,
+    this.avatarAsset = '',
     required this.score,
     required this.protectedDayCount,
     required this.isCurrentUser,
@@ -166,11 +172,19 @@ class StreakLeaderboardRow {
       displayName: json['display_name']?.toString() ?? 'VitalySync user',
       initials: json['initials']?.toString() ?? 'VS',
       avatarColor: json['avatar_color']?.toString() ?? '#1D8CA8',
+      gender: _optionalText(json['gender']),
+      userType: _optionalText(json['user_type'] ?? json['role']),
+      avatarAsset: json['avatar_asset']?.toString() ?? '',
       score: LogApi.parseInt(json['score']),
       protectedDayCount: LogApi.parseInt(json['protected_day_count']),
       isCurrentUser: json['is_current_user'] == true,
     );
   }
+}
+
+String? _optionalText(Object? value) {
+  final text = value?.toString().trim() ?? '';
+  return text.isEmpty ? null : text;
 }
 
 class StreakLeaderboard {

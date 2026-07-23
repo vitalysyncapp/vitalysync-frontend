@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vitalysync/features/profile/data/profile_avatar.dart';
 import 'package:vitalysync/features/streaks/data/streak_api.dart';
 import 'package:vitalysync/features/streaks/data/streak_models.dart';
 import 'package:vitalysync/features/streaks/presentation/pages/streak_leaderboard_page.dart';
@@ -201,7 +202,50 @@ void main() {
     );
     final provider = image.image as AssetImage;
 
-    expect(provider.assetName, 'assets/images/female Student.png');
+    expect(
+      provider.assetName,
+      suggestedProfileAvatarAsset('Female', 'Student'),
+    );
+  });
+
+  testWidgets('uses the leaderboard row gender and role for other users', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'user_id': 99,
+      'gender': 'Male',
+      'user_type': 'Working Professional',
+    });
+
+    Future<StreakLeaderboard> load({
+      required String section,
+      required String metric,
+      required int limit,
+    }) async {
+      return _leaderboard(
+        section: section,
+        metric: metric,
+        score: 12,
+        firstGender: 'Female',
+        firstUserType: 'Student',
+      );
+    }
+
+    await _pumpLeaderboard(tester, load);
+    await tester.pumpAndSettle();
+
+    final image = tester.widget<Image>(
+      find.descendant(
+        of: find.byKey(const ValueKey('leaderboard-avatar-2')),
+        matching: find.byType(Image),
+      ),
+    );
+    final provider = image.image as AssetImage;
+
+    expect(
+      provider.assetName,
+      suggestedProfileAvatarAsset('Female', 'Student'),
+    );
   });
 
   testWidgets('puts rank four in the list below a partial top three', (
@@ -364,6 +408,9 @@ StreakLeaderboard _leaderboard({
   int rowCount = 1,
   List<int>? ranks,
   String firstDisplayName = 'Taylor',
+  String? firstGender,
+  String? firstUserType,
+  String firstAvatarAsset = '',
   int? currentUserId,
 }) {
   final resolvedRanks =
@@ -380,6 +427,9 @@ StreakLeaderboard _leaderboard({
         displayName: index == 0 ? firstDisplayName : 'User $rank',
         initials: 'U$rank',
         avatarColor: '#1D8CA8',
+        gender: index == 0 ? firstGender : null,
+        userType: index == 0 ? firstUserType : null,
+        avatarAsset: index == 0 ? firstAvatarAsset : '',
         score: rowScore > 0 ? rowScore : 0,
         protectedDayCount: 3,
         isCurrentUser: currentUserId == rank + 1,

@@ -12,7 +12,7 @@ import '../../data/streak_models.dart';
 
 const _streakFireAnimationPath = 'assets/animations/streak_fire.json';
 const _healthyHeartAnimationPath = 'assets/animations/healthy_heart.json';
-const _defaultLeaderboardAvatarPath = 'assets/images/user.png';
+final _defaultLeaderboardAvatarPath = suggestedProfileAvatarAsset(null, null);
 
 typedef StreakLeaderboardLoader =
     Future<StreakLeaderboard> Function({
@@ -886,7 +886,7 @@ class _LeaderboardAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCurrentUser = _isCurrentUser(row, currentUserSession);
+    final avatarAsset = _leaderboardAvatarAsset(row, currentUserSession);
 
     return Semantics(
       image: true,
@@ -906,11 +906,11 @@ class _LeaderboardAvatar extends StatelessWidget {
             ),
           ],
         ),
-        child: isCurrentUser
+        child: avatarAsset.isNotEmpty
             ? ExcludeSemantics(
                 child: _DefaultAvatar(
                   semanticLabel: 'Avatar for ${row.displayName}',
-                  assetPath: _leaderboardAvatarAsset(row, currentUserSession),
+                  assetPath: avatarAsset,
                   size: size - 5,
                 ),
               )
@@ -983,14 +983,27 @@ String _leaderboardAvatarAsset(
   StreakLeaderboardRow row,
   UserSessionSnapshot currentUserSession,
 ) {
-  if (!_isCurrentUser(row, currentUserSession)) {
-    return _defaultLeaderboardAvatarPath;
+  final rowGender = row.gender?.trim() ?? '';
+  final rowUserType = row.userType?.trim() ?? '';
+  final rowAvatarAsset = row.avatarAsset.trim();
+  final hasSessionProfile =
+      currentUserSession.gender?.trim().isNotEmpty == true &&
+      currentUserSession.userType?.trim().isNotEmpty == true;
+
+  if (_isCurrentUser(row, currentUserSession) && hasSessionProfile) {
+    return suggestedProfileAvatarAsset(
+      currentUserSession.gender,
+      currentUserSession.userType,
+    );
   }
 
-  return suggestedProfileAvatarAsset(
-    currentUserSession.gender,
-    currentUserSession.userType,
-  );
+  if (rowGender.isNotEmpty && rowUserType.isNotEmpty) {
+    return suggestedProfileAvatarAsset(rowGender, rowUserType);
+  }
+
+  return rowAvatarAsset.isNotEmpty
+      ? rowAvatarAsset
+      : _defaultLeaderboardAvatarPath;
 }
 
 bool _isCurrentUser(
