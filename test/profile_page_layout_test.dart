@@ -37,6 +37,14 @@ void main() {
     ]);
     expect(find.text('Cinnamon'), findsOneWidget);
     expect(find.text('Working Professional'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('profile-email-verify-button')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('profile-email-verified-badge')),
+      findsNothing,
+    );
     expect(find.text('3 days'), findsOneWidget);
     expect(find.text('14 days'), findsOneWidget);
     expect(find.text('23 yrs'), findsOneWidget);
@@ -79,6 +87,55 @@ void main() {
     expect(find.text('Working Professional'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('profile header shows a verified email badge', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await _pumpProfile(
+      tester,
+      brightness: Brightness.light,
+      size: const Size(390, 844),
+      emailVerified: true,
+    );
+
+    expect(
+      find.byKey(const ValueKey('profile-email-verified-badge')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('profile-email-verify-button')),
+      findsNothing,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('profile verify button opens the email verification page', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await _pumpProfile(
+      tester,
+      brightness: Brightness.light,
+      size: const Size(390, 844),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('profile-email-verify-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+
+    expect(
+      find.byKey(const ValueKey('email-verification-page-card')),
+      findsOneWidget,
+    );
+    expect(find.text('Verify your email'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('send-email-verification-button')),
+      findsOneWidget,
+    );
+  });
 }
 
 Future<void> _pumpProfile(
@@ -86,10 +143,12 @@ Future<void> _pumpProfile(
   required Brightness brightness,
   required Size size,
   TextScaler textScaler = TextScaler.noScaling,
+  bool emailVerified = false,
 }) async {
   SharedPreferences.setMockInitialValues({
     'username': 'Cinnamon',
     'email': 'estoce.orlan@gmail.com',
+    'email_verified': emailVerified,
     'age': 23,
     'gender': 'Male',
     'user_type': 'Working Professional',

@@ -11,6 +11,7 @@ import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/terms_privacy_widget.dart';
 import '../../../../shared/widgets/validation_dialog.dart';
+import '../../data/email_validator.dart';
 import '../widgets/auth_chrome.dart';
 import 'login_page.dart';
 
@@ -283,15 +284,10 @@ class _SignUpPageState extends State<SignUpPage> {
                     label: 'Email',
                     icon: Icons.email_outlined,
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Enter your email';
-                    }
-                    if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) {
-                      return 'Enter a valid email';
-                    }
-                    return null;
-                  },
+                  validator: (value) => EmailValidator.validate(
+                    value,
+                    emptyMessage: 'Enter your email',
+                  ),
                 ),
                 const SizedBox(height: 14),
                 TextFormField(

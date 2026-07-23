@@ -15,6 +15,7 @@ class UserSessionSnapshot {
   final String? userType;
   final String? authToken;
   final bool onboardingCompleted;
+  final bool emailVerified;
 
   const UserSessionSnapshot({
     required this.userId,
@@ -25,6 +26,7 @@ class UserSessionSnapshot {
     required this.userType,
     required this.authToken,
     required this.onboardingCompleted,
+    required this.emailVerified,
   });
 
   bool get isLoggedIn =>
@@ -40,6 +42,7 @@ class UserSessionSnapshot {
     userType: null,
     authToken: null,
     onboardingCompleted: false,
+    emailVerified: false,
   );
 }
 
@@ -56,6 +59,7 @@ class UserSessionController {
   static const String _genderKey = 'gender';
   static const String _ageKey = 'age';
   static const String _onboardingCompletedKey = 'onboarding_completed';
+  static const String _emailVerifiedKey = 'email_verified';
   static const String _legacyDemoModeKey = 'demo_mode_enabled';
 
   Future<UserSessionSnapshot> load() async {
@@ -74,6 +78,7 @@ class UserSessionController {
       userType: prefs.getString(_userTypeKey),
       authToken: await AuthTokenStore.instance.readToken(),
       onboardingCompleted: prefs.getBool(_onboardingCompletedKey) ?? false,
+      emailVerified: prefs.getBool(_emailVerifiedKey) ?? false,
     );
   }
 
@@ -104,6 +109,7 @@ class UserSessionController {
     final gender = (user['gender'] ?? '').toString().trim();
     final userType = (user['user_type'] ?? '').toString().trim();
     final onboardingCompleted = user['onboarding_completed'] == true;
+    final emailVerified = user['email_verified'] == true;
 
     if (gender.isEmpty) {
       await prefs.remove(_genderKey);
@@ -118,6 +124,7 @@ class UserSessionController {
     }
 
     await prefs.setBool(_onboardingCompletedKey, onboardingCompleted);
+    await prefs.setBool(_emailVerifiedKey, emailVerified);
     await prefs.remove(_legacyDemoModeKey);
 
     if (authToken != null && authToken.trim().isNotEmpty) {
@@ -138,6 +145,7 @@ class UserSessionController {
     await prefs.remove(_ageKey);
     await AuthTokenStore.instance.clearToken();
     await prefs.remove(_onboardingCompletedKey);
+    await prefs.remove(_emailVerifiedKey);
     await prefs.remove(_legacyDemoModeKey);
   }
 
@@ -145,6 +153,37 @@ class UserSessionController {
     final prefs = await SharedPreferences.getInstance();
     final email = prefs.getString(_lastLoginEmailKey)?.trim();
     return email?.isNotEmpty == true ? email : null;
+  }
+
+  Future<String> resendEmailVerification() async {
+    final session = await load();
+    final email = session.email?.trim() ?? '';
+
+    if (!session.isLoggedIn || email.isEmpty) {
+      throw Exception(
+        'Email verification is only available for signed-in accounts.',
+      );
+    }
+
+    final response = await http.post(
+      Uri.parse(ApiConfig.auth('/email-verification/resend')),
+      headers: await ApiConfig.jsonHeaders(),
+      body: jsonEncode({'email': email}),
+    );
+
+    final data = _decodeResponseBody(response.body);
+
+    if (response.statusCode != 200) {
+      throw Exception(data['message'] ?? 'Unable to send verification email.');
+    }
+
+    return data['message']?.toString() ??
+        'If this email needs verification, a link has been sent.';
+  }
+
+  Future<void> updateEmailVerified(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_emailVerifiedKey, value);
   }
 
   Future<void> reauthenticateWithPassword({required String password}) async {

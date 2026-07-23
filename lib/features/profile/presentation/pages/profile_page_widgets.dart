@@ -90,23 +90,27 @@ class _ProfileHeaderCard extends StatefulWidget {
   final int? userId;
   final String username;
   final String email;
+  final bool emailVerified;
   final String? role;
   final int currentStreak;
   final int longestStreak;
   final int? age;
   final String? gender;
   final VoidCallback onEditAvatar;
+  final VoidCallback onVerifyEmail;
 
   const _ProfileHeaderCard({
     required this.userId,
     required this.username,
     required this.email,
+    required this.emailVerified,
     required this.role,
     required this.currentStreak,
     required this.longestStreak,
     required this.age,
     required this.gender,
     required this.onEditAvatar,
+    required this.onVerifyEmail,
   });
 
   @override
@@ -138,20 +142,23 @@ class _ProfileHeaderCardState extends State<_ProfileHeaderCard>
       parent: _entranceController,
       curve: const Interval(0.0, 0.45, curve: Curves.easeOut),
     );
-    _cardSlide = Tween<Offset>(
-      begin: const Offset(0, 0.08),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _entranceController,
-      curve: const Interval(0.0, 0.5, curve: Curves.easeOutCubic),
-    ));
+    _cardSlide = Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _entranceController,
+            curve: const Interval(0.0, 0.5, curve: Curves.easeOutCubic),
+          ),
+        );
 
     _statFades = List.generate(4, (i) {
       final start = 0.3 + i * 0.1;
       return CurvedAnimation(
         parent: _entranceController,
-        curve: Interval(start, (start + 0.3).clamp(0.0, 1.0),
-            curve: Curves.easeOut),
+        curve: Interval(
+          start,
+          (start + 0.3).clamp(0.0, 1.0),
+          curve: Curves.easeOut,
+        ),
       );
     });
     _statSlides = List.generate(4, (i) {
@@ -159,11 +166,16 @@ class _ProfileHeaderCardState extends State<_ProfileHeaderCard>
       return Tween<Offset>(
         begin: const Offset(0, 0.18),
         end: Offset.zero,
-      ).animate(CurvedAnimation(
-        parent: _entranceController,
-        curve: Interval(start, (start + 0.35).clamp(0.0, 1.0),
-            curve: Curves.easeOutCubic),
-      ));
+      ).animate(
+        CurvedAnimation(
+          parent: _entranceController,
+          curve: Interval(
+            start,
+            (start + 0.35).clamp(0.0, 1.0),
+            curve: Curves.easeOutCubic,
+          ),
+        ),
+      );
     });
 
     _entranceController.forward();
@@ -219,16 +231,17 @@ class _ProfileHeaderCardState extends State<_ProfileHeaderCard>
                 top: -76,
                 right: -54,
                 child: IgnorePointer(
-                  child:
-                      _ProfileSoftOrb(size: 196, color: palette.secondaryOrb),
+                  child: _ProfileSoftOrb(
+                    size: 196,
+                    color: palette.secondaryOrb,
+                  ),
                 ),
               ),
               Positioned(
                 bottom: -92,
                 left: -48,
                 child: IgnorePointer(
-                  child:
-                      _ProfileSoftOrb(size: 184, color: palette.primaryOrb),
+                  child: _ProfileSoftOrb(size: 184, color: palette.primaryOrb),
                 ),
               ),
               Positioned(
@@ -237,7 +250,9 @@ class _ProfileHeaderCardState extends State<_ProfileHeaderCard>
                 child: IgnorePointer(
                   child: _ProfileSoftOrb(
                     size: 120,
-                    color: palette.accent.withValues(alpha: isDark ? 0.04 : 0.06),
+                    color: palette.accent.withValues(
+                      alpha: isDark ? 0.04 : 0.06,
+                    ),
                   ),
                 ),
               ),
@@ -266,10 +281,12 @@ class _ProfileHeaderCardState extends State<_ProfileHeaderCard>
                   final identity = _ProfileIdentity(
                     username: widget.username,
                     email: widget.email,
+                    emailVerified: widget.emailVerified,
                     role: widget.role,
                     centered: useStackedIdentity,
                     palette: palette,
                     shimmerAnimation: _shimmerController,
+                    onVerifyEmail: widget.onVerifyEmail,
                   );
 
                   return Padding(
@@ -299,12 +316,16 @@ class _ProfileHeaderCardState extends State<_ProfileHeaderCard>
                           ),
                         const SizedBox(height: 20),
                         Divider(
-                            color: palette.divider, height: 1, thickness: 1),
+                          color: palette.divider,
+                          height: 1,
+                          thickness: 1,
+                        ),
                         const SizedBox(height: 16),
                         LayoutBuilder(
                           builder: (context, statConstraints) {
-                            final columns =
-                                statConstraints.maxWidth >= 620 ? 4 : 2;
+                            final columns = statConstraints.maxWidth >= 620
+                                ? 4
+                                : 2;
                             const spacing = 11.0;
                             final tileWidth =
                                 (statConstraints.maxWidth -
@@ -315,8 +336,7 @@ class _ProfileHeaderCardState extends State<_ProfileHeaderCard>
                               _ProfileStatTile(
                                 width: tileWidth,
                                 accent: const Color(0xFFF08A35),
-                                icon:
-                                    const _ProfileFireAnimation(size: 24),
+                                icon: const _ProfileFireAnimation(size: 24),
                                 label: 'Current streak',
                                 value: _daysValue(widget.currentStreak),
                               ),
@@ -434,14 +454,16 @@ class _ProfileAvatarButton extends StatelessWidget {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: palette.avatarRingColors[0]
-                              .withValues(alpha: isDark ? 0.18 : 0.14),
+                          color: palette.avatarRingColors[0].withValues(
+                            alpha: isDark ? 0.18 : 0.14,
+                          ),
                           blurRadius: 32,
                           spreadRadius: 4,
                         ),
                         BoxShadow(
-                          color: palette.avatarRingColors[1]
-                              .withValues(alpha: isDark ? 0.10 : 0.08),
+                          color: palette.avatarRingColors[1].withValues(
+                            alpha: isDark ? 0.10 : 0.08,
+                          ),
                           blurRadius: 48,
                           spreadRadius: 8,
                         ),
@@ -516,9 +538,7 @@ class _ProfileAvatarButton extends StatelessWidget {
                     ),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: isDark
-                          ? const Color(0xFF193044)
-                          : Colors.white,
+                      color: isDark ? const Color(0xFF193044) : Colors.white,
                       width: 2.5,
                     ),
                     boxShadow: [
@@ -548,18 +568,22 @@ class _ProfileIdentity extends StatelessWidget {
   const _ProfileIdentity({
     required this.username,
     required this.email,
+    required this.emailVerified,
     required this.role,
     required this.centered,
     required this.palette,
     required this.shimmerAnimation,
+    required this.onVerifyEmail,
   });
 
   final String username;
   final String email;
+  final bool emailVerified;
   final String? role;
   final bool centered;
   final _ProfileHeaderPalette palette;
   final Animation<double> shimmerAnimation;
+  final VoidCallback onVerifyEmail;
 
   @override
   Widget build(BuildContext context) {
@@ -585,7 +609,7 @@ class _ProfileIdentity extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Row(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: centered ? MainAxisSize.min : MainAxisSize.max,
           children: [
             Icon(
               Icons.mail_outline_rounded,
@@ -607,6 +631,44 @@ class _ProfileIdentity extends StatelessWidget {
                 ),
               ),
             ),
+            if (emailVerified) ...[
+              const SizedBox(width: 5),
+              Tooltip(
+                message: 'Email verified',
+                child: Semantics(
+                  label: 'Email verified',
+                  child: const ExcludeSemantics(
+                    child: Text(
+                      '\u{2705}',
+                      key: ValueKey('profile-email-verified-badge'),
+                      style: TextStyle(fontSize: 13.5, height: 1),
+                    ),
+                  ),
+                ),
+              ),
+            ] else if (email.trim().isNotEmpty &&
+                email.trim() != 'user@email.com') ...[
+              const SizedBox(width: 7),
+              TextButton(
+                key: const ValueKey('profile-email-verify-button'),
+                onPressed: onVerifyEmail,
+                style: TextButton.styleFrom(
+                  foregroundColor: palette.accent,
+                  visualDensity: VisualDensity.compact,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  minimumSize: const Size(0, 26),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                child: const Text('Verify email'),
+              ),
+            ],
           ],
         ),
         const SizedBox(height: 12),
@@ -622,8 +684,9 @@ class _ProfileIdentity extends StatelessWidget {
                 border: Border.all(color: palette.glassBorder),
                 boxShadow: [
                   BoxShadow(
-                    color: palette.accent
-                        .withValues(alpha: isDark ? 0.08 : 0.06),
+                    color: palette.accent.withValues(
+                      alpha: isDark ? 0.08 : 0.06,
+                    ),
                     blurRadius: 12,
                     offset: const Offset(0, 3),
                   ),

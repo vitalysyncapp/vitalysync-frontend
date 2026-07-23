@@ -104,6 +104,7 @@ void clearTestAssets() {
 void configureLoggedInSession({
   int userId = 1,
   bool onboardingCompleted = true,
+  bool emailVerified = false,
 }) {
   SharedPreferences.setMockInitialValues({
     'email': 'tester@example.com',
@@ -111,6 +112,7 @@ void configureLoggedInSession({
     'username': 'Tester',
     'auth_access_token': 'test-token',
     'onboarding_completed': onboardingCompleted,
+    'email_verified': emailVerified,
   });
 }
 

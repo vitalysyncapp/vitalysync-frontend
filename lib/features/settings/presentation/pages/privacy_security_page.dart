@@ -1,10 +1,72 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/preferences/app_preferences.dart';
+import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/validation_dialog.dart';
 
-class PrivacySecurityPage extends StatelessWidget {
+class PrivacySecurityPage extends StatefulWidget {
   const PrivacySecurityPage({super.key});
+
+  @override
+  State<PrivacySecurityPage> createState() => _PrivacySecurityPageState();
+}
+
+class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
+  UserSessionSnapshot _session = UserSessionSnapshot.empty;
+  bool _isLoadingSession = true;
+  bool _isResendingVerification = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSession();
+  }
+
+  Future<void> _loadSession() async {
+    final session = await UserSessionController.instance.load();
+    if (!mounted) return;
+
+    setState(() {
+      _session = session;
+      _isLoadingSession = false;
+    });
+  }
+
+  Future<void> _resendVerificationEmail() async {
+    if (_isResendingVerification) {
+      return;
+    }
+
+    setState(() => _isResendingVerification = true);
+
+    try {
+      final message = await UserSessionController.instance
+          .resendEmailVerification();
+      if (!mounted) return;
+
+      await ValidationDialog.show(
+        context,
+        title: 'Verification email sent',
+        message: message,
+        type: ValidationDialogType.success,
+      );
+    } catch (error) {
+      if (!mounted) return;
+
+      final message = error.toString().replaceFirst('Exception: ', '');
+      await ValidationDialog.show(
+        context,
+        title: 'Unable to send email',
+        message: message,
+        type: ValidationDialogType.error,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isResendingVerification = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,12 +126,25 @@ class PrivacySecurityPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   _SectionCard(
+                    title: 'Account security',
+                    children: [
+                      _EmailVerificationTile(
+                        email: _session.email,
+                        isLoading: _isLoadingSession,
+                        isVerified: _session.emailVerified,
+                        isSending: _isResendingVerification,
+                        onResend: _resendVerificationEmail,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _SectionCard(
                     title: 'About this section',
                     children: [
                       Padding(
                         padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
                         child: Text(
-                          'These settings are stored locally on this device for now. They help us keep privacy behavior consistent even before deeper account security is connected.',
+                          'These settings help keep privacy behavior consistent across the account and this device.',
                           style: TextStyle(
                             height: 1.45,
                             color: pageSecondaryTextColor(context),
@@ -138,6 +213,98 @@ class _SectionCard extends StatelessWidget {
             ),
           ),
           ...children,
+        ],
+      ),
+    );
+  }
+}
+
+class _EmailVerificationTile extends StatelessWidget {
+  final String? email;
+  final bool isLoading;
+  final bool isVerified;
+  final bool isSending;
+  final VoidCallback onResend;
+
+  const _EmailVerificationTile({
+    required this.email,
+    required this.isLoading,
+    required this.isVerified,
+    required this.isSending,
+    required this.onResend,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final normalizedEmail = email?.trim() ?? '';
+    final statusText = isLoading
+        ? 'Checking'
+        : isVerified
+        ? 'Verified'
+        : 'Not verified';
+    final statusColor = isVerified
+        ? const Color(0xFF1EAD83)
+        : const Color(0xFFF59E0B);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              isVerified
+                  ? Icons.mark_email_read_outlined
+                  : Icons.mark_email_unread_outlined,
+              color: statusColor,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Email verification',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: pagePrimaryTextColor(context),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  normalizedEmail.isEmpty
+                      ? statusText
+                      : '$statusText - $normalizedEmail',
+                  style: TextStyle(
+                    height: 1.4,
+                    color: pageSecondaryTextColor(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (!isLoading && !isVerified && normalizedEmail.isNotEmpty) ...[
+            const SizedBox(width: 12),
+            TextButton.icon(
+              key: const ValueKey('resend-email-verification-button'),
+              onPressed: isSending ? null : onResend,
+              icon: isSending
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.send_outlined, size: 18),
+              label: Text(isSending ? 'Sending' : 'Resend'),
+            ),
+          ],
         ],
       ),
     );

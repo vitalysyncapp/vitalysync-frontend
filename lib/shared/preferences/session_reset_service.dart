@@ -29,6 +29,7 @@ class SessionResetService {
     'age',
     'auth_access_token',
     'onboarding_completed',
+    'email_verified',
     'demo_mode_enabled',
     'demo_local_logs',
     'log_streak',

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../auth/data/email_validator.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/validation_dialog.dart';
 import '../widgets/profile_avatar_image.dart';
@@ -109,6 +110,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     setState(() => _isSubmitting = true);
     try {
+      final emailChanged =
+          EmailValidator.normalize(widget.initialEmail) !=
+          EmailValidator.normalize(_emailController.text);
       final didSave = await widget.onSave(
         username: _usernameController.text.trim(),
         email: _emailController.text.trim(),
@@ -124,8 +128,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
         await ValidationDialog.show(
           context,
           title: 'Profile updated',
-          message: 'Your changes were saved successfully.',
+          message: emailChanged
+              ? 'Your profile was updated. We sent a verification link to your new email. Open the email and tap the link to verify it.'
+              : 'Your changes were saved successfully.',
           type: ValidationDialogType.success,
+          duration: emailChanged
+              ? const Duration(milliseconds: 3200)
+              : const Duration(milliseconds: 1500),
         );
         if (mounted && Navigator.of(context).canPop()) {
           Navigator.of(context).pop(true);
@@ -249,16 +258,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       label: 'Email',
                       icon: Icons.mail_outline_rounded,
                       keyboardType: TextInputType.emailAddress,
-                      validator: (value) {
-                        final text = value?.trim() ?? '';
-                        if (text.isEmpty) return 'Enter an email';
-                        if (!RegExp(
-                          r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
-                        ).hasMatch(text)) {
-                          return 'Enter a valid email';
-                        }
-                        return null;
-                      },
+                      validator: (value) => EmailValidator.validate(
+                        value,
+                        emptyMessage: 'Enter an email',
+                      ),
                     ),
                     _buildTextField(
                       controller: _ageController,

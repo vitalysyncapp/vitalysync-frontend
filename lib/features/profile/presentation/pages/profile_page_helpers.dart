@@ -45,6 +45,14 @@ double? _parseDoubleValue(dynamic value) {
   return double.tryParse('${value ?? ''}');
 }
 
+bool? _parseBoolValue(dynamic value) {
+  if (value is bool) return value;
+  final normalized = value?.toString().trim().toLowerCase();
+  if (normalized == 'true') return true;
+  if (normalized == 'false') return false;
+  return null;
+}
+
 String? _dropdownValueOrNull(
   String? value,
   List<String> options, {

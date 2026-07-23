@@ -3,6 +3,7 @@ import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../features/activity/data/activity_service.dart';
+import '../../../../features/auth/presentation/pages/email_verification_page.dart';
 import '../../../../features/auth/presentation/pages/auth_start_page.dart';
 import '../../../../features/dashboard/data/burnout_score_api.dart';
 import '../../../../features/onboarding/data/onboarding_api.dart';
@@ -60,6 +61,7 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isSavingWellness = false, _isSavingGoals = false;
   bool _isSavingBaseline = false;
   bool _isLoggingOut = false;
+  bool _emailVerified = false;
   int? _userId, _age;
   String _username = 'User name', _email = 'user@email.com';
   String? _gender, _userType;
@@ -100,6 +102,7 @@ class _ProfilePageState extends State<ProfilePage> {
     var initialBurnoutScore = 0;
     double? heightCm, weightKg;
     var userType = _emptyToNull(session.userType);
+    var emailVerified = session.emailVerified;
     var goals = UserGoalsSnapshot.defaults();
     var baselineAnswers = <String, int>{};
 
@@ -117,6 +120,18 @@ class _ProfilePageState extends State<ProfilePage> {
         final preferences = Map<String, dynamic>.from(
           summary['preferences'] as Map? ?? {},
         );
+        final summaryEmailVerified = _parseBoolValue(
+          summary['email_verified'] ??
+              (summary['user'] is Map
+                  ? (summary['user'] as Map)['email_verified']
+                  : null),
+        );
+        if (summaryEmailVerified != null) {
+          emailVerified = summaryEmailVerified;
+          await UserSessionController.instance.updateEmailVerified(
+            summaryEmailVerified,
+          );
+        }
         baselineAnswers = _baselineAnswersFromSummary(summary);
         final profileSleepTime = _emptyToNull(
           profile['usual_sleep_time']?.toString(),
@@ -200,6 +215,7 @@ class _ProfilePageState extends State<ProfilePage> {
       _email = session.email?.isNotEmpty == true
           ? session.email!
           : 'user@email.com';
+      _emailVerified = emailVerified;
       _age = session.age;
       _gender = _emptyToNull(session.gender);
       _userType = userType;
@@ -236,7 +252,7 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() => _isSaving = true);
 
     try {
-      await UserSessionController.instance.updateProfile(
+      final user = await UserSessionController.instance.updateProfile(
         userId: _userId!,
         username: username,
         email: email,
@@ -246,8 +262,9 @@ class _ProfilePageState extends State<ProfilePage> {
       );
       if (!mounted) return false;
       setState(() {
-        _username = username;
-        _email = email;
+        _username = user['username']?.toString() ?? username;
+        _email = user['email']?.toString() ?? email;
+        _emailVerified = user['email_verified'] == true;
         _age = age;
         _gender = _emptyToNull(gender);
         _userType = _emptyToNull(userType);
@@ -463,6 +480,16 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Future<void> _openEmailVerificationPage() async {
+    await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const EmailVerificationPage()),
+    );
+
+    if (!mounted) return;
+    await _loadProfile();
+  }
+
   Future<void> _openEditAvatarPage() async {
     final userId = _userId;
     if (userId == null) return;
@@ -672,12 +699,14 @@ class _ProfilePageState extends State<ProfilePage> {
                       userId: _userId,
                       username: _username,
                       email: _email,
+                      emailVerified: _emailVerified,
                       role: _userType,
                       currentStreak: _currentStreak,
                       longestStreak: _longestStreak,
                       age: _age,
                       gender: _gender,
                       onEditAvatar: _openEditAvatarPage,
+                      onVerifyEmail: _openEmailVerificationPage,
                     ),
                     const SizedBox(height: 18),
                     _ProfileStreakPreviewCard(

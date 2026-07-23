@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vitalysync/shared/config/api_config.dart';
 import 'package:vitalysync/shared/preferences/auth_token_store.dart';
+import 'package:vitalysync/shared/preferences/user_session.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -80,4 +81,19 @@ void main() {
       });
     },
   );
+
+  test('user session saves and loads email verification state', () async {
+    await UserSessionController.instance.saveUser({
+      'user_id': 7,
+      'email': 'student@example.com',
+      'username': 'Student',
+      'onboarding_completed': false,
+      'email_verified': true,
+    });
+
+    final session = await UserSessionController.instance.load();
+
+    expect(session.emailVerified, isTrue);
+    expect(session.email, 'student@example.com');
+  });
 }
