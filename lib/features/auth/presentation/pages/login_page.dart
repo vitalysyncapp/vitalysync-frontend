@@ -14,6 +14,7 @@ import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/validation_dialog.dart';
 import '../widgets/auth_chrome.dart';
+import 'forgot_password_page.dart';
 import 'sign_up_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -193,7 +194,19 @@ class _LoginPageState extends State<LoginPage> {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
-                onPressed: () {},
+                key: const ValueKey('login-forgot-password-button'),
+                onPressed: isLoading
+                    ? null
+                    : () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ForgotPasswordPage(
+                              initialEmail: emailController.text.trim(),
+                            ),
+                          ),
+                        );
+                      },
                 child: Text(
                   'Forgot password?',
                   style: GoogleFonts.poppins(
