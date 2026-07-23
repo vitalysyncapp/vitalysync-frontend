@@ -276,8 +276,8 @@ class _GuidanceBox extends StatelessWidget {
     final text = isVerified
         ? 'Your email is confirmed for this account.'
         : hasSent
-        ? 'Email sent. Open your inbox, tap the verification link, then return to VitalySync.'
-        : 'Send a verification email, then open your inbox and tap the confirmation link.';
+        ? 'Email sent. Open your inbox, tap the verification link, then return to VitalySync.\nMake sure to check your spam folder if you don\'t see it.'
+        : 'Send a verification email, then open your inbox and tap the confirmation link. \nMake sure to check your spam folder if you don\'t see it.';
 
     return Container(
       key: ValueKey(
