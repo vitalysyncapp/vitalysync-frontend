@@ -171,76 +171,79 @@ class _HeroCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isDark
-              ? const [Color(0xFF17304A), Color(0xFF163D35)]
-              : const [Color(0xFFEAF7FF), Color(0xFFEAFBF3)],
+              ? const [Color(0xFF1A365D), Color(0xFF134E4A)]
+              : const [Color(0xFFEFF6FF), Color(0xFFF0FDF4)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: pageBorderColor(context)),
-        boxShadow: pageCardShadow(context),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? Colors.black.withValues(alpha: 0.2) : Colors.blue.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: isDark ? 0.08 : 0.72),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: pageBorderColor(context)),
-                ),
-                child: Icon(
-                  Icons.local_fire_department_rounded,
-                  color: isDark
-                      ? const Color(0xFFFFB86B)
-                      : const Color(0xFFF97316),
-                  size: 34,
-                ),
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isDark
+                    ? [const Color(0xFFFFB86B).withValues(alpha: 0.2), const Color(0xFFFF9A44).withValues(alpha: 0.1)]
+                    : [const Color(0xFFF97316).withValues(alpha: 0.15), const Color(0xFFFB923C).withValues(alpha: 0.05)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Burnout is a chronic stress signal',
-                      style: TextStyle(
-                        fontSize: 23,
-                        fontWeight: FontWeight.w800,
-                        height: 1.12,
-                        color: pagePrimaryTextColor(context),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'It usually builds gradually when pressure keeps outpacing recovery.',
-                      style: TextStyle(
-                        height: 1.4,
-                        color: pageSecondaryTextColor(context),
-                      ),
-                    ),
-                  ],
-                ),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: isDark ? const Color(0xFFFFB86B).withValues(alpha: 0.3) : const Color(0xFFF97316).withValues(alpha: 0.2),
               ),
-            ],
+            ),
+            child: Icon(
+              Icons.local_fire_department_rounded,
+              color: isDark ? const Color(0xFFFFB86B) : const Color(0xFFEA580C),
+              size: 36,
+            ),
           ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: const [
-              _HeroPill(icon: Icons.work_outline_rounded, label: 'Work-first'),
-              _HeroPill(icon: Icons.school_outlined, label: 'Student-aware'),
-              _HeroPill(icon: Icons.spa_outlined, label: 'Recovery matters'),
-            ],
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Burnout is a chronic stress signal',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
+                    height: 1.15,
+                    color: pagePrimaryTextColor(context),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'It usually builds gradually when pressure keeps outpacing recovery.',
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 1.45,
+                    color: pageSecondaryTextColor(context),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -524,43 +527,7 @@ class _SupportNote extends StatelessWidget {
   }
 }
 
-class _HeroPill extends StatelessWidget {
-  final IconData icon;
-  final String label;
 
-  const _HeroPill({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
-      decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.07)
-            : Colors.white.withValues(alpha: 0.7),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: pageBorderColor(context)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 7),
-          Text(
-            label,
-            style: TextStyle(
-              color: pagePrimaryTextColor(context),
-              fontSize: 12.5,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _IconBadge extends StatelessWidget {
   final String emoji;

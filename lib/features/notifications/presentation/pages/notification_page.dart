@@ -209,7 +209,7 @@ class _NotificationPageState extends State<NotificationPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Insights',
+                    'Notifications',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -279,7 +279,7 @@ class _NotificationPageState extends State<NotificationPage> {
               ),
               const SizedBox(width: 7),
               Text(
-                'PERSONALIZED INSIGHTS  •  HISTORY',
+                'PERSONALIZED INSIGHTS',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: pageSecondaryTextColor(context),
                   fontSize: isCompact ? 9.5 : 10.5,

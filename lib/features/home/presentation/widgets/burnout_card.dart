@@ -174,8 +174,8 @@ class BurnoutCard extends StatelessWidget {
                   ),
                 ),
                 SizedBox(
-                  width: 30,
-                  height: 30,
+                  width: 20,
+                  height: 20,
                   child: DecoratedBox(
                     decoration: const BoxDecoration(
                       color: Colors.white24,
@@ -185,7 +185,7 @@ class BurnoutCard extends StatelessWidget {
                       tooltip: 'About burnout score',
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
-                      iconSize: 13,
+                      iconSize: 11,
                       color: textColor,
                       onPressed: () => _showInfoDialog(context),
                       icon: const Icon(Icons.question_mark_rounded),

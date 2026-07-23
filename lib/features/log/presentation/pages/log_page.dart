@@ -1176,7 +1176,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                     const SizedBox(width: 7),
                     Flexible(
                       child: Text(
-                        'DAILY CHECK-IN  •  TODAY',
+                        'DAILY CHECK-IN',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -1211,7 +1211,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
           ),
           SizedBox(height: isCompact ? 4 : 5),
           Text(
-            'Reflect on your day—an evening check-in works best.',
+            'An evening check-in works best.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               fontSize: isCompact ? 12 : 13,
               fontWeight: FontWeight.w500,
@@ -1299,8 +1299,8 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
             onTap: _showLogScoringInfo,
             customBorder: const CircleBorder(),
             child: Ink(
-              width: isCompact ? 38 : 40,
-              height: isCompact ? 38 : 40,
+              width: isCompact ? 22 : 24,
+              height: isCompact ? 22 : 24,
               decoration: BoxDecoration(
                 color: primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
@@ -1308,7 +1308,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
               ),
               child: Icon(
                 Icons.question_mark_rounded,
-                size: isCompact ? 17 : 18,
+                size: isCompact ? 13 : 14,
                 color: primary,
               ),
             ),

@@ -446,7 +446,7 @@ class _HistoryHeader extends StatelessWidget {
               ),
               const SizedBox(width: 7),
               Text(
-                'WELLNESS DATA  •  HISTORY',
+                'WELLNESS DATA',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: pageSecondaryTextColor(context),
                   fontSize: isCompact ? 9.5 : 10.5,
