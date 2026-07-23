@@ -10,35 +10,56 @@ import 'package:vitalysync/shared/preferences/session_reset_service.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('catalog exposes 40 distinct flat-vector avatar choices', () {
-    expect(ProfileAvatarCatalog.entries, hasLength(40));
+  test('catalog exposes 45 distinct bundled avatar choices', () {
+    expect(ProfileAvatarCatalog.entries, hasLength(45));
     expect(
       ProfileAvatarCatalog.entries.map((entry) => entry.id).toSet(),
-      hasLength(40),
+      hasLength(45),
     );
     expect(
       ProfileAvatarCatalog.entriesFor(ProfileAvatarCategory.personas),
-      hasLength(24),
+      hasLength(25),
     );
-    for (final category in ProfileAvatarCategory.values.where(
-      (category) => category != ProfileAvatarCategory.personas,
-    )) {
+    for (final category in const [
+      ProfileAvatarCategory.youngProfessional,
+      ProfileAvatarCategory.freelancer,
+    ]) {
       expect(ProfileAvatarCatalog.entriesFor(category), hasLength(4));
     }
+    expect(
+      ProfileAvatarCatalog.entriesFor(ProfileAvatarCategory.student),
+      hasLength(6),
+    );
+    expect(
+      ProfileAvatarCatalog.entriesFor(
+        ProfileAvatarCategory.workingProfessional,
+      ),
+      hasLength(6),
+    );
+    expect(
+      ProfileAvatarCatalog.entries.map((entry) => entry.assetPath),
+      containsAll(const [
+        ProfileAvatarAssets.generic,
+        ProfileAvatarAssets.maleStudent,
+        ProfileAvatarAssets.femaleStudent,
+        ProfileAvatarAssets.businessMan,
+        ProfileAvatarAssets.businessWoman,
+      ]),
+    );
   });
 
   test('suggested avatar normalizes role and gender values', () {
     expect(
       suggestedProfileAvatarAsset(' female ', ' student '),
-      'assets/images/female Student.png',
+      ProfileAvatarAssets.femaleStudent,
     );
     expect(
       suggestedProfileAvatarAsset('MALE', 'Working Professional'),
-      'assets/images/business-man.png',
+      ProfileAvatarAssets.businessMan,
     );
     expect(
       suggestedProfileAvatarAsset('Other', 'Student'),
-      'assets/images/user.png',
+      ProfileAvatarAssets.generic,
     );
   });
 

@@ -179,6 +179,32 @@ void main() {
     expect(find.text('Local #100'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('streak saver help explains rewards and is easily dismissed', (
+    tester,
+  ) async {
+    await _pumpPage(
+      tester,
+      loadLeaderboard:
+          ({required section, required metric, required limit}) async =>
+              _leaderboard(section: section, rank: null),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('streak-saver-help')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('How streak savers work'), findsOneWidget);
+    expect(find.textContaining('protect one missed day'), findsOneWidget);
+    expect(find.textContaining('first 7-day streak'), findsOneWidget);
+    expect(find.textContaining('10 check-ins'), findsOneWidget);
+    expect(find.textContaining('4 days in a week'), findsOneWidget);
+    expect(find.text('Got it'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('streak-saver-dialog-close')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('How streak savers work'), findsNothing);
+  });
 }
 
 Future<void> _pumpPage(

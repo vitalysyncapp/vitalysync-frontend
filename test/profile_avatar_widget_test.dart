@@ -19,7 +19,7 @@ void main() {
   setUpAll(configureTestAssets);
   tearDownAll(clearTestAssets);
 
-  testWidgets('editor renders 40 choices and saves a bundled avatar', (
+  testWidgets('editor renders 45 choices and saves a bundled PNG avatar', (
     tester,
   ) async {
     final storage = _MemoryAvatarStorage();
@@ -39,9 +39,13 @@ void main() {
     expect(find.text('Personas collection'), findsNothing);
 
     final option = find.byKey(
-      const ValueKey('avatar-option-avataaars_working_professional_03'),
+      const ValueKey('avatar-option-classic_business_man'),
     );
     await tester.ensureVisible(option);
+    expect(
+      find.descendant(of: option, matching: find.byType(Image)),
+      findsOneWidget,
+    );
     await tester.tap(option);
     await tester.ensureVisible(
       find.byKey(const ValueKey('avatar-save-button')),
@@ -51,7 +55,7 @@ void main() {
 
     final saved = await store.load(42);
     expect(saved.kind, ProfileAvatarKind.bundled);
-    expect(saved.avatarId, 'avataaars_working_professional_03');
+    expect(saved.avatarId, 'classic_business_man');
   });
 
   testWidgets('backing out discards the avatar draft', (tester) async {

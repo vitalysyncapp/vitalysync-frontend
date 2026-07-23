@@ -33,20 +33,20 @@ final ByteData assetManifestBytes = const StandardMessageCodec().encodeMessage(
     'assets/images/auth_dashboard.svg': <Object?>[
       <Object?, Object?>{'asset': 'assets/images/auth_dashboard.svg'},
     ],
-    'assets/images/user.png': <Object?>[
-      <Object?, Object?>{'asset': 'assets/images/user.png'},
+    'assets/images/avatars/user.png': <Object?>[
+      <Object?, Object?>{'asset': 'assets/images/avatars/user.png'},
     ],
-    'assets/images/male Student.png': <Object?>[
-      <Object?, Object?>{'asset': 'assets/images/male Student.png'},
+    'assets/images/avatars/male Student.png': <Object?>[
+      <Object?, Object?>{'asset': 'assets/images/avatars/male Student.png'},
     ],
-    'assets/images/female Student.png': <Object?>[
-      <Object?, Object?>{'asset': 'assets/images/female Student.png'},
+    'assets/images/avatars/female Student.png': <Object?>[
+      <Object?, Object?>{'asset': 'assets/images/avatars/female Student.png'},
     ],
-    'assets/images/business-man.png': <Object?>[
-      <Object?, Object?>{'asset': 'assets/images/business-man.png'},
+    'assets/images/avatars/business-man.png': <Object?>[
+      <Object?, Object?>{'asset': 'assets/images/avatars/business-man.png'},
     ],
-    'assets/images/businesswoman.png': <Object?>[
-      <Object?, Object?>{'asset': 'assets/images/businesswoman.png'},
+    'assets/images/avatars/businesswoman.png': <Object?>[
+      <Object?, Object?>{'asset': 'assets/images/avatars/businesswoman.png'},
     ],
   },
 )!;

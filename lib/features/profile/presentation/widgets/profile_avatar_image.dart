@@ -44,14 +44,22 @@ class ProfileAvatarImage extends StatelessWidget {
     } else if (entry != null) {
       image = Padding(
         padding: EdgeInsets.all(size * 0.035),
-        child: SvgPicture.asset(
-          entry.assetPath,
-          fit: BoxFit.contain,
-          width: size,
-          height: size,
-          placeholderBuilder: (_) => _fallbackIcon(context),
-          errorBuilder: (_, _, _) => _fallbackIcon(context),
-        ),
+        child: entry.assetPath.toLowerCase().endsWith('.svg')
+            ? SvgPicture.asset(
+                entry.assetPath,
+                fit: BoxFit.contain,
+                width: size,
+                height: size,
+                placeholderBuilder: (_) => _fallbackIcon(context),
+                errorBuilder: (_, _, _) => _fallbackIcon(context),
+              )
+            : Image.asset(
+                entry.assetPath,
+                fit: BoxFit.contain,
+                width: size,
+                height: size,
+                errorBuilder: (_, _, _) => _fallbackIcon(context),
+              ),
       );
     } else {
       image = Padding(

@@ -4,6 +4,7 @@ import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../data/streak_api.dart';
 import '../../data/streak_models.dart';
+import '../widgets/streak_saver_info_dialog.dart';
 import '../widgets/streak_share_card.dart';
 import 'streak_leaderboard_page.dart';
 
@@ -309,6 +310,14 @@ class _SaverPanel extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+              IconButton(
+                key: const ValueKey('streak-saver-help'),
+                tooltip: 'How streak savers work',
+                visualDensity: VisualDensity.compact,
+                onPressed: () => showStreakSaverInfoDialog(context),
+                icon: const Icon(Icons.help_outline_rounded, size: 21),
+                color: pageSecondaryTextColor(context),
               ),
             ],
           ),

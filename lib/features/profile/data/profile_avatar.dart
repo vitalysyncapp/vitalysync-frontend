@@ -15,6 +15,16 @@ enum ProfileAvatarCategory {
   personas,
 }
 
+class ProfileAvatarAssets {
+  ProfileAvatarAssets._();
+
+  static const generic = 'assets/images/avatars/user.png';
+  static const maleStudent = 'assets/images/avatars/male Student.png';
+  static const femaleStudent = 'assets/images/avatars/female Student.png';
+  static const businessMan = 'assets/images/avatars/business-man.png';
+  static const businessWoman = 'assets/images/avatars/businesswoman.png';
+}
+
 @immutable
 class ProfileAvatarSelection {
   const ProfileAvatarSelection._({
@@ -58,6 +68,40 @@ class ProfileAvatarCatalog {
   ProfileAvatarCatalog._();
 
   static const entries = <AvatarCatalogEntry>[
+    AvatarCatalogEntry(
+      id: 'classic_male_student',
+      assetPath: ProfileAvatarAssets.maleStudent,
+      semanticLabel: 'Male student avatar',
+      frameColor: Color(0xFFDDF4FF),
+      category: ProfileAvatarCategory.student,
+    ),
+    AvatarCatalogEntry(
+      id: 'classic_female_student',
+      assetPath: ProfileAvatarAssets.femaleStudent,
+      semanticLabel: 'Female student avatar',
+      frameColor: Color(0xFFFFE7EF),
+      category: ProfileAvatarCategory.student,
+    ),
+    AvatarCatalogEntry(
+      id: 'classic_business_man',
+      assetPath: ProfileAvatarAssets.businessMan,
+      semanticLabel: 'Business professional avatar',
+      frameColor: Color(0xFFE8EEF4),
+      category: ProfileAvatarCategory.workingProfessional,
+    ),
+    AvatarCatalogEntry(
+      id: 'classic_business_woman',
+      assetPath: ProfileAvatarAssets.businessWoman,
+      semanticLabel: 'Businesswoman avatar',
+      frameColor: Color(0xFFE7F1EF),
+      category: ProfileAvatarCategory.workingProfessional,
+    ),
+    AvatarCatalogEntry(
+      id: 'classic_user',
+      assetPath: ProfileAvatarAssets.generic,
+      semanticLabel: 'Classic user avatar',
+      frameColor: Color(0xFFE6E8FF),
+    ),
     AvatarCatalogEntry(
       id: 'personas_01',
       assetPath: 'assets/images/avatars/personas_01.svg',
@@ -334,7 +378,7 @@ class ProfileAvatarCatalog {
 }
 
 String suggestedProfileAvatarAsset(String? gender, String? userType) {
-  if (gender == null || userType == null) return 'assets/images/user.png';
+  if (gender == null || userType == null) return ProfileAvatarAssets.generic;
 
   final normalizedGender = gender.trim().toLowerCase();
   final normalizedUserType = userType.trim().toLowerCase();
@@ -342,15 +386,15 @@ String suggestedProfileAvatarAsset(String? gender, String? userType) {
 
   if (normalizedGender == 'male') {
     return isStudent
-        ? 'assets/images/male Student.png'
-        : 'assets/images/business-man.png';
+        ? ProfileAvatarAssets.maleStudent
+        : ProfileAvatarAssets.businessMan;
   }
   if (normalizedGender == 'female') {
     return isStudent
-        ? 'assets/images/female Student.png'
-        : 'assets/images/businesswoman.png';
+        ? ProfileAvatarAssets.femaleStudent
+        : ProfileAvatarAssets.businessWoman;
   }
-  return 'assets/images/user.png';
+  return ProfileAvatarAssets.generic;
 }
 
 abstract interface class ProfileAvatarStorage {

@@ -516,7 +516,7 @@ class _AvatarOption extends StatelessWidget {
               ),
               child: ProfileAvatarImage(
                 selection: ProfileAvatarSelection.bundled(entry.id),
-                suggestedAssetPath: 'assets/images/user.png',
+                suggestedAssetPath: ProfileAvatarAssets.generic,
                 size: 84,
                 semanticLabel: entry.semanticLabel,
               ),
