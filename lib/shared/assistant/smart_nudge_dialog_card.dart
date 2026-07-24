@@ -277,6 +277,7 @@ class _SmartNudgeInsightCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final recommendation = primary;
     if (isLoading && recommendation == null) {
       return const AppSkeletonCard(
@@ -292,7 +293,7 @@ class _SmartNudgeInsightCard extends StatelessWidget {
       recommendation?.message ?? fallbackMessage,
     );
     final priority = recommendation?.priority ?? 'low';
-    final priorityColor = _priorityColor(priority);
+    final priorityColor = _priorityColor(priority, isDark);
     final metadata = recommendation?.metadata ?? const <String, dynamic>{};
     final whyThisMatters = _metadataText(metadata['ai_why_this_matters']);
     final actionSteps = _metadataTextList(metadata['ai_action_steps']);
@@ -306,17 +307,19 @@ class _SmartNudgeInsightCard extends StatelessWidget {
         ? 'AI-enhanced guidance'
         : 'Deterministic guidance';
 
+    final cardColor = isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white;
+    final cardBorderColor = isDark
+        ? const Color(0xFFF3C765).withValues(alpha: 0.2)
+        : const Color(0xFFF3C765).withValues(alpha: 0.5);
+    final iconBgColor = isDark
+        ? const Color(0xFFF3C765).withValues(alpha: 0.15)
+        : const Color(0xFFFEF3D7);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color.fromARGB(255, 105, 93, 240),
-            Color.fromARGB(255, 4, 177, 128),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: cardColor,
+        border: Border.all(color: cardBorderColor, width: 1.5),
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
@@ -330,7 +333,7 @@ class _SmartNudgeInsightCard extends StatelessWidget {
                 height: 44,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: iconBgColor,
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: _AssistantLottieIcon(
@@ -344,10 +347,10 @@ class _SmartNudgeInsightCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Smart nudge',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: pagePrimaryTextColor(context),
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
                       ),
@@ -357,7 +360,7 @@ class _SmartNudgeInsightCard extends StatelessWidget {
                       Text(
                         subtitle,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.84),
+                          color: pageSecondaryTextColor(context),
                           fontSize: 12.5,
                           height: 1.2,
                           fontWeight: FontWeight.w800,
@@ -377,13 +380,13 @@ class _SmartNudgeInsightCard extends StatelessWidget {
                   color: priorityColor.withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.38),
+                    color: priorityColor.withValues(alpha: 0.38),
                   ),
                 ),
                 child: Text(
                   _humanizeMetadataLabel(priority),
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: priorityColor,
                     fontSize: 10,
                     fontWeight: FontWeight.w900,
                   ),
@@ -396,7 +399,7 @@ class _SmartNudgeInsightCard extends StatelessWidget {
             FirstWeekLearningPill(
               state: firstWeekLearning,
               message: firstWeekLearning.assistantNudgeNote,
-              onGradient: true,
+              onGradient: false,
               icon: Icons.psychology_alt_rounded,
               maxLines: 2,
             ),
@@ -404,8 +407,8 @@ class _SmartNudgeInsightCard extends StatelessWidget {
           const SizedBox(height: 14),
           Text(
             body,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: pagePrimaryTextColor(context),
               fontSize: 14,
               height: 1.35,
               fontWeight: FontWeight.w700,
@@ -416,14 +419,14 @@ class _SmartNudgeInsightCard extends StatelessWidget {
             _NudgeDetailLine(
               icon: Icons.info_outline_rounded,
               text: whyThisMatters,
-              foregroundColor: Colors.white,
+              foregroundColor: pageSecondaryTextColor(context),
             ),
           ],
           if (actionSteps.isNotEmpty) ...[
             const SizedBox(height: 10),
             _NudgeActionSteps(
               steps: actionSteps,
-              foregroundColor: Colors.white,
+              foregroundColor: pageSecondaryTextColor(context),
             ),
           ] else if (actionLabel.isNotEmpty &&
               actionLabel.toLowerCase() != 'continue') ...[
@@ -431,15 +434,15 @@ class _SmartNudgeInsightCard extends StatelessWidget {
             _NudgeDetailLine(
               icon: Icons.check_circle_outline_rounded,
               text: actionLabel,
-              foregroundColor: Colors.white,
+              foregroundColor: pageSecondaryTextColor(context),
             ),
           ],
           if (isLoading) ...[
             const SizedBox(height: 14),
             LinearProgressIndicator(
               minHeight: 4,
-              color: Colors.white,
-              backgroundColor: Colors.white.withValues(alpha: 0.2),
+              color: const Color(0xFFF3C765),
+              backgroundColor: const Color(0xFFF3C765).withValues(alpha: 0.2),
             ),
           ],
           const SizedBox(height: 16),
@@ -448,23 +451,23 @@ class _SmartNudgeInsightCard extends StatelessWidget {
             isUpdating: isUpdatingFeedback,
             onLiked: onLiked,
             onDisliked: onDisliked,
-            foregroundColor: Colors.white,
+            foregroundColor: pageSecondaryTextColor(context),
           ),
         ],
       ),
     );
   }
 
-  Color _priorityColor(String priority) {
-    switch (priority) {
+  Color _priorityColor(String priority, bool isDark) {
+    switch (priority.toLowerCase()) {
       case 'urgent':
-        return const Color(0xFFFF6B6B);
+        return isDark ? const Color(0xFFFF6B6B) : const Color(0xFFE53935);
       case 'high':
-        return const Color(0xFFFFB454);
+        return isDark ? const Color(0xFFFFB454) : const Color(0xFFF57C00);
       case 'medium':
-        return const Color(0xFFB9F6CA);
+        return isDark ? const Color(0xFFFFD54F) : const Color(0xFFD69C12);
       default:
-        return const Color(0xFFE0F2FE);
+        return isDark ? const Color(0xFF81D4FA) : const Color(0xFF0288D1);
     }
   }
 }

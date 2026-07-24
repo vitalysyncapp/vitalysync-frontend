@@ -895,6 +895,11 @@ class _AssistantSectionNavigator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final highlightColor = isDark
+        ? const Color.fromARGB(255, 28, 19, 98)
+        : const Color.fromARGB(255, 243, 204, 107);
+
     return SizedBox(
       height: 42,
       child: LayoutBuilder(
@@ -914,7 +919,7 @@ class _AssistantSectionNavigator extends StatelessWidget {
                       ? Colors.white
                       : pagePrimaryTextColor(context);
                   final background = selected
-                      ? const Color(0xFF1FB489)
+                      ? highlightColor
                       : pageSurfaceColor(context);
 
                   return Padding(
@@ -929,7 +934,7 @@ class _AssistantSectionNavigator extends StatelessWidget {
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: selected
-                              ? const Color(0xFF1FB489)
+                              ? highlightColor
                               : pageBorderColor(context),
                         ),
                       ),

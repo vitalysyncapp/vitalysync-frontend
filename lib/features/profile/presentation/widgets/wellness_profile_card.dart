@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
 
-class WellnessProfileCard extends StatelessWidget {
+class WellnessProfileCard extends StatefulWidget {
   final String lifestyleType;
   final String currentRole;
   final String usualSleepTime;
@@ -33,6 +33,13 @@ class WellnessProfileCard extends StatelessWidget {
     required this.onEdit,
     required this.onRetakeBaseline,
   });
+
+  @override
+  State<WellnessProfileCard> createState() => _WellnessProfileCardState();
+}
+
+class _WellnessProfileCardState extends State<WellnessProfileCard> {
+  bool _isExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -112,117 +119,137 @@ class WellnessProfileCard extends StatelessWidget {
             emoji: '\u{1F33F}',
             icon: Icons.directions_walk_rounded,
             label: 'Lifestyle type',
-            value: _sentenceCaseCategory(lifestyleType),
+            value: _sentenceCaseCategory(widget.lifestyleType),
           ),
-          _rowItem(
-            emoji: '\u{1F4BC}',
-            icon: Icons.work_outline_rounded,
-            label: 'Current role',
-            value: _sentenceCaseCategory(currentRole),
-          ),
-          _rowItem(
-            emoji: '\u{1F319}',
-            icon: Icons.bedtime_outlined,
-            label: 'Usual sleep time',
-            value: usualSleepTime,
-          ),
-          _rowItem(
-            emoji: '\u2600\uFE0F',
-            icon: Icons.wb_sunny_outlined,
-            label: 'Usual wake time',
-            value: usualWakeTime,
-          ),
-          _rowItem(
-            emoji: '\u{1F4CF}',
-            icon: Icons.height_rounded,
-            label: 'Height',
-            value: _formatMetric(heightCm, unit: 'cm'),
-          ),
-          _rowItem(
-            emoji: '\u{1F4AA}',
-            icon: Icons.monitor_weight_rounded,
-            label: 'Weight',
-            value: _formatMetric(weightKg, unit: 'kg'),
-          ),
-          _rowItem(
-            emoji: '\u{1F4CA}',
-            icon: Icons.calculate_outlined,
-            label: 'BMI',
-            value: _formatBmi(heightCm: heightCm, weightKg: weightKg),
-          ),
-          _rowItemWithBadge(
-            emoji: '\u26A1',
-            label: 'Work intensity',
-            value: _sentenceCaseCategory(workIntensity),
-          ),
-          _rowItem(
-            emoji: '\u{1F525}',
-            icon: Icons.local_fire_department_outlined,
-            label: 'Initial burnout',
-            value: '${_sentenceCaseCategory(burnoutLevel)} ($burnoutScore%)',
-          ),
-          const SizedBox(height: 6),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(13),
-            decoration: BoxDecoration(
-              color: themePrimary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: themePrimary.withValues(alpha: 0.12)),
+          if (_isExpanded) ...[
+            _rowItem(
+              emoji: '\u{1F4BC}',
+              icon: Icons.work_outline_rounded,
+              label: 'Current role',
+              value: _sentenceCaseCategory(widget.currentRole),
             ),
-            child: Text(
-              'Your baseline helps VitalySync compare your daily logs with your usual routine.',
-              style: TextStyle(height: 1.4, fontSize: 13, color: secondary),
+            _rowItem(
+              emoji: '\u{1F319}',
+              icon: Icons.bedtime_outlined,
+              label: 'Usual sleep time',
+              value: widget.usualSleepTime,
             ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: isSaving ? null : onEdit,
-              icon: const Icon(Icons.edit_outlined),
-              label: const Text(
-                'Edit wellness profile',
-                style: TextStyle(fontWeight: FontWeight.w800),
+            _rowItem(
+              emoji: '\u2600\uFE0F',
+              icon: Icons.wb_sunny_outlined,
+              label: 'Usual wake time',
+              value: widget.usualWakeTime,
+            ),
+            _rowItem(
+              emoji: '\u{1F4CF}',
+              icon: Icons.height_rounded,
+              label: 'Height',
+              value: _formatMetric(widget.heightCm, unit: 'cm'),
+            ),
+            _rowItem(
+              emoji: '\u{1F4AA}',
+              icon: Icons.monitor_weight_rounded,
+              label: 'Weight',
+              value: _formatMetric(widget.weightKg, unit: 'kg'),
+            ),
+            _rowItem(
+              emoji: '\u{1F4CA}',
+              icon: Icons.calculate_outlined,
+              label: 'BMI',
+              value: _formatBmi(heightCm: widget.heightCm, weightKg: widget.weightKg),
+            ),
+            _rowItemWithBadge(
+              emoji: '\u26A1',
+              label: 'Work intensity',
+              value: _sentenceCaseCategory(widget.workIntensity),
+            ),
+            _rowItem(
+              emoji: '\u{1F525}',
+              icon: Icons.local_fire_department_outlined,
+              label: 'Initial burnout',
+              value: '${_sentenceCaseCategory(widget.burnoutLevel)} (${widget.burnoutScore}%)',
+            ),
+            const SizedBox(height: 6),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(13),
+              decoration: BoxDecoration(
+                color: themePrimary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: themePrimary.withValues(alpha: 0.12)),
               ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: themePrimary,
-                side: BorderSide(color: pageBorderColor(context)),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+              child: Text(
+                'Your baseline helps VitalySync compare your daily logs with your usual routine.',
+                style: TextStyle(height: 1.4, fontSize: 13, color: secondary),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: widget.isSaving ? null : widget.onEdit,
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text(
+                  'Edit wellness profile',
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: themePrimary,
+                  side: BorderSide(color: pageBorderColor(context)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: isSavingBaseline ? null : onRetakeBaseline,
-              icon: isSavingBaseline
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.restart_alt_rounded),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: widget.isSavingBaseline ? null : widget.onRetakeBaseline,
+                icon: widget.isSavingBaseline
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.restart_alt_rounded),
+                label: Text(
+                  widget.isSavingBaseline ? 'Saving baseline...' : 'Retake baseline',
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isDark
+                      ? const Color.fromARGB(255, 55, 66, 156)
+                      : themePrimary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 4),
+          Center(
+            child: TextButton.icon(
+              onPressed: () {
+                setState(() {
+                  _isExpanded = !_isExpanded;
+                });
+              },
+              icon: Icon(_isExpanded ? Icons.expand_less : Icons.expand_more),
               label: Text(
-                isSavingBaseline ? 'Saving baseline...' : 'Retake baseline',
-                style: const TextStyle(fontWeight: FontWeight.w800),
+                _isExpanded ? 'Hide' : 'More',
+                style: const TextStyle(fontWeight: FontWeight.w700),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isDark
-                    ? const Color.fromARGB(255, 55, 66, 156)
-                    : themePrimary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
+              style: TextButton.styleFrom(
+                foregroundColor: themePrimary,
               ),
             ),
           ),

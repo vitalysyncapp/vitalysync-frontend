@@ -171,6 +171,7 @@ class _ManualLogDialogState extends State<_ManualLogDialog> {
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final isCompact = width < 380;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Dialog(
       insetPadding: EdgeInsets.symmetric(
@@ -304,7 +305,9 @@ class _ManualLogDialogState extends State<_ManualLogDialog> {
                           icon: const Icon(Icons.auto_awesome_rounded),
                           label: const Text('Analyze'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF16A34A),
+                            backgroundColor: isDark
+                                ? const Color(0xFF5D4385)
+                                : const Color(0xFF16A34A),
                             foregroundColor: Colors.white,
                             padding: EdgeInsets.symmetric(
                               vertical: isCompact ? 12 : 14,

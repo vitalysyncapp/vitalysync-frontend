@@ -35,13 +35,23 @@ class _ProfileHeaderPalette {
         glassSurface: Colors.white.withValues(alpha: 0.065),
         glassBorder: Colors.white.withValues(alpha: 0.1),
         avatarRingColors: const [
-          Color(0xFF68D5B8),
-          Color(0xFF76ACE8),
-          Color(0xFFB18ADD),
+          Color.fromARGB(255, 25, 92, 134),
+          Color.fromARGB(255, 20, 22, 143),
+          Color.fromARGB(255, 50, 5, 101),
         ],
-        editButton: const Color(0xFF27A98F),
-        primaryOrb: const Color(0xFF5BDEC1).withValues(alpha: 0.08),
-        secondaryOrb: const Color(0xFF76ACE8).withValues(alpha: 0.08),
+        editButton: const Color.fromARGB(255, 39, 65, 169),
+        primaryOrb: const Color.fromARGB(
+          255,
+          30,
+          22,
+          136,
+        ).withValues(alpha: 0.08),
+        secondaryOrb: const Color.fromARGB(
+          255,
+          30,
+          22,
+          136,
+        ).withValues(alpha: 0.08),
         watermarkOpacity: 0.08,
       );
     }
@@ -1127,7 +1137,7 @@ class _PersonalInformationCard extends StatelessWidget {
   }
 }
 
-class MyGoalsCard extends StatelessWidget {
+class MyGoalsCard extends StatefulWidget {
   final UserGoalsSnapshot goals;
   final bool isSaving;
   final VoidCallback onEdit;
@@ -1138,6 +1148,13 @@ class MyGoalsCard extends StatelessWidget {
     required this.isSaving,
     required this.onEdit,
   });
+
+  @override
+  State<MyGoalsCard> createState() => _MyGoalsCardState();
+}
+
+class _MyGoalsCardState extends State<MyGoalsCard> {
+  bool _isExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -1205,51 +1222,69 @@ class MyGoalsCard extends StatelessWidget {
           _GoalDataRow(
             icon: Icons.flag_outlined,
             label: 'Wellness goal',
-            value: goals.wellnessGoal,
+            value: widget.goals.wellnessGoal,
           ),
-          _GoalDataRow(
-            icon: Icons.bedtime_outlined,
-            label: 'Sleep goal',
-            value: goals.sleepLabel,
-          ),
-          _GoalDataRow(
-            icon: Icons.water_drop_outlined,
-            label: 'Hydration goal',
-            value: goals.hydrationLabel,
-          ),
-          _GoalDataRow(
-            icon: Icons.fitness_center_outlined,
-            label: 'Activity goal',
-            value: goals.activityLabel,
-          ),
-          _GoalDataRow(
-            icon: Icons.directions_walk_rounded,
-            label: 'Daily steps',
-            value: goals.dailyStepsLabel,
-          ),
-          _GoalDataRow(
-            icon: Icons.local_dining_outlined,
-            label: 'Nutrition goal',
-            value: goals.nutritionLabel,
-          ),
-          const SizedBox(height: 4),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: isSaving ? null : onEdit,
-              icon: const Icon(Icons.edit_outlined),
-              label: const Text(
-                'Edit goals',
-                style: TextStyle(fontWeight: FontWeight.w800),
-              ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: themePrimary,
-                side: BorderSide(color: pageBorderColor(context)),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+          if (_isExpanded) ...[
+            _GoalDataRow(
+              icon: Icons.bedtime_outlined,
+              label: 'Sleep goal',
+              value: widget.goals.sleepLabel,
+            ),
+            _GoalDataRow(
+              icon: Icons.water_drop_outlined,
+              label: 'Hydration goal',
+              value: widget.goals.hydrationLabel,
+            ),
+            _GoalDataRow(
+              icon: Icons.fitness_center_outlined,
+              label: 'Activity goal',
+              value: widget.goals.activityLabel,
+            ),
+            _GoalDataRow(
+              icon: Icons.directions_walk_rounded,
+              label: 'Daily steps',
+              value: widget.goals.dailyStepsLabel,
+            ),
+            _GoalDataRow(
+              icon: Icons.local_dining_outlined,
+              label: 'Nutrition goal',
+              value: widget.goals.nutritionLabel,
+            ),
+            const SizedBox(height: 4),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: widget.isSaving ? null : widget.onEdit,
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text(
+                  'Edit goals',
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: themePrimary,
+                  side: BorderSide(color: pageBorderColor(context)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
               ),
+            ),
+          ],
+          const SizedBox(height: 4),
+          Center(
+            child: TextButton.icon(
+              onPressed: () {
+                setState(() {
+                  _isExpanded = !_isExpanded;
+                });
+              },
+              icon: Icon(_isExpanded ? Icons.expand_less : Icons.expand_more),
+              label: Text(
+                _isExpanded ? 'Hide' : 'More',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              style: TextButton.styleFrom(foregroundColor: themePrimary),
             ),
           ),
         ],
