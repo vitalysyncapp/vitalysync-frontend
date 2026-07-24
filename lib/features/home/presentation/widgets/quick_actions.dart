@@ -24,6 +24,8 @@ class QuickActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final textScale = MediaQuery.textScalerOf(
@@ -64,7 +66,9 @@ class QuickActionCard extends StatelessWidget {
                     width: iconBoxSize,
                     height: iconBoxSize,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.72),
+                      color: isDark 
+                          ? Colors.white.withValues(alpha: 0.1) 
+                          : Colors.white.withValues(alpha: 0.72),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(icon, color: iconColor, size: 18),
@@ -88,7 +92,9 @@ class QuickActionCard extends StatelessWidget {
                     width: actionSize,
                     height: actionSize,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.82),
+                      color: isDark 
+                          ? Colors.white.withValues(alpha: 0.15) 
+                          : Colors.white.withValues(alpha: 0.82),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -143,21 +149,27 @@ class QuickActionsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final actions = [
       _QuickActionItem(
         icon: Icons.monitor_heart_rounded,
         title: 'Daily check-in',
-        gradientColors: const [Color(0xFFE6F6FF), Color(0xFFDDEEFF)],
-        iconColor: const Color(0xFF2067C9),
-        titleColor: const Color(0xFF15447C),
+        gradientColors: isDark
+            ? const [Color(0xFF1C2C42), Color(0xFF142032)]
+            : const [Color(0xFFE6F6FF), Color(0xFFDDEEFF)],
+        iconColor: isDark ? const Color(0xFF7CB8FF) : const Color(0xFF2067C9),
+        titleColor: isDark ? const Color(0xFFE6F0FF) : const Color(0xFF15447C),
         onTap: () => _goToTab(context, MainTab.log),
       ),
       _QuickActionItem(
         icon: Icons.restaurant_menu_rounded,
         title: 'Log meal',
-        gradientColors: const [Color(0xFFE6FBF1), Color(0xFFD7F6E8)],
-        iconColor: const Color(0xFF178A58),
-        titleColor: const Color(0xFF17583B),
+        gradientColors: isDark
+            ? const [Color(0xFF162D24), Color(0xFF10221A)]
+            : const [Color(0xFFE6FBF1), Color(0xFFD7F6E8)],
+        iconColor: isDark ? const Color(0xFF67E2A8) : const Color(0xFF178A58),
+        titleColor: isDark ? const Color(0xFFE6F8EF) : const Color(0xFF17583B),
         onTap: () => _goToNutritionLog(context),
       ),
     ];

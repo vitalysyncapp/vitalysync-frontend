@@ -39,6 +39,7 @@ class WellnessProfileCard extends StatelessWidget {
     final primary = pagePrimaryTextColor(context);
     final secondary = pageSecondaryTextColor(context);
     final themePrimary = Theme.of(context).colorScheme.primary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       width: double.infinity,
@@ -214,7 +215,9 @@ class WellnessProfileCard extends StatelessWidget {
                 style: const TextStyle(fontWeight: FontWeight.w800),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: themePrimary,
+                backgroundColor: isDark
+                    ? const Color.fromARGB(255, 55, 66, 156)
+                    : themePrimary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(

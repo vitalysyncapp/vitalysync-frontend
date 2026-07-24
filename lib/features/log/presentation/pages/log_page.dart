@@ -921,13 +921,17 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   }
 
   Widget _buildSaveButton() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return SizedBox(
       width: double.infinity,
       height: 54,
       child: ElevatedButton(
         onPressed: isSaving ? null : _saveLog,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF1FB489),
+          backgroundColor: isDark
+              ? const Color.fromARGB(255, 36, 66, 148)
+              : const Color(0xFF1FB489),
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(

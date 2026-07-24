@@ -19,20 +19,25 @@ class WeeklyPerformanceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final consistency = metrics?.consistencyScore ?? 0;
     final goalsMet = metrics?.exerciseDays ?? 0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF4A86F7), Color.fromARGB(255, 122, 86, 189)],
+        gradient: LinearGradient(
+          colors: isDark
+              ? const [Color(0xFF4A3469), Color(0xFF1B264F)]
+              : const [Color(0xFF4A86F7), Color.fromARGB(255, 122, 86, 189)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withValues(alpha: 0.18),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.3)
+                : Colors.blue.withValues(alpha: 0.18),
             blurRadius: 12,
             offset: const Offset(0, 5),
           ),

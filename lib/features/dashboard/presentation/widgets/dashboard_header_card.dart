@@ -11,20 +11,25 @@ class DashboardHeaderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final firstWeekState = learningState;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        gradient: const LinearGradient(
-          colors: [Color.fromARGB(255, 135, 97, 186), Color(0xFF5DB8F0)],
+        gradient: LinearGradient(
+          colors: isDark
+              ? const [Color(0xFF4A3469), Color(0xFF1B264F)]
+              : const [Color.fromARGB(255, 135, 97, 186), Color(0xFF5DB8F0)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF3CB7C8).withValues(alpha: 0.18),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.3)
+                : const Color(0xFF3CB7C8).withValues(alpha: 0.18),
             blurRadius: 14,
             offset: const Offset(0, 6),
           ),

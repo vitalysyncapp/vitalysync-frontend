@@ -7,20 +7,25 @@ class NutritionHeaderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isCompact = screenWidth < 380;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(isCompact ? 10 : 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(isCompact ? 13 : 16),
-        gradient: const LinearGradient(
-          colors: [Color.fromARGB(255, 29, 150, 150), Color(0xFF5DB8F0)],
+        gradient: LinearGradient(
+          colors: isDark
+              ? const [Color(0xFF4A3469), Color(0xFF1B264F)]
+              : const [Color.fromARGB(255, 29, 150, 150), Color(0xFF5DB8F0)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF39B7C3).withValues(alpha: 0.18),
+            color: isDark 
+                ? Colors.black.withValues(alpha: 0.3)
+                : const Color(0xFF39B7C3).withValues(alpha: 0.18),
             blurRadius: isCompact ? 10 : 12,
             offset: Offset(0, isCompact ? 4 : 5),
           ),
