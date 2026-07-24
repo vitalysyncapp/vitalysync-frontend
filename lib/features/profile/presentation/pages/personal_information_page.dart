@@ -8,15 +8,6 @@ class PersonalInformationPage extends StatelessWidget {
   final int? age;
   final String? gender;
   final String? role;
-  final String lifestyleType;
-  final String wellnessGoal;
-  final String usualSleepTime;
-  final String usualWakeTime;
-  final String workIntensity;
-  final String waterGoal;
-  final String exerciseTarget;
-  final String burnoutLevel;
-  final int burnoutScore;
 
   const PersonalInformationPage({
     super.key,
@@ -25,15 +16,6 @@ class PersonalInformationPage extends StatelessWidget {
     required this.age,
     required this.gender,
     required this.role,
-    required this.lifestyleType,
-    required this.wellnessGoal,
-    required this.usualSleepTime,
-    required this.usualWakeTime,
-    required this.workIntensity,
-    required this.waterGoal,
-    required this.exerciseTarget,
-    required this.burnoutLevel,
-    required this.burnoutScore,
   });
 
   String _value(String? value) {
@@ -185,62 +167,6 @@ class PersonalInformationPage extends StatelessWidget {
                     icon: Icons.verified_user_outlined,
                     label: 'Session',
                     value: 'Signed in',
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              _InfoGroupCard(
-                emoji: '🌿',
-                icon: Icons.spa_outlined,
-                title: 'Onboarding profile',
-                children: [
-                  _InfoRow(
-                    icon: Icons.directions_walk_rounded,
-                    label: 'Lifestyle type',
-                    value: _categoryValue(lifestyleType),
-                  ),
-                  _InfoRow(
-                    icon: Icons.flag_outlined,
-                    label: 'Wellness goal',
-                    value: _value(wellnessGoal),
-                  ),
-                  _InfoRow(
-                    icon: Icons.bedtime_outlined,
-                    label: 'Usual sleep',
-                    value: _value(usualSleepTime),
-                  ),
-                  _InfoRow(
-                    icon: Icons.wb_sunny_outlined,
-                    label: 'Usual wake',
-                    value: _value(usualWakeTime),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              _InfoGroupCard(
-                emoji: '⚡',
-                icon: Icons.monitor_heart_outlined,
-                title: 'Health baseline',
-                children: [
-                  _InfoRow(
-                    icon: Icons.speed_outlined,
-                    label: 'Work intensity',
-                    value: _categoryValue(workIntensity),
-                  ),
-                  _InfoRow(
-                    icon: Icons.local_fire_department_outlined,
-                    label: 'Initial burnout',
-                    value: '${_categoryValue(burnoutLevel)} ($burnoutScore%)',
-                  ),
-                  _InfoRow(
-                    icon: Icons.water_drop_outlined,
-                    label: 'Daily water goal',
-                    value: _value(waterGoal),
-                  ),
-                  _InfoRow(
-                    icon: Icons.fitness_center_outlined,
-                    label: 'Exercise target',
-                    value: _value(exerciseTarget),
                   ),
                 ],
               ),
