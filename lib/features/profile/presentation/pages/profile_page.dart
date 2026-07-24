@@ -68,9 +68,6 @@ class _ProfilePageState extends State<ProfilePage> {
   String _sleepSchedule = '10:30 PM - 6:30 AM',
       _lifestyleType = 'Moderately Active',
       _workIntensity = 'Medium',
-      _waterGoal = '2.5 L',
-      _exerciseTarget = '3–4 days',
-      _wellnessGoal = 'Not set',
       _usualSleepTime = '--',
       _usualWakeTime = '--',
       _initialBurnoutLevel = 'Not set';
@@ -222,9 +219,6 @@ class _ProfilePageState extends State<ProfilePage> {
       _sleepSchedule = sleepSchedule;
       _lifestyleType = lifestyleType;
       _workIntensity = workIntensity;
-      _waterGoal = waterGoal;
-      _exerciseTarget = exerciseTarget;
-      _wellnessGoal = wellnessGoal;
       _usualSleepTime = usualSleepTime;
       _usualWakeTime = usualWakeTime;
       _initialBurnoutLevel = initialBurnoutLevel;
@@ -382,9 +376,6 @@ class _ProfilePageState extends State<ProfilePage> {
       if (!mounted) return false;
       setState(() {
         _goals = savedGoals;
-        _wellnessGoal = savedGoals.wellnessGoal;
-        _waterGoal = _formatLiters(savedGoals.hydrationLiters);
-        _exerciseTarget = '${savedGoals.activityDaysPerWeek} days/week';
       });
       return true;
     } catch (_) {

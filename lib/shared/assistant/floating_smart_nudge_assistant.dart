@@ -637,13 +637,12 @@ class _FloatingSmartNudgeAssistantState
 
   EdgeInsets _dragPadding(BuildContext context, Size bounds) {
     final safePadding = MediaQuery.paddingOf(context);
-    final isCompact = bounds.width < 390;
 
     return EdgeInsets.only(
       left: safePadding.left,
       top: safePadding.top + 12,
       right: safePadding.right,
-      bottom: safePadding.bottom + (isCompact ? 104 : 112),
+      bottom: safePadding.bottom + 16,
     );
   }
 
