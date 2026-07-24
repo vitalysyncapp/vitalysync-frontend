@@ -113,7 +113,7 @@ class _FloatingHeartButton extends StatelessWidget {
                                 94,
                                 255,
                               ).withValues(alpha: 0.12)
-                            : Colors.white.withValues(alpha: 0.92),
+                            : Color.fromARGB(255, 59, 9, 132),
                         width: 1.2,
                       ),
                       boxShadow: [
