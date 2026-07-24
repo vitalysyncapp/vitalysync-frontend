@@ -95,14 +95,24 @@ class _FloatingHeartButton extends StatelessWidget {
                       shape: BoxShape.circle,
                       gradient: LinearGradient(
                         colors: isDark
-                            ? const [Color(0xFF123655), Color(0xFF1FB489)]
+                            ? const [
+                                Color.fromARGB(255, 96, 62, 148),
+                                Color.fromARGB(255, 59, 9, 132),
+                                Color.fromARGB(255, 32, 54, 133),
+                                Color.fromARGB(255, 85, 41, 153),
+                              ]
                             : const [Color(0xFFFFFFFF), Color(0xFFE8FAFF)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       border: Border.all(
                         color: isDark
-                            ? Colors.white.withValues(alpha: 0.12)
+                            ? const Color.fromARGB(
+                                255,
+                                169,
+                                94,
+                                255,
+                              ).withValues(alpha: 0.12)
                             : Colors.white.withValues(alpha: 0.92),
                         width: 1.2,
                       ),
