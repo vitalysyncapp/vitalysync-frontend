@@ -482,6 +482,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           },
                         ),
                       ],
+
                     ),
                   ],
                 ),
@@ -499,7 +500,6 @@ class _SettingsPageState extends State<SettingsPage> {
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final notificationsLabel = prefs.notificationsEnabled ? 'On' : 'Off';
-    final accountLabel = _session.isLoggedIn ? 'Signed in' : 'Local mode';
 
     return Container(
       width: double.infinity,
@@ -586,11 +586,6 @@ class _SettingsPageState extends State<SettingsPage> {
                 context: context,
                 icon: Icons.notifications_active_outlined,
                 label: 'Notifications $notificationsLabel',
-              ),
-              _buildStatusPill(
-                context: context,
-                icon: Icons.account_circle_outlined,
-                label: accountLabel,
               ),
             ],
           ),
