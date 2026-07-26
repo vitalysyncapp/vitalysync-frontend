@@ -113,7 +113,7 @@ class BurnoutRiskTrendCard extends StatelessWidget {
         color: const Color(0xFF14B8A6),
       ),
       _DimensionMetric(
-        label: 'Accomplishment',
+        label: 'Progress strain',
         score: latestScore?.reducedAccomplishmentScore,
         color: const Color(0xFF2563EB),
       ),
@@ -338,6 +338,7 @@ class BurnoutRiskTrendCard extends StatelessWidget {
     BurnoutPatternInsight? pattern,
   ) {
     final confidence = window?.averageConfidenceScore;
+    final weeklyContext = summary?.latestScore?.weeklyContext;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -358,6 +359,26 @@ class BurnoutRiskTrendCard extends StatelessWidget {
                 Icons.verified_outlined,
                 '${confidence.round()}% confidence',
                 const Color(0xFF2563EB),
+              ),
+            if (weeklyContext != null)
+              _metricChip(
+                context,
+                Icons.calendar_view_week_rounded,
+                weeklyContext.ageDays == null
+                    ? 'Weekly context'
+                    : weeklyContext.ageDays == 0
+                    ? 'Pulse updated today'
+                    : 'Pulse ${weeklyContext.ageDays}d old',
+                weeklyContext.isCurrent
+                    ? const Color(0xFF0F766E)
+                    : const Color(0xFFCA8A04),
+              )
+            else if (summary?.latestScore != null)
+              _metricChip(
+                context,
+                Icons.today_rounded,
+                'Daily signals only',
+                const Color(0xFF64748B),
               ),
             if (window?.dominantDimensionLabel != null)
               _metricChip(

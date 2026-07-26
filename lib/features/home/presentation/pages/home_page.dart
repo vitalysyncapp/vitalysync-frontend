@@ -143,7 +143,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       ]);
       latestScore = results[0] as BurnoutScoreSnapshot?;
       patternSummary = results[1] as BurnoutPatternSummary?;
-      latestScore ??= patternSummary?.latestScore;
+      // Pattern loading refreshes recent scores, so prefer its snapshot over a
+      // concurrently returned cached score from an older scoring version.
+      latestScore = patternSummary?.latestScore ?? latestScore;
     } catch (_) {
       latestScore = null;
       patternSummary = null;
@@ -187,6 +189,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   String _burnoutStatusForRisk(String level, double confidenceScore) {
     final confidence = confidenceScore.round();
+    if (confidence < 55) {
+      return 'Limited confidence - complete the current check-in ($confidence% confidence)';
+    }
+
     switch (level) {
       case 'low':
         return 'Low - Current patterns look steady ($confidence% confidence)';

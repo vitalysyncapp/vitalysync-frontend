@@ -10,6 +10,7 @@ import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/widgets/reveal_on_build.dart';
 import '../../../onboarding/services/onboarding_service.dart';
 import '../../../streaks/data/streak_models.dart';
+import '../../data/check_in_models.dart';
 import '../../data/log_api.dart';
 import '../widgets/log_widgets.dart';
 
@@ -115,44 +116,17 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   final Set<String> selectedSymptoms = {};
   final Set<String> selectedHabits = {};
 
-  final List<String> sleepLabels = [
-    'Poor',
-    'Fair',
-    'Good',
-    'Very good',
-    'Excellent',
-  ];
+  final List<String> sleepLabels = CheckInFormOptions.sleepLabels;
 
-  final List<int> sleepStars = [1, 2, 3, 4, 5];
+  final List<int> sleepStars = CheckInFormOptions.sleepStars;
 
-  final List<String> moods = [
-    '\u{1F61E}',
-    '\u{1F641}',
-    '\u{1F610}',
-    '\u{1F642}',
-    '\u{1F60A}',
-  ];
+  final List<String> moods = CheckInFormOptions.moods;
 
   final List<String> exercises = LogApi.exerciseOptions;
 
-  final List<String> symptoms = [
-    'Headache',
-    'Fatigue',
-    'Irritability',
-    'Anxiety',
-    'Body pain',
-    'Back pain',
-    'None',
-  ];
+  final List<String> symptoms = CheckInFormOptions.symptoms;
 
-  final List<String> habits = [
-    'Quiet break',
-    'Sunlight or fresh air',
-    'Less screen time',
-    'Balanced meal',
-    'Talked with someone',
-    'None',
-  ];
+  final List<String> habits = CheckInFormOptions.habits;
 
   bool isSubmitted = false;
   bool isLoading = true;
@@ -161,6 +135,12 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   bool hasPendingSync = false;
   bool lastSaveWasOffline = false;
   int pendingSyncCount = 0;
+  CheckInStatus? checkInStatus;
+
+  CheckInMode get requiredMode =>
+      checkInStatus?.requiredMode ?? CheckInMode.daily;
+
+  bool get showWeeklyQuestions => requiredMode == CheckInMode.weekly;
 
   late ConfettiController _confettiController;
 
@@ -212,12 +192,13 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
 
     try {
       final defaults = await OnboardingService.loadDefaults();
+      final status = await LogApi.fetchCheckInStatus();
       final data = await LogApi.fetchTodayLog();
       final hydrationPrefill = await LogApi.readHydrationPrefill();
       final exercisePrefill = await LogApi.readExercisePrefill();
       final streak = data['streak'] as Map<String, dynamic>?;
-      final hasLog = data['has_log'] == true;
-      final pendingCount = LogApi.parseInt(data['pending_sync_count']);
+      final hasLog = status.hasTodayLog;
+      final pendingCount = status.pendingSyncCount;
 
       if (!mounted) return;
 
@@ -226,17 +207,18 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
         defaultSleepHours = defaults.sleepHours();
         exerciseGoalLabel = defaults.exerciseGoalDays ?? '3–4 days';
         workloadContext = defaults.workloadLevel;
+        checkInStatus = status;
         hasSavedLogToday = hasLog;
-        isSubmitted = hasLog;
+        isSubmitted = status.isComplete;
         hasPendingSync = pendingCount > 0;
-        lastSaveWasOffline = data['is_offline'] == true && pendingCount > 0;
+        lastSaveWasOffline = status.isOffline && pendingCount > 0;
         pendingSyncCount = pendingCount;
         isLoading = false;
       });
       _publishNavigationState();
 
-      if (hasLog) {
-        _populateFromLog(data['log'] as Map<String, dynamic>);
+      if (status.daily != null) {
+        _populateFromCheckIn(status.daily!, status.weekly);
       } else {
         setState(() {
           _resetForm(
@@ -270,85 +252,66 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     );
   }
 
-  void _populateFromLog(Map<String, dynamic> log) {
+  void _populateFromCheckIn(
+    Map<String, dynamic> daily,
+    Map<String, dynamic>? weekly,
+  ) {
+    final draft = CheckInDraft.fromJson(
+      daily: daily,
+      weekly: weekly,
+      defaultSleepHours: defaultSleepHours,
+    );
     setState(() {
-      sleepHours = LogApi.parseDouble(log['sleep_hours'], fallback: 7);
-      sleepQuality = LogApi.parseInt(log['sleep_quality'], fallback: 2);
-      moodIndex = LogApi.parseInt(log['mood_index'], fallback: 3);
-      energyLevel = LogApi.parseEnergyLevel(log['energy_level']);
-      hydration = LogApi.parseDouble(log['hydration_liters'], fallback: 0.5);
-      workloadHoursBand =
-          LogApi.normalizeWorkloadHoursBand(log['workload_hours_band']) ??
-          'None';
-      perceivedStressLevel = LogApi.parseLikert(log['perceived_stress_level']);
-      breakQualityLevel = LogApi.parseLikert(log['break_quality_level']);
-      dailyDetachmentLevel = LogApi.parseLikert(log['daily_detachment_level']);
-      dailyFocusLevel = LogApi.parseLikert(log['daily_focus_level']);
-      dailyAccomplishmentLevel = LogApi.parseLikert(
-        log['daily_accomplishment_level'],
-      );
+      sleepHours = draft.sleepHours;
+      sleepQuality = draft.sleepQuality;
+      moodIndex = draft.moodIndex;
+      energyLevel = draft.energyLevel;
+      hydration = draft.hydrationLiters;
+      workloadHoursBand = draft.workloadHoursBand;
+      perceivedStressLevel = draft.perceivedPressureLevel;
+      breakQualityLevel = draft.recoveryRestLevel;
+      dailyDetachmentLevel = draft.detachmentLevel;
+      dailyFocusLevel = draft.productivityFocusLevel;
+      dailyAccomplishmentLevel = draft.accomplishmentLevel;
       selectedExercises
         ..clear()
-        ..addAll(
-          ((log['exercise_names'] as List<dynamic>? ?? const []).map(
-            (item) => item.toString(),
-          )),
-        );
+        ..addAll(draft.exerciseNames);
       selectedSymptoms
         ..clear()
-        ..addAll(
-          ((log['symptom_names'] as List<dynamic>? ?? const []).map(
-            (item) => item.toString(),
-          )),
-        );
+        ..addAll(draft.symptomNames);
       selectedHabits
         ..clear()
-        ..addAll(
-          ((log['habit_names'] as List<dynamic>? ?? const []).map(
-            (item) => _readableHabitName(item.toString()),
-          )),
-        );
+        ..addAll(draft.habitNames);
     });
   }
 
-  String _readableHabitName(String habit) {
-    switch (habit) {
-      case 'Mindful break':
-        return 'Quiet break';
-      case 'Outdoor light':
-        return 'Sunlight or fresh air';
-      case 'Screen boundary':
-        return 'Less screen time';
-      case 'Healthy meal':
-        return 'Balanced meal';
-      case 'Social connection':
-        return 'Talked with someone';
-      default:
-        return habit;
-    }
-  }
-
-  bool _validateLog() {
-    if (hydration <= 0) return false;
-    if (energyLevel == null) return false;
-    if (workloadHoursBand.isEmpty) return false;
-    if (perceivedStressLevel == null) return false;
-    if (breakQualityLevel == null) return false;
-    if (dailyDetachmentLevel == null) return false;
-    if (dailyFocusLevel == null) return false;
-    if (dailyAccomplishmentLevel == null) return false;
-    if (selectedExercises.isEmpty) return false;
-    if (selectedSymptoms.isEmpty) return false;
-    if (selectedHabits.isEmpty) return false;
-    return true;
+  CheckInDraft _buildDraft() {
+    return CheckInDraft(
+      sleepHours: sleepHours,
+      sleepQuality: sleepQuality,
+      moodIndex: moodIndex,
+      energyLevel: energyLevel,
+      hydrationLiters: hydration,
+      workloadHoursBand: workloadHoursBand,
+      exerciseNames: Set<String>.from(selectedExercises),
+      symptomNames: Set<String>.from(selectedSymptoms),
+      habitNames: Set<String>.from(selectedHabits),
+      perceivedPressureLevel: perceivedStressLevel,
+      recoveryRestLevel: breakQualityLevel,
+      detachmentLevel: dailyDetachmentLevel,
+      productivityFocusLevel: dailyFocusLevel,
+      accomplishmentLevel: dailyAccomplishmentLevel,
+    );
   }
 
   Future<void> _saveLog({String streakRestoreDecision = 'defer'}) async {
-    if (!_validateLog()) {
+    final draft = _buildDraft();
+    final missingFields = draft.validationErrors(requiredMode);
+    if (missingFields.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Please complete all daily dimension questions, hydration, workload, exercise, symptoms, and recovery habits before saving.',
+            'Please complete ${missingFields.join(', ')} before saving.',
           ),
         ),
       );
@@ -361,21 +324,9 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     _publishNavigationState();
 
     try {
-      final data = await LogApi.saveDailyLog(
-        sleepHours: sleepHours,
-        sleepQuality: sleepQuality,
-        moodIndex: moodIndex,
-        energyLevel: energyLevel!,
-        hydrationLiters: hydration,
-        workloadHoursBand: workloadHoursBand,
-        perceivedStressLevel: perceivedStressLevel!,
-        breakQualityLevel: breakQualityLevel,
-        dailyDetachmentLevel: dailyDetachmentLevel!,
-        dailyFocusLevel: dailyFocusLevel!,
-        dailyAccomplishmentLevel: dailyAccomplishmentLevel!,
-        exerciseNames: selectedExercises.toList()..sort(),
-        symptomNames: selectedSymptoms.toList()..sort(),
-        habitNames: selectedHabits.toList()..sort(),
+      final data = await LogApi.saveCheckIn(
+        draft: draft,
+        mode: requiredMode,
         streakRestoreDecision: streakRestoreDecision,
       );
 
@@ -406,10 +357,23 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
           content: Text(
             savedOffline
                 ? 'Saved offline. $pendingCount check-in${pendingCount == 1 ? '' : 's'} waiting to sync.'
+                : requiredMode == CheckInMode.weekly
+                ? 'Weekly pulse and today\'s check-in synced successfully.'
                 : 'Daily check-in synced successfully.',
           ),
         ),
       );
+    } on CheckInModeChangedException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        isSaving = false;
+      });
+      _publishNavigationState();
+      await _loadLogState(showLoader: false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     } on StreakRestoreRequiredException catch (error) {
       if (!mounted) return;
 
@@ -747,6 +711,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                                   RevealOnBuild(
                                     delay: const Duration(milliseconds: 90),
                                     child: LogWidgets(
+                                      showWeeklyQuestions: showWeeklyQuestions,
                                       sleepHours: sleepHours,
                                       sleepQuality: sleepQuality,
                                       moodIndex: moodIndex,
@@ -948,7 +913,11 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                 ),
               )
             : Text(
-                hasSavedLogToday
+                showWeeklyQuestions
+                    ? checkInStatus?.schedule.completedToday == true
+                          ? 'Update today\'s weekly pulse'
+                          : 'Save weekly pulse and check-in'
+                    : hasSavedLogToday
                     ? 'Update today\'s check-in'
                     : 'Save daily check-in',
                 style: const TextStyle(
@@ -1180,7 +1149,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                     const SizedBox(width: 7),
                     Flexible(
                       child: Text(
-                        'DAILY CHECK-IN',
+                        showWeeklyQuestions ? 'WEEKLY PULSE' : 'DAILY CHECK-IN',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -1202,7 +1171,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
           ),
           SizedBox(height: isCompact ? 9 : 11),
           Text(
-            'Log your day',
+            showWeeklyQuestions ? 'Your weekly pulse' : 'Log your day',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -1215,7 +1184,11 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
           ),
           SizedBox(height: isCompact ? 4 : 5),
           Text(
-            'An evening check-in works best.',
+            showWeeklyQuestions
+                ? checkInStatus?.schedule.isOverdue == true
+                      ? 'Your pulse was missed earlier. Complete it now to continue logging.'
+                      : 'Today includes five weekly reflection questions.'
+                : 'A short evening check-in works best.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               fontSize: isCompact ? 12 : 13,
               fontWeight: FontWeight.w500,
@@ -1485,7 +1458,7 @@ class _LogScoringInfoSheet extends StatelessWidget {
                           icon: Icons.fact_check_outlined,
                           title: 'Log order',
                           text:
-                              'Sleep duration and sleep quality are standalone recovery inputs and stay first. The three Maslach-style sections follow with four daily questionnaires each.',
+                              'Most days use nine quick inputs. Every seventh-day pulse keeps those same inputs and adds five weekly reflections for pressure, recovery, detachment, focus, and accomplishment.',
                         ),
                         SizedBox(height: 10),
                         _ScoringFormulaBlock(),
@@ -1501,28 +1474,28 @@ class _LogScoringInfoSheet extends StatelessWidget {
                           icon: Icons.local_fire_department_rounded,
                           title: 'Emotional exhaustion',
                           text:
-                              'Pressure, energy level, mood, and symptoms form the daily emotional-exhaustion group. Sleep, workload, and symptoms also support the backend exhaustion formula.',
+                              'Energy, mood, symptoms, sleep, and workload provide the daily context. Perceived pressure is asked in the weekly pulse to reduce daily effort.',
                         ),
                         SizedBox(height: 10),
                         _ScoringInfoBlock(
                           icon: Icons.spa_outlined,
                           title: 'Detachment',
                           text:
-                              'Daily detachment, recovery breaks, recovery habits, and hydration form the detachment group. The weekly detachment pulse still anchors the dimension score.',
+                              'Recovery habits and hydration provide daily context. Detachment and recovery breaks are collected in the weekly pulse.',
                         ),
                         SizedBox(height: 10),
                         _ScoringInfoBlock(
                           icon: Icons.center_focus_strong_rounded,
                           title: 'Reduced accomplishment',
                           text:
-                              'Daily focus, daily accomplishment, workload hours, and exercise form the reduced-accomplishment group. Weekly focus and accomplishment remain supporting pulse inputs.',
+                              'Workload and exercise provide daily context. Focus and accomplishment are collected in the weekly pulse.',
                         ),
                         SizedBox(height: 10),
                         _ScoringInfoBlock(
                           icon: Icons.self_improvement_rounded,
                           title: 'Recovery and workload support',
                           text:
-                              'Break quality, recovery habits, hydration, exercise, activity minutes, and workload hours shape recovery deficit, workload strain, and daily functioning context.',
+                              'Recovery habits, hydration, exercise, activity minutes, and workload hours shape daily context. Weekly answers add a broader view without asking for them every day.',
                         ),
                         SizedBox(height: 10),
                         _ScoringInfoBlock(

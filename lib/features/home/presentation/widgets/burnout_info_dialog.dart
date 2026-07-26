@@ -66,7 +66,7 @@ class BurnoutInfoDialog extends StatelessWidget {
                           color: const Color(0xFF2563EB),
                           title: 'What the score means',
                           child: Text(
-                            'Your score is $score/100. Higher scores mean stronger burnout-risk signals from recent logs, baseline answers, workload, and recovery patterns.',
+                            'Your score is $score/100. It combines short daily signals—such as sleep, mood, energy, workload, and habits—with the latest eligible weekly pulse and your baseline.',
                             style: _bodyStyle(context),
                           ),
                         ),
@@ -96,6 +96,13 @@ class BurnoutInfoDialog extends StatelessWidget {
                           color: const Color(0xFF16A34A),
                           title: 'Confidence score',
                           child: _buildConfidence(context),
+                        ),
+                        const SizedBox(height: 10),
+                        _InfoSection(
+                          icon: Icons.calendar_view_week_rounded,
+                          color: const Color(0xFF0F766E),
+                          title: 'Weekly pulse context',
+                          child: _buildWeeklyContext(context),
                         ),
                         const SizedBox(height: 10),
                         _InfoSection(
@@ -226,12 +233,17 @@ class BurnoutInfoDialog extends StatelessWidget {
 
     if (confidence == null || confidence <= 0) {
       return Text(
-        'Confidence appears after enough daily data is available. Complete logs make the score easier to trust.',
+        'Confidence appears after enough short daily logs and weekly context are available.',
         style: _bodyStyle(context),
       );
     }
 
     final completeness = scoreSnapshot?.completenessScore;
+    final confidenceColor = confidence >= 70
+        ? const Color(0xFF16A34A)
+        : confidence >= 55
+        ? const Color(0xFFCA8A04)
+        : const Color(0xFFF97316);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,7 +254,7 @@ class BurnoutInfoDialog extends StatelessWidget {
           children: [
             _Pill(
               label: '${confidence.round()}% confidence',
-              color: const Color(0xFF16A34A),
+              color: confidenceColor,
             ),
             if (completeness != null)
               _Pill(
@@ -253,9 +265,63 @@ class BurnoutInfoDialog extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'This reflects how complete the current inputs are. Missing logs lower confidence, so recommendations stay gentler.',
+          'Confidence reflects required-field coverage and the age of the weekly pulse used for this score. Limited inputs keep recommendations gentler.',
           style: _bodyStyle(context),
         ),
+      ],
+    );
+  }
+
+  Widget _buildWeeklyContext(BuildContext context) {
+    final weeklyContext = latestScore?.weeklyContext;
+    if (weeklyContext == null) {
+      return Text(
+        latestScore == null
+            ? 'Complete a check-in to begin building weekly context.'
+            : 'This score uses short daily signals only. Weekly dimensions will be added after the first scheduled pulse.',
+        style: _bodyStyle(context),
+      );
+    }
+
+    final freshness = _humanize(weeklyContext.freshness);
+    final age = weeklyContext.ageDays;
+    final ageLabel = age == null
+        ? null
+        : age == 0
+        ? 'Completed on the score date'
+        : '$age day${age == 1 ? '' : 's'} old for this score';
+    final color = weeklyContext.isCurrent
+        ? const Color(0xFF0F766E)
+        : weeklyContext.freshness == 'aging'
+        ? const Color(0xFFCA8A04)
+        : const Color(0xFFF97316);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _Pill(
+              label: '$freshness context',
+              color: color,
+              icon: Icons.event_available_rounded,
+            ),
+            if (weeklyContext.responseDate.isNotEmpty)
+              _Pill(
+                label: _formatDate(context, weeklyContext.responseDate),
+                color: const Color(0xFF2563EB),
+              ),
+          ],
+        ),
+        if (ageLabel != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            '$ageLabel. Pressure, recovery, detachment, focus, and accomplishment carry forward until the next required pulse.',
+            style: _bodyStyle(context),
+          ),
+        ],
       ],
     );
   }
@@ -267,7 +333,7 @@ class BurnoutInfoDialog extends StatelessWidget {
       return Text(
         latestScore == null
             ? 'No daily burnout score has been generated yet. Complete check-ins to unlock richer details.'
-            : 'No missing fields reported for this score.',
+            : 'No required daily or weekly fields are missing from the inputs used for this score.',
         style: _bodyStyle(context),
       );
     }
@@ -428,7 +494,28 @@ class BurnoutInfoDialog extends StatelessWidget {
   }
 
   String _humanize(String value) {
+    const fieldLabels = {
+      'daily_logs.sleep_hours': 'Sleep duration',
+      'daily_logs.sleep_quality': 'Sleep quality',
+      'daily_logs.mood_index': 'Mood',
+      'daily_logs.energy_level': 'Energy',
+      'daily_logs.hydration_liters': 'Hydration',
+      'daily_logs.workload_hours_band': 'Workload',
+      'daily_logs.exercise_names': 'Movement',
+      'daily_logs.symptom_names': 'Body signals',
+      'daily_logs.habit_names': 'Recovery habits',
+      'weekly_pulse_responses.perceived_pressure_level': 'Weekly pressure',
+      'weekly_pulse_responses.recovery_rest_level': 'Weekly recovery',
+      'weekly_pulse_responses.detachment_level': 'Weekly detachment',
+      'weekly_pulse_responses.productivity_focus_level': 'Weekly focus',
+      'weekly_pulse_responses.accomplishment_level': 'Weekly accomplishment',
+    };
+    final knownLabel = fieldLabels[value];
+    if (knownLabel != null) return knownLabel;
+
     final words = value
+        .split('.')
+        .last
         .replaceAll('_', ' ')
         .replaceAll('-', ' ')
         .split(' ')
@@ -438,6 +525,13 @@ class BurnoutInfoDialog extends StatelessWidget {
     if (words.isEmpty) return 'Unknown';
     final text = words.join(' ');
     return '${text[0].toUpperCase()}${text.substring(1)}';
+  }
+
+  String _formatDate(BuildContext context, String value) {
+    final parsed = DateTime.tryParse(value);
+    return parsed == null
+        ? value
+        : MaterialLocalizations.of(context).formatMediumDate(parsed);
   }
 
   TextStyle _bodyStyle(BuildContext context) {

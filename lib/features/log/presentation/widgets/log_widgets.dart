@@ -9,6 +9,7 @@ part 'log_pressure_recovery_cards.dart';
 part 'log_widget_shared_builders.dart';
 
 class LogWidgets extends StatelessWidget {
+  final bool showWeeklyQuestions;
   final double sleepHours;
   final int sleepQuality;
   final int moodIndex;
@@ -53,6 +54,7 @@ class LogWidgets extends StatelessWidget {
 
   const LogWidgets({
     super.key,
+    this.showWeeklyQuestions = false,
     required this.sleepHours,
     required this.sleepQuality,
     required this.moodIndex,
@@ -100,53 +102,32 @@ class LogWidgets extends StatelessWidget {
         _buildSleepDurationCard(context),
         const SizedBox(height: 12),
         _buildSleepQualityCard(),
-        const SizedBox(height: 12),
-        _buildDimensionHeader(
-          context,
-          icon: Icons.battery_5_bar_rounded,
-          title: 'Emotional exhaustion',
-          description:
-              'Tracks strain, depleted energy, low mood, and physical symptoms that can signal exhaustion.',
-          accentColor: const Color(0xFFFF8A1F),
-        ),
-        const SizedBox(height: 12),
-        _buildPerceivedStressCard(),
+        if (showWeeklyQuestions) ...[
+          const SizedBox(height: 12),
+          _buildPerceivedStressCard(),
+        ],
         const SizedBox(height: 12),
         _buildEnergyCard(context),
         const SizedBox(height: 12),
         _buildMoodCard(),
         const SizedBox(height: 12),
         _buildSymptomsCard(),
-        const SizedBox(height: 12),
-        _buildDimensionHeader(
-          context,
-          icon: Icons.spa_outlined,
-          title: 'Depersonalization or detachment',
-          description:
-              'Tracks emotional distance and recovery supports that can affect connection to daily responsibilities.',
-          accentColor: const Color(0xFF14B8A6),
-        ),
-        const SizedBox(height: 12),
-        _buildDailyDetachmentCard(),
-        const SizedBox(height: 12),
-        _buildBreakQualityCard(),
+        if (showWeeklyQuestions) ...[
+          const SizedBox(height: 12),
+          _buildDailyDetachmentCard(),
+          const SizedBox(height: 12),
+          _buildBreakQualityCard(),
+        ],
         const SizedBox(height: 12),
         _buildHabitsCard(),
         const SizedBox(height: 12),
         _buildHydrationCard(),
-        const SizedBox(height: 12),
-        _buildDimensionHeader(
-          context,
-          icon: Icons.center_focus_strong_rounded,
-          title: 'Reduced accomplishment',
-          description:
-              'Connects workload, activity, and body-support signals with weekly focus and progress answers.',
-          accentColor: const Color(0xFF2563EB),
-        ),
-        const SizedBox(height: 12),
-        _buildDailyFocusCard(),
-        const SizedBox(height: 12),
-        _buildDailyAccomplishmentCard(),
+        if (showWeeklyQuestions) ...[
+          const SizedBox(height: 12),
+          _buildDailyFocusCard(),
+          const SizedBox(height: 12),
+          _buildDailyAccomplishmentCard(),
+        ],
         const SizedBox(height: 12),
         _buildWorkloadCard(),
         const SizedBox(height: 12),

@@ -19,6 +19,8 @@ class BurnoutScoreSnapshot {
   final double? reducedAccomplishmentScore;
   final List<String> missingFields;
   final List<BurnoutContributingFactor> contributingFactors;
+  final BurnoutWeeklyContext? weeklyContext;
+  final String scoringVersion;
 
   const BurnoutScoreSnapshot({
     required this.scoreDate,
@@ -31,9 +33,16 @@ class BurnoutScoreSnapshot {
     required this.reducedAccomplishmentScore,
     required this.missingFields,
     required this.contributingFactors,
+    required this.weeklyContext,
+    required this.scoringVersion,
   });
 
   factory BurnoutScoreSnapshot.fromJson(Map<String, dynamic> json) {
+    final sourceSnapshot = json['source_snapshot'];
+    final weeklyPulse = sourceSnapshot is Map
+        ? sourceSnapshot['weekly_pulse']
+        : null;
+
     return BurnoutScoreSnapshot(
       scoreDate: json['score_date']?.toString() ?? '',
       overallScore: _parseDouble(json['overall_score']),
@@ -59,8 +68,39 @@ class BurnoutScoreSnapshot {
                 ),
               )
               .toList(),
+      weeklyContext: weeklyPulse is Map
+          ? BurnoutWeeklyContext.fromJson(
+              Map<String, dynamic>.from(weeklyPulse),
+            )
+          : null,
+      scoringVersion: json['scoring_version']?.toString() ?? '',
     );
   }
+}
+
+class BurnoutWeeklyContext {
+  final String responseDate;
+  final String dueDate;
+  final int? ageDays;
+  final String freshness;
+
+  const BurnoutWeeklyContext({
+    required this.responseDate,
+    required this.dueDate,
+    required this.ageDays,
+    required this.freshness,
+  });
+
+  factory BurnoutWeeklyContext.fromJson(Map<String, dynamic> json) {
+    return BurnoutWeeklyContext(
+      responseDate: json['response_date']?.toString() ?? '',
+      dueDate: json['due_date']?.toString() ?? '',
+      ageDays: _parseOptionalInt(json['age_days']),
+      freshness: json['freshness']?.toString() ?? 'unknown',
+    );
+  }
+
+  bool get isCurrent => freshness == 'current';
 }
 
 class BurnoutContributingFactor {
@@ -677,4 +717,16 @@ int _parseInt(dynamic value) {
   }
 
   return 0;
+}
+
+int? _parseOptionalInt(dynamic value) {
+  if (value == null || value == '') {
+    return null;
+  }
+
+  if (value is num) {
+    return value.toInt();
+  }
+
+  return int.tryParse(value.toString());
 }

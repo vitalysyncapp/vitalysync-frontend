@@ -1,496 +1,333 @@
 part of 'floating_smart_nudge_assistant.dart';
 
-class _WeeklyPulseCard extends StatelessWidget {
+class _AssistantCheckInCard extends StatelessWidget {
   final bool isLoading;
   final bool isSaving;
-  final bool hasResponse;
+  final CheckInStatus? status;
+  final CheckInDraft draft;
   final bool isEditing;
-  final int? productivityFocusLevel;
-  final int? recoveryRestLevel;
-  final int? detachmentLevel;
-  final int? accomplishmentLevel;
-  final ValueChanged<int> onProductivityChanged;
-  final ValueChanged<int> onRecoveryChanged;
-  final ValueChanged<int> onDetachmentChanged;
-  final ValueChanged<int> onAccomplishmentChanged;
-  final VoidCallback onSave;
+  final String exerciseGoalLabel;
+  final ValueChanged<CheckInDraft> onChanged;
+  final Future<void> Function() onSave;
   final VoidCallback onRedo;
 
-  const _WeeklyPulseCard({
+  const _AssistantCheckInCard({
     required this.isLoading,
     required this.isSaving,
-    required this.hasResponse,
+    required this.status,
+    required this.draft,
     required this.isEditing,
-    required this.productivityFocusLevel,
-    required this.recoveryRestLevel,
-    required this.detachmentLevel,
-    required this.accomplishmentLevel,
-    required this.onProductivityChanged,
-    required this.onRecoveryChanged,
-    required this.onDetachmentChanged,
-    required this.onAccomplishmentChanged,
+    required this.exerciseGoalLabel,
+    required this.onChanged,
     required this.onSave,
     required this.onRedo,
   });
 
-  bool get _canSave =>
-      productivityFocusLevel != null &&
-      recoveryRestLevel != null &&
-      detachmentLevel != null &&
-      accomplishmentLevel != null &&
-      !isSaving;
+  bool get _showWeeklyQuestions => status?.requiredMode == CheckInMode.weekly;
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return const _AssistantLoadingCard();
+    if (isLoading) return const _AssistantLoadingCard();
+    final currentStatus = status;
+    if (currentStatus == null) {
+      return _AssistantCheckInMessage(
+        icon: Icons.cloud_off_rounded,
+        title: 'Check-in unavailable',
+        message:
+            'Reconnect and refresh the assistant to load today\'s check-in.',
+      );
+    }
+    if (currentStatus.isComplete && !isEditing) {
+      return _AssistantCheckInSavedView(
+        isWeekly: _showWeeklyQuestions,
+        isOffline: currentStatus.isOffline,
+        nextDueDate: currentStatus.schedule.nextDueDate,
+        onRedo: onRedo,
+      );
     }
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark
-        ? const Color(0xFF0F1F2E).withValues(alpha: 0.96)
-        : const Color(0xFFF8FEFC);
-    final headerGradient = isDark
-        ? const [Color(0xFF123655), Color(0xFF1FB489)]
-        : const [Color(0xFFE8FFF5), Color(0xFFE8F7FF)];
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : const Color(0xFFBCEBDD),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(
-              0xFF1FB489,
-            ).withValues(alpha: isDark ? 0.12 : 0.08),
-            blurRadius: 26,
-            offset: const Offset(0, 16),
+    final missing = draft.validationErrors(currentStatus.requiredMode);
+    final primary = Theme.of(context).colorScheme.primary;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: primary.withValues(alpha: 0.09),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: primary.withValues(alpha: 0.2)),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: headerGradient,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : Colors.white.withValues(alpha: 0.82),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: isDark ? 0.12 : 0.7),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: isDark ? 0.1 : 0.9),
-                    ),
-                  ),
-                  child: const Text(
-                    '\u{1F33F}',
-                    style: TextStyle(fontSize: 24),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Weekly pulse',
-                        style: TextStyle(
-                          color: pagePrimaryTextColor(context),
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        hasResponse
-                            ? 'Your check-in is saved for this Monday-based week.'
-                            : 'A calm check-in for focus, rest, distance, and wins.',
-                        style: TextStyle(
-                          color: pageSecondaryTextColor(context),
-                          fontSize: 13.5,
-                          height: 1.35,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (hasResponse && !isEditing) ...[
-            const SizedBox(height: 16),
-            _WeeklyPulseSavedView(onRedo: onRedo),
-          ] else ...[
-            const SizedBox(height: 16),
-            _PulseLikertQuestion(
-              emoji: '\u{1F3AF}',
-              title: 'I was able to stay focused on important tasks this week.',
-              lowLabel: 'Scattered',
-              highLabel: 'Focused',
-              accentColor: const Color(0xFF38BDF8),
-              value: productivityFocusLevel,
-              onChanged: onProductivityChanged,
-            ),
-            const SizedBox(height: 12),
-            _PulseLikertQuestion(
-              emoji: '\u{1F319}',
-              title: 'I had enough breaks or recovery time this week.',
-              lowLabel: 'Limited',
-              highLabel: 'Rested',
-              accentColor: const Color(0xFF8B5CF6),
-              value: recoveryRestLevel,
-              onChanged: onRecoveryChanged,
-            ),
-            const SizedBox(height: 12),
-            _PulseLikertQuestion(
-              emoji: '\u{1FAE7}',
-              title:
-                  'I felt emotionally distant from my responsibilities this week.',
-              lowLabel: 'Connected',
-              highLabel: 'Detached',
-              accentColor: const Color(0xFF14B8A6),
-              value: detachmentLevel,
-              onChanged: onDetachmentChanged,
-            ),
-            const SizedBox(height: 12),
-            _PulseLikertQuestion(
-              emoji: '\u{2728}',
-              title: 'I felt I made meaningful progress this week.',
-              lowLabel: 'Stuck',
-              highLabel: 'Progress',
-              accentColor: const Color(0xFFF59E0B),
-              value: accomplishmentLevel,
-              onChanged: onAccomplishmentChanged,
-            ),
-            const SizedBox(height: 18),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _canSave ? onSave : null,
-                icon: isSaving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.check_circle_outline_rounded),
-                label: Text(
-                  isSaving
-                      ? 'Saving...'
-                      : hasResponse
-                      ? 'Update weekly pulse'
-                      : 'Save weekly pulse',
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1FB489),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _WeeklyPulseSavedView extends StatelessWidget {
-  final VoidCallback onRedo;
-
-  const _WeeklyPulseSavedView({required this.onRedo});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [
-                  const Color(0xFF0F2922).withValues(alpha: 0.5),
-                  const Color(0xFF0A1B16).withValues(alpha: 0.3),
-                ]
-              : [
-                  const Color(0xFFF0FDF4),
-                  const Color(0xFFF8FAFC),
-                ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isDark
-              ? const Color(0xFF22C55E).withValues(alpha: 0.15)
-              : const Color(0xFFBBF7D0),
-        ),
-        boxShadow: [
-          if (!isDark)
-            BoxShadow(
-              color: const Color(0xFF22C55E).withValues(alpha: 0.05),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Stack(
-            alignment: Alignment.center,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFF22C55E).withValues(alpha: isDark ? 0.1 : 0.15),
-                ),
+              Icon(
+                _showWeeklyQuestions
+                    ? Icons.calendar_view_week_rounded
+                    : Icons.bolt_rounded,
+                color: primary,
               ),
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF22C55E), Color(0xFF15803D)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF22C55E).withValues(alpha: 0.4),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _showWeeklyQuestions
+                          ? currentStatus.schedule.isOverdue
+                                ? 'Weekly pulse due'
+                                : 'Weekly pulse'
+                          : 'Short daily check-in',
+                      style: TextStyle(
+                        color: pagePrimaryTextColor(context),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _showWeeklyQuestions
+                          ? 'Today includes the usual nine inputs plus five weekly reflections. It cannot be skipped, but it follows you to the next day you return.'
+                          : 'The same nine inputs as the Log page, sized for the assistant.',
+                      style: TextStyle(
+                        color: pageSecondaryTextColor(context),
+                        height: 1.35,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
-                child: const Icon(Icons.check_rounded, color: Colors.white, size: 32),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            'Weekly pulse saved',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: pagePrimaryTextColor(context),
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -0.3,
+        ),
+        const SizedBox(height: 12),
+        LogWidgets(
+          showWeeklyQuestions: _showWeeklyQuestions,
+          sleepHours: draft.sleepHours,
+          sleepQuality: draft.sleepQuality,
+          moodIndex: draft.moodIndex,
+          energyLevel: draft.energyLevel,
+          hydration: draft.hydrationLiters,
+          workloadHoursBand: draft.workloadHoursBand,
+          perceivedStressLevel: draft.perceivedPressureLevel,
+          breakQualityLevel: draft.recoveryRestLevel,
+          dailyDetachmentLevel: draft.detachmentLevel,
+          dailyFocusLevel: draft.productivityFocusLevel,
+          dailyAccomplishmentLevel: draft.accomplishmentLevel,
+          selectedExercises: draft.exerciseNames,
+          selectedSymptoms: draft.symptomNames,
+          selectedHabits: draft.habitNames,
+          sleepLabels: CheckInFormOptions.sleepLabels,
+          sleepStars: CheckInFormOptions.sleepStars,
+          moods: CheckInFormOptions.moods,
+          exercises: LogApi.exerciseOptions,
+          symptoms: CheckInFormOptions.symptoms,
+          habits: CheckInFormOptions.habits,
+          exerciseGoalLabel: exerciseGoalLabel,
+          workloadOptions: LogApi.workloadHoursBandOptions,
+          onSleepChanged: (value) =>
+              onChanged(draft.copyWith(sleepHours: value)),
+          onSleepQualityChanged: (value) =>
+              onChanged(draft.copyWith(sleepQuality: value)),
+          onMoodChanged: (value) => onChanged(draft.copyWith(moodIndex: value)),
+          onEnergyChanged: (value) =>
+              onChanged(draft.copyWith(energyLevel: value)),
+          onHydrationAdd: (value) => onChanged(
+            draft.copyWith(
+              hydrationLiters: (draft.hydrationLiters + value)
+                  .clamp(0, 10)
+                  .toDouble(),
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'You are set for this week. A fresh pulse\nopens again next Monday.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: pageSecondaryTextColor(context),
-              fontSize: 14,
-              height: 1.4,
-              fontWeight: FontWeight.w600,
+          onHydrationSubtract: () => onChanged(
+            draft.copyWith(
+              hydrationLiters: (draft.hydrationLiters - 0.25)
+                  .clamp(0, 10)
+                  .toDouble(),
             ),
           ),
-          const SizedBox(height: 20),
-          FilledButton.icon(
-            onPressed: onRedo,
-            icon: const Icon(Icons.refresh_rounded, size: 18),
-            label: const Text('Redo weekly pulse', style: TextStyle(fontWeight: FontWeight.w700)),
+          onHydrationReset: () => onChanged(draft.copyWith(hydrationLiters: 0)),
+          onWorkloadChanged: (value) =>
+              onChanged(draft.copyWith(workloadHoursBand: value)),
+          onPerceivedStressChanged: (value) =>
+              onChanged(draft.copyWith(perceivedPressureLevel: value)),
+          onBreakQualityChanged: (value) =>
+              onChanged(draft.copyWith(recoveryRestLevel: value)),
+          onDailyDetachmentChanged: (value) =>
+              onChanged(draft.copyWith(detachmentLevel: value)),
+          onDailyFocusChanged: (value) =>
+              onChanged(draft.copyWith(productivityFocusLevel: value)),
+          onDailyAccomplishmentChanged: (value) =>
+              onChanged(draft.copyWith(accomplishmentLevel: value)),
+          onExerciseToggle: (value) => onChanged(
+            draft.copyWith(
+              exerciseNames: _toggleSelection(draft.exerciseNames, value),
+            ),
+          ),
+          onSymptomToggle: (value) => onChanged(
+            draft.copyWith(
+              symptomNames: _toggleSelection(draft.symptomNames, value),
+            ),
+          ),
+          onHabitToggle: (value) => onChanged(
+            draft.copyWith(
+              habitNames: _toggleSelection(draft.habitNames, value),
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: isSaving || missing.isNotEmpty ? null : onSave,
+            icon: isSaving
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.check_circle_outline_rounded),
+            label: Text(
+              isSaving
+                  ? 'Saving...'
+                  : _showWeeklyQuestions
+                  ? 'Save weekly pulse and check-in'
+                  : 'Save daily check-in',
+            ),
             style: FilledButton.styleFrom(
-              backgroundColor: isDark 
-                  ? Colors.white.withValues(alpha: 0.1) 
-                  : const Color(0xFFDCFCE7),
-              foregroundColor: isDark ? Colors.white : const Color(0xFF166534),
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
           ),
+        ),
+        if (missing.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Still needed: ${missing.join(', ')}',
+            style: TextStyle(
+              color: pageSecondaryTextColor(context),
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
+      ],
+    );
+  }
+
+  static Set<String> _toggleSelection(Set<String> current, String value) {
+    final updated = Set<String>.from(current);
+    if (value == 'None') {
+      if (updated.contains('None')) {
+        updated.remove('None');
+      } else {
+        updated
+          ..clear()
+          ..add('None');
+      }
+      return updated;
+    }
+    updated.remove('None');
+    if (!updated.add(value)) updated.remove(value);
+    return updated;
+  }
+}
+
+class _AssistantCheckInSavedView extends StatelessWidget {
+  final bool isWeekly;
+  final bool isOffline;
+  final String? nextDueDate;
+  final VoidCallback onRedo;
+
+  const _AssistantCheckInSavedView({
+    required this.isWeekly,
+    required this.isOffline,
+    required this.nextDueDate,
+    required this.onRedo,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final nextDate = DateTime.tryParse(nextDueDate ?? '');
+    final nextLabel = nextDate == null
+        ? null
+        : DateFormat('EEE, MMM d').format(nextDate);
+    return _AssistantCheckInMessage(
+      icon: isOffline ? Icons.cloud_upload_outlined : Icons.check_rounded,
+      title: isWeekly ? 'Weekly pulse saved' : 'Today\'s check-in is done',
+      message: isOffline
+          ? 'Your answers are safe on this device and will sync automatically.'
+          : isWeekly && nextLabel != null
+          ? 'Your next weekly pulse is scheduled for $nextLabel.'
+          : 'You can update today\'s answers if anything changes.',
+      action: OutlinedButton.icon(
+        onPressed: onRedo,
+        icon: const Icon(Icons.refresh_rounded, size: 18),
+        label: Text(isWeekly ? 'Update today\'s pulse' : 'Update check-in'),
       ),
     );
   }
 }
 
-class _PulseLikertQuestion extends StatelessWidget {
-  final String emoji;
+class _AssistantCheckInMessage extends StatelessWidget {
+  final IconData icon;
   final String title;
-  final String lowLabel;
-  final String highLabel;
-  final Color accentColor;
-  final int? value;
-  final ValueChanged<int> onChanged;
+  final String message;
+  final Widget? action;
 
-  const _PulseLikertQuestion({
-    required this.emoji,
+  const _AssistantCheckInMessage({
+    required this.icon,
     required this.title,
-    required this.lowLabel,
-    required this.highLabel,
-    required this.accentColor,
-    required this.value,
-    required this.onChanged,
+    required this.message,
+    this.action,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
+    final primary = Theme.of(context).colorScheme.primary;
     return Container(
-      padding: const EdgeInsets.all(12),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 18),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.045)
-            : Colors.white.withValues(alpha: 0.86),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : accentColor.withValues(alpha: 0.18),
-        ),
+        color: primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: primary.withValues(alpha: 0.18)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: isDark ? 0.18 : 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(emoji, style: const TextStyle(fontSize: 17)),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    color: pagePrimaryTextColor(context),
-                    fontSize: 14.5,
-                    height: 1.35,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ],
+          CircleAvatar(
+            radius: 27,
+            backgroundColor: primary.withValues(alpha: 0.14),
+            child: Icon(icon, color: primary, size: 30),
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: List.generate(5, (index) {
-              final optionValue = index + 1;
-              final selected = value == optionValue;
-
-              return Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(right: index == 4 ? 0 : 7),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(14),
-                    onTap: () => onChanged(optionValue),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      curve: Curves.easeOut,
-                      height: 44,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? accentColor
-                            : isDark
-                            ? Colors.white.withValues(alpha: 0.06)
-                            : const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: selected
-                              ? accentColor
-                              : pageBorderColor(context),
-                        ),
-                        boxShadow: selected
-                            ? [
-                                BoxShadow(
-                                  color: accentColor.withValues(alpha: 0.24),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 6),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Text(
-                        '$optionValue',
-                        style: TextStyle(
-                          color: selected
-                              ? Colors.white
-                              : pagePrimaryTextColor(context),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }),
+          const SizedBox(height: 14),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: pagePrimaryTextColor(context),
+              fontSize: 19,
+              fontWeight: FontWeight.w900,
+            ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  lowLabel,
-                  style: TextStyle(
-                    color: pageSecondaryTextColor(context),
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              Text(
-                highLabel,
-                style: TextStyle(
-                  color: pageSecondaryTextColor(context),
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
+          const SizedBox(height: 7),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: pageSecondaryTextColor(context),
+              height: 1.4,
+              fontWeight: FontWeight.w600,
+            ),
           ),
+          if (action != null) ...[const SizedBox(height: 18), action!],
         ],
       ),
     );

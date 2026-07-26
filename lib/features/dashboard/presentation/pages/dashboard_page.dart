@@ -221,6 +221,9 @@ class _DashboardState extends State<Dashboard> {
     if (summary == null || summary.latestScore == null) {
       return 'No score history yet';
     }
+    if (summary.latestScore!.confidenceScore < 55) {
+      return summary.adaptiveState.label;
+    }
 
     final sevenDay = summary.windowForDays(7);
     final delta = sevenDay?.deltaFromStart;
@@ -589,7 +592,7 @@ class _AiBurnoutInsightCard extends StatelessWidget {
                       const SizedBox(height: 1),
                       Text(
                         aiEnhanced
-                            ? 'Personalized from your pattern data'
+                            ? 'Personalized from daily and weekly patterns'
                             : 'Rule-based fallback insight',
                         style: TextStyle(
                           color: pageSecondaryTextColor(context),
@@ -623,7 +626,7 @@ class _AiBurnoutInsightCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               recommendation?.message ??
-                  'Complete a few more check-ins so VitalySync can personalize burnout insights more accurately.',
+                  'Complete a few more short daily logs and scheduled weekly pulses so VitalySync can personalize burnout insights more accurately.',
               maxLines: 5,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(

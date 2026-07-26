@@ -90,6 +90,7 @@ void main() {
       tester,
       SingleChildScrollView(
         child: LogWidgets(
+          showWeeklyQuestions: false,
           sleepHours: 7,
           sleepQuality: 2,
           moodIndex: 3,
@@ -135,6 +136,10 @@ void main() {
     expect(find.text('Sleep duration'), findsOneWidget);
     expect(find.text('Hydration'), findsOneWidget);
     expect(find.text('Recovery habits'), findsOneWidget);
+    expect(find.text("This week's pressure"), findsNothing);
+    expect(find.text('Weekly detachment'), findsNothing);
+    expect(find.text('Emotional exhaustion'), findsNothing);
+    expect(find.text('Reduced accomplishment'), findsNothing);
   });
 
   testWidgets('dashboard header renders analytics copy', (tester) async {

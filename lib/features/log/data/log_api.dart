@@ -12,6 +12,7 @@ import '../../../shared/offline/offline_cache_store.dart';
 import '../../dashboard/data/burnout_score_api.dart';
 import '../../exercise/data/exercise_goal_model.dart';
 import '../../exercise/data/exercise_goal_service.dart';
+import 'check_in_models.dart';
 
 part 'log_local_cache_helpers.dart';
 
@@ -28,15 +29,8 @@ class HydrationStatus {
 }
 
 class LogApi {
-  static const List<String> workloadHoursBandOptions = [
-    'None',
-    '1-2 hours',
-    '3-4 hours',
-    '5-6 hours',
-    '6-7 hours',
-    '8-9 hours',
-    '10-12 hours',
-  ];
+  static const List<String> workloadHoursBandOptions =
+      CheckInFormOptions.workloadHoursBands;
 
   static const String _legacyLocalLogsKey = 'demo_local_logs';
   static const String _legacyLocalWeeklyPulseKeyPrefix = 'local_weekly_pulse';
@@ -50,6 +44,9 @@ class LogApi {
   static const String _exercisePrefillKeyPrefix = 'assistant_exercise_prefill';
   static const String _weeklyPulseStatusCache = 'weekly_pulse_status';
   static const String _weeklyPulsePendingCache = 'weekly_pulse_pending';
+  static const String _checkInStatusCachePrefix = 'unified_check_in_status_v1';
+  static const String _pendingCheckInsKeyPrefix =
+      'unified_pending_check_ins_v1';
   static const Duration _requestTimeout = ApiRequestTimeouts.standard;
   static const String liveDataIssueOffline = 'offline';
   static const String liveDataIssueUnavailable = 'unavailable';
@@ -649,16 +646,16 @@ class LogApi {
       throw Exception('Missing logged-in user');
     }
 
-    final data = await fetchTodayLog();
-    final rawLog = data['log'];
-    if (data['has_log'] == true && rawLog is Map) {
-      final log = Map<String, dynamic>.from(rawLog);
-      final updatedHydration = (parseDouble(log['hydration_liters']) + amount)
+    final status = await fetchCheckInStatus();
+    final rawLog = status.daily;
+    if (status.isComplete && rawLog != null) {
+      final draft = CheckInDraft.fromJson(daily: rawLog, weekly: status.weekly);
+      final updatedHydration = (draft.hydrationLiters + amount)
           .clamp(0.0, 10.0)
           .toDouble();
-      final saved = await _savePreparedDailyLog(
-        userId,
-        _normalizeLog({...log, 'hydration_liters': updatedHydration}),
+      final saved = await saveCheckIn(
+        draft: draft.copyWith(hydrationLiters: updatedHydration),
+        mode: status.requiredMode,
       );
 
       return {
@@ -672,7 +669,12 @@ class LogApi {
     return {
       'has_log': false,
       'quick_hydration_saved': false,
-      'queued_hydration_liters': queuedTotal,
+      'check_in_required': status.requiredMode == CheckInMode.weekly,
+      'queued_hydration_liters': rawLog == null
+          ? queuedTotal
+          : (parseDouble(rawLog['hydration_liters']) + queuedTotal)
+                .clamp(0, 10)
+                .toDouble(),
     };
   }
 
@@ -716,17 +718,15 @@ class LogApi {
     }
 
     final exerciseName = normalizeExerciseNameForLog(goal.exerciseName);
-    final goalMetadata = goal.toDailyLogMetadata();
-    final data = await fetchTodayLog();
-    final rawLog = data['log'];
+    final status = await fetchCheckInStatus();
+    final rawLog = status.daily;
 
-    if (data['has_log'] == true && rawLog is Map) {
-      final updatedLog = _normalizeLog({
-        ...Map<String, dynamic>.from(rawLog),
-        'exercise_names': [exerciseName],
-        ...goalMetadata,
-      });
-      final saved = await _savePreparedDailyLog(userId, updatedLog);
+    if (status.isComplete && rawLog != null) {
+      final draft = CheckInDraft.fromJson(daily: rawLog, weekly: status.weekly);
+      final saved = await saveCheckIn(
+        draft: draft.copyWith(exerciseNames: {exerciseName}),
+        mode: status.requiredMode,
+      );
       return {
         ...saved,
         'exercise_applied_to_log': true,
@@ -738,6 +738,7 @@ class LogApi {
     return {
       'has_log': false,
       'exercise_applied_to_log': false,
+      'check_in_required': status.requiredMode == CheckInMode.weekly,
       'exercise_name': exerciseName,
     };
   }
@@ -928,6 +929,344 @@ class LogApi {
     }
   }
 
+  static Future<CheckInStatus> fetchCheckInStatus() async {
+    final userId = await getStoredUserId();
+    if (userId == null) {
+      throw Exception('Missing logged-in user');
+    }
+
+    final logDate = todayKey();
+    try {
+      await _syncPendingCheckIns(userId);
+      final response = await http
+          .get(
+            Uri.parse(
+              '${ApiConfig.logs('/check-in/status')}?user_id=$userId&date=$logDate',
+            ),
+            headers: await ApiConfig.jsonHeaders(),
+          )
+          .timeout(_requestTimeout);
+      final data = _decodeResponseMap(response);
+      if (response.statusCode != 200) {
+        throw _LogApiException(
+          data['message']?.toString() ?? 'Failed to fetch check-in status',
+          response.statusCode,
+          data,
+        );
+      }
+
+      await _cacheCheckInStatus(userId, logDate, data);
+      final pending = await _pendingCheckInForDate(userId, logDate);
+      return CheckInStatus.fromJson(
+        data,
+        pendingPayload: pending,
+        pendingSyncCount: await pendingLogCount(),
+        localDate: logDate,
+      );
+    } on _LogApiException catch (error) {
+      if (!error.canUseOfflineFallback) {
+        throw Exception(error.message);
+      }
+      return _offlineCheckInStatus(userId, logDate);
+    } catch (_) {
+      return _offlineCheckInStatus(userId, logDate);
+    }
+  }
+
+  static Future<Map<String, dynamic>> saveCheckIn({
+    required CheckInDraft draft,
+    required CheckInMode mode,
+    String streakRestoreDecision = 'defer',
+  }) async {
+    final validationErrors = draft.validationErrors(mode);
+    if (validationErrors.isNotEmpty) {
+      throw CheckInValidationException(validationErrors);
+    }
+
+    final userId = await getStoredUserId();
+    if (userId == null) {
+      throw Exception('Missing logged-in user');
+    }
+
+    final logDate = todayKey();
+    final daily = draft.dailyJson();
+    daily.addAll(await ExerciseGoalService.instance.goalMetadataForDailyLog());
+    final payload = <String, dynamic>{
+      'user_id': userId,
+      'log_date': logDate,
+      'check_in_type': mode.apiValue,
+      'daily': daily,
+      if (mode == CheckInMode.weekly) 'weekly': draft.weeklyJson(),
+      'streak_restore_decision': streakRestoreDecision,
+    };
+
+    try {
+      final data = await _postUnifiedCheckIn(userId, payload);
+      await _removePendingCheckIn(userId, logDate);
+      await _upsertCachedLog(userId, {...daily, 'log_date': logDate});
+      await _clearHydrationPrefillForUser(userId);
+      await _clearExercisePrefillForUser(userId);
+      await _refreshBurnoutCacheAfterInputChange(data);
+      await _persistSyncedStreakSnapshot(
+        userId,
+        data['streak'] as Map<String, dynamic>?,
+      );
+      await _cacheCheckInStatus(userId, logDate, {
+        'required_mode': data['check_in_type'] ?? mode.apiValue,
+        'has_today_log': true,
+        'schedule': data['schedule'] ?? const <String, dynamic>{},
+        'existing_check_in': {
+          'daily': data['log'] ?? daily,
+          'weekly': data['weekly_pulse'],
+        },
+      });
+      data['is_offline'] = false;
+      data['pending_sync_count'] = await pendingLogCount();
+      await invalidateNotificationFeedCache();
+      return data;
+    } on StreakRestoreRequiredException {
+      rethrow;
+    } on CheckInModeChangedException {
+      rethrow;
+    } on _LogApiException catch (error) {
+      if (!error.canQueueForLater) {
+        throw Exception(error.message);
+      }
+      return _saveOfflineCheckIn(userId, payload);
+    } catch (_) {
+      return _saveOfflineCheckIn(userId, payload);
+    }
+  }
+
+  static Future<Map<String, dynamic>> _postUnifiedCheckIn(
+    int userId,
+    Map<String, dynamic> payload,
+  ) async {
+    final headers = await ApiConfig.jsonHeaders();
+    headers['Idempotency-Key'] = 'check-in:$userId:${payload['log_date']}';
+    final response = await http
+        .post(
+          Uri.parse(ApiConfig.logs('/check-in')),
+          headers: headers,
+          body: jsonEncode(payload),
+        )
+        .timeout(_requestTimeout);
+    final data = _decodeResponseMap(response);
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return data;
+    }
+    if (response.statusCode == 409 && data['streak_restore'] is Map) {
+      throw StreakRestoreRequiredException(
+        data['message']?.toString() ?? 'Streak restore decision required',
+        Map<String, dynamic>.from(data['streak_restore'] as Map),
+      );
+    }
+    if (response.statusCode == 409 &&
+        (data['code'] == 'WEEKLY_PULSE_REQUIRED' ||
+            data['code'] == 'WEEKLY_PULSE_NOT_DUE')) {
+      throw CheckInModeChangedException(
+        data['message']?.toString() ?? 'The required check-in changed',
+        CheckInMode.fromValue(
+          data['code'] == 'WEEKLY_PULSE_REQUIRED' ? 'weekly' : 'daily',
+        ),
+      );
+    }
+    throw _LogApiException(
+      data['message']?.toString() ?? 'Failed to save check-in',
+      response.statusCode,
+      data,
+    );
+  }
+
+  static Future<Map<String, dynamic>> _saveOfflineCheckIn(
+    int userId,
+    Map<String, dynamic> payload,
+  ) async {
+    final pending = await _readPendingCheckIns(userId);
+    pending.removeWhere((item) => item['log_date'] == payload['log_date']);
+    pending.add({
+      ...payload,
+      'pending_since': DateTime.now().toIso8601String(),
+    });
+    await _writePendingCheckIns(userId, pending);
+    final daily = Map<String, dynamic>.from(payload['daily'] as Map);
+    await _upsertCachedLog(userId, {
+      ...daily,
+      'log_date': payload['log_date'],
+      'pending_since': DateTime.now().toIso8601String(),
+    });
+    await _clearHydrationPrefillForUser(userId);
+    await _clearExercisePrefillForUser(userId);
+    final mode = CheckInMode.fromValue(payload['check_in_type']);
+    await _cacheCheckInStatus(userId, payload['log_date'].toString(), {
+      'required_mode': mode.apiValue,
+      'has_today_log': true,
+      'schedule': {
+        'completed_today': mode == CheckInMode.weekly,
+        'is_due': false,
+        'is_overdue': false,
+      },
+      'existing_check_in': {'daily': daily, 'weekly': payload['weekly']},
+    });
+    await invalidateNotificationFeedCache();
+    return {
+      'message': 'Check-in saved locally and will sync when online',
+      'check_in_type': mode.apiValue,
+      'log': {...daily, 'log_date': payload['log_date']},
+      'weekly_pulse': payload['weekly'],
+      'streak': await _refreshOptimisticStreak(userId),
+      'is_offline': true,
+      'pending_sync_count': await pendingLogCount(),
+    };
+  }
+
+  static Future<int> _syncPendingCheckIns(int userId) async {
+    final pending = await _readPendingCheckIns(userId);
+    if (pending.isEmpty) return 0;
+    final sorted = [...pending]
+      ..sort(
+        (left, right) =>
+            left['log_date'].toString().compareTo(right['log_date'].toString()),
+      );
+    final remaining = [...pending];
+    var synced = 0;
+    for (final payload in sorted) {
+      try {
+        final data = await _postUnifiedCheckIn(userId, payload);
+        final daily = Map<String, dynamic>.from(payload['daily'] as Map);
+        await _upsertCachedLog(
+          userId,
+          data['log'] is Map
+              ? Map<String, dynamic>.from(data['log'] as Map)
+              : {...daily, 'log_date': payload['log_date']},
+        );
+        await _refreshBurnoutCacheAfterInputChange(data);
+        await _persistSyncedStreakSnapshot(
+          userId,
+          data['streak'] as Map<String, dynamic>?,
+        );
+        remaining.removeWhere(
+          (item) => item['log_date'] == payload['log_date'],
+        );
+        await _writePendingCheckIns(userId, remaining);
+        synced++;
+      } on CheckInModeChangedException {
+        // Preserve the short answers. Status loading will reveal the five
+        // required weekly answers without discarding the pending draft.
+        break;
+      }
+    }
+    if (synced > 0) await invalidateNotificationFeedCache();
+    return synced;
+  }
+
+  static Future<CheckInStatus> _offlineCheckInStatus(
+    int userId,
+    String logDate,
+  ) async {
+    final cached = await _readCachedCheckInStatus(userId);
+    final pending = await _pendingCheckInForDate(userId, logDate);
+    final data = cached == null
+        ? <String, dynamic>{
+            'required_mode': pending?['check_in_type'] ?? 'daily',
+            'has_today_log': pending != null,
+            'schedule': const <String, dynamic>{},
+            'existing_check_in': const <String, dynamic>{},
+          }
+        : Map<String, dynamic>.from(cached);
+    if (data['_cached_for_date'] != logDate) {
+      data['has_today_log'] = pending != null;
+      data['existing_check_in'] = const <String, dynamic>{};
+      final schedule = data['schedule'] is Map
+          ? Map<String, dynamic>.from(data['schedule'] as Map)
+          : <String, dynamic>{};
+      schedule['completed_today'] = false;
+      schedule['due_date'] = schedule['next_due_date'];
+      data['schedule'] = schedule;
+    }
+    return CheckInStatus.fromJson(
+      data,
+      pendingPayload: pending,
+      isOffline: true,
+      pendingSyncCount: await pendingLogCount(),
+      localDate: logDate,
+    );
+  }
+
+  static Future<void> _cacheCheckInStatus(
+    int userId,
+    String logDate,
+    Map<String, dynamic> data,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      '${_checkInStatusCachePrefix}_$userId',
+      jsonEncode({...data, '_cached_for_date': logDate}),
+    );
+  }
+
+  static Future<Map<String, dynamic>?> _readCachedCheckInStatus(
+    int userId,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('${_checkInStatusCachePrefix}_$userId');
+    if (raw == null) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      return decoded is Map ? Map<String, dynamic>.from(decoded) : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> _readPendingCheckIns(
+    int userId,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('${_pendingCheckInsKeyPrefix}_$userId');
+    if (raw == null) return <Map<String, dynamic>>[];
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return <Map<String, dynamic>>[];
+      return decoded
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList();
+    } catch (_) {
+      return <Map<String, dynamic>>[];
+    }
+  }
+
+  static Future<void> _writePendingCheckIns(
+    int userId,
+    List<Map<String, dynamic>> pending,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = '${_pendingCheckInsKeyPrefix}_$userId';
+    if (pending.isEmpty) {
+      await prefs.remove(key);
+    } else {
+      await prefs.setString(key, jsonEncode(pending));
+    }
+  }
+
+  static Future<Map<String, dynamic>?> _pendingCheckInForDate(
+    int userId,
+    String logDate,
+  ) async {
+    final pending = await _readPendingCheckIns(userId);
+    for (final item in pending.reversed) {
+      if (item['log_date'] == logDate) return item;
+    }
+    return null;
+  }
+
+  static Future<void> _removePendingCheckIn(int userId, String logDate) async {
+    final pending = await _readPendingCheckIns(userId);
+    pending.removeWhere((item) => item['log_date'] == logDate);
+    await _writePendingCheckIns(userId, pending);
+  }
+
   static Future<void> clearLocalAccountData() async {
     final prefs = await SharedPreferences.getInstance();
     final logKeys = prefs.getKeys().where(
@@ -939,7 +1278,9 @@ class LogApi {
           key.startsWith(_energyScaleMigrationKeyPrefix) ||
           key.startsWith(_hydrationPrefillKeyPrefix) ||
           key.startsWith(_exercisePrefillKeyPrefix) ||
-          key.startsWith(_syncedStreakKeyPrefix),
+          key.startsWith(_syncedStreakKeyPrefix) ||
+          key.startsWith(_checkInStatusCachePrefix) ||
+          key.startsWith(_pendingCheckInsKeyPrefix),
     );
 
     for (final key in logKeys.toList()) {
@@ -958,7 +1299,8 @@ class LogApi {
     }
 
     final pendingLogs = await _readPendingLogs(userId);
-    return pendingLogs.length;
+    final pendingCheckIns = await _readPendingCheckIns(userId);
+    return pendingLogs.length + pendingCheckIns.length;
   }
 
   static Future<int> syncPendingLogs() async {
@@ -967,10 +1309,11 @@ class LogApi {
       return 0;
     }
 
+    final unifiedSynced = await _syncPendingCheckIns(userId);
     final pendingLogs = await _readPendingLogs(userId);
     if (pendingLogs.isEmpty) {
       await _refreshOptimisticStreak(userId);
-      return 0;
+      return unifiedSynced;
     }
 
     final sortedLogs = [...pendingLogs]..sort(_compareLogsByDate);
@@ -999,7 +1342,7 @@ class LogApi {
     if (syncedCount > 0) {
       await invalidateNotificationFeedCache();
     }
-    return syncedCount;
+    return unifiedSynced + syncedCount;
   }
 }
 
@@ -1046,6 +1389,25 @@ class StreakRestoreRequiredException implements Exception {
   final Map<String, dynamic> restore;
 
   const StreakRestoreRequiredException(this.message, this.restore);
+
+  @override
+  String toString() => message;
+}
+
+class CheckInValidationException implements Exception {
+  final List<String> fields;
+
+  const CheckInValidationException(this.fields);
+
+  @override
+  String toString() => 'Complete: ${fields.join(', ')}';
+}
+
+class CheckInModeChangedException implements Exception {
+  final String message;
+  final CheckInMode requiredMode;
+
+  const CheckInModeChangedException(this.message, this.requiredMode);
 
   @override
   String toString() => message;

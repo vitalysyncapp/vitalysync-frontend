@@ -13,11 +13,14 @@ import '../../features/exercise/data/exercise_recommendation_service.dart';
 import '../../features/exercise/presentation/widgets/assistant_exercise_card.dart';
 import '../../features/exercise/presentation/widgets/selected_exercise_goal_card.dart';
 import '../../features/home/data/environment_model.dart';
+import '../../features/log/data/check_in_models.dart';
 import '../../features/log/data/log_api.dart';
+import '../../features/log/presentation/widgets/log_widgets.dart';
 import '../../features/nutrition/data/nutrition_analyzer.dart';
 import '../../features/nutrition/data/nutrition_coach.dart';
 import '../../features/nutrition/data/nutrition_insight_store.dart';
 import '../../features/nutrition/data/nutrition_reminder_engine.dart';
+import '../../features/onboarding/services/onboarding_service.dart';
 import '../learning/first_week_learning_service.dart';
 import '../theme/app_page_style.dart';
 import '../widgets/app_skeleton.dart';
@@ -159,11 +162,12 @@ class _AssistantFloatingBubbleVisualState
 
   Future<void> _loadWeeklyPulseIndicator() async {
     try {
-      final data = await LogApi.fetchWeeklyPulseStatus();
+      final status = await LogApi.fetchCheckInStatus();
       if (!mounted) return;
 
       setState(() {
-        _hasPendingWeeklyPulse = data['has_response'] != true;
+        _hasPendingWeeklyPulse =
+            status.requiredMode == CheckInMode.weekly && !status.isComplete;
       });
     } catch (_) {
       if (!mounted) return;
@@ -356,11 +360,12 @@ class _FloatingSmartNudgeAssistantState
 
   Future<void> _loadWeeklyPulseIndicator() async {
     try {
-      final data = await LogApi.fetchWeeklyPulseStatus();
+      final status = await LogApi.fetchCheckInStatus();
       if (!mounted) return;
 
       setState(() {
-        _hasPendingWeeklyPulse = data['has_response'] != true;
+        _hasPendingWeeklyPulse =
+            status.requiredMode == CheckInMode.weekly && !status.isComplete;
       });
     } catch (_) {
       if (!mounted) return;
@@ -710,7 +715,6 @@ class _FloatingSmartNudgeAssistantState
     return _snapButtonOffsetToEdge(_buttonOffset, bounds, padding, _dockEdge);
   }
 
-
   void _handlePanStart(Size bounds, EdgeInsets padding) {
     _bubbleSwitchTimer?.cancel();
     final currentOffset = _effectiveButtonOffset(bounds, padding);
@@ -824,8 +828,11 @@ class _FloatingSmartNudgeAssistantState
         // Bubble sits beside the button, on the opposite side of the dock.
         final availableWidth = isDockedRight
             ? buttonOffset.dx - padding.left - bubbleGap
-            : bounds.width - padding.right - buttonOffset.dx -
-                widget.buttonSize - bubbleGap;
+            : bounds.width -
+                  padding.right -
+                  buttonOffset.dx -
+                  widget.buttonSize -
+                  bubbleGap;
         final maxBubbleWidth = min(max(availableWidth, 200.0), 356.0);
         final bubbleLeft = isDockedRight
             ? max(padding.left, buttonOffset.dx - bubbleGap - maxBubbleWidth)
@@ -860,11 +867,10 @@ class _FloatingSmartNudgeAssistantState
                       opacity: _isBubbleVisible ? 1 : 0,
                       child: ValueListenableBuilder<ExerciseGoalState>(
                         valueListenable: ExerciseGoalService.instance.notifier,
-                        builder: (context, goalState, _) =>
-                            _buildActiveBubble(
-                              goalState,
-                              tailOnRight: isDockedRight,
-                            ),
+                        builder: (context, goalState, _) => _buildActiveBubble(
+                          goalState,
+                          tailOnRight: isDockedRight,
+                        ),
                       ),
                     ),
                   ),

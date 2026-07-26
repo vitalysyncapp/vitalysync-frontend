@@ -58,10 +58,10 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
   bool _isLoadingAdaptiveNudges = false;
   bool _isLoadingNutritionInsight = false;
   bool _isLoadingEnvironment = false;
-  bool _isLoadingWeeklyPulse = true;
+  bool _isLoadingCheckIn = true;
   FirstWeekLearningState _firstWeekLearning =
       const FirstWeekLearningState.hidden();
-  bool _isSavingWeeklyPulse = false;
+  bool _isSavingCheckIn = false;
   bool _showHydrationLogger = false;
   bool _isLoadingHydrationContext = false;
   bool _isSavingHydration = false;
@@ -69,12 +69,10 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
   double _quickHydrationAmount = 0.25;
   double _todayHydrationLiters = 0;
   String? _hydrationHelperText;
-  bool _hasWeeklyPulseResponse = false;
-  bool _isEditingWeeklyPulse = false;
-  int? _productivityFocusLevel;
-  int? _recoveryRestLevel;
-  int? _detachmentLevel;
-  int? _accomplishmentLevel;
+  bool _isEditingCheckIn = false;
+  CheckInStatus? _checkInStatus;
+  CheckInDraft _checkInDraft = const CheckInDraft();
+  String _exerciseGoalLabel = '3-4 days';
 
   @override
   void initState() {
@@ -95,7 +93,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     }
     unawaited(_loadFirstWeekLearning());
     unawaited(_loadEnvironment());
-    unawaited(_loadWeeklyPulseStatus());
+    unawaited(_loadCheckInStatus());
   }
 
   @override
@@ -385,6 +383,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
         amountLiters: _quickHydrationAmount,
       );
       final saved = result['quick_hydration_saved'] == true;
+      final checkInRequired = result['check_in_required'] == true;
       final hydrationTotal = saved
           ? LogApi.parseDouble(result['hydration_liters'])
           : LogApi.parseDouble(result['queued_hydration_liters']);
@@ -397,8 +396,11 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
         _isSavingHydration = false;
         _hydrationHelperText = saved
             ? 'Water added to today\'s check-in.'
+            : checkInRequired
+            ? 'Water added to your pending weekly pulse. Complete it in the Check-in tab.'
             : 'No daily check-in yet. I prefilled this for the log page.';
       });
+      unawaited(_loadCheckInStatus());
     } catch (error) {
       if (!mounted) return;
 
@@ -436,91 +438,150 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     widget.onClose?.call();
   }
 
-  Future<void> _loadWeeklyPulseStatus() async {
+  Future<void> _loadCheckInStatus() async {
     setState(() {
-      _isLoadingWeeklyPulse = true;
+      _isLoadingCheckIn = true;
     });
 
     try {
-      final data = await LogApi.fetchWeeklyPulseStatus();
-      final response = data['response'] as Map<String, dynamic>?;
+      final defaults = await OnboardingService.loadDefaults();
+      final status = await LogApi.fetchCheckInStatus();
+      final hydrationPrefill = await LogApi.readHydrationPrefill();
+      final exercisePrefill = await LogApi.readExercisePrefill();
       if (!mounted) return;
 
       setState(() {
-        _hasWeeklyPulseResponse = data['has_response'] == true;
-        _isEditingWeeklyPulse = data['has_response'] != true;
-        _productivityFocusLevel = LogApi.parseLikert(
-          response?['productivity_focus_level'],
+        _checkInStatus = status;
+        _isEditingCheckIn = !status.isComplete;
+        _exerciseGoalLabel = defaults.exerciseGoalDays ?? '3-4 days';
+        _checkInDraft = CheckInDraft.fromJson(
+          daily: status.daily,
+          weekly: status.weekly,
+          defaultSleepHours: defaults.sleepHours(),
+          hydrationPrefill: hydrationPrefill,
+          exercisePrefill: exercisePrefill,
         );
-        _recoveryRestLevel = LogApi.parseLikert(
-          response?['recovery_rest_level'],
-        );
-        _detachmentLevel = LogApi.parseLikert(response?['detachment_level']);
-        _accomplishmentLevel = LogApi.parseLikert(
-          response?['accomplishment_level'],
-        );
-        _isLoadingWeeklyPulse = false;
+        _isLoadingCheckIn = false;
       });
     } catch (_) {
       if (!mounted) return;
 
       setState(() {
-        _isLoadingWeeklyPulse = false;
+        _isLoadingCheckIn = false;
       });
     }
   }
 
-  Future<void> _saveWeeklyPulse() async {
-    final productivityFocusLevel = _productivityFocusLevel;
-    final recoveryRestLevel = _recoveryRestLevel;
-    final detachmentLevel = _detachmentLevel;
-    final accomplishmentLevel = _accomplishmentLevel;
-
-    if (productivityFocusLevel == null ||
-        recoveryRestLevel == null ||
-        detachmentLevel == null ||
-        accomplishmentLevel == null) {
+  Future<void> _saveCheckIn({String streakRestoreDecision = 'defer'}) async {
+    final status = _checkInStatus;
+    if (status == null) return;
+    final missing = _checkInDraft.validationErrors(status.requiredMode);
+    if (missing.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please complete ${missing.join(', ')}.')),
+      );
       return;
     }
 
     setState(() {
-      _isSavingWeeklyPulse = true;
+      _isSavingCheckIn = true;
     });
 
     try {
-      await LogApi.saveWeeklyPulse(
-        productivityFocusLevel: productivityFocusLevel,
-        recoveryRestLevel: recoveryRestLevel,
-        detachmentLevel: detachmentLevel,
-        accomplishmentLevel: accomplishmentLevel,
+      final data = await LogApi.saveCheckIn(
+        draft: _checkInDraft,
+        mode: status.requiredMode,
+        streakRestoreDecision: streakRestoreDecision,
       );
 
       if (!mounted) return;
 
       setState(() {
-        _hasWeeklyPulseResponse = true;
-        _isEditingWeeklyPulse = false;
-        _isSavingWeeklyPulse = false;
+        _isEditingCheckIn = false;
+        _isSavingCheckIn = false;
       });
 
+      final savedOffline = data['is_offline'] == true;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            savedOffline
+                ? 'Check-in saved offline and queued to sync.'
+                : status.requiredMode == CheckInMode.weekly
+                ? 'Weekly pulse and today\'s check-in saved.'
+                : 'Today\'s check-in saved.',
+          ),
+        ),
+      );
+      await _loadCheckInStatus();
+    } on CheckInModeChangedException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isSavingCheckIn = false;
+      });
+      await _loadCheckInStatus();
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Weekly pulse saved.')));
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } on StreakRestoreRequiredException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isSavingCheckIn = false;
+      });
+      final decision = await _showAssistantStreakDecision(error);
+      if (decision != null && mounted) {
+        await _saveCheckIn(streakRestoreDecision: decision);
+      }
     } catch (error) {
       if (!mounted) return;
 
       setState(() {
-        _isSavingWeeklyPulse = false;
+        _isSavingCheckIn = false;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Unable to save weekly pulse: ${error.toString().replaceFirst('Exception: ', '')}',
+            'Unable to save check-in: ${error.toString().replaceFirst('Exception: ', '')}',
           ),
         ),
       );
     }
+  }
+
+  Future<String?> _showAssistantStreakDecision(
+    StreakRestoreRequiredException error,
+  ) {
+    final available = LogApi.parseInt(error.restore['available_savers']);
+    final required = LogApi.parseInt(error.restore['savers_required']);
+    final canRestore = required > 0 && available >= required;
+    return showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Save today\'s check-in?'),
+        content: Text(
+          canRestore
+              ? 'Use $required streak saver${required == 1 ? '' : 's'} to protect your streak, or save without restoring it.'
+              : 'Your check-in can still be saved, but the missed days cannot be restored with the savers currently available.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Not now'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, 'skip'),
+            child: const Text('Save without restoring'),
+          ),
+          if (canRestore)
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, 'use'),
+              child: const Text('Use savers and save'),
+            ),
+        ],
+      ),
+    );
   }
 
   Future<void> _chooseExercise(
@@ -531,11 +592,13 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     );
     var appliedToLog = false;
     var queuedForLog = false;
+    var checkInRequired = false;
 
     try {
       final result = await LogApi.applyExerciseGoalSelection(goal);
       appliedToLog = result['exercise_applied_to_log'] == true;
       queuedForLog = result['exercise_applied_to_log'] == false;
+      checkInRequired = result['check_in_required'] == true;
     } catch (_) {
       // The goal itself is still saved through the exercise goal service.
     }
@@ -554,7 +617,13 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     } else if (appliedToLog) {
       snackBarMessage += ' $exerciseName also updated today\'s log.';
     } else if (queuedForLog) {
-      snackBarMessage += ' $exerciseName will prefill the log page.';
+      snackBarMessage += checkInRequired
+          ? ' $exerciseName will prefill the pending weekly pulse.'
+          : ' $exerciseName will prefill the log page.';
+    }
+
+    if (queuedForLog) {
+      unawaited(_loadCheckInStatus());
     }
 
     ScaffoldMessenger.of(
@@ -582,9 +651,9 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     }
   }
 
-  void _redoWeeklyPulse() {
+  void _redoCheckIn() {
     setState(() {
-      _isEditingWeeklyPulse = true;
+      _isEditingCheckIn = true;
     });
   }
 
@@ -746,6 +815,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
             unawaited(_loadRecommendations());
             unawaited(_loadEnvironment());
             unawaited(_loadFirstWeekLearning());
+            unawaited(_loadCheckInStatus());
             if (_showHydrationLogger) {
               unawaited(_loadHydrationContext());
             }
@@ -785,8 +855,10 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
       ),
       _AssistantSection(
         icon: Icons.fact_check_rounded,
-        label: 'Pulse',
-        child: _buildWeeklyPulsePage(),
+        label: _checkInStatus?.requiredMode == CheckInMode.weekly
+            ? 'Pulse'
+            : 'Check-in',
+        child: _buildCheckInPage(),
       ),
     ];
   }
@@ -834,38 +906,21 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     );
   }
 
-  Widget _buildWeeklyPulsePage() {
-    return _WeeklyPulseCard(
-      isLoading: _isLoadingWeeklyPulse,
-      isSaving: _isSavingWeeklyPulse,
-      hasResponse: _hasWeeklyPulseResponse,
-      isEditing: _isEditingWeeklyPulse,
-      productivityFocusLevel: _productivityFocusLevel,
-      recoveryRestLevel: _recoveryRestLevel,
-      detachmentLevel: _detachmentLevel,
-      accomplishmentLevel: _accomplishmentLevel,
-      onProductivityChanged: (value) {
+  Widget _buildCheckInPage() {
+    return _AssistantCheckInCard(
+      isLoading: _isLoadingCheckIn,
+      isSaving: _isSavingCheckIn,
+      status: _checkInStatus,
+      draft: _checkInDraft,
+      isEditing: _isEditingCheckIn,
+      exerciseGoalLabel: _exerciseGoalLabel,
+      onChanged: (draft) {
         setState(() {
-          _productivityFocusLevel = value;
+          _checkInDraft = draft;
         });
       },
-      onRecoveryChanged: (value) {
-        setState(() {
-          _recoveryRestLevel = value;
-        });
-      },
-      onDetachmentChanged: (value) {
-        setState(() {
-          _detachmentLevel = value;
-        });
-      },
-      onAccomplishmentChanged: (value) {
-        setState(() {
-          _accomplishmentLevel = value;
-        });
-      },
-      onSave: _saveWeeklyPulse,
-      onRedo: _redoWeeklyPulse,
+      onSave: _saveCheckIn,
+      onRedo: _redoCheckIn,
     );
   }
 }

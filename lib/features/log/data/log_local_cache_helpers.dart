@@ -224,15 +224,26 @@ Future<Map<String, dynamic>> _refreshOptimisticStreak(
   Map<String, dynamic>? baseStreak,
 }) async {
   final pendingLogs = await _readPendingLogs(userId);
+  final pendingCheckIns = await LogApi._readPendingCheckIns(userId);
+  final pendingUnifiedLogs = pendingCheckIns
+      .where((item) => item['daily'] is Map)
+      .map(
+        (item) => _normalizeLog({
+          ...Map<String, dynamic>.from(item['daily'] as Map),
+          'log_date': item['log_date'],
+        }),
+      )
+      .toList();
+  final allPendingLogs = [...pendingLogs, ...pendingUnifiedLogs];
   final base = _normalizeStreak(
     baseStreak ??
         await _readSyncedStreakSnapshot(userId) ??
         await _readPrefsStreakSnapshot(),
   );
 
-  final streak = pendingLogs.isEmpty
+  final streak = allPendingLogs.isEmpty
       ? base
-      : _applyPendingLogsToStreak(base, pendingLogs);
+      : _applyPendingLogsToStreak(base, allPendingLogs);
 
   await LogApi.persistStreakSnapshot(streak);
   return streak;

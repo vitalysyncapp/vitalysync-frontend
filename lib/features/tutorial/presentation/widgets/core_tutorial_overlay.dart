@@ -904,7 +904,7 @@ const _coreTutorialSteps = [
     icon: Icons.auto_awesome_rounded,
     title: 'The assistant adapts to your day',
     body:
-        'Open the floating assistant for smart nudges, quick hydration or meal support, exercise suggestions, and your weekly pulse.',
+        'Open the floating assistant for smart nudges, quick hydration or meal support, exercise suggestions, and the same daily or weekly check-in used on the Log page.',
     assistantDock: _TutorialAssistantDock.topRight,
   ),
   _TutorialStepData(

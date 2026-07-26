@@ -14,8 +14,9 @@ extension _LogPressureRecoveryCards on LogWidgets {
       icon: Icons.link_off_rounded,
       iconBg: const Color(0xFFE0F7F1),
       iconColor: const Color(0xFF14B8A6),
-      title: 'Daily detachment',
-      subtitle: 'How emotionally distant did you feel from responsibilities?',
+      title: 'Weekly detachment',
+      subtitle:
+          'How emotionally distant did you feel from responsibilities this week?',
       labels: detachmentLabels,
       selectedLevel: dailyDetachmentLevel,
       onChanged: onDailyDetachmentChanged,
@@ -31,8 +32,8 @@ extension _LogPressureRecoveryCards on LogWidgets {
       icon: Icons.center_focus_strong_rounded,
       iconBg: const Color(0xFFEFF6FF),
       iconColor: const Color(0xFF2563EB),
-      title: 'Daily focus',
-      subtitle: 'How well could you stay with important tasks today?',
+      title: 'Weekly focus',
+      subtitle: 'How well could you stay with important tasks this week?',
       labels: focusLabels,
       selectedLevel: dailyFocusLevel,
       onChanged: onDailyFocusChanged,
@@ -48,8 +49,8 @@ extension _LogPressureRecoveryCards on LogWidgets {
       icon: Icons.emoji_events_rounded,
       iconBg: const Color(0xFFFFF7ED),
       iconColor: const Color(0xFFF59E0B),
-      title: 'Daily accomplishment',
-      subtitle: 'How much meaningful progress did you feel today?',
+      title: 'Weekly accomplishment',
+      subtitle: 'How much meaningful progress did you feel this week?',
       labels: accomplishmentLabels,
       selectedLevel: dailyAccomplishmentLevel,
       onChanged: onDailyAccomplishmentChanged,
@@ -105,7 +106,7 @@ extension _LogPressureRecoveryCards on LogWidgets {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Today's pressure check",
+                      "This week's pressure",
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 16.5,
@@ -114,7 +115,7 @@ extension _LogPressureRecoveryCards on LogWidgets {
                     ),
                     SizedBox(height: 3),
                     Text(
-                      "Choose the level that best matches how much pressure you carried today.",
+                      "Choose the level that best matches how much pressure you carried this week.",
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 12.5,
@@ -225,7 +226,7 @@ extension _LogPressureRecoveryCards on LogWidgets {
                 iconBg: const Color(0xFFE0F7F1),
                 iconColor: const Color(0xFF0F766E),
                 title: 'Recovery breaks',
-                subtitle: 'How restorative were your pauses today?',
+                subtitle: 'How restorative were your pauses this week?',
               ),
               const SizedBox(height: 12),
               Row(
