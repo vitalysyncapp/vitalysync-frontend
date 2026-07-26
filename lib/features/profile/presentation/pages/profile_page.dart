@@ -25,6 +25,7 @@ import 'history_page.dart';
 import 'personal_information_page.dart';
 import 'retake_baseline_questionnaire_page.dart';
 import '../widgets/wellness_profile_card.dart';
+import '../../data/report_service.dart';
 
 part 'profile_page_widgets.dart';
 part 'profile_page_helpers.dart';
@@ -57,9 +58,12 @@ class _ProfilePageState extends State<ProfilePage> {
   ];
   static const List<String> _workIntensityOptions = ['Low', 'Medium', 'High'];
 
-  bool _isLoading = true, _isSaving = false;
-  bool _isSavingWellness = false, _isSavingGoals = false;
+  bool _isLoading = true;
+  bool _isSaving = false;
+  bool _isSavingGoals = false;
+  bool _isSavingWellness = false;
   bool _isSavingBaseline = false;
+  bool _isExportingReport = false;
   bool _isLoggingOut = false;
   bool _emailVerified = false;
   int? _userId, _age;
@@ -582,6 +586,23 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Future<void> _exportReport() async {
+    if (_userId == null) return;
+    setState(() => _isExportingReport = true);
+    try {
+      await ReportService().exportAndOpenUserReport(_userId!);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to export report: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isExportingReport = false);
+      }
+    }
+  }
+
   void _openHistoryPage() {
     Navigator.push(
       context,
@@ -702,9 +723,11 @@ class _ProfilePageState extends State<ProfilePage> {
                       role: _userType,
                       sleepSchedule: _sleepSchedule,
                       isSaving: _isSaving,
+                      isExportingReport: _isExportingReport,
                       onOpenDetails: _openPersonalInformationPage,
                       onOpenHistory: _openHistoryPage,
                       onEditProfile: _openEditProfilePage,
+                      onExportReport: _exportReport,
                     ),
                     const SizedBox(height: 18),
                     WellnessProfileCard(
