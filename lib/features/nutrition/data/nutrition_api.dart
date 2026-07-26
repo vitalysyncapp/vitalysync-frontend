@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -10,6 +10,7 @@ import '../../../shared/notifications/notification_feed_cache.dart';
 import '../../../shared/offline/fetch_policy.dart';
 import '../../../shared/offline/offline_cache_store.dart';
 import '../../../shared/preferences/user_session.dart';
+import 'nutrition_image_upload.dart';
 
 class NutritionReviewItem {
   String foodName;
@@ -255,7 +256,7 @@ class NutritionApi {
   }
 
   static Future<NutritionAnalysisResult> analyzeMeal({
-    required File image,
+    required Uint8List imageBytes,
     required String mealType,
     required String logDate,
   }) async {
@@ -269,7 +270,7 @@ class NutritionApi {
     request.fields['meal_type'] = mealType;
     request.fields['log_date'] = logDate;
     request.headers.addAll(await ApiConfig.acceptJsonHeaders());
-    request.files.add(await http.MultipartFile.fromPath('image', image.path));
+    request.files.add(NutritionImageUpload.multipart(imageBytes));
 
     try {
       final streamedResponse = await request.send().timeout(_analysisTimeout);

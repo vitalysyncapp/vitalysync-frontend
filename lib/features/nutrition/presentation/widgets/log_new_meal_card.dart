@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
@@ -12,7 +12,7 @@ class LogNewMealCard extends StatelessWidget {
   final ValueChanged<String> onMealTypeChanged;
   final bool Function(String mealType)? canSelectMealType;
   final ValueChanged<String>? onLockedMealTypeTap;
-  final File? selectedImage;
+  final Uint8List? selectedImage;
   final String selectedMealType;
   final bool isAnalyzing;
 
@@ -152,7 +152,7 @@ class LogNewMealCard extends StatelessWidget {
                   if (selectedImage != null) ...[
                     ClipRRect(
                       borderRadius: BorderRadius.circular(isCompact ? 10 : 12),
-                      child: Image.file(
+                      child: Image.memory(
                         selectedImage!,
                         height: isCompact ? 82 : 104,
                         width: double.infinity,
@@ -267,11 +267,17 @@ class LogNewMealCard extends StatelessWidget {
                   : const Icon(Icons.auto_awesome_rounded),
               label: Text(isAnalyzing ? 'Analyzing...' : 'Analyze meal'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: isDark ? const Color(0xFF5D4385) : const Color(0xFF16A34A),
+                backgroundColor: isDark
+                    ? const Color(0xFF5D4385)
+                    : const Color(0xFF16A34A),
                 foregroundColor: Colors.white,
-                disabledBackgroundColor: (isDark ? const Color(0xFF5D4385) : const Color(0xFF16A34A)).withValues(alpha: 0.55),
+                disabledBackgroundColor:
+                    (isDark ? const Color(0xFF5D4385) : const Color(0xFF16A34A))
+                        .withValues(alpha: 0.55),
                 elevation: 2,
-                shadowColor: (isDark ? const Color(0xFF5D4385) : const Color(0xFF16A34A)).withValues(alpha: 0.32),
+                shadowColor:
+                    (isDark ? const Color(0xFF5D4385) : const Color(0xFF16A34A))
+                        .withValues(alpha: 0.32),
                 padding: EdgeInsets.symmetric(vertical: isCompact ? 10 : 12),
                 textStyle: TextStyle(
                   fontSize: isCompact ? 12.5 : 13.5,

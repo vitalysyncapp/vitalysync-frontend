@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -11,6 +12,7 @@ import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/widgets/reveal_on_build.dart';
 import '../../data/nutrition_api.dart';
+import '../../data/nutrition_image_processor.dart';
 import '../../data/nutrition_meal_suggestion_store.dart';
 import '../../data/nutrition_reminder_engine.dart';
 import '../widgets/log_new_meal_card.dart';
@@ -88,7 +90,7 @@ class _NutritionPageState extends State<NutritionPage> {
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _logNewMealCardKey = GlobalKey();
   final GlobalKey _firstReviewItemKey = GlobalKey();
-  File? _selectedImage;
+  Uint8List? _selectedImage;
   late String _selectedMealType;
   bool _isAnalyzing = false;
   bool _isSaving = false;
@@ -114,6 +116,7 @@ class _NutritionPageState extends State<NutritionPage> {
     _loadNutritionGoal();
     _loadManualMealSuggestions();
     _loadDailyNutrition(showErrors: false);
+    unawaited(_recoverLostImage());
   }
 
   @override
@@ -163,17 +166,14 @@ class _NutritionPageState extends State<NutritionPage> {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.camera,
         imageQuality: 85,
+        maxWidth: NutritionImageProcessor.maxDimension.toDouble(),
+        maxHeight: NutritionImageProcessor.maxDimension.toDouble(),
       );
 
       if (image == null) return;
-
-      setState(() {
-        _selectedImage = File(image.path);
-      });
-
-      _showSnackBar('Photo captured successfully');
+      await _preparePickedImage(image, 'Photo captured successfully');
     } catch (e) {
-      _showSnackBar('Failed to open camera');
+      _showSnackBar(_imagePickerError(e, 'Failed to open camera'));
     }
   }
 
@@ -182,18 +182,57 @@ class _NutritionPageState extends State<NutritionPage> {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
         imageQuality: 85,
+        maxWidth: NutritionImageProcessor.maxDimension.toDouble(),
+        maxHeight: NutritionImageProcessor.maxDimension.toDouble(),
       );
 
       if (image == null) return;
-
-      setState(() {
-        _selectedImage = File(image.path);
-      });
-
-      _showSnackBar('Image selected from gallery');
+      await _preparePickedImage(image, 'Image selected from gallery');
     } catch (e) {
-      _showSnackBar('Failed to open gallery');
+      _showSnackBar(_imagePickerError(e, 'Failed to open gallery'));
     }
+  }
+
+  Future<void> _recoverLostImage() async {
+    try {
+      final response = await _picker.retrieveLostData();
+      final files = response.files;
+      if (response.exception != null) {
+        throw response.exception!;
+      }
+      if (response.isEmpty || files == null || files.isEmpty) {
+        return;
+      }
+
+      await _preparePickedImage(files.first, 'Recovered your meal photo');
+    } catch (e) {
+      _showSnackBar(_imagePickerError(e, 'Unable to recover the meal photo'));
+    }
+  }
+
+  Future<void> _preparePickedImage(XFile image, String successMessage) async {
+    final sourceBytes = await image.readAsBytes();
+    final preparedBytes = await compute(
+      NutritionImageProcessor.prepare,
+      sourceBytes,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _selectedImage = preparedBytes;
+      _attemptId = null;
+      _reviewItems = [];
+      _pendingManualMeals = [];
+    });
+    _showSnackBar(successMessage);
+  }
+
+  String _imagePickerError(Object error, String fallback) {
+    final message = error.toString().trim();
+    if (message.contains('Choose a ') || message.contains('photo is still')) {
+      return message;
+    }
+    return '$fallback. Check photo permissions and try again.';
   }
 
   void _showSnackBar(String message) {
@@ -322,7 +361,7 @@ class _NutritionPageState extends State<NutritionPage> {
 
     try {
       final result = await NutritionApi.analyzeMeal(
-        image: _selectedImage!,
+        imageBytes: _selectedImage!,
         mealType: _selectedMealType,
         logDate: NutritionApi.todayKey(),
       );
