@@ -26,7 +26,6 @@ import 'personal_information_page.dart';
 import 'retake_baseline_questionnaire_page.dart';
 import 'user_report_page.dart';
 import '../widgets/wellness_profile_card.dart';
-import '../../data/report_service.dart';
 
 part 'profile_page_widgets.dart';
 part 'profile_page_helpers.dart';
@@ -590,9 +589,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (_userId == null) return;
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => UserReportPage(userId: _userId!),
-      ),
+      MaterialPageRoute(builder: (_) => UserReportPage(userId: _userId!)),
     );
   }
 
