@@ -14,20 +14,17 @@ const vitalySyncPageTransitionsTheme = PageTransitionsTheme(
 );
 
 ThemeData buildVitalySyncLightTheme() {
-  final poppins = GoogleFonts.poppins();
   final base = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
-    fontFamily: poppins.fontFamily,
     colorScheme: ColorScheme.fromSeed(
       seedColor: const Color(0xFF1EAD83),
       brightness: Brightness.light,
     ),
   );
-  final poppinsTextTheme = base.textTheme.apply(fontFamily: poppins.fontFamily);
-  final poppinsPrimaryTextTheme = base.primaryTextTheme.apply(
-    fontFamily: poppins.fontFamily,
-  );
+  final poppinsTextTheme = GoogleFonts.poppinsTextTheme(base.textTheme);
+  final poppinsPrimaryTextTheme =
+      GoogleFonts.poppinsTextTheme(base.primaryTextTheme);
 
   return base.copyWith(
     textTheme: poppinsTextTheme,
@@ -40,7 +37,9 @@ ThemeData buildVitalySyncLightTheme() {
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: const Color(0xFF14324A),
-      contentTextStyle: poppins.copyWith(color: Colors.white),
+      contentTextStyle: poppinsTextTheme.bodyMedium?.copyWith(
+        color: Colors.white,
+      ),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     ),
@@ -65,20 +64,17 @@ ThemeData buildVitalySyncLightTheme() {
 }
 
 ThemeData buildVitalySyncDarkTheme() {
-  final poppins = GoogleFonts.poppins();
   final base = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
-    fontFamily: poppins.fontFamily,
     colorScheme: ColorScheme.fromSeed(
       seedColor: const Color(0xFF5BDEC1),
       brightness: Brightness.dark,
     ),
   );
-  final poppinsTextTheme = base.textTheme.apply(fontFamily: poppins.fontFamily);
-  final poppinsPrimaryTextTheme = base.primaryTextTheme.apply(
-    fontFamily: poppins.fontFamily,
-  );
+  final poppinsTextTheme = GoogleFonts.poppinsTextTheme(base.textTheme);
+  final poppinsPrimaryTextTheme =
+      GoogleFonts.poppinsTextTheme(base.primaryTextTheme);
 
   return base.copyWith(
     textTheme: poppinsTextTheme,
@@ -95,7 +91,9 @@ ThemeData buildVitalySyncDarkTheme() {
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: const Color(0xFF142030),
-      contentTextStyle: poppins.copyWith(color: Colors.white),
+      contentTextStyle: poppinsTextTheme.bodyMedium?.copyWith(
+        color: Colors.white,
+      ),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     ),
