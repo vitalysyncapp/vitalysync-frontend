@@ -24,6 +24,7 @@ import 'edit_wellness_profile_page.dart';
 import 'history_page.dart';
 import 'personal_information_page.dart';
 import 'retake_baseline_questionnaire_page.dart';
+import 'user_report_page.dart';
 import '../widgets/wellness_profile_card.dart';
 import '../../data/report_service.dart';
 
@@ -63,7 +64,6 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isSavingGoals = false;
   bool _isSavingWellness = false;
   bool _isSavingBaseline = false;
-  bool _isExportingReport = false;
   bool _isLoggingOut = false;
   bool _emailVerified = false;
   int? _userId, _age;
@@ -586,21 +586,14 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Future<void> _exportReport() async {
+  void _openUserReportPage() {
     if (_userId == null) return;
-    setState(() => _isExportingReport = true);
-    try {
-      await ReportService().exportAndOpenUserReport(_userId!);
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to export report: $e')),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isExportingReport = false);
-      }
-    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => UserReportPage(userId: _userId!),
+      ),
+    );
   }
 
   void _openHistoryPage() {
@@ -723,11 +716,10 @@ class _ProfilePageState extends State<ProfilePage> {
                       role: _userType,
                       sleepSchedule: _sleepSchedule,
                       isSaving: _isSaving,
-                      isExportingReport: _isExportingReport,
                       onOpenDetails: _openPersonalInformationPage,
                       onOpenHistory: _openHistoryPage,
                       onEditProfile: _openEditProfilePage,
-                      onExportReport: _exportReport,
+                      onOpenUserReport: _openUserReportPage,
                     ),
                     const SizedBox(height: 18),
                     WellnessProfileCard(

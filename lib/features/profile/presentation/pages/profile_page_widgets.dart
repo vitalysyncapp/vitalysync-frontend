@@ -1019,22 +1019,20 @@ class _PersonalInformationCard extends StatelessWidget {
   final String? role;
   final String sleepSchedule;
   final bool isSaving;
-  final bool isExportingReport;
   final VoidCallback onOpenDetails;
   final VoidCallback onOpenHistory;
   final VoidCallback onEditProfile;
-  final VoidCallback onExportReport;
+  final VoidCallback onOpenUserReport;
 
   const _PersonalInformationCard({
     required this.gender,
     required this.role,
     required this.sleepSchedule,
     required this.isSaving,
-    required this.isExportingReport,
     required this.onOpenDetails,
     required this.onOpenHistory,
     required this.onEditProfile,
-    required this.onExportReport,
+    required this.onOpenUserReport,
   });
 
   @override
@@ -1116,19 +1114,13 @@ class _PersonalInformationCard extends StatelessWidget {
               icon: Icons.summarize_outlined,
               iconBg: const Color(0xFFF3E8FF),
               iconColor: const Color(0xFF9333EA),
-              title: 'Export User Report',
-              subtitle: 'Download your wellness data as a Word file',
-              onTap: isExportingReport ? null : onExportReport,
-              trailing: isExportingReport
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Icon(
-                      Icons.chevron_right_rounded,
-                      color: pageSecondaryTextColor(context),
-                    ),
+              title: 'User Report',
+              subtitle: 'Export data and view report details',
+              onTap: onOpenUserReport,
+              trailing: Icon(
+                Icons.chevron_right_rounded,
+                color: pageSecondaryTextColor(context),
+              ),
             ),
             Divider(height: 1, thickness: 1, color: pageBorderColor(context)),
             Padding(
