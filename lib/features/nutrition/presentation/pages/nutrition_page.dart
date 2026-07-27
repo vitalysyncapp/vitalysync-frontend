@@ -116,7 +116,9 @@ class _NutritionPageState extends State<NutritionPage> {
     _loadNutritionGoal();
     _loadManualMealSuggestions();
     _loadDailyNutrition(showErrors: false);
-    unawaited(_recoverLostImage());
+    if (!kIsWeb) {
+      unawaited(_recoverLostImage());
+    }
   }
 
   @override
@@ -237,9 +239,13 @@ class _NutritionPageState extends State<NutritionPage> {
 
   void _showSnackBar(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null) {
+      debugPrint('NutritionPage: skipped snackbar without ScaffoldMessenger.');
+      return;
+    }
+
+    messenger.showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _loadManualMealSuggestions() async {
