@@ -23,6 +23,9 @@ class AppPreferencesState {
   final String sleepWindDownTime;
   final bool hideSensitiveContent;
   final bool biometricLockEnabled;
+  final bool pauseWellnessInsights;
+  final bool hideProfileFromLeaderboard;
+  final int dataRetentionDays;
   final AppLocationPermissionChoice locationPermissionChoice;
   final bool assistantOverlayEnabled;
   final bool isLoaded;
@@ -42,6 +45,9 @@ class AppPreferencesState {
     required this.sleepWindDownTime,
     required this.hideSensitiveContent,
     required this.biometricLockEnabled,
+    required this.pauseWellnessInsights,
+    required this.hideProfileFromLeaderboard,
+    required this.dataRetentionDays,
     required this.locationPermissionChoice,
     required this.assistantOverlayEnabled,
     required this.isLoaded,
@@ -62,6 +68,9 @@ class AppPreferencesState {
       sleepWindDownTime = '21:30',
       hideSensitiveContent = false,
       biometricLockEnabled = false,
+      pauseWellnessInsights = false,
+      hideProfileFromLeaderboard = false,
+      dataRetentionDays = 0,
       locationPermissionChoice = AppLocationPermissionChoice.undecided,
       assistantOverlayEnabled = false,
       isLoaded = false;
@@ -81,6 +90,9 @@ class AppPreferencesState {
     String? sleepWindDownTime,
     bool? hideSensitiveContent,
     bool? biometricLockEnabled,
+    bool? pauseWellnessInsights,
+    bool? hideProfileFromLeaderboard,
+    int? dataRetentionDays,
     AppLocationPermissionChoice? locationPermissionChoice,
     bool? assistantOverlayEnabled,
     bool? isLoaded,
@@ -103,6 +115,11 @@ class AppPreferencesState {
       sleepWindDownTime: sleepWindDownTime ?? this.sleepWindDownTime,
       hideSensitiveContent: hideSensitiveContent ?? this.hideSensitiveContent,
       biometricLockEnabled: biometricLockEnabled ?? this.biometricLockEnabled,
+      pauseWellnessInsights:
+          pauseWellnessInsights ?? this.pauseWellnessInsights,
+      hideProfileFromLeaderboard:
+          hideProfileFromLeaderboard ?? this.hideProfileFromLeaderboard,
+      dataRetentionDays: dataRetentionDays ?? this.dataRetentionDays,
       locationPermissionChoice:
           locationPermissionChoice ?? this.locationPermissionChoice,
       assistantOverlayEnabled:
@@ -186,6 +203,10 @@ class AppPreferencesController {
   static const String _sleepWindDownTimeKey = 'sleep_wind_down_time';
   static const String _hideSensitiveContentKey = 'hide_sensitive_content';
   static const String _biometricLockKey = 'biometric_lock_enabled';
+  static const String _pauseWellnessInsightsKey = 'pause_wellness_insights';
+  static const String _hideProfileFromLeaderboardKey =
+      'hide_profile_from_leaderboard';
+  static const String _dataRetentionDaysKey = 'data_retention_days';
   static const String _locationPermissionChoiceKey =
       'location_permission_choice';
   static const String _assistantOverlayEnabledKey = 'assistant_overlay_enabled';
@@ -212,6 +233,13 @@ class AppPreferencesController {
       final sleepWindDownTime = prefs.getString(_sleepWindDownTimeKey);
       final hideSensitiveContent = prefs.getBool(_hideSensitiveContentKey);
       final biometricLockEnabled = prefs.getBool(_biometricLockKey);
+      final pauseWellnessInsights = prefs.getBool(
+        _pauseWellnessInsightsKey,
+      );
+      final hideProfileFromLeaderboard = prefs.getBool(
+        _hideProfileFromLeaderboardKey,
+      );
+      final dataRetentionDays = prefs.getInt(_dataRetentionDaysKey);
       final locationPermissionChoice = prefs.getString(
         _locationPermissionChoiceKey,
       );
@@ -234,6 +262,9 @@ class AppPreferencesController {
         sleepWindDownTime: sleepWindDownTime ?? '21:30',
         hideSensitiveContent: hideSensitiveContent ?? false,
         biometricLockEnabled: biometricLockEnabled ?? false,
+        pauseWellnessInsights: pauseWellnessInsights ?? false,
+        hideProfileFromLeaderboard: hideProfileFromLeaderboard ?? false,
+        dataRetentionDays: dataRetentionDays ?? 0,
         locationPermissionChoice: _locationPermissionChoiceFromString(
           locationPermissionChoice,
         ),
@@ -301,6 +332,26 @@ class AppPreferencesController {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_biometricLockKey, value);
     notifier.value = notifier.value.copyWith(biometricLockEnabled: value);
+  }
+
+  Future<void> updatePauseWellnessInsights(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_pauseWellnessInsightsKey, value);
+    notifier.value = notifier.value.copyWith(pauseWellnessInsights: value);
+  }
+
+  Future<void> updateHideProfileFromLeaderboard(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_hideProfileFromLeaderboardKey, value);
+    notifier.value = notifier.value.copyWith(
+      hideProfileFromLeaderboard: value,
+    );
+  }
+
+  Future<void> updateDataRetentionDays(int days) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_dataRetentionDaysKey, days);
+    notifier.value = notifier.value.copyWith(dataRetentionDays: days);
   }
 
   Future<void> updateLocationPermissionChoice(
@@ -388,6 +439,9 @@ class AppPreferencesController {
     await prefs.remove(_sleepWindDownTimeKey);
     await prefs.remove(_hideSensitiveContentKey);
     await prefs.remove(_biometricLockKey);
+    await prefs.remove(_pauseWellnessInsightsKey);
+    await prefs.remove(_hideProfileFromLeaderboardKey);
+    await prefs.remove(_dataRetentionDaysKey);
     await prefs.remove(_locationPermissionChoiceKey);
     await prefs.remove(_assistantOverlayEnabledKey);
     notifier.value = AppPreferencesState.defaults().copyWith(isLoaded: true);

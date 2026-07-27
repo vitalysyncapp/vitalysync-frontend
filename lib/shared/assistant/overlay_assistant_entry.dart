@@ -318,6 +318,12 @@ class _OverlayAssistantShellState extends State<_OverlayAssistantShell> {
   }
 
   Future<bool> _maybePreviewSmartNudge({required bool forceRefresh}) async {
+    final insightsPaused = AppPreferencesController
+        .instance.notifier.value.pauseWellnessInsights;
+    if (insightsPaused) {
+      return false;
+    }
+
     final nudges = await _loadAdaptiveNudges(forceRefresh: forceRefresh);
     if (!mounted || _mode != _OverlayAssistantMode.bubble || nudges.isEmpty) {
       return false;
@@ -492,7 +498,7 @@ class _OverlayAssistantShellState extends State<_OverlayAssistantShell> {
             child: Align(
               alignment: Alignment.center,
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420),
+                constraints: const BoxConstraints(maxWidth: 520),
                 child: AssistantExperiencePanel(
                   message:
                       "You're doing well today. Log sleep and hydration to keep your streak going.",

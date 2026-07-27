@@ -10,12 +10,14 @@ import '../../data/burnout_score_api.dart';
 import '../../../../shared/goals/user_goals.dart';
 import '../../../../shared/learning/first_week_learning_service.dart';
 import '../../../../shared/notifications/notification_feed_service.dart';
+import '../../../../shared/preferences/app_preferences.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
 import '../../../../shared/widgets/analytics_animation.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/widgets/first_week_learning_pill.dart';
 import '../../../../shared/widgets/reveal_on_build.dart';
+import '../../../../shared/widgets/sensitive_content_guard.dart';
 import '../widgets/burnout_risk_trend_card.dart';
 import '../widgets/dashboard_goal_tracking_card.dart';
 import '../widgets/dashboard_header_card.dart';
@@ -92,12 +94,14 @@ class _DashboardState extends State<Dashboard> {
       final summary = await BurnoutScoreApi.fetchPatternSummary();
       AdaptiveNudgeRecommendation? aiInsight;
       try {
-        final nudgeResponse = await AdaptiveNudgeApi.fetchRecommendations(
+      final nudgeResponse = await AdaptiveNudgeApi.fetchRecommendations(
           limit: 1,
           record: false,
           ai: true,
         );
-        aiInsight = nudgeResponse.recommendations.isEmpty
+        final insightsPaused = AppPreferencesController
+            .instance.notifier.value.pauseWellnessInsights;
+        aiInsight = nudgeResponse.recommendations.isEmpty || insightsPaused
             ? null
             : nudgeResponse.recommendations.first;
       } catch (_) {
@@ -284,113 +288,122 @@ class _DashboardState extends State<Dashboard> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  RevealOnBuild(
-                    delay: const Duration(milliseconds: 70),
-                    child: Row(
+                  SensitiveContentGuard(
+                    child: Column(
                       children: [
-                        DashboardStatCard(
-                          title: "Burnout risk",
-                          value: _burnoutRiskValue(),
-                          subtitle: _burnoutRiskSubtitle(),
-                          subtitleColor: _burnoutTrendColor(),
-                          icon: _burnoutTrendIcon(),
-                          iconColor: _burnoutTrendColor(),
-                          isLoading: _isLoadingBurnoutPatterns,
+                        RevealOnBuild(
+                          delay: const Duration(milliseconds: 70),
+                          child: Row(
+                            children: [
+                              DashboardStatCard(
+                                title: "Burnout risk",
+                                value: _burnoutRiskValue(),
+                                subtitle: _burnoutRiskSubtitle(),
+                                subtitleColor: _burnoutTrendColor(),
+                                icon: _burnoutTrendIcon(),
+                                iconColor: _burnoutTrendColor(),
+                                isLoading: _isLoadingBurnoutPatterns,
+                              ),
+                              const SizedBox(width: 10),
+                              _AvgSleepStatCard(
+                                currentWeek: _currentWeekMetrics,
+                                previousWeek: _previousWeekMetrics,
+                                isLoading: _isLoadingWeeklyMetrics,
+                              ),
+                            ],
+                          ),
                         ),
-                        const SizedBox(width: 10),
-                        _AvgSleepStatCard(
-                          currentWeek: _currentWeekMetrics,
-                          previousWeek: _previousWeekMetrics,
-                          isLoading: _isLoadingWeeklyMetrics,
+                        const SizedBox(height: 12),
+                        RevealOnBuild(
+                          delay: const Duration(milliseconds: 140),
+                          child: BurnoutRiskTrendCard(
+                            summary: _burnoutPatternSummary,
+                            isLoading: _isLoadingBurnoutPatterns,
+                            onRefresh: _loadBurnoutPatterns,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        RevealOnBuild(
+                          delay: const Duration(milliseconds: 200),
+                          child: _AiBurnoutInsightCard(
+                            recommendation: _aiInsightNudge,
+                            isLoading: _isLoadingAiInsight,
+                            learningState: _firstWeekLearning,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        RevealOnBuild(
+                          delay: const Duration(milliseconds: 260),
+                          child: ValueListenableBuilder<ActivityTrackingState>(
+                            valueListenable:
+                                ActivityService.instance.notifier,
+                            builder: (context, activityState, _) {
+                              return WeeklyStepAnalyticsCard(
+                                state: activityState,
+                                compact: true,
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        RevealOnBuild(
+                          delay: const Duration(milliseconds: 320),
+                          child: NutritionAnalyticsCard(
+                            key: ValueKey(
+                              'nutrition-analytics-$_refreshVersion',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        RevealOnBuild(
+                          delay: const Duration(milliseconds: 380),
+                          child: SleepPatternCard(
+                            metrics: _currentWeekMetrics,
+                            isLoading: _isLoadingWeeklyMetrics,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        RevealOnBuild(
+                          delay: const Duration(milliseconds: 440),
+                          child: WellnessIndexCard(
+                            metrics: _currentWeekMetrics,
+                            isLoading: _isLoadingWeeklyMetrics,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        RevealOnBuild(
+                          delay: const Duration(milliseconds: 500),
+                          child: MoodVolatilityCard(
+                            metrics: _currentWeekMetrics,
+                            isLoading: _isLoadingWeeklyMetrics,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        RevealOnBuild(
+                          delay: const Duration(milliseconds: 560),
+                          child: SymptomFrequencyCard(
+                            metrics: _currentWeekMetrics,
+                            isLoading: _isLoadingWeeklyMetrics,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        RevealOnBuild(
+                          delay: const Duration(milliseconds: 620),
+                          child: DashboardGoalTrackingCard(
+                            weeklyMetrics: _currentWeekMetrics,
+                            isLoadingWeeklyMetrics: _isLoadingWeeklyMetrics,
+                            refreshVersion: _refreshVersion,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        RevealOnBuild(
+                          delay: const Duration(milliseconds: 680),
+                          child: WeeklyPerformanceCard(
+                            metrics: _currentWeekMetrics,
+                            isLoading: _isLoadingWeeklyMetrics,
+                          ),
                         ),
                       ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  RevealOnBuild(
-                    delay: const Duration(milliseconds: 140),
-                    child: BurnoutRiskTrendCard(
-                      summary: _burnoutPatternSummary,
-                      isLoading: _isLoadingBurnoutPatterns,
-                      onRefresh: _loadBurnoutPatterns,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  RevealOnBuild(
-                    delay: const Duration(milliseconds: 200),
-                    child: _AiBurnoutInsightCard(
-                      recommendation: _aiInsightNudge,
-                      isLoading: _isLoadingAiInsight,
-                      learningState: _firstWeekLearning,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  RevealOnBuild(
-                    delay: const Duration(milliseconds: 260),
-                    child: ValueListenableBuilder<ActivityTrackingState>(
-                      valueListenable: ActivityService.instance.notifier,
-                      builder: (context, activityState, _) {
-                        return WeeklyStepAnalyticsCard(
-                          state: activityState,
-                          compact: true,
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  RevealOnBuild(
-                    delay: const Duration(milliseconds: 320),
-                    child: NutritionAnalyticsCard(
-                      key: ValueKey('nutrition-analytics-$_refreshVersion'),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  RevealOnBuild(
-                    delay: const Duration(milliseconds: 380),
-                    child: SleepPatternCard(
-                      metrics: _currentWeekMetrics,
-                      isLoading: _isLoadingWeeklyMetrics,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  RevealOnBuild(
-                    delay: const Duration(milliseconds: 440),
-                    child: WellnessIndexCard(
-                      metrics: _currentWeekMetrics,
-                      isLoading: _isLoadingWeeklyMetrics,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  RevealOnBuild(
-                    delay: const Duration(milliseconds: 500),
-                    child: MoodVolatilityCard(
-                      metrics: _currentWeekMetrics,
-                      isLoading: _isLoadingWeeklyMetrics,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  RevealOnBuild(
-                    delay: const Duration(milliseconds: 560),
-                    child: SymptomFrequencyCard(
-                      metrics: _currentWeekMetrics,
-                      isLoading: _isLoadingWeeklyMetrics,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  RevealOnBuild(
-                    delay: const Duration(milliseconds: 620),
-                    child: DashboardGoalTrackingCard(
-                      weeklyMetrics: _currentWeekMetrics,
-                      isLoadingWeeklyMetrics: _isLoadingWeeklyMetrics,
-                      refreshVersion: _refreshVersion,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  RevealOnBuild(
-                    delay: const Duration(milliseconds: 680),
-                    child: WeeklyPerformanceCard(
-                      metrics: _currentWeekMetrics,
-                      isLoading: _isLoadingWeeklyMetrics,
                     ),
                   ),
                 ],

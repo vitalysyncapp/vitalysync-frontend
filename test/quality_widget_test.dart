@@ -212,6 +212,10 @@ void main() {
       ),
     );
 
+    await tester.tap(find.text('More').first);
+    await tester.tap(find.text('More').last);
+    await tester.pumpAndSettle();
+
     expect(find.text('Wellness profile'), findsOneWidget);
     expect(find.text('Edit wellness profile'), findsOneWidget);
     expect(find.text('Retake baseline'), findsOneWidget);
@@ -366,6 +370,9 @@ void main() {
         ),
       ),
     );
+
+    await tester.tap(find.text('More'));
+    await tester.pumpAndSettle();
 
     await tester.ensureVisible(find.text('Retake baseline'));
     await tester.pump();

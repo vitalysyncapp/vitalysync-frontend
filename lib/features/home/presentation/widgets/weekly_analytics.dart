@@ -5,6 +5,7 @@ import '../../../../features/dashboard/data/weekly_user_metrics.dart';
 import '../../../../shared/navigation/main_tab.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
+import '../../../../shared/widgets/sensitive_content_guard.dart';
 
 class WeeklyAnalyticsCard extends StatelessWidget {
   final String title;
@@ -103,21 +104,25 @@ class WeeklyAnalyticsCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            ...List.generate(items.length, (index) {
-              final item = items[index];
-              return Padding(
-                padding: EdgeInsets.only(
-                  bottom: index == items.length - 1 ? 0 : 11,
-                ),
-                child: _buildStatRow(
-                  label: item.label,
-                  value: item.value,
-                  labelColor: labelColor,
-                  valueColor: item.valueColor ?? defaultValueColor,
-                  valueWeight: item.valueWeight,
-                ),
-              );
-            }),
+            SensitiveContentGuard(
+              child: Column(
+                children: List.generate(items.length, (index) {
+                  final item = items[index];
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      bottom: index == items.length - 1 ? 0 : 11,
+                    ),
+                    child: _buildStatRow(
+                      label: item.label,
+                      value: item.value,
+                      labelColor: labelColor,
+                      valueColor: item.valueColor ?? defaultValueColor,
+                      valueWeight: item.valueWeight,
+                    ),
+                  );
+                }),
+              ),
+            ),
           ],
         ),
       ),

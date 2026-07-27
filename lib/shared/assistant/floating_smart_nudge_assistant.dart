@@ -482,7 +482,7 @@ class _FloatingSmartNudgeAssistantState
         transitionDuration: const Duration(milliseconds: 260),
         pageBuilder: (dialogContext, _, _) {
           return SafeArea(
-            minimum: const EdgeInsets.all(8),
+            minimum: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
             child: LayoutBuilder(
               builder: (context, constraints) {
                 return Center(

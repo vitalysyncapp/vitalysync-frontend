@@ -12,6 +12,10 @@ import '../shared/notifications/local_notification_service.dart';
 import '../shared/notifications/notification_payload_router.dart';
 import '../shared/preferences/app_preferences.dart';
 import '../shared/preferences/user_session.dart';
+import '../shared/privacy/biometric_lock_screen.dart';
+import '../shared/privacy/biometric_lock_service.dart';
+import '../shared/privacy/local_data_retention_service.dart';
+import '../shared/privacy/privacy_screen_observer.dart';
 import 'app_theme.dart';
 import 'main_navigation.dart';
 
@@ -43,6 +47,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     _appLaunchChannel.setMethodCallHandler(_handleAppLaunchMethodCall);
     unawaited(_consumeInitialAppLaunchPayload());
     _handlePreferencesChanged();
+    PrivacyScreenObserver.instance.init();
+    unawaited(LocalDataRetentionService.instance.pruneIfNeeded());
   }
 
   @override
@@ -51,6 +57,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     _preferences.notifier.removeListener(_handlePreferencesChanged);
     LocalNotificationService.instance.onNotificationPayload = null;
     _appLaunchChannel.setMethodCallHandler(null);
+    PrivacyScreenObserver.instance.dispose();
     super.dispose();
   }
 
@@ -73,6 +80,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       isForeground: isForeground,
       prefs: prefs,
     );
+
+    // Biometric lock lifecycle integration.
+    if (isForeground) {
+      BiometricLockService.instance.onAppResumed();
+    } else {
+      BiometricLockService.instance.onAppBackgrounded();
+    }
   }
 
   void _handlePreferencesChanged() {
@@ -172,7 +186,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               data: mediaQuery.copyWith(
                 textScaler: TextScaler.linear(prefs.textScaleFactor),
               ),
-              child: child ?? const SizedBox.shrink(),
+              child: ValueListenableBuilder<bool>(
+                valueListenable: BiometricLockService.instance.isLocked,
+                builder: (context, isLocked, innerChild) {
+                  if (isLocked) {
+                    return const BiometricLockScreen();
+                  }
+                  return innerChild ?? const SizedBox.shrink();
+                },
+                child: child ?? const SizedBox.shrink(),
+              ),
             );
           },
           home: const LoadingScreen(),

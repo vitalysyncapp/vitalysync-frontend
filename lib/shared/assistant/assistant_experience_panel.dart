@@ -676,15 +676,15 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     final currentIndex = min(_pageIndex, sections.length - 1);
     final panel = Padding(
       padding: EdgeInsets.only(
-        left: 12,
-        right: 12,
+        left: 6,
+        right: 6,
         bottom: widget.useSafeAreaPadding
             ? MediaQuery.viewInsetsOf(context).bottom + 12
             : 0,
       ),
       child: Container(
         constraints: BoxConstraints(maxHeight: maxHeight),
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+        padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
         decoration: BoxDecoration(
           color: Theme.of(context).brightness == Brightness.dark
               ? const Color(0xFF0F1B2D)

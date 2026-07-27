@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
+import '../../../../shared/preferences/app_preferences.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
@@ -431,9 +432,13 @@ class _LeaderboardContent extends StatelessWidget {
       );
     }
 
+    final hideProfile = AppPreferencesController
+        .instance.notifier.value.hideProfileFromLeaderboard;
+
     final orderedRows =
         leaderboard.rows
             .where((row) => row.rank >= 1 && row.rank <= 50)
+            .where((row) => !(hideProfile && row.isCurrentUser))
             .toList()
           ..sort((left, right) => left.rank.compareTo(right.rank));
     final podiumRows = orderedRows.where((row) => row.rank <= 3).toList();

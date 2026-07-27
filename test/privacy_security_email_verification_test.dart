@@ -13,7 +13,10 @@ void main() {
     configureLoggedInSession(emailVerified: false);
 
     await tester.pumpWidget(const MaterialApp(home: PrivacySecurityPage()));
-    await tester.pump();
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(ListView), const Offset(0, -500));
+    await tester.pumpAndSettle();
 
     expect(find.text('Email verification'), findsOneWidget);
     expect(find.text('Not verified - tester@example.com'), findsOneWidget);
@@ -29,7 +32,10 @@ void main() {
     configureLoggedInSession(emailVerified: true);
 
     await tester.pumpWidget(const MaterialApp(home: PrivacySecurityPage()));
-    await tester.pump();
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(ListView), const Offset(0, -500));
+    await tester.pumpAndSettle();
 
     expect(find.text('Verified - tester@example.com'), findsOneWidget);
     expect(

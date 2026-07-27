@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/widgets/app_skeleton.dart';
+import '../../../../shared/widgets/sensitive_content_guard.dart';
 import '../../../dashboard/data/burnout_score_api.dart';
 import '../pages/about_burnout_page.dart';
 import 'burnout_info_dialog.dart';
@@ -159,7 +160,8 @@ class BurnoutCard extends StatelessWidget {
       ),
       child: AppSkeleton(
         enabled: isLoading,
-        child: Column(
+        child: SensitiveContentGuard(
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -250,6 +252,7 @@ class BurnoutCard extends StatelessWidget {
               ),
             ),
           ],
+          ),
         ),
       ),
     );

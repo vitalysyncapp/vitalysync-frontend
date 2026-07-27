@@ -104,27 +104,59 @@ class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
                   pageBottomContentPadding(context),
                 ),
                 children: [
+                  // ── Content privacy ──────────────────────────────
                   _SectionCard(
-                    title: 'Privacy controls',
+                    title: 'Content privacy',
                     children: [
                       _PrivacySwitchTile(
                         title: 'Hide sensitive content',
                         subtitle:
-                            'Softens wellness details on shared or public screens',
+                            'Blurs wellness scores, analytics, and stat values across the app',
                         value: prefs.hideSensitiveContent,
                         onChanged: preferences.updateHideSensitiveContent,
                       ),
                       _divider(context),
                       _PrivacySwitchTile(
-                        title: 'Biometric lock',
+                        title: 'Pause wellness insights',
                         subtitle:
-                            'Keep a local lock preference saved for future secure unlock support',
-                        value: prefs.biometricLockEnabled,
-                        onChanged: preferences.updateBiometricLockEnabled,
+                            'Suppresses AI nudges and adaptive insight cards',
+                        value: prefs.pauseWellnessInsights,
+                        onChanged: preferences.updatePauseWellnessInsights,
+                      ),
+                      _divider(context),
+                      _PrivacySwitchTile(
+                        title: 'Hide profile from leaderboard',
+                        subtitle:
+                            'Removes your entry from the streak leaderboard display',
+                        value: prefs.hideProfileFromLeaderboard,
+                        onChanged:
+                            preferences.updateHideProfileFromLeaderboard,
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
+
+                  // ── Device security ──────────────────────────────
+                  _SectionCard(
+                    title: 'Device security',
+                    children: [
+                      _PrivacySwitchTile(
+                        title: 'Biometric lock',
+                        subtitle:
+                            'Shows a lock screen when the app is reopened. Biometric prompt will be added in a future update.',
+                        value: prefs.biometricLockEnabled,
+                        onChanged: preferences.updateBiometricLockEnabled,
+                      ),
+                      _divider(context),
+                      _DataRetentionTile(
+                        currentDays: prefs.dataRetentionDays,
+                        onChanged: preferences.updateDataRetentionDays,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // ── Account security ─────────────────────────────
                   _SectionCard(
                     title: 'Account security',
                     children: [
@@ -138,13 +170,17 @@ class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
                     ],
                   ),
                   const SizedBox(height: 16),
+
+                  // ── About ────────────────────────────────────────
                   _SectionCard(
                     title: 'About this section',
                     children: [
                       Padding(
                         padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
                         child: Text(
-                          'These settings help keep privacy behavior consistent across the account and this device.',
+                          'Privacy controls are stored on this device only and '
+                          'do not sync to the server. They help you manage '
+                          'what is visible on-screen and in the app switcher.',
                           style: TextStyle(
                             height: 1.45,
                             color: pageSecondaryTextColor(context),
@@ -354,6 +390,101 @@ class _PrivacySwitchTile extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Switch(value: value, onChanged: onChanged),
+        ],
+      ),
+    );
+  }
+}
+
+class _DataRetentionTile extends StatelessWidget {
+  final int currentDays;
+  final Future<void> Function(int) onChanged;
+
+  const _DataRetentionTile({
+    required this.currentDays,
+    required this.onChanged,
+  });
+
+  static const _options = <int, String>{
+    0: 'Unlimited',
+    30: '30 days',
+    60: '60 days',
+    90: '90 days',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final label = _options[currentDays] ?? '$currentDays days';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Local data retention',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: pagePrimaryTextColor(context),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'How long offline cached logs are kept on this device',
+                  style: TextStyle(
+                    height: 1.4,
+                    color: pageSecondaryTextColor(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          PopupMenuButton<int>(
+            initialValue: currentDays,
+            onSelected: onChanged,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 6,
+              ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: pageBorderColor(context)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: pagePrimaryTextColor(context),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.arrow_drop_down_rounded,
+                    color: pageSecondaryTextColor(context),
+                  ),
+                ],
+              ),
+            ),
+            itemBuilder: (_) => _options.entries
+                .map(
+                  (entry) => PopupMenuItem<int>(
+                    value: entry.key,
+                    child: Text(entry.value),
+                  ),
+                )
+                .toList(),
+          ),
         ],
       ),
     );
