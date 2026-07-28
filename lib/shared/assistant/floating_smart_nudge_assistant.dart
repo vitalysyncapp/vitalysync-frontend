@@ -14,7 +14,9 @@ import '../../features/exercise/presentation/widgets/assistant_exercise_card.dar
 import '../../features/exercise/presentation/widgets/selected_exercise_goal_card.dart';
 import '../../features/home/data/environment_model.dart';
 import '../../features/log/data/check_in_models.dart';
+import '../../features/log/data/check_in_state_coordinator.dart';
 import '../../features/log/data/log_api.dart';
+import '../../features/log/presentation/widgets/check_in_success_view.dart';
 import '../../features/log/presentation/widgets/log_widgets.dart';
 import '../../features/nutrition/data/nutrition_analyzer.dart';
 import '../../features/nutrition/data/nutrition_coach.dart';
@@ -35,7 +37,7 @@ part 'assistant_visual_widgets.dart';
 
 const _assistantAnimationPath = 'assets/animations/Assistant.json';
 const _assistantSmartNudgeSectionIndex = 0;
-const _assistantExerciseSectionIndex = 1;
+const _assistantExerciseSectionIndex = 2;
 
 enum _AssistantBubbleKind { smartNudge, nutrition, exercise }
 

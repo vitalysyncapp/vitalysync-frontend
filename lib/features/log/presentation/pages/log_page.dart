@@ -11,11 +11,12 @@ import '../../../../shared/widgets/reveal_on_build.dart';
 import '../../../onboarding/services/onboarding_service.dart';
 import '../../../streaks/data/streak_models.dart';
 import '../../data/check_in_models.dart';
+import '../../data/check_in_state_coordinator.dart';
 import '../../data/log_api.dart';
+import '../widgets/check_in_success_view.dart';
 import '../widgets/log_widgets.dart';
 
 const _streakFireAnimationPath = 'assets/animations/streak_fire.json';
-const _healthyHeartAnimationPath = 'assets/animations/healthy_heart.json';
 const _wellnessConfettiColors = [
   Color(0xFF1FB489),
   Color(0xFF56CCF2),
@@ -149,6 +150,9 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    CheckInStateCoordinator.instance.changes.addListener(
+      _handleCheckInStateChanged,
+    );
     widget.controller?.bindSaveAction(_saveLog);
     _confettiController = ConfettiController(
       duration: const Duration(seconds: 2),
@@ -160,6 +164,9 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    CheckInStateCoordinator.instance.changes.removeListener(
+      _handleCheckInStateChanged,
+    );
     widget.controller?.unbindSaveAction(_saveLog);
     _confettiController.dispose();
     super.dispose();
@@ -181,6 +188,12 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       _loadLogState(showLoader: false);
     }
+  }
+
+  void _handleCheckInStateChanged() {
+    final change = CheckInStateCoordinator.instance.changes.value;
+    if (change == null || identical(change.source, this) || isSaving) return;
+    _loadLogState(showLoader: false);
   }
 
   Future<void> _loadLogState({bool showLoader = true}) async {
@@ -347,6 +360,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
         isSaving = false;
       });
       _publishNavigationState();
+      CheckInStateCoordinator.instance.markChanged(this);
 
       await refreshAppBarStreak();
       if (!mounted) return;
@@ -941,197 +955,12 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   }
 
   Widget _buildSuccessScreen() {
-    return Center(
-      key: const ValueKey('success_screen'),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildSuccessAnimation(),
-            const SizedBox(height: 18),
-            Text(
-              lastSaveWasOffline ? 'Check-in saved offline' : 'Check-in saved!',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 23,
-                fontWeight: FontWeight.w800,
-                color: pagePrimaryTextColor(context),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              hasPendingSync
-                  ? 'Your daily wellness log is saved on this device. It will sync automatically when internet access is available again.'
-                  : 'Your daily wellness log has been recorded. Come back tomorrow for your next check-in, or redo today\'s entry if you need to update it.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: pageSecondaryTextColor(context),
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 14),
-            _buildSuccessStreakBadge(),
-            if (hasPendingSync) ...[
-              const SizedBox(height: 12),
-              _buildPendingSyncBanner(),
-            ],
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: OutlinedButton(
-                onPressed: _redoLog,
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Color(0xFFCBD5E1)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: const Text(
-                  'Redo today\'s log',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSuccessAnimation() {
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0.85, end: 1),
-      duration: const Duration(milliseconds: 450),
-      curve: Curves.easeOutBack,
-      builder: (context, scale, child) {
-        return Transform.scale(scale: scale, child: child);
-      },
-      child: SizedBox(
-        width: 104,
-        height: 104,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Container(
-              width: 92,
-              height: 92,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE0F2FE),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF38BDF8).withValues(alpha: 0.22),
-                    blurRadius: 14,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-              child: Lottie.asset(
-                _healthyHeartAnimationPath,
-                width: 86,
-                height: 86,
-                fit: BoxFit.contain,
-                repeat: true,
-                animate: true,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Icon(
-                    Icons.favorite_rounded,
-                    size: 48,
-                    color: Color(0xFF1FB489),
-                  );
-                },
-              ),
-            ),
-            Positioned(
-              right: 4,
-              bottom: 6,
-              child: Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1FB489),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 3),
-                ),
-                child: const Icon(
-                  Icons.check_rounded,
-                  size: 19,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSuccessStreakBadge() {
-    final streakText = currentStreak == 1
-        ? '1 day streak'
-        : '$currentStreak day streak';
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-      decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFFFF8A1F).withValues(alpha: 0.12)
-            : const Color(0xFFFFF7ED),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFFF8A1F).withValues(alpha: 0.34),
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          _buildFireAnimation(size: 46),
-          const SizedBox(height: 3),
-          Text(
-            streakText,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w900,
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? const Color(0xFFFBBF24)
-                  : const Color(0xFF7C2D12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPendingSyncBanner() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFBFDBFE)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.cloud_upload_outlined, color: Color(0xFF2563EB)),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              '$pendingSyncCount pending check-in${pendingSyncCount == 1 ? '' : 's'} will upload in the background.',
-              style: const TextStyle(
-                color: Color(0xFF1E3A8A),
-                height: 1.35,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
+    return CheckInSuccessView(
+      isOffline: lastSaveWasOffline,
+      hasPendingSync: hasPendingSync,
+      pendingSyncCount: pendingSyncCount,
+      currentStreak: currentStreak,
+      onRedo: _redoLog,
     );
   }
 

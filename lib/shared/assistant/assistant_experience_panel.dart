@@ -15,6 +15,8 @@ class AssistantExperiencePanel extends StatefulWidget {
   final Future<NutritionInsight?> Function({bool forceRefresh})
   onRefreshNutritionInsight;
   final Future<EnvironmentSnapshot?> Function() onRefreshEnvironment;
+  final Future<CheckInStatus> Function()? checkInStatusLoader;
+  final Future<Map<String, dynamic>> Function()? todayLogLoader;
   final VoidCallback? onLogMealRequested;
   final VoidCallback? onLogPageRequested;
   final VoidCallback? onClose;
@@ -34,6 +36,8 @@ class AssistantExperiencePanel extends StatefulWidget {
     required this.onRefreshAdaptiveNudges,
     required this.onRefreshNutritionInsight,
     required this.onRefreshEnvironment,
+    this.checkInStatusLoader,
+    this.todayLogLoader,
     this.onLogMealRequested,
     this.onLogPageRequested,
     this.onClose,
@@ -73,6 +77,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
   CheckInStatus? _checkInStatus;
   CheckInDraft _checkInDraft = const CheckInDraft();
   String _exerciseGoalLabel = '3-4 days';
+  int _checkInStreak = 0;
 
   @override
   void initState() {
@@ -82,6 +87,9 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     _recommendations = widget.recommendations;
     _adaptiveNudges = prioritizeAssistantNudges(widget.adaptiveNudges);
     _nutritionInsight = widget.nutritionInsight;
+    CheckInStateCoordinator.instance.changes.addListener(
+      _handleCheckInStateChanged,
+    );
     if (_recommendations.isEmpty) {
       unawaited(_loadRecommendations());
     }
@@ -115,8 +123,19 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
 
   @override
   void dispose() {
+    CheckInStateCoordinator.instance.changes.removeListener(
+      _handleCheckInStateChanged,
+    );
     _pageController.dispose();
     super.dispose();
+  }
+
+  void _handleCheckInStateChanged() {
+    final change = CheckInStateCoordinator.instance.changes.value;
+    if (change == null || identical(change.source, this) || _isSavingCheckIn) {
+      return;
+    }
+    _loadCheckInStatus();
   }
 
   Future<void> _loadRecommendations() async {
@@ -449,13 +468,25 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
 
     try {
       final defaults = await OnboardingService.loadDefaults();
-      final status = await LogApi.fetchCheckInStatus();
+      final status =
+          await (widget.checkInStatusLoader?.call() ??
+              LogApi.fetchCheckInStatus());
+      var streak = _checkInStreak;
+      try {
+        final todayLog =
+            await (widget.todayLogLoader?.call() ?? LogApi.fetchTodayLog());
+        final streakData = todayLog['streak'] as Map<String, dynamic>?;
+        streak = LogApi.parseInt(streakData?['current_streak']);
+      } catch (_) {
+        // The completion state remains useful if streak metadata is unavailable.
+      }
       final hydrationPrefill = await LogApi.readHydrationPrefill();
       final exercisePrefill = await LogApi.readExercisePrefill();
       if (!mounted) return;
 
       setState(() {
         _checkInStatus = status;
+        _checkInStreak = streak;
         _isEditingCheckIn = !status.isComplete;
         _exerciseGoalLabel = defaults.exerciseGoalDays ?? '3-4 days';
         _checkInDraft = CheckInDraft.fromJson(
@@ -503,7 +534,10 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
       setState(() {
         _isEditingCheckIn = false;
         _isSavingCheckIn = false;
+        final streak = data['streak'] as Map<String, dynamic>?;
+        _checkInStreak = LogApi.parseInt(streak?['current_streak']);
       });
+      CheckInStateCoordinator.instance.markChanged(this);
 
       final savedOffline = data['is_offline'] == true;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -853,16 +887,16 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
         ),
       ),
       _AssistantSection(
-        icon: Icons.directions_run_rounded,
-        label: 'Exercise',
-        child: _buildExercisePage(),
-      ),
-      _AssistantSection(
         icon: Icons.fact_check_rounded,
         label: _checkInStatus?.requiredMode == CheckInMode.weekly
             ? 'Pulse'
             : 'Check-in',
         child: _buildCheckInPage(),
+      ),
+      _AssistantSection(
+        icon: Icons.directions_run_rounded,
+        label: 'Exercise',
+        child: _buildExercisePage(),
       ),
     ];
   }
@@ -917,6 +951,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
       status: _checkInStatus,
       draft: _checkInDraft,
       isEditing: _isEditingCheckIn,
+      currentStreak: _checkInStreak,
       exerciseGoalLabel: _exerciseGoalLabel,
       onChanged: (draft) {
         setState(() {

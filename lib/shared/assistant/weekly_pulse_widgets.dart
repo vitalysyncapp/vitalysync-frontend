@@ -6,6 +6,7 @@ class _AssistantCheckInCard extends StatelessWidget {
   final CheckInStatus? status;
   final CheckInDraft draft;
   final bool isEditing;
+  final int currentStreak;
   final String exerciseGoalLabel;
   final ValueChanged<CheckInDraft> onChanged;
   final Future<void> Function() onSave;
@@ -17,6 +18,7 @@ class _AssistantCheckInCard extends StatelessWidget {
     required this.status,
     required this.draft,
     required this.isEditing,
+    required this.currentStreak,
     required this.exerciseGoalLabel,
     required this.onChanged,
     required this.onSave,
@@ -38,10 +40,12 @@ class _AssistantCheckInCard extends StatelessWidget {
       );
     }
     if (currentStatus.isComplete && !isEditing) {
-      return _AssistantCheckInSavedView(
-        isWeekly: _showWeeklyQuestions,
-        isOffline: currentStatus.isOffline,
-        nextDueDate: currentStatus.schedule.nextDueDate,
+      return CheckInSuccessView(
+        isOffline:
+            currentStatus.isOffline && currentStatus.pendingSyncCount > 0,
+        hasPendingSync: currentStatus.pendingSyncCount > 0,
+        pendingSyncCount: currentStatus.pendingSyncCount,
+        currentStreak: currentStreak,
         onRedo: onRedo,
       );
     }
@@ -240,53 +244,15 @@ class _AssistantCheckInCard extends StatelessWidget {
   }
 }
 
-class _AssistantCheckInSavedView extends StatelessWidget {
-  final bool isWeekly;
-  final bool isOffline;
-  final String? nextDueDate;
-  final VoidCallback onRedo;
-
-  const _AssistantCheckInSavedView({
-    required this.isWeekly,
-    required this.isOffline,
-    required this.nextDueDate,
-    required this.onRedo,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final nextDate = DateTime.tryParse(nextDueDate ?? '');
-    final nextLabel = nextDate == null
-        ? null
-        : DateFormat('EEE, MMM d').format(nextDate);
-    return _AssistantCheckInMessage(
-      icon: isOffline ? Icons.cloud_upload_outlined : Icons.check_rounded,
-      title: isWeekly ? 'Weekly pulse saved' : 'Today\'s check-in is done',
-      message: isOffline
-          ? 'Your answers are safe on this device and will sync automatically.'
-          : isWeekly && nextLabel != null
-          ? 'Your next weekly pulse is scheduled for $nextLabel.'
-          : 'You can update today\'s answers if anything changes.',
-      action: OutlinedButton.icon(
-        onPressed: onRedo,
-        icon: const Icon(Icons.refresh_rounded, size: 18),
-        label: Text(isWeekly ? 'Update today\'s pulse' : 'Update check-in'),
-      ),
-    );
-  }
-}
-
 class _AssistantCheckInMessage extends StatelessWidget {
   final IconData icon;
   final String title;
   final String message;
-  final Widget? action;
 
   const _AssistantCheckInMessage({
     required this.icon,
     required this.title,
     required this.message,
-    this.action,
   });
 
   @override
@@ -327,7 +293,6 @@ class _AssistantCheckInMessage extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          if (action != null) ...[const SizedBox(height: 18), action!],
         ],
       ),
     );
