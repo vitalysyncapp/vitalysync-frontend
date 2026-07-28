@@ -8,10 +8,14 @@ import '../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../features/exercise/data/exercise_goal_service.dart';
 import '../features/home/presentation/pages/home_page.dart';
 import '../features/log/data/log_api.dart';
+import '../features/log/data/check_in_models.dart';
 import '../features/log/presentation/pages/log_page.dart';
+import '../features/log/presentation/pages/welcome_back_baseline_page.dart';
 import '../features/nutrition/data/nutrition_reminder_engine.dart';
 import '../features/nutrition/presentation/pages/nutrition_page.dart';
 import '../features/profile/presentation/pages/profile_page.dart';
+import '../features/onboarding/data/onboarding_api.dart';
+import '../features/onboarding/services/onboarding_service.dart';
 import '../features/recovery/data/recovery_mode_service.dart';
 import '../features/recovery/presentation/pages/recovery_mode_page.dart';
 import '../features/settings/presentation/pages/assistant_settings.dart';
@@ -22,6 +26,7 @@ import '../features/tutorial/services/core_tutorial_service.dart';
 import '../shared/widgets/bottom_nav.dart';
 import '../shared/assistant/floating_smart_nudge_assistant.dart';
 import '../shared/navigation/main_tab.dart';
+import '../shared/preferences/user_session.dart';
 import '../shared/widgets/app_bar.dart';
 
 class MainNavigationController extends InheritedWidget {
@@ -58,6 +63,10 @@ class MainNavigation extends StatefulWidget {
   final bool openNutritionLogOnStart;
   final int? tutorialUserId;
   final bool showTutorialOnStart;
+  final Future<CheckInStatus> Function()? checkInStatusLoader;
+  final Future<bool> Function(List<Map<String, dynamic>> answers)?
+  baselineRefreshSaver;
+  final Future<String> Function()? usernameLoader;
 
   const MainNavigation({
     super.key,
@@ -65,6 +74,9 @@ class MainNavigation extends StatefulWidget {
     this.openNutritionLogOnStart = false,
     this.tutorialUserId,
     this.showTutorialOnStart = false,
+    this.checkInStatusLoader,
+    this.baselineRefreshSaver,
+    this.usernameLoader,
   });
   @override
   State<MainNavigation> createState() => _MainNavigationState();
@@ -91,6 +103,8 @@ class _MainNavigationState extends State<MainNavigation>
   bool _isTutorialActive = false;
   bool _tutorialSettingsRouteOpen = false;
   bool _tutorialAssistantRouteOpen = false;
+  bool _isBaselineRefreshRouteOpen = false;
+  bool _isCheckingBaselineRefresh = false;
   int _recoveryCheckToken = 0;
 
   @override
@@ -103,7 +117,12 @@ class _MainNavigationState extends State<MainNavigation>
     _pages = [
       HomePage(onProfileTap: () => _selectTab(MainTab.profile)),
       const NutritionPage(),
-      LogPage(controller: _logPageController),
+      LogPage(
+        controller: _logPageController,
+        onBaselineRefreshRequired: () {
+          unawaited(_ensureBaselineReady());
+        },
+      ),
       const Dashboard(),
       const ProfilePage(),
     ];
@@ -139,6 +158,9 @@ class _MainNavigationState extends State<MainNavigation>
         _showTutorialOverlay();
       }
       _checkRecoveryMode();
+      if (_currentTab == MainTab.log) {
+        unawaited(_ensureBaselineReady());
+      }
     });
     _offlineSyncTimer = Timer.periodic(
       _offlineSyncInterval,
@@ -165,6 +187,9 @@ class _MainNavigationState extends State<MainNavigation>
       _syncPendingLogs();
       _evaluateNutritionReminder();
       _checkRecoveryMode();
+      if (_currentTab == MainTab.log) {
+        unawaited(_ensureBaselineReady());
+      }
     } else if (state == AppLifecycleState.hidden ||
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
@@ -190,6 +215,11 @@ class _MainNavigationState extends State<MainNavigation>
   }
 
   void _selectTab(MainTab tab) {
+    if (tab == MainTab.log) {
+      unawaited(_selectLogTab());
+      return;
+    }
+
     if (tab == _currentTab) return;
 
     setState(() {
@@ -210,11 +240,92 @@ class _MainNavigationState extends State<MainNavigation>
   }
 
   void _openLogPage() {
-    setState(() {
-      _currentTab = MainTab.log;
-    });
+    _selectTab(MainTab.log);
+  }
 
+  Future<void> _selectLogTab() async {
+    if (_currentTab == MainTab.log) return;
+    final baselineReady = await _ensureBaselineReady();
+    if (!mounted || !baselineReady) return;
+
+    setState(() => _currentTab = MainTab.log);
+    _tutorialOverlayEntry?.markNeedsBuild();
     _syncPendingLogs();
+  }
+
+  Future<bool> _ensureBaselineReady() async {
+    if (_isTutorialActive || _isBaselineRefreshRouteOpen) {
+      return !_isBaselineRefreshRouteOpen;
+    }
+    if (_isCheckingBaselineRefresh || !mounted) return false;
+
+    _isCheckingBaselineRefresh = true;
+    try {
+      final status =
+          await (widget.checkInStatusLoader?.call() ??
+              LogApi.fetchCheckInStatus());
+      if (!mounted || !status.requiresBaselineRefresh) return true;
+
+      _isBaselineRefreshRouteOpen = true;
+      final username = widget.usernameLoader != null
+          ? await widget.usernameLoader!()
+          : (await UserSessionController.instance.load()).username ?? 'there';
+      if (!mounted) return false;
+
+      final refreshed = await Navigator.of(context, rootNavigator: true)
+          .push<bool>(
+            MaterialPageRoute(
+              fullscreenDialog: true,
+              builder: (_) => WelcomeBackBaselinePage(
+                username: username,
+                onSave: _saveBaselineRefresh,
+              ),
+            ),
+          );
+      if (refreshed != true && mounted && _currentTab == MainTab.log) {
+        setState(() => _currentTab = MainTab.home);
+      }
+      return refreshed == true;
+    } catch (_) {
+      // Offline status retains the current local flow. The server remains the
+      // authority and will keep queued check-ins pending until refresh.
+      return true;
+    } finally {
+      _isCheckingBaselineRefresh = false;
+      _isBaselineRefreshRouteOpen = false;
+    }
+  }
+
+  Future<bool> _saveBaselineRefresh(List<Map<String, dynamic>> answers) async {
+    final injectedSaver = widget.baselineRefreshSaver;
+    if (injectedSaver != null) return injectedSaver(answers);
+
+    final session = await UserSessionController.instance.load();
+    final userId = session.userId;
+    if (userId == null) return false;
+
+    try {
+      final response = await OnboardingApi.updateBurnoutBaseline(
+        userId: userId,
+        burnoutAnswers: answers,
+      );
+      final profile = response['profile'];
+      if (profile is Map) {
+        await OnboardingService.saveDefaultsFromProfile(
+          Map<String, dynamic>.from(profile),
+        );
+      }
+      final latestScore = response['latest_score'];
+      await BurnoutScoreApi.markInputsChanged(
+        latestScore: latestScore is Map
+            ? Map<String, dynamic>.from(latestScore)
+            : null,
+        clearLatestScore: latestScore is! Map,
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> _syncPendingLogs() async {

@@ -7,6 +7,8 @@ import 'package:vitalysync/features/auth/presentation/pages/auth_start_page.dart
 import 'package:vitalysync/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:vitalysync/features/home/presentation/pages/home_page.dart';
 import 'package:vitalysync/features/log/presentation/pages/log_page.dart';
+import 'package:vitalysync/features/log/data/check_in_models.dart';
+import 'package:vitalysync/features/log/presentation/pages/welcome_back_baseline_page.dart';
 import 'package:vitalysync/features/nutrition/presentation/pages/nutrition_page.dart';
 import 'package:vitalysync/features/profile/presentation/pages/profile_page.dart';
 import 'package:vitalysync/features/settings/presentation/pages/settings_page.dart';
@@ -309,6 +311,42 @@ void main() {
 
     await disposeNavigation(tester);
   });
+
+  testWidgets(
+    'log navigation gates a thirty-day return behind baseline refresh',
+    (tester) async {
+      configureLoggedInSession();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MainNavigation(
+            checkInStatusLoader: () async => const CheckInStatus(
+              requiredMode: CheckInMode.daily,
+              hasTodayLog: false,
+              schedule: CheckInSchedule(),
+              requiresBaselineRefresh: true,
+              baselineRefreshReason: 'thirty_day_return',
+              lastLoggedDate: '2026-06-28',
+              daysSinceLastLog: 30,
+            ),
+            usernameLoader: () async => 'Mika',
+            baselineRefreshSaver: (_) async => true,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 800));
+      expect(controller(tester).currentTab, MainTab.home);
+
+      await tester.tap(find.byKey(const ValueKey('main-nav-log')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.byType(WelcomeBackBaselinePage), findsOneWidget);
+      expect(find.text('Welcome back, Mika'), findsOneWidget);
+
+      await disposeNavigation(tester);
+    },
+  );
 }
 
 class _BottomNavHarness extends StatefulWidget {

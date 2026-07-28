@@ -88,8 +88,9 @@ class LogPageController extends ValueNotifier<LogNavigationState> {
 
 class LogPage extends StatefulWidget {
   final LogPageController? controller;
+  final VoidCallback? onBaselineRefreshRequired;
 
-  const LogPage({super.key, this.controller});
+  const LogPage({super.key, this.controller, this.onBaselineRefreshRequired});
 
   @override
   State<LogPage> createState() => _LogPageState();
@@ -371,6 +372,16 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       _publishNavigationState();
       await _loadLogState(showLoader: false);
       if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } on BaselineRefreshRequiredException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        isSaving = false;
+      });
+      _publishNavigationState();
+      widget.onBaselineRefreshRequired?.call();
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(error.message)));

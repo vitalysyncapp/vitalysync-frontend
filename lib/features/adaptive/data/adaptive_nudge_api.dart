@@ -36,6 +36,28 @@ class AdaptiveNudgeRecommendation {
     required this.metadata,
   });
 
+  String get userFacingSeverity {
+    final value = (severity ?? priority).trim().toLowerCase().replaceAll(
+      RegExp(r'[-\s]+'),
+      '_',
+    );
+    switch (value) {
+      case 'critical':
+      case 'urgent':
+      case 'needs_support':
+        return 'needs support';
+      case 'high_risk':
+      case 'high':
+        return 'high';
+      case 'watch':
+      case 'moderate':
+      case 'medium':
+        return 'watch';
+      default:
+        return 'steady';
+    }
+  }
+
   factory AdaptiveNudgeRecommendation.fromJson(Map<String, dynamic> json) {
     return AdaptiveNudgeRecommendation(
       nudgeEventId: _parseNullableInt(json['nudge_event_id']),
@@ -574,7 +596,9 @@ class AdaptiveNudgeApi {
   static Future<AdaptiveNudgeResponse> _fallbackResponse() async {
     final username = await _storedUsername();
     final displayName = username == null ? null : _displayName(username);
-    final prefix = displayName == null ? '' : '$displayName, ';
+    final message = displayName == null
+        ? 'Keep one recovery habit simple today.'
+        : '$displayName, keep one recovery habit simple today.';
     final metadata = <String, dynamic>{
       'local_fallback': true,
       'ai_fallback': true,
@@ -590,13 +614,12 @@ class AdaptiveNudgeApi {
           nudgeType: 'steady_routine',
           priority: 'low',
           title: 'Keep today steady',
-          message:
-              '${prefix}use one small reset today: hydrate, pause briefly, and keep a clear stop time.',
-          actionLabel: 'Continue',
+          message: message,
+          actionLabel: 'Keep it simple',
           triggerReason: 'Local fallback',
           recommendedFocus: 'maintenance',
           patternType: null,
-          severity: 'low',
+          severity: 'steady',
           confidenceScore: 0,
           metadata: metadata,
         ),

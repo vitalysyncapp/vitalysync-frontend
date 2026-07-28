@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 
 class SmartNudgeCard extends StatelessWidget {
   final String message;
+  final String severity;
 
-  const SmartNudgeCard({super.key, required this.message});
+  const SmartNudgeCard({
+    super.key,
+    required this.message,
+    this.severity = 'steady',
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -22,6 +27,7 @@ class SmartNudgeCard extends StatelessWidget {
           );
 
     final textColor = isDark ? Colors.white : const Color(0xFF3F2A00);
+    final userFacingSeverity = _userFacingSeverity(severity);
 
     return Container(
       width: double.infinity,
@@ -42,12 +48,33 @@ class SmartNudgeCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Today's smart nudge",
-            style: TextStyle(
-              fontSize: 12.5,
-              color: textColor.withValues(alpha: 0.85),
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  "Today's smart nudge",
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: textColor.withValues(alpha: 0.85),
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: textColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  _severityLabel(userFacingSeverity),
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Text(
@@ -62,5 +89,34 @@ class SmartNudgeCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _userFacingSeverity(String value) {
+    switch (value.trim().toLowerCase().replaceAll(RegExp(r'[-\s]+'), '_')) {
+      case 'critical':
+      case 'urgent':
+      case 'needs_support':
+        return 'needs support';
+      case 'high_risk':
+      case 'high':
+        return 'high';
+      case 'watch':
+      case 'moderate':
+      case 'medium':
+        return 'watch';
+      default:
+        return 'steady';
+    }
+  }
+
+  String _severityLabel(String value) {
+    return value
+        .split(' ')
+        .map(
+          (part) => part.isEmpty
+              ? part
+              : '${part[0].toUpperCase()}${part.substring(1)}',
+        )
+        .join(' ');
   }
 }

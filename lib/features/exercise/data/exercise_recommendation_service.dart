@@ -9,6 +9,7 @@ import '../../onboarding/services/onboarding_service.dart';
 import '../../../shared/offline/offline_cache_store.dart';
 import 'exercise_goal_api.dart';
 import 'exercise_goal_model.dart';
+import 'exercise_log_context_policy.dart';
 import 'exercise_recommendation_policy.dart';
 import 'exercise_recommendation_model.dart';
 
@@ -60,11 +61,30 @@ class ExerciseRecommendationService {
     final activity = ActivityService.instance.notifier.value.log;
     final burnoutSummary = await _safeBurnoutPatternSummary();
     final adaptiveNudges = await _safeAdaptiveNudges();
-    final latestLog = await _safeLatestLog();
+    final recoveryCheckIn = await _safeRecoveryCheckIn();
     final goalHistory = await _safeExerciseGoalHistory();
-    final latestSleep = LogApi.parseDouble(latestLog?['sleep_hours']);
-    final sleepHours = latestSleep > 0 ? latestSleep : defaults.sleepHours();
+    final parsedSleepHours = LogApi.parseDouble(
+      recoveryCheckIn?['sleep_hours'],
+    );
+    final sleepHours = parsedSleepHours > 0 ? parsedSleepHours : null;
+    final parsedSleepQuality = LogApi.parseInt(
+      recoveryCheckIn?['sleep_quality'],
+      fallback: -1,
+    );
+    final sleepQuality = parsedSleepQuality >= 0 && parsedSleepQuality <= 4
+        ? parsedSleepQuality
+        : null;
+    final energyLevel = LogApi.parseEnergyLevel(
+      recoveryCheckIn?['energy_level'],
+    );
+    final workloadHoursBand = LogApi.normalizeWorkloadHoursBand(
+      recoveryCheckIn?['workload_hours_band'],
+    );
     final recommendedFocus = _recommendedFocus(
+      burnoutSummary: burnoutSummary,
+      adaptiveNudges: adaptiveNudges,
+    );
+    final burnoutSeverity = _burnoutSeverity(
       burnoutSummary: burnoutSummary,
       adaptiveNudges: adaptiveNudges,
     );
@@ -82,9 +102,7 @@ class ExerciseRecommendationService {
         ? weatherCondition.reason
         : 'Air quality is elevated; indoor movement is safer today.';
     final needsRecovery =
-        sleepHours < 6 ||
-        highStress ||
-        _focusSuggestsRecovery(recommendedFocus);
+        highStress || _focusSuggestsRecovery(recommendedFocus);
     final steps = activity.steps;
 
     final policyResult = ExerciseRecommendationPolicy.buildRecommendations(
@@ -93,6 +111,12 @@ class ExerciseRecommendationService {
         exerciseGoalDays: defaults.exerciseGoalDays,
         steps: steps,
         needsRecovery: needsRecovery,
+        energyLevel: energyLevel,
+        sleepHours: sleepHours,
+        sleepQuality: sleepQuality,
+        workloadHoursBand: workloadHoursBand,
+        burnoutPatternFocus: recommendedFocus,
+        burnoutPatternSeverity: burnoutSeverity,
         outdoorSafe: weatherCondition.isOutdoorSafe,
         gentleOutdoor: weatherCondition.needsGentleOutdoor,
         airSafe: airSafe,
@@ -163,11 +187,36 @@ class ExerciseRecommendationService {
     }
   }
 
-  Future<Map<String, dynamic>?> _safeLatestLog() async {
+  Future<Map<String, dynamic>?> _safeRecoveryCheckIn() async {
+    try {
+      final status = await LogApi.fetchCheckInStatus();
+      if (status.daily != null) {
+        return status.daily;
+      }
+    } catch (_) {
+      // Fall through to the today-log cache and API path.
+    }
+
+    try {
+      final response = await LogApi.fetchTodayLog();
+      final log = response['log'];
+      if (log is Map) {
+        return Map<String, dynamic>.from(log);
+      }
+    } catch (_) {
+      // Fall through to the bounded recent-log fallback.
+    }
+
     try {
       final response = await LogApi.fetchLatestLog();
       final log = response['log'];
-      return log is Map ? Map<String, dynamic>.from(log) : null;
+      if (log is! Map) {
+        return null;
+      }
+
+      return ExerciseLogContextPolicy.selectRecentFallback(
+        Map<String, dynamic>.from(log),
+      );
     } catch (_) {
       return null;
     }
@@ -269,6 +318,49 @@ class ExerciseRecommendationService {
     }
 
     return burnoutSummary?.adaptiveState.recommendedFocus.toLowerCase() ?? '';
+  }
+
+  String _burnoutSeverity({
+    required BurnoutPatternSummary? burnoutSummary,
+    required List<AdaptiveNudgeRecommendation> adaptiveNudges,
+  }) {
+    final values = <String>[
+      ...adaptiveNudges.map((nudge) => nudge.userFacingSeverity),
+      ...?burnoutSummary?.patterns.map((pattern) => pattern.severity),
+      if (burnoutSummary?.adaptiveState.state != null)
+        burnoutSummary!.adaptiveState.state,
+      if (burnoutSummary?.adaptiveState.priority != null)
+        burnoutSummary!.adaptiveState.priority,
+      if (burnoutSummary?.latestScore?.riskLevel != null)
+        burnoutSummary!.latestScore!.riskLevel,
+    ];
+
+    var strongest = 'steady';
+    var strongestRank = 0;
+    for (final value in values) {
+      final normalized = value.trim().toLowerCase().replaceAll(
+        RegExp(r'[-\s]+'),
+        '_',
+      );
+      final rank = switch (normalized) {
+        'critical' || 'urgent' || 'needs_support' => 3,
+        'high' || 'high_risk' => 2,
+        'moderate' || 'medium' || 'watch' => 1,
+        _ => 0,
+      };
+      if (rank > strongestRank) {
+        strongestRank = rank;
+        strongest = rank == 3
+            ? 'needs support'
+            : rank == 2
+            ? 'high'
+            : rank == 1
+            ? 'watch'
+            : 'steady';
+      }
+    }
+
+    return strongest;
   }
 
   bool _focusSuggestsRecovery(String focus) {

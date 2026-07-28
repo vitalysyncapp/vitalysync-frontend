@@ -15,10 +15,16 @@ class RetakeBaselineQuestionnairePage extends StatefulWidget {
     super.key,
     required this.initialAnswers,
     required this.onSave,
+    this.pageTitle = 'Retake baseline',
+    this.successTitle = 'Baseline updated',
+    this.successMessage = 'Your dimension baseline was saved successfully.',
   });
 
   final Map<String, int> initialAnswers;
   final RetakeBaselineSaveCallback onSave;
+  final String pageTitle;
+  final String successTitle;
+  final String successMessage;
 
   @override
   State<RetakeBaselineQuestionnairePage> createState() =>
@@ -107,8 +113,8 @@ class _RetakeBaselineQuestionnairePageState
 
       await ValidationDialog.show(
         context,
-        title: 'Baseline updated',
-        message: 'Your dimension baseline was saved successfully.',
+        title: widget.successTitle,
+        message: widget.successMessage,
         type: ValidationDialogType.success,
       );
 
@@ -159,7 +165,7 @@ class _RetakeBaselineQuestionnairePageState
               onPressed: _isSubmitting ? null : () => Navigator.pop(context),
             ),
             title: Text(
-              'Retake baseline',
+              widget.pageTitle,
               style: TextStyle(
                 color: pagePrimaryTextColor(context),
                 fontSize: 22,

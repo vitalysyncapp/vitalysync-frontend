@@ -6,6 +6,8 @@ import 'package:vitalysync/features/exercise/data/exercise_recommendation_model.
 import 'package:vitalysync/features/nutrition/data/nutrition_analyzer.dart';
 import 'package:vitalysync/features/nutrition/data/nutrition_api.dart';
 import 'package:vitalysync/features/nutrition/data/nutrition_coach.dart';
+import 'package:vitalysync/features/nutrition/data/nutrition_feedback_preferences.dart';
+import 'package:vitalysync/features/nutrition/data/nutrition_insight_store.dart';
 import 'package:vitalysync/shared/assistant/floating_smart_nudge_assistant.dart';
 
 import 'test_helpers.dart';
@@ -17,6 +19,7 @@ void main() {
 
   setUpAll(configureTestAssets);
   tearDownAll(clearTestAssets);
+  setUp(() => SharedPreferences.setMockInitialValues({}));
 
   NutritionAnalysis analysis({
     double calories = 500,
@@ -69,6 +72,28 @@ void main() {
     return NutritionAnalyzer.analyze(
       days: [NutritionDaySnapshot(date: now, summary: summary)],
       now: now,
+    );
+  }
+
+  NutritionDaySnapshot snapshot({
+    required DateTime date,
+    double calories = 500,
+    double protein = 25,
+    double carbs = 55,
+    double fat = 18,
+    String foodName = 'rice tomato',
+    bool noMeals = false,
+  }) {
+    return NutritionDaySnapshot(
+      date: date,
+      summary: analysis(
+        calories: calories,
+        protein: protein,
+        carbs: carbs,
+        fat: fat,
+        foodName: foodName,
+        noMeals: noMeals,
+      ).today.summary,
     );
   }
 
@@ -139,7 +164,8 @@ void main() {
     );
 
     expect(insight?.metadata['macro_focus'], 'complete_meal');
-    expect(insight?.message, contains('No meals are logged yet'));
+    expect(insight?.message, contains('No meals are logged today'));
+    expect(insight?.metadata['recommended_foods'], isEmpty);
   });
 
   test('macro nudge suppresses dismissed focus when another option exists', () {
@@ -150,6 +176,95 @@ void main() {
     );
 
     expect(insight?.metadata['macro_focus'], isNot('protein'));
+  });
+
+  test('macro nudge uses a repeated seven-day meal pattern', () {
+    final repeatedAnalysis = NutritionAnalyzer.analyze(
+      days: [
+        snapshot(date: now.subtract(const Duration(days: 3)), protein: 7),
+        snapshot(date: now.subtract(const Duration(days: 2)), protein: 8),
+        snapshot(date: now.subtract(const Duration(days: 1)), protein: 9),
+        snapshot(date: now, noMeals: true),
+      ],
+      now: now,
+    );
+    final insight = NutritionMacroNudgeBuilder.bestInsight(
+      analysis: repeatedAnalysis,
+      now: now,
+    );
+
+    expect(repeatedAnalysis.lowProteinDays, 3);
+    expect(insight?.metadata['pattern_type'], 'repeatedLowProtein');
+    expect(insight?.message, contains('3 recent logged days'));
+  });
+
+  test('food-group dismissal and accepted focus affect local ranking', () {
+    final input = analysis(protein: 5, carbs: 45, fat: 15);
+    final dismissed = NutritionMacroNudgeBuilder.bestInsight(
+      analysis: input,
+      feedback: const NutritionFeedbackPreferences(
+        dismissedFoodGroups: {'protein'},
+      ),
+      now: now,
+    );
+    final accepted = NutritionMacroNudgeBuilder.bestInsight(
+      analysis: input,
+      feedback: const NutritionFeedbackPreferences(
+        acceptedMacroFocuses: {'produce'},
+        acceptedFoodGroups: {'produce'},
+        acceptedNudgeTypes: {'food_group'},
+      ),
+      now: now,
+    );
+
+    expect(dismissed?.metadata['food_group'], isNot('protein'));
+    expect(accepted?.metadata['macro_focus'], 'produce');
+  });
+
+  test(
+    'nutrition feedback store retains adaptive dimensions during cooldown',
+    () async {
+      await NutritionInsightStore.instance.saveFeedbackStatus(
+        'protein-insight',
+        'dismissed',
+        metadata: const {
+          'macro_focus': 'protein',
+          'food_group': 'protein',
+          'nutrition_nudge_type': 'macro_balance',
+        },
+        now: now,
+      );
+
+      final feedback = await NutritionInsightStore.instance
+          .readRecentFeedbackPreferences(
+            now: now.add(const Duration(hours: 24)),
+          );
+
+      expect(feedback.dismissedMacroFocuses, contains('protein'));
+      expect(feedback.dismissedFoodGroups, contains('protein'));
+      expect(feedback.dismissedNudgeTypes, contains('macro_balance'));
+    },
+  );
+
+  test('balanced day receives positive reinforcement with safe wording', () {
+    final insight = NutritionMacroNudgeBuilder.bestInsight(
+      analysis: analysis(
+        protein: 25,
+        carbs: 55,
+        fat: 18,
+        foodName: 'chicken rice tomato avocado',
+      ),
+      now: now,
+    );
+
+    expect(insight?.metadata['macro_focus'], 'balanced_plate');
+    expect(insight?.message, contains('balanced mix'));
+    expect(
+      insight?.message.toLowerCase(),
+      isNot(
+        matches(RegExp(r'calorie target|kcal|diet|weight loss|diagnos|treat')),
+      ),
+    );
   });
 
   testWidgets('assistant dialog nudge cards keep long text visible', (

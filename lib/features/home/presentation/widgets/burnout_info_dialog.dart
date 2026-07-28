@@ -79,7 +79,9 @@ class BurnoutInfoDialog extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               _Pill(
-                                label: '${_humanize(_riskLevel)} risk',
+                                label: _riskLevel == 'critical'
+                                    ? 'Needs support'
+                                    : '${_humanize(_riskLevel)} risk',
                                 color: _riskColor(_riskLevel),
                               ),
                               const SizedBox(height: 8),
@@ -96,6 +98,13 @@ class BurnoutInfoDialog extends StatelessWidget {
                           color: const Color(0xFF16A34A),
                           title: 'Confidence score',
                           child: _buildConfidence(context),
+                        ),
+                        const SizedBox(height: 10),
+                        _InfoSection(
+                          icon: Icons.manage_search_rounded,
+                          color: const Color(0xFF4F46E5),
+                          title: 'Evidence basis',
+                          child: _buildEvidenceBasis(context),
                         ),
                         const SizedBox(height: 10),
                         _InfoSection(
@@ -326,6 +335,55 @@ class BurnoutInfoDialog extends StatelessWidget {
     );
   }
 
+  Widget _buildEvidenceBasis(BuildContext context) {
+    final snapshot = latestScore;
+    if (snapshot == null) {
+      return Text(
+        'Evidence details appear after the first daily score is generated.',
+        style: _bodyStyle(context),
+      );
+    }
+
+    final evidence = snapshot.evidenceBasis;
+    final baselineWeight = evidence.baselineWeight;
+    final coverage = evidence.logCoveragePercent;
+    final window = evidence.windowUsed?.replaceAll('_', ' ');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            if (window != null && window.isNotEmpty)
+              _Pill(
+                label: '${_humanize(window)} window',
+                color: const Color(0xFF4F46E5),
+              ),
+            if (baselineWeight != null)
+              _Pill(
+                label: '${(baselineWeight * 100).round()}% baseline',
+                color: const Color(0xFF0F766E),
+              ),
+            if (coverage != null)
+              _Pill(
+                label: '${coverage.round()}% log coverage',
+                color: const Color(0xFF2563EB),
+              ),
+            _Pill(
+              label:
+                  '${evidence.weeklyPulseCountSinceEpoch} weekly pulse${evidence.weeklyPulseCountSinceEpoch == 1 ? '' : 's'}',
+              color: const Color(0xFF7C3AED),
+            ),
+          ],
+        ),
+        const SizedBox(height: 9),
+        Text(snapshot.explanationNote, style: _bodyStyle(context)),
+      ],
+    );
+  }
+
   Widget _buildMissingData(BuildContext context) {
     final fields = latestScore?.missingFields ?? const <String>[];
 
@@ -468,7 +526,7 @@ class BurnoutInfoDialog extends StatelessWidget {
       case 'very_high':
         return 'Baseline signals are very elevated. Prioritize support, recovery time, and a lighter load where possible.';
       case 'critical':
-        return 'Risk signals are very elevated. Treat rest and support as urgent, and consider professional help if distress feels hard to manage.';
+        return 'Risk signals are very elevated. Lower pressure where possible and consider trusted or qualified support if concerns persist.';
       default:
         return 'VitalySync is still collecting enough context to classify this score clearly.';
     }

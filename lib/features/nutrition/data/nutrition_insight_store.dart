@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'nutrition_coach.dart';
+import 'nutrition_feedback_preferences.dart';
 
 class NutritionInsightStore {
   NutritionInsightStore._();
@@ -170,15 +171,79 @@ class NutritionInsightStore {
     return history[insightId]?['status']?.toString();
   }
 
-  Future<void> saveFeedbackStatus(String insightId, String status) async {
+  Future<void> saveFeedbackStatus(
+    String insightId,
+    String status, {
+    Map<String, dynamic> metadata = const <String, dynamic>{},
+    DateTime? now,
+  }) async {
     final history = await _readFeedbackHistory();
     history[insightId] = {
       'status': status,
-      'updated_at': DateTime.now().toIso8601String(),
+      'updated_at': (now ?? DateTime.now()).toIso8601String(),
+      'metadata': {
+        if (metadata['macro_focus'] != null)
+          'macro_focus': metadata['macro_focus'],
+        if (metadata['food_group'] != null)
+          'food_group': metadata['food_group'],
+        if (metadata['nutrition_nudge_type'] != null)
+          'nutrition_nudge_type': metadata['nutrition_nudge_type'],
+      },
     };
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_insightFeedbackKey, jsonEncode(history));
+  }
+
+  Future<NutritionFeedbackPreferences> readRecentFeedbackPreferences({
+    DateTime? now,
+  }) async {
+    final current = now ?? DateTime.now();
+    final history = await _readFeedbackHistory();
+    final dismissedMacroFocuses = <String>{};
+    final dismissedFoodGroups = <String>{};
+    final dismissedNudgeTypes = <String>{};
+    final acceptedMacroFocuses = <String>{};
+    final acceptedFoodGroups = <String>{};
+    final acceptedNudgeTypes = <String>{};
+
+    for (final event in history.values) {
+      final updatedAt = DateTime.tryParse(
+        event['updated_at']?.toString() ?? '',
+      );
+      if (updatedAt == null) {
+        continue;
+      }
+      final age = current.difference(updatedAt);
+      if (age.isNegative) {
+        continue;
+      }
+
+      final metadata = event['metadata'] is Map
+          ? Map<String, dynamic>.from(event['metadata'] as Map)
+          : const <String, dynamic>{};
+      final status = event['status']?.toString();
+      if (status == 'dismissed' && age <= const Duration(hours: 48)) {
+        _addDimension(dismissedMacroFocuses, metadata['macro_focus']);
+        _addDimension(dismissedFoodGroups, metadata['food_group']);
+        _addDimension(dismissedNudgeTypes, metadata['nutrition_nudge_type']);
+      }
+      if ((status == 'accepted' || status == 'completed') &&
+          age <= const Duration(days: 14)) {
+        _addDimension(acceptedMacroFocuses, metadata['macro_focus']);
+        _addDimension(acceptedFoodGroups, metadata['food_group']);
+        _addDimension(acceptedNudgeTypes, metadata['nutrition_nudge_type']);
+      }
+    }
+
+    return NutritionFeedbackPreferences(
+      dismissedMacroFocuses: dismissedMacroFocuses,
+      dismissedFoodGroups: dismissedFoodGroups,
+      dismissedNudgeTypes: dismissedNudgeTypes,
+      acceptedMacroFocuses: acceptedMacroFocuses,
+      acceptedFoodGroups: acceptedFoodGroups,
+      acceptedNudgeTypes: acceptedNudgeTypes,
+    );
   }
 
   Future<Map<String, DateTime>> _readMessageHistory() async {
@@ -233,6 +298,13 @@ class NutritionInsightStore {
 
   String _normalizeMessage(String message) {
     return message.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+  }
+
+  void _addDimension(Set<String> target, Object? value) {
+    final normalized = value?.toString().trim() ?? '';
+    if (normalized.isNotEmpty) {
+      target.add(normalized);
+    }
   }
 
   bool _isFreshAssistantCache(

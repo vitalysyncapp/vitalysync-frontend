@@ -138,7 +138,10 @@ class OnboardingApi {
     final response = await http.put(
       Uri.parse(ApiConfig.onboarding('/$userId/burnout-baseline')),
       headers: await ApiConfig.jsonHeaders(),
-      body: jsonEncode({'burnout_answers': burnoutAnswers}),
+      body: jsonEncode({
+        'burnout_answers': burnoutAnswers,
+        'baseline_date': DateTime.now().toIso8601String().split('T').first,
+      }),
     );
 
     final data = _decodeMap(response);

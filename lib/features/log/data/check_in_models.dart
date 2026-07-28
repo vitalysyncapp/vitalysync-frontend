@@ -296,6 +296,10 @@ class CheckInStatus {
   final Map<String, dynamic>? weekly;
   final bool isOffline;
   final int pendingSyncCount;
+  final bool requiresBaselineRefresh;
+  final String? baselineRefreshReason;
+  final String? lastLoggedDate;
+  final int? daysSinceLastLog;
 
   const CheckInStatus({
     required this.requiredMode,
@@ -305,9 +309,14 @@ class CheckInStatus {
     this.weekly,
     this.isOffline = false,
     this.pendingSyncCount = 0,
+    this.requiresBaselineRefresh = false,
+    this.baselineRefreshReason,
+    this.lastLoggedDate,
+    this.daysSinceLastLog,
   });
 
   bool get isComplete =>
+      !requiresBaselineRefresh &&
       hasTodayLog &&
       (requiredMode == CheckInMode.daily || schedule.completedToday);
 
@@ -357,6 +366,10 @@ class CheckInStatus {
       weekly: weekly,
       isOffline: isOffline,
       pendingSyncCount: pendingSyncCount,
+      requiresBaselineRefresh: json['requires_baseline_refresh'] == true,
+      baselineRefreshReason: json['baseline_refresh_reason']?.toString(),
+      lastLoggedDate: json['last_logged_date']?.toString(),
+      daysSinceLastLog: _optionalInt(json['days_since_last_log']),
     );
   }
 }

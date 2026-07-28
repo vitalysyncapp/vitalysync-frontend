@@ -1,5 +1,6 @@
 import 'exercise_goal_model.dart';
 import 'exercise_recommendation_model.dart';
+import 'exercise_recovery_assessment.dart';
 
 enum ExerciseEffortLevel { restorative, light, moderate, active, veryActive }
 
@@ -54,6 +55,12 @@ class ExerciseRecommendationPolicyContext {
   final String? exerciseGoalDays;
   final int steps;
   final bool needsRecovery;
+  final int? energyLevel;
+  final double? sleepHours;
+  final int? sleepQuality;
+  final String? workloadHoursBand;
+  final String? burnoutPatternFocus;
+  final String? burnoutPatternSeverity;
   final bool outdoorSafe;
   final bool gentleOutdoor;
   final bool airSafe;
@@ -65,6 +72,12 @@ class ExerciseRecommendationPolicyContext {
     required this.exerciseGoalDays,
     required this.steps,
     required this.needsRecovery,
+    this.energyLevel,
+    this.sleepHours,
+    this.sleepQuality,
+    this.workloadHoursBand,
+    this.burnoutPatternFocus,
+    this.burnoutPatternSeverity,
     required this.outdoorSafe,
     required this.gentleOutdoor,
     required this.airSafe,
@@ -146,6 +159,8 @@ class ExerciseRecommendationPolicy {
     required String? exerciseGoalDays,
     required ExerciseGoalHistorySummary history,
     required bool needsRecovery,
+    ExerciseRecoveryAssessment recoveryAssessment =
+        ExerciseRecoveryAssessment.none,
   }) {
     final bounds = _lifestyleBounds(lifestyleType);
     final completedBumps = history.completedStreak ~/ 7;
@@ -160,23 +175,31 @@ class ExerciseRecommendationPolicy {
     var targetIndex = bounds.startLevel + completedBumps - missedDrops;
     targetIndex = _clampInt(targetIndex, bounds.minLevel, maxLevel);
 
-    if (needsRecovery) {
-      final recoveryCap = bounds.startLevel >= 3 ? 2 : 1;
-      targetIndex = _clampInt(targetIndex, bounds.minLevel, recoveryCap);
+    if (recoveryAssessment.needsRestorative) {
+      targetIndex = ExerciseEffortLevel.restorative.index;
+    } else if (recoveryAssessment.hasPoorRecovery || needsRecovery) {
+      targetIndex = _clampInt(
+        targetIndex,
+        bounds.minLevel,
+        ExerciseEffortLevel.light.index,
+      );
     }
+
+    final targetLevel = _levelFromIndex(targetIndex);
 
     final note = _planNote(
       bounds: bounds,
-      history: history,
       completedBumps: completedBumps,
       missedDrops: missedDrops,
       preferenceMax: preferenceMax,
       needsRecovery: needsRecovery,
+      recoveryAssessment: recoveryAssessment,
+      targetLevel: targetLevel,
     );
 
     return ExerciseEffortPlan(
       baselineLevel: _levelFromIndex(bounds.startLevel),
-      targetLevel: _levelFromIndex(targetIndex),
+      targetLevel: targetLevel,
       lifestyleLabel: bounds.label,
       note: note,
     );
@@ -185,16 +208,29 @@ class ExerciseRecommendationPolicy {
   static ExerciseRecommendationPolicyResult buildRecommendations(
     ExerciseRecommendationPolicyContext context,
   ) {
+    final recoveryAssessment = ExerciseRecoveryAssessment.evaluate(
+      needsRecovery: context.needsRecovery,
+      energyLevel: context.energyLevel,
+      sleepHours: context.sleepHours,
+      sleepQuality: context.sleepQuality,
+      workloadHoursBand: context.workloadHoursBand,
+      burnoutPatternFocus: context.burnoutPatternFocus,
+      burnoutPatternSeverity: context.burnoutPatternSeverity,
+    );
     final plan = resolveEffortPlan(
       lifestyleType: context.lifestyleType,
       exerciseGoalDays: context.exerciseGoalDays,
       history: context.history,
       needsRecovery: context.needsRecovery,
+      recoveryAssessment: recoveryAssessment,
     );
     final indoorOnly = !context.outdoorSafe || !context.airSafe;
-    final reason = indoorOnly || context.gentleOutdoor
-        ? '${plan.note} ${context.weatherReason}'
-        : plan.note;
+    final reason = _recommendationReason(
+      context: context,
+      plan: plan,
+      recoveryAssessment: recoveryAssessment,
+      indoorOnly: indoorOnly,
+    );
     final candidates = indoorOnly
         ? _indoorRecommendations(plan.targetLevel, reason)
         : context.gentleOutdoor
@@ -202,14 +238,15 @@ class ExerciseRecommendationPolicy {
         : _outdoorRecommendations(plan.targetLevel, reason);
 
     if (context.steps >= 9000 && plan.targetLevel.index >= 2) {
-      candidates.add(
+      candidates.insert(
+        0,
         _activity(
           name: 'Recovery stretching',
           category: 'stretching',
           minutes: 8,
           method: 'manual',
           reason:
-              '${plan.note} You already have many steps today, so recovery keeps the plan sustainable.',
+              'Your step count is already high, so a short recovery option fits today.',
         ),
       );
     }
@@ -232,7 +269,7 @@ class ExerciseRecommendationPolicy {
             category: 'breathing',
             minutes: 5,
             method: 'manual',
-            reason: '$reason A low-load reset is enough for today.',
+            reason: reason,
           ),
           _activity(
             name: '500 m walk',
@@ -240,21 +277,21 @@ class ExerciseRecommendationPolicy {
             distanceMeters: 500,
             minutes: 7,
             method: 'distance',
-            reason: '$reason A tiny walk keeps momentum without pressure.',
+            reason: reason,
           ),
           _activity(
             name: 'Chair mobility',
             category: 'mobility',
             minutes: 6,
             method: 'manual',
-            reason: '$reason Gentle joint movement fits a recovery day.',
+            reason: reason,
           ),
           _activity(
             name: 'Light stretching',
             category: 'stretching',
             minutes: 8,
             method: 'manual',
-            reason: '$reason Keeps your body loose without adding strain.',
+            reason: reason,
           ),
         ];
       case ExerciseEffortLevel.light:
@@ -265,22 +302,21 @@ class ExerciseRecommendationPolicy {
             distanceMeters: 800,
             minutes: 10,
             method: 'distance',
-            reason: '$reason Light movement is the best first step.',
+            reason: reason,
           ),
           _activity(
             name: 'Light stretching',
             category: 'stretching',
             minutes: 10,
             method: 'manual',
-            reason: '$reason A simple mobility reset supports consistency.',
+            reason: reason,
           ),
           _activity(
             name: 'Gentle yoga',
             category: 'yoga',
             minutes: 12,
             method: 'manual',
-            reason:
-                '$reason Low-impact movement keeps the routine approachable.',
+            reason: reason,
           ),
           _activity(
             name: 'Beginner bodyweight',
@@ -288,7 +324,7 @@ class ExerciseRecommendationPolicy {
             minutes: 8,
             reps: 12,
             method: 'manual',
-            reason: '$reason A short strength primer without overdoing it.',
+            reason: reason,
           ),
         ];
       case ExerciseEffortLevel.moderate:
@@ -299,7 +335,7 @@ class ExerciseRecommendationPolicy {
             distanceMeters: 1600,
             minutes: 20,
             method: 'distance',
-            reason: '$reason This adds moderate cardio without a big jump.',
+            reason: reason,
           ),
           _activity(
             name: 'Easy jog',
@@ -307,7 +343,7 @@ class ExerciseRecommendationPolicy {
             distanceMeters: 1200,
             minutes: 12,
             method: 'distance',
-            reason: '$reason A controlled jog gently raises intensity.',
+            reason: reason,
           ),
           _activity(
             name: 'Bodyweight circuit',
@@ -315,14 +351,14 @@ class ExerciseRecommendationPolicy {
             minutes: 15,
             reps: 30,
             method: 'manual',
-            reason: '$reason A compact strength session fits moderate effort.',
+            reason: reason,
           ),
           _activity(
             name: 'Yoga flow',
             category: 'yoga',
             minutes: 15,
             method: 'manual',
-            reason: '$reason Mobility and balance keep the plan rounded.',
+            reason: reason,
           ),
         ];
       case ExerciseEffortLevel.active:
@@ -333,7 +369,7 @@ class ExerciseRecommendationPolicy {
             distanceMeters: 3000,
             minutes: 25,
             method: 'distance',
-            reason: '$reason A steady jog fits an active baseline.',
+            reason: reason,
           ),
           _activity(
             name: 'Strength circuit',
@@ -341,15 +377,14 @@ class ExerciseRecommendationPolicy {
             minutes: 25,
             reps: 60,
             method: 'manual',
-            reason: '$reason Strength work matches a frequent exercise rhythm.',
+            reason: reason,
           ),
           _activity(
             name: 'Jump rope intervals',
             category: 'cardio',
             minutes: 10,
             method: 'manual',
-            reason:
-                '$reason Short intervals add challenge without taking long.',
+            reason: reason,
           ),
           _activity(
             name: 'Push-up and squat sets',
@@ -357,7 +392,7 @@ class ExerciseRecommendationPolicy {
             minutes: 20,
             reps: 50,
             method: 'manual',
-            reason: '$reason Bodyweight volume fits active conditioning.',
+            reason: reason,
           ),
         ];
       case ExerciseEffortLevel.veryActive:
@@ -367,8 +402,7 @@ class ExerciseRecommendationPolicy {
             category: 'strength',
             minutes: 45,
             method: 'manual',
-            reason:
-                '$reason A full gym session fits your very active baseline.',
+            reason: reason,
           ),
           _activity(
             name: 'Long jog',
@@ -376,7 +410,7 @@ class ExerciseRecommendationPolicy {
             distanceMeters: 5000,
             minutes: 35,
             method: 'distance',
-            reason: '$reason Longer cardio matches high activity capacity.',
+            reason: reason,
           ),
           _activity(
             name: 'Run',
@@ -384,7 +418,7 @@ class ExerciseRecommendationPolicy {
             distanceMeters: 3000,
             minutes: 20,
             method: 'distance',
-            reason: '$reason A focused run keeps intensity high.',
+            reason: reason,
           ),
           _activity(
             name: 'Push-ups and jump rope',
@@ -392,15 +426,14 @@ class ExerciseRecommendationPolicy {
             minutes: 25,
             reps: 60,
             method: 'manual',
-            reason:
-                '$reason Bodyweight and rope work fit a very active routine.',
+            reason: reason,
           ),
           _activity(
             name: 'Jump rope',
             category: 'cardio',
             minutes: 15,
             method: 'manual',
-            reason: '$reason Conditioning work fits high daily activity.',
+            reason: reason,
           ),
         ];
     }
@@ -418,21 +451,21 @@ class ExerciseRecommendationPolicy {
             category: 'breathing',
             minutes: 5,
             method: 'manual',
-            reason: '$reason Stay indoors and keep effort restorative.',
+            reason: reason,
           ),
           _activity(
             name: 'Chair mobility',
             category: 'mobility',
             minutes: 6,
             method: 'manual',
-            reason: '$reason Gentle indoor mobility is the safer fit.',
+            reason: reason,
           ),
           _activity(
             name: 'Light stretching',
             category: 'stretching',
             minutes: 8,
             method: 'manual',
-            reason: '$reason Low-impact movement works well indoors.',
+            reason: reason,
           ),
         ];
       case ExerciseEffortLevel.light:
@@ -442,28 +475,28 @@ class ExerciseRecommendationPolicy {
             category: 'yoga',
             minutes: 12,
             method: 'manual',
-            reason: '$reason This keeps today light and weather-safe.',
+            reason: reason,
           ),
           _activity(
             name: 'Light stretching',
             category: 'stretching',
             minutes: 10,
             method: 'manual',
-            reason: '$reason A simple indoor reset protects consistency.',
+            reason: reason,
           ),
           _activity(
             name: 'Indoor walk',
             category: 'walking',
             minutes: 10,
             method: 'manual',
-            reason: '$reason Stay inside while still adding light movement.',
+            reason: reason,
           ),
           _activity(
             name: 'Breathing exercise',
             category: 'breathing',
             minutes: 5,
             method: 'manual',
-            reason: '$reason A safe option when conditions are not ideal.',
+            reason: reason,
           ),
         ];
       case ExerciseEffortLevel.moderate:
@@ -474,21 +507,21 @@ class ExerciseRecommendationPolicy {
             minutes: 15,
             reps: 30,
             method: 'manual',
-            reason: '$reason Moderate effort can stay indoors today.',
+            reason: reason,
           ),
           _activity(
             name: 'Yoga flow',
             category: 'yoga',
             minutes: 15,
             method: 'manual',
-            reason: '$reason Controlled indoor movement fits the conditions.',
+            reason: reason,
           ),
           _activity(
             name: 'Indoor cardio',
             category: 'cardio',
             minutes: 15,
             method: 'manual',
-            reason: '$reason Keeps cardio available without outdoor exposure.',
+            reason: reason,
           ),
           _activity(
             name: 'Core session',
@@ -496,7 +529,7 @@ class ExerciseRecommendationPolicy {
             minutes: 12,
             reps: 30,
             method: 'manual',
-            reason: '$reason A compact indoor strength option.',
+            reason: reason,
           ),
         ];
       case ExerciseEffortLevel.active:
@@ -507,14 +540,14 @@ class ExerciseRecommendationPolicy {
             minutes: 25,
             reps: 60,
             method: 'manual',
-            reason: '$reason Active training can stay indoors today.',
+            reason: reason,
           ),
           _activity(
             name: 'Jump rope intervals',
             category: 'cardio',
             minutes: 10,
             method: 'manual',
-            reason: '$reason Intensity stays high without going outside.',
+            reason: reason,
           ),
           _activity(
             name: 'Push-up and squat sets',
@@ -522,14 +555,14 @@ class ExerciseRecommendationPolicy {
             minutes: 20,
             reps: 50,
             method: 'manual',
-            reason: '$reason Bodyweight work fits an active indoor plan.',
+            reason: reason,
           ),
           _activity(
             name: 'Indoor cardio',
             category: 'cardio',
             minutes: 20,
             method: 'manual',
-            reason: '$reason Keeps the session active while avoiding weather.',
+            reason: reason,
           ),
         ];
       case ExerciseEffortLevel.veryActive:
@@ -539,14 +572,14 @@ class ExerciseRecommendationPolicy {
             category: 'strength',
             minutes: 45,
             method: 'manual',
-            reason: '$reason Gym training avoids poor outdoor conditions.',
+            reason: reason,
           ),
           _activity(
             name: 'Jump rope',
             category: 'cardio',
             minutes: 15,
             method: 'manual',
-            reason: '$reason Conditioning stays intense and indoor-friendly.',
+            reason: reason,
           ),
           _activity(
             name: 'Push-ups',
@@ -554,7 +587,7 @@ class ExerciseRecommendationPolicy {
             minutes: 20,
             reps: 60,
             method: 'manual',
-            reason: '$reason High-volume bodyweight work fits your baseline.',
+            reason: reason,
           ),
           _activity(
             name: 'Strength circuit',
@@ -562,7 +595,7 @@ class ExerciseRecommendationPolicy {
             minutes: 30,
             reps: 80,
             method: 'manual',
-            reason: '$reason A strong indoor session replaces outdoor cardio.',
+            reason: reason,
           ),
         ];
     }
@@ -588,7 +621,7 @@ class ExerciseRecommendationPolicy {
         distanceMeters: 1000,
         minutes: 12,
         method: 'distance',
-        reason: '$reason Outdoor movement should stay controlled today.',
+        reason: reason,
       ),
     );
     return recommendations;
@@ -611,7 +644,7 @@ class ExerciseRecommendationPolicy {
         targetMinutes: null,
         targetReps: null,
         completionMethod: 'none',
-        reason: 'Save an intentional rest day instead of skipping by accident.',
+        reason: 'Choosing rest today is a valid way to protect your recovery.',
       ),
     ];
   }
@@ -636,31 +669,79 @@ class ExerciseRecommendationPolicy {
     );
   }
 
+  static String _recommendationReason({
+    required ExerciseRecommendationPolicyContext context,
+    required ExerciseEffortPlan plan,
+    required ExerciseRecoveryAssessment recoveryAssessment,
+    required bool indoorOnly,
+  }) {
+    final routedLevel =
+        context.gentleOutdoor &&
+            plan.targetLevel.index >= ExerciseEffortLevel.active.index
+        ? ExerciseEffortLevel.active
+        : plan.targetLevel;
+    final effort = routedLevel.label.toLowerCase();
+    final recoverySubject = recoveryAssessment.reasonSubject;
+
+    if (indoorOnly) {
+      if (recoverySubject != null) {
+        return '${_capitalize(recoverySubject)} and current conditions make $effort indoor movement the better fit today.';
+      }
+      if (!context.airSafe) {
+        return 'Air quality makes a $effort indoor option the better fit today.';
+      }
+      return 'Current weather makes a $effort indoor option the better fit today.';
+    }
+
+    if (context.gentleOutdoor) {
+      if (recoverySubject != null) {
+        return '${_capitalize(recoverySubject)} and current weather favor a controlled $effort option today.';
+      }
+      return 'Current weather favors a controlled $effort option today.';
+    }
+
+    return plan.note;
+  }
+
   static String _planNote({
     required _LifestyleBounds bounds,
-    required ExerciseGoalHistorySummary history,
     required int completedBumps,
     required int missedDrops,
     required int preferenceMax,
     required bool needsRecovery,
+    required ExerciseRecoveryAssessment recoveryAssessment,
+    required ExerciseEffortLevel targetLevel,
   }) {
+    final recoverySubject = recoveryAssessment.reasonSubject;
+    if (recoverySubject != null) {
+      final verb = recoveryAssessment.reasonSubjectIsPlural ? 'make' : 'makes';
+      return '${_capitalize(recoverySubject)} $verb ${targetLevel.label.toLowerCase()} movement the better fit today.';
+    }
+
     if (needsRecovery) {
-      return 'Kept gentler for sleep or burnout recovery.';
+      return 'Today\'s recovery needs make light movement the better fit.';
     }
 
     if (preferenceMax < bounds.maxLevel) {
-      return 'Aligned with your exercise-day preference.';
+      return 'This fits your exercise-day preference and keeps today manageable.';
     }
 
     if (missedDrops > 0) {
-      return 'Lowered after ${history.missedStreak} none or missed days.';
+      return 'A lighter option can make restarting after missed days easier.';
     }
 
     if (completedBumps > 0) {
-      return 'Raised after ${history.completedStreak} completed days.';
+      return 'Your recent consistency supports a gentle step up today.';
     }
 
-    return 'Matches your ${bounds.label} lifestyle baseline.';
+    return 'This matches your ${bounds.label.toLowerCase()} routine today.';
+  }
+
+  static String _capitalize(String value) {
+    if (value.isEmpty) {
+      return value;
+    }
+    return '${value[0].toUpperCase()}${value.substring(1)}';
   }
 
   static int _preferenceMaxLevel(

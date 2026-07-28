@@ -161,9 +161,11 @@ class NutritionReminderEngine {
       return insight;
     }
 
+    final feedback = await _store.readRecentFeedbackPreferences(now: now);
     final candidates = NutritionCoach.buildAssistantCandidates(
       analysis: analysis,
       baseInsight: lastInsight,
+      feedback: feedback,
       now: now,
     );
     for (final candidate in candidates) {

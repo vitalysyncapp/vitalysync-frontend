@@ -276,7 +276,7 @@ class _NoneTodayGoalCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'That is okay. Choosing rest deliberately still counts as taking care of today. You can pick movement later if your energy changes.',
+            'Choosing rest today is a valid way to care for your energy; you can choose movement later if that changes.',
             style: TextStyle(
               color: pageSecondaryTextColor(context),
               fontSize: 13.5,

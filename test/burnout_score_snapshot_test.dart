@@ -44,4 +44,39 @@ void main() {
 
     expect(score.weeklyContext, isNull);
   });
+
+  test('burnout score parses backend-owned evidence basis', () {
+    final score = BurnoutScoreSnapshot.fromJson({
+      'baseline_epoch_id': 12,
+      'score_date': '2026-07-28',
+      'overall_score': 42,
+      'risk_level': 'moderate',
+      'confidence_score': 90,
+      'completeness_score': 100,
+      'scoring_version': 'burnout_engine_v4_decay_v1',
+      'missing_fields': <String>[],
+      'contributing_factors': <Map<String, dynamic>>[],
+      'evidence_basis': {
+        'scoring_version': 'burnout_engine_v4_decay_v1',
+        'baseline_weight': 0.35,
+        'baseline_epoch_started_at': '2026-07-28',
+        'window_used': '1_day',
+        'weekly_pulse_count_since_epoch': 0,
+        'log_coverage_percent': 100,
+        'confidence_score': 90,
+        'missing_fields': <String>[],
+        'top_factor_keys': ['sleep_recovery'],
+      },
+      'explanation_note':
+          'This is a pattern estimate based on your recent logs, not a medical diagnosis.',
+      'source_snapshot': {'weekly_pulse': null},
+    });
+
+    expect(score.baselineEpochId, 12);
+    expect(score.evidenceBasis.baselineWeight, 0.35);
+    expect(score.evidenceBasis.windowUsed, '1_day');
+    expect(score.evidenceBasis.logCoveragePercent, 100);
+    expect(score.evidenceBasis.topFactorKeys, ['sleep_recovery']);
+    expect(score.explanationNote, contains('not a medical diagnosis'));
+  });
 }

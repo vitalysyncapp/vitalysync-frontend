@@ -21,6 +21,9 @@ class BurnoutScoreSnapshot {
   final List<BurnoutContributingFactor> contributingFactors;
   final BurnoutWeeklyContext? weeklyContext;
   final String scoringVersion;
+  final int? baselineEpochId;
+  final BurnoutEvidenceBasis evidenceBasis;
+  final String explanationNote;
 
   const BurnoutScoreSnapshot({
     required this.scoreDate,
@@ -35,6 +38,9 @@ class BurnoutScoreSnapshot {
     required this.contributingFactors,
     required this.weeklyContext,
     required this.scoringVersion,
+    required this.baselineEpochId,
+    required this.evidenceBasis,
+    required this.explanationNote,
   });
 
   factory BurnoutScoreSnapshot.fromJson(Map<String, dynamic> json) {
@@ -42,6 +48,7 @@ class BurnoutScoreSnapshot {
     final weeklyPulse = sourceSnapshot is Map
         ? sourceSnapshot['weekly_pulse']
         : null;
+    final evidenceBasis = json['evidence_basis'];
 
     return BurnoutScoreSnapshot(
       scoreDate: json['score_date']?.toString() ?? '',
@@ -74,6 +81,86 @@ class BurnoutScoreSnapshot {
             )
           : null,
       scoringVersion: json['scoring_version']?.toString() ?? '',
+      baselineEpochId: _parseOptionalInt(json['baseline_epoch_id']),
+      evidenceBasis: evidenceBasis is Map
+          ? BurnoutEvidenceBasis.fromJson(
+              Map<String, dynamic>.from(evidenceBasis),
+            )
+          : BurnoutEvidenceBasis.empty(
+              scoringVersion: json['scoring_version']?.toString() ?? '',
+              confidenceScore: _parseDouble(json['confidence_score']),
+              missingFields:
+                  (json['missing_fields'] as List<dynamic>? ?? const [])
+                      .map((item) => item.toString())
+                      .toList(),
+            ),
+      explanationNote:
+          json['explanation_note']?.toString() ??
+          'This is a pattern estimate based on your recent logs, not a medical diagnosis.',
+    );
+  }
+}
+
+class BurnoutEvidenceBasis {
+  final String scoringVersion;
+  final double? baselineWeight;
+  final String? baselineEpochStartedAt;
+  final String? windowUsed;
+  final int weeklyPulseCountSinceEpoch;
+  final double? logCoveragePercent;
+  final double confidenceScore;
+  final List<String> missingFields;
+  final List<String> topFactorKeys;
+
+  const BurnoutEvidenceBasis({
+    required this.scoringVersion,
+    required this.baselineWeight,
+    required this.baselineEpochStartedAt,
+    required this.windowUsed,
+    required this.weeklyPulseCountSinceEpoch,
+    required this.logCoveragePercent,
+    required this.confidenceScore,
+    required this.missingFields,
+    required this.topFactorKeys,
+  });
+
+  factory BurnoutEvidenceBasis.empty({
+    required String scoringVersion,
+    required double confidenceScore,
+    required List<String> missingFields,
+  }) {
+    return BurnoutEvidenceBasis(
+      scoringVersion: scoringVersion,
+      baselineWeight: null,
+      baselineEpochStartedAt: null,
+      windowUsed: null,
+      weeklyPulseCountSinceEpoch: 0,
+      logCoveragePercent: null,
+      confidenceScore: confidenceScore,
+      missingFields: missingFields,
+      topFactorKeys: const <String>[],
+    );
+  }
+
+  factory BurnoutEvidenceBasis.fromJson(Map<String, dynamic> json) {
+    return BurnoutEvidenceBasis(
+      scoringVersion: json['scoring_version']?.toString() ?? '',
+      baselineWeight: _parseOptionalDouble(json['baseline_weight']),
+      baselineEpochStartedAt: json['baseline_epoch_started_at']?.toString(),
+      windowUsed: json['window_used']?.toString(),
+      weeklyPulseCountSinceEpoch: _parseInt(
+        json['weekly_pulse_count_since_epoch'],
+      ),
+      logCoveragePercent: _parseOptionalDouble(json['log_coverage_percent']),
+      confidenceScore: _parseDouble(json['confidence_score']),
+      missingFields:
+          (json['missing_fields'] as List<dynamic>? ?? const <dynamic>[])
+              .map((item) => item.toString())
+              .toList(),
+      topFactorKeys:
+          (json['top_factor_keys'] as List<dynamic>? ?? const <dynamic>[])
+              .map((item) => item.toString())
+              .toList(),
     );
   }
 }

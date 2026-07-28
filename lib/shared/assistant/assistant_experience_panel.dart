@@ -276,7 +276,11 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     NutritionInsight insight,
     String status,
   ) async {
-    await NutritionInsightStore.instance.saveFeedbackStatus(insight.id, status);
+    await NutritionInsightStore.instance.saveFeedbackStatus(
+      insight.id,
+      status,
+      metadata: insight.metadata,
+    );
     await AdaptiveNudgeApi.createInsightFeedback(
       nudgeType: 'nutrition_insight',
       title: insight.title,

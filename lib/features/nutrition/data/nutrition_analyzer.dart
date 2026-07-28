@@ -5,6 +5,9 @@ enum NutritionConfidence { low, medium, high }
 enum NutritionPatternType {
   missingSingleMeal,
   repeatedMissingBreakfast,
+  repeatedLowProtein,
+  repeatedMissingProduce,
+  repeatedHighCarbShare,
   inactiveLogging,
   irregularMealTiming,
 }
@@ -85,6 +88,9 @@ class NutritionAnalysis {
   final List<NutritionPattern> patterns;
   final NutritionConfidence confidence;
   final int missingBreakfastDays;
+  final int lowProteinDays;
+  final int missingProduceDays;
+  final int highCarbShareDays;
   final int inactiveLoggingDays;
   final int irregularTimingDays;
 
@@ -95,6 +101,9 @@ class NutritionAnalysis {
     required this.patterns,
     required this.confidence,
     required this.missingBreakfastDays,
+    required this.lowProteinDays,
+    required this.missingProduceDays,
+    required this.highCarbShareDays,
     required this.inactiveLoggingDays,
     required this.irregularTimingDays,
   });
@@ -130,7 +139,10 @@ class NutritionAnalyzer {
     DateTime? now,
   }) {
     final generatedAt = now ?? DateTime.now();
-    final normalizedDays = [...days]..sort((a, b) => a.date.compareTo(b.date));
+    final sortedDays = [...days]..sort((a, b) => a.date.compareTo(b.date));
+    final normalizedDays = sortedDays.length <= 7
+        ? sortedDays
+        : sortedDays.sublist(sortedDays.length - 7);
     final today = _findToday(normalizedDays, generatedAt);
     final inactiveLoggingDays = _consecutiveInactiveDays(
       normalizedDays,
@@ -139,6 +151,15 @@ class NutritionAnalyzer {
     final missingBreakfastDays = normalizedDays
         .where((day) => day.dailyMealCount > 0 && !day.breakfastLogged)
         .length;
+    final macroDays = normalizedDays.where(_hasMacroEvidence).toList();
+    final namedFoodDays = normalizedDays
+        .where((day) => _foodNames(day).isNotEmpty)
+        .toList();
+    final lowProteinDays = macroDays.where(_looksLowProtein).length;
+    final missingProduceDays = namedFoodDays
+        .where((day) => !_hasProduce(day))
+        .length;
+    final highCarbShareDays = macroDays.where(_hasHighCarbShare).length;
     final irregularTimingDays = normalizedDays
         .where((day) => day.hasIrregularMealTiming)
         .length;
@@ -165,6 +186,48 @@ class NutritionAnalyzer {
           occurrences: missingBreakfastDays,
           reason:
               'Breakfast is missing from $missingBreakfastDays logged days in the 7-day window.',
+        ),
+      );
+    }
+
+    if (lowProteinDays >= 2) {
+      patterns.add(
+        NutritionPattern(
+          type: NutritionPatternType.repeatedLowProtein,
+          confidence: lowProteinDays >= 4
+              ? NutritionConfidence.high
+              : NutritionConfidence.medium,
+          occurrences: lowProteinDays,
+          reason:
+              'Protein was light in $lowProteinDays logged days in the 7-day window.',
+        ),
+      );
+    }
+
+    if (missingProduceDays >= 2) {
+      patterns.add(
+        NutritionPattern(
+          type: NutritionPatternType.repeatedMissingProduce,
+          confidence: missingProduceDays >= 4
+              ? NutritionConfidence.high
+              : NutritionConfidence.medium,
+          occurrences: missingProduceDays,
+          reason:
+              'Produce was not found in $missingProduceDays logged days in the 7-day window.',
+        ),
+      );
+    }
+
+    if (highCarbShareDays >= 2) {
+      patterns.add(
+        NutritionPattern(
+          type: NutritionPatternType.repeatedHighCarbShare,
+          confidence: highCarbShareDays >= 4
+              ? NutritionConfidence.high
+              : NutritionConfidence.medium,
+          occurrences: highCarbShareDays,
+          reason:
+              'Carbs made up most of $highCarbShareDays logged days in the 7-day window.',
         ),
       );
     }
@@ -202,6 +265,9 @@ class NutritionAnalyzer {
       patterns: patterns,
       confidence: _overallConfidence(patterns),
       missingBreakfastDays: missingBreakfastDays,
+      lowProteinDays: lowProteinDays,
+      missingProduceDays: missingProduceDays,
+      highCarbShareDays: highCarbShareDays,
       inactiveLoggingDays: inactiveLoggingDays,
       irregularTimingDays: irregularTimingDays,
     );
@@ -263,6 +329,46 @@ class NutritionAnalyzer {
         (dinnerWindowPassed && !today.dinnerLogged);
   }
 
+  static bool _hasMacroEvidence(NutritionDaySnapshot day) {
+    return day.dailyMealCount > 0 && day.summary.totalCalories >= 200;
+  }
+
+  static bool _looksLowProtein(NutritionDaySnapshot day) {
+    final shares = _macroShares(day.summary);
+    return shares.protein < 0.18 || day.summary.totalProteinG < 25;
+  }
+
+  static bool _hasHighCarbShare(NutritionDaySnapshot day) {
+    return _macroShares(day.summary).carbs > 0.58;
+  }
+
+  static bool _hasProduce(NutritionDaySnapshot day) {
+    return _producePattern.hasMatch(_foodNames(day));
+  }
+
+  static String _foodNames(NutritionDaySnapshot day) {
+    return day.summary.meals
+        .expand((meal) => meal.items)
+        .map((item) => item.foodName.toLowerCase())
+        .join(' ')
+        .trim();
+  }
+
+  static _NutritionMacroShares _macroShares(DailyNutritionSummary summary) {
+    final proteinCalories = summary.totalProteinG * 4;
+    final carbCalories = summary.totalCarbsG * 4;
+    final fatCalories = summary.totalFatG * 9;
+    final total = proteinCalories + carbCalories + fatCalories;
+    if (total <= 0) {
+      return const _NutritionMacroShares(protein: 0, carbs: 0);
+    }
+
+    return _NutritionMacroShares(
+      protein: proteinCalories / total,
+      carbs: carbCalories / total,
+    );
+  }
+
   static NutritionConfidence _overallConfidence(
     List<NutritionPattern> patterns,
   ) {
@@ -290,4 +396,15 @@ class NutritionAnalyzer {
     final normalized = DateTime(date.year, date.month, date.day);
     return normalized.toIso8601String().substring(0, 10);
   }
+
+  static final RegExp _producePattern = RegExp(
+    r'\b(fruit|apple|banana|orange|mango|berry|vegetable|salad|greens|spinach|kangkong|pechay|broccoli|carrot|tomato|beans|lentil|okra|cabbage)\b',
+  );
+}
+
+class _NutritionMacroShares {
+  final double protein;
+  final double carbs;
+
+  const _NutritionMacroShares({required this.protein, required this.carbs});
 }

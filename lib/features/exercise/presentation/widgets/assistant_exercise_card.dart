@@ -22,7 +22,7 @@ class AssistantExerciseCard extends StatelessWidget {
     return _AssistantCardShell(
       icon: Icons.fitness_center_rounded,
       title: 'Exercise recommendation',
-      subtitle: 'Choose one for today',
+      subtitle: 'Choose what fits your energy today',
       child: Column(
         children: [
           ...visibleRecommendations.map(
@@ -77,7 +77,9 @@ class _RecommendationTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(13),
               ),
               child: Icon(
-                isNone ? Icons.block_rounded : Icons.directions_run_rounded,
+                isNone
+                    ? Icons.self_improvement_rounded
+                    : Icons.directions_run_rounded,
                 color: accent,
                 size: 21,
               ),

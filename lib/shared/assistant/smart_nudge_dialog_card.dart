@@ -292,11 +292,13 @@ class _SmartNudgeInsightCard extends StatelessWidget {
     final body = _expandedAssistantText(
       recommendation?.message ?? fallbackMessage,
     );
-    final priority = recommendation?.priority ?? 'low';
-    final priorityColor = _priorityColor(priority, isDark);
+    final severity = recommendation?.userFacingSeverity ?? 'steady';
+    final severityColor = _severityColor(severity, isDark);
     final metadata = recommendation?.metadata ?? const <String, dynamic>{};
     final whyThisMatters = _metadataText(metadata['ai_why_this_matters']);
-    final actionSteps = _metadataTextList(metadata['ai_action_steps']);
+    final actionSteps = _metadataTextList(
+      metadata['ai_action_steps'],
+    ).take(1).toList();
     final actionLabel = recommendation?.actionLabel.trim() ?? '';
     final subtitle =
         nudgeTitle.isNotEmpty && nudgeTitle.toLowerCase() != 'smart nudge'
@@ -307,7 +309,9 @@ class _SmartNudgeInsightCard extends StatelessWidget {
         ? 'AI-enhanced guidance'
         : 'Deterministic guidance';
 
-    final cardColor = isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white;
+    final cardColor = isDark
+        ? Colors.white.withValues(alpha: 0.05)
+        : Colors.white;
     final cardBorderColor = isDark
         ? const Color(0xFFF3C765).withValues(alpha: 0.2)
         : const Color(0xFFF3C765).withValues(alpha: 0.5);
@@ -377,16 +381,16 @@ class _SmartNudgeInsightCard extends StatelessWidget {
                   vertical: 5,
                 ),
                 decoration: BoxDecoration(
-                  color: priorityColor.withValues(alpha: 0.18),
+                  color: severityColor.withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(
-                    color: priorityColor.withValues(alpha: 0.38),
+                    color: severityColor.withValues(alpha: 0.38),
                   ),
                 ),
                 child: Text(
-                  _humanizeMetadataLabel(priority),
+                  _humanizeMetadataLabel(severity),
                   style: TextStyle(
-                    color: priorityColor,
+                    color: severityColor,
                     fontSize: 10,
                     fontWeight: FontWeight.w900,
                   ),
@@ -458,13 +462,13 @@ class _SmartNudgeInsightCard extends StatelessWidget {
     );
   }
 
-  Color _priorityColor(String priority, bool isDark) {
-    switch (priority.toLowerCase()) {
-      case 'urgent':
+  Color _severityColor(String severity, bool isDark) {
+    switch (severity.toLowerCase()) {
+      case 'needs support':
         return isDark ? const Color(0xFFFF6B6B) : const Color(0xFFE53935);
       case 'high':
         return isDark ? const Color(0xFFFFB454) : const Color(0xFFF57C00);
-      case 'medium':
+      case 'watch':
         return isDark ? const Color(0xFFFFD54F) : const Color(0xFFD69C12);
       default:
         return isDark ? const Color(0xFF81D4FA) : const Color(0xFF0288D1);

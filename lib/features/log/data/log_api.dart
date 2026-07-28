@@ -1028,6 +1028,8 @@ class LogApi {
       rethrow;
     } on CheckInModeChangedException {
       rethrow;
+    } on BaselineRefreshRequiredException {
+      rethrow;
     } on _LogApiException catch (error) {
       if (!error.canQueueForLater) {
         throw Exception(error.message);
@@ -1060,6 +1062,10 @@ class LogApi {
         data['message']?.toString() ?? 'Streak restore decision required',
         Map<String, dynamic>.from(data['streak_restore'] as Map),
       );
+    }
+    if (response.statusCode == 409 &&
+        data['code'] == 'BASELINE_REFRESH_REQUIRED') {
+      throw BaselineRefreshRequiredException.fromJson(data);
     }
     if (response.statusCode == 409 &&
         (data['code'] == 'WEEKLY_PULSE_REQUIRED' ||
@@ -1153,6 +1159,9 @@ class LogApi {
       } on CheckInModeChangedException {
         // Preserve the short answers. Status loading will reveal the five
         // required weekly answers without discarding the pending draft.
+        break;
+      } on BaselineRefreshRequiredException {
+        // Keep the queued check-in until the welcome-back baseline is saved.
         break;
       }
     }
@@ -1408,6 +1417,36 @@ class CheckInModeChangedException implements Exception {
   final CheckInMode requiredMode;
 
   const CheckInModeChangedException(this.message, this.requiredMode);
+
+  @override
+  String toString() => message;
+}
+
+class BaselineRefreshRequiredException implements Exception {
+  final String message;
+  final String? reason;
+  final String? lastLoggedDate;
+  final int? daysSinceLastLog;
+
+  const BaselineRefreshRequiredException({
+    required this.message,
+    this.reason,
+    this.lastLoggedDate,
+    this.daysSinceLastLog,
+  });
+
+  factory BaselineRefreshRequiredException.fromJson(Map<String, dynamic> json) {
+    return BaselineRefreshRequiredException(
+      message:
+          json['message']?.toString() ??
+          'Refresh your burnout baseline before this check-in',
+      reason: json['baseline_refresh_reason']?.toString(),
+      lastLoggedDate: json['last_logged_date']?.toString(),
+      daysSinceLastLog: json['days_since_last_log'] is num
+          ? (json['days_since_last_log'] as num).toInt()
+          : int.tryParse(json['days_since_last_log']?.toString() ?? ''),
+    );
+  }
 
   @override
   String toString() => message;

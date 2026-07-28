@@ -130,4 +130,23 @@ void main() {
       expect(status.isComplete, isFalse);
     },
   );
+
+  test('status parses the thirty-day baseline refresh contract', () {
+    final status = CheckInStatus.fromJson({
+      'required_mode': 'daily',
+      'has_today_log': false,
+      'requires_baseline_refresh': true,
+      'baseline_refresh_reason': 'thirty_day_return',
+      'last_logged_date': '2026-06-28',
+      'days_since_last_log': 30,
+      'schedule': <String, dynamic>{},
+      'existing_check_in': <String, dynamic>{},
+    });
+
+    expect(status.requiresBaselineRefresh, isTrue);
+    expect(status.baselineRefreshReason, 'thirty_day_return');
+    expect(status.lastLoggedDate, '2026-06-28');
+    expect(status.daysSinceLastLog, 30);
+    expect(status.isComplete, isFalse);
+  });
 }

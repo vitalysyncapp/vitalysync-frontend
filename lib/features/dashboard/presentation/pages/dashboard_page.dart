@@ -539,11 +539,12 @@ class _AiBurnoutInsightCard extends StatelessWidget {
         ? (recommendation!.metadata['ai_action_steps'] as List)
               .map((item) => item.toString())
               .where((item) => item.trim().isNotEmpty)
-              .take(2)
+              .take(1)
               .toList()
         : const <String>[];
     final aiEnhanced = recommendation?.metadata['ai_enhanced'] == true;
     final firstWeekState = learningState;
+    final severity = recommendation?.userFacingSeverity;
 
     return Container(
       width: double.infinity,
@@ -616,6 +617,30 @@ class _AiBurnoutInsightCard extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (severity != null) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _severityColor(
+                        severity,
+                        isDark,
+                      ).withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      _severityLabel(severity),
+                      style: TextStyle(
+                        color: _severityColor(severity, isDark),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
             if (firstWeekState?.isVisible == true) ...[
@@ -639,7 +664,7 @@ class _AiBurnoutInsightCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               recommendation?.message ??
-                  'Complete a few more short daily logs and scheduled weekly pulses so VitalySync can personalize burnout insights more accurately.',
+                  'Log a few daily check-ins and your next weekly pulse so VitalySync can tailor this insight.',
               maxLines: 5,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -697,5 +722,29 @@ class _AiBurnoutInsightCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Color _severityColor(String severity, bool isDark) {
+    switch (severity) {
+      case 'needs support':
+        return isDark ? const Color(0xFFFF8A80) : const Color(0xFFD83B3B);
+      case 'high':
+        return isDark ? const Color(0xFFFFB454) : const Color(0xFFF57C00);
+      case 'watch':
+        return isDark ? const Color(0xFFFFD54F) : const Color(0xFFB77900);
+      default:
+        return isDark ? const Color(0xFF81D4FA) : const Color(0xFF0277BD);
+    }
+  }
+
+  String _severityLabel(String severity) {
+    return severity
+        .split(' ')
+        .map(
+          (part) => part.isEmpty
+              ? part
+              : '${part[0].toUpperCase()}${part.substring(1)}',
+        )
+        .join(' ');
   }
 }

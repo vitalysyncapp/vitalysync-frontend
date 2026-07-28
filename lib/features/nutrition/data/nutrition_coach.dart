@@ -1,5 +1,6 @@
 import 'nutrition_analyzer.dart';
 import 'nutrition_api.dart';
+import 'nutrition_feedback_preferences.dart';
 
 class NutritionInsight {
   final String id;
@@ -190,12 +191,15 @@ class NutritionCoach {
   static List<NutritionInsight> buildAssistantCandidates({
     required NutritionAnalysis analysis,
     NutritionInsight? baseInsight,
+    NutritionFeedbackPreferences feedback =
+        const NutritionFeedbackPreferences(),
     DateTime? now,
   }) {
     final generatedAt = now ?? DateTime.now();
     final candidates = <NutritionInsight>[];
     final macroInsight = NutritionMacroNudgeBuilder.bestInsight(
       analysis: analysis,
+      feedback: feedback,
       now: generatedAt,
     );
 
@@ -362,19 +366,27 @@ class NutritionMacroNudgeBuilder {
     required NutritionAnalysis analysis,
     DateTime? now,
     Set<String> dismissedMacroFocuses = const <String>{},
+    NutritionFeedbackPreferences feedback =
+        const NutritionFeedbackPreferences(),
   }) {
     final generatedAt = now ?? DateTime.now();
     final candidates = buildInsights(analysis: analysis, now: generatedAt)
         .where(
-          (candidate) => !dismissedMacroFocuses.contains(
-            candidate.metadata['macro_focus'],
-          ),
+          (candidate) =>
+              !dismissedMacroFocuses.contains(
+                candidate.metadata['macro_focus'],
+              ) &&
+              !feedback.dismisses(candidate.metadata),
         );
 
     final ranked = candidates.toList()
       ..sort((left, right) {
-        final leftScore = _metadataDouble(left, 'selection_score');
-        final rightScore = _metadataDouble(right, 'selection_score');
+        final leftScore =
+            _metadataDouble(left, 'selection_score') +
+            feedback.acceptedMatchCount(left.metadata) * 0.02;
+        final rightScore =
+            _metadataDouble(right, 'selection_score') +
+            feedback.acceptedMatchCount(right.metadata) * 0.02;
         return rightScore.compareTo(leftScore);
       });
 
@@ -382,8 +394,7 @@ class NutritionMacroNudgeBuilder {
       return ranked.first;
     }
 
-    final fallback = buildInsights(analysis: analysis, now: generatedAt);
-    return fallback.isEmpty ? null : fallback.first;
+    return null;
   }
 
   static List<NutritionInsight> buildInsights({
@@ -396,19 +407,31 @@ class NutritionMacroNudgeBuilder {
     final candidates = <NutritionInsight>[];
 
     if (summary.meals.isEmpty || summary.totalCalories < 50) {
+      final hasMealLog = summary.meals.isNotEmpty;
       return [
+        ..._patternInsights(
+          analysis: analysis,
+          generatedAt: generatedAt,
+          dateKey: dateKey,
+          summary: summary,
+        ),
         _macroInsight(
           generatedAt: generatedAt,
           dateKey: dateKey,
           macroFocus: 'complete_meal',
-          title: 'Build a simple plate',
-          message:
-              'No meals are logged yet. For your next meal, aim for protein, a fiber-rich carb, and produce, such as eggs with rice and leafy vegetables.',
-          recommendedFoods: const ['eggs', 'rice', 'leafy vegetables', 'fruit'],
-          score: 1,
+          title: hasMealLog ? 'Add meal details' : 'Log your next meal',
+          message: hasMealLog
+              ? 'Today\'s meal log has limited detail. Add the foods you had so suggestions can use the log accurately.'
+              : 'No meals are logged today. Log your next meal so suggestions can reflect what you actually ate.',
+          recommendedFoods: const [],
+          score: 0.08,
           confidence: NutritionConfidence.low,
           summary: summary,
-          metadata: const {'meal_signal': 'no_meals_logged'},
+          metadata: {
+            'meal_signal': hasMealLog
+                ? 'limited_meal_detail'
+                : 'no_meals_logged',
+          },
         ),
       ];
     }
@@ -427,7 +450,7 @@ class NutritionMacroNudgeBuilder {
           macroFocus: 'protein',
           title: 'Add protein next',
           message:
-              'Protein looks light compared with the rest of today\'s macros. At your next meal, add eggs, chicken, tuna or fish, tofu, beans, or Greek yogurt to make the plate steadier.',
+              'Protein looks light in today\'s logged meals. Add a protein food you enjoy to your next meal.',
           recommendedFoods: proteinFoods,
           score: score,
           confidence: score >= 0.12
@@ -448,7 +471,7 @@ class NutritionMacroNudgeBuilder {
           macroFocus: 'carbs_fiber',
           title: 'Add fiber-rich carbs',
           message:
-              'Carbs are low in today\'s balance. A simple option like rice, oats, sweet potato, banana, or whole-grain bread can add steady energy.',
+              'Fiber-rich carbs look light in today\'s logs. Add a grain, starchy vegetable, or fruit you enjoy.',
           recommendedFoods: carbFiberFoods,
           score: score,
           confidence: score >= 0.12
@@ -469,7 +492,7 @@ class NutritionMacroNudgeBuilder {
           macroFocus: 'healthy_fats',
           title: 'Add healthy fats',
           message:
-              'Fat is low in today\'s macro mix. Add a small serving of avocado, nuts, peanut butter, olive oil, or eggs with your next meal.',
+              'Healthy fats look light in today\'s logs. Add a small portion of nuts, avocado, or olive oil.',
           recommendedFoods: healthyFatFoods,
           score: score,
           confidence: score >= 0.10
@@ -489,7 +512,7 @@ class NutritionMacroNudgeBuilder {
           macroFocus: 'protein_produce',
           title: 'Balance carbs with protein',
           message:
-              'Carbs are carrying most of today\'s macros. Balance the next meal with protein and produce, such as eggs, tofu, chicken, leafy vegetables, tomatoes, or fruit.',
+              'Carbs make up most of today\'s logged balance. Pair the next carb food with protein or produce.',
           recommendedFoods: const [
             'eggs',
             'tofu',
@@ -515,9 +538,9 @@ class NutritionMacroNudgeBuilder {
           generatedAt: generatedAt,
           dateKey: dateKey,
           macroFocus: 'fiber_produce',
-          title: 'Lighten the next plate',
+          title: 'Add fiber and produce',
           message:
-              'Fat is taking a large share today. Balance the next meal with fiber-rich carbs and produce like oats, sweet potato, rice, leafy vegetables, tomatoes, or fruit.',
+              'Fats make up most of today\'s logged balance. Add a fiber-rich carb or produce to the next plate.',
           recommendedFoods: const [
             'oats',
             'sweet potato',
@@ -545,7 +568,7 @@ class NutritionMacroNudgeBuilder {
           macroFocus: 'produce',
           title: 'Add produce',
           message:
-              'Produce is missing from today\'s logged foods. Add leafy vegetables, carrots, tomatoes, or fruit to bring in fiber and color.',
+              'Produce is missing from today\'s logged foods. Add a fruit or vegetable you enjoy to your next meal.',
           recommendedFoods: produceFoods,
           score: 0.09,
           confidence: NutritionConfidence.low,
@@ -562,12 +585,114 @@ class NutritionMacroNudgeBuilder {
         macroFocus: 'balanced_plate',
         title: 'Keep the plate balanced',
         message:
-            'Your macros look reasonably balanced today. Keep the next meal simple with protein, fiber-rich carbs, healthy fats, and produce.',
+            'Today\'s logged meals show a balanced mix. Keep choosing the foods that worked well for you.',
         recommendedFoods: const ['eggs', 'rice', 'avocado', 'leafy vegetables'],
         score: 0.01,
         confidence: NutritionConfidence.low,
         summary: summary,
       ),
+    );
+
+    candidates.addAll(
+      _patternInsights(
+        analysis: analysis,
+        generatedAt: generatedAt,
+        dateKey: dateKey,
+        summary: summary,
+      ),
+    );
+
+    return candidates;
+  }
+
+  static List<NutritionInsight> _patternInsights({
+    required NutritionAnalysis analysis,
+    required DateTime generatedAt,
+    required String dateKey,
+    required DailyNutritionSummary summary,
+  }) {
+    final candidates = <NutritionInsight>[];
+
+    void addPattern({
+      required NutritionPatternType type,
+      required String macroFocus,
+      required String title,
+      required String message,
+      required List<String> recommendedFoods,
+      required double baseScore,
+    }) {
+      final pattern = analysis.firstPatternOf(type);
+      if (pattern == null) {
+        return;
+      }
+
+      candidates.add(
+        _macroInsight(
+          generatedAt: generatedAt,
+          dateKey: dateKey,
+          macroFocus: macroFocus,
+          title: title,
+          message: message.replaceFirst('{count}', '${pattern.occurrences}'),
+          recommendedFoods: recommendedFoods,
+          score: baseScore + pattern.occurrences * 0.02,
+          confidence: pattern.confidence,
+          summary: summary,
+          metadata: {
+            'pattern_type': type.name,
+            'pattern_occurrences': pattern.occurrences,
+            'pattern_observed_days': analysis.days
+                .where((day) => day.dailyMealCount > 0)
+                .length,
+            'reason_basis': 'seven_day_logged_pattern',
+          },
+        ),
+      );
+    }
+
+    addPattern(
+      type: NutritionPatternType.repeatedLowProtein,
+      macroFocus: 'protein',
+      title: 'Add a protein food',
+      message:
+          'Protein was light in {count} recent logged days. Add a protein food you enjoy to your next meal.',
+      recommendedFoods: proteinFoods,
+      baseScore: 0.12,
+    );
+    addPattern(
+      type: NutritionPatternType.repeatedMissingProduce,
+      macroFocus: 'produce',
+      title: 'Add fruit or vegetables',
+      message:
+          'Produce was missing from {count} recent logged days. Add a fruit or vegetable you enjoy to your next meal.',
+      recommendedFoods: produceFoods,
+      baseScore: 0.1,
+    );
+    addPattern(
+      type: NutritionPatternType.repeatedMissingBreakfast,
+      macroFocus: 'breakfast_rhythm',
+      title: 'Check your morning rhythm',
+      message:
+          'Breakfast was not logged on {count} recent logged days. If it fits your routine, try a simple morning meal.',
+      recommendedFoods: const [],
+      baseScore: 0.09,
+    );
+    addPattern(
+      type: NutritionPatternType.repeatedHighCarbShare,
+      macroFocus: 'protein_produce',
+      title: 'Pair carbs with balance',
+      message:
+          'Carbs made up most of {count} recent logged days. Pair your next carb food with protein or produce.',
+      recommendedFoods: [...proteinFoods, ...produceFoods],
+      baseScore: 0.11,
+    );
+    addPattern(
+      type: NutritionPatternType.irregularMealTiming,
+      macroFocus: 'meal_timing',
+      title: 'Try a steadier meal rhythm',
+      message:
+          'Long gaps appeared between logged meals on {count} recent days. Try a meal rhythm that feels practical for you.',
+      recommendedFoods: const [],
+      baseScore: 0.08,
     );
 
     return candidates;
@@ -585,6 +710,7 @@ class NutritionMacroNudgeBuilder {
     required DailyNutritionSummary summary,
     Map<String, dynamic> metadata = const <String, dynamic>{},
   }) {
+    final dimensions = _candidateDimensions(macroFocus);
     return NutritionInsight(
       id: '${dateKey}_nutrition_$macroFocus',
       title: title,
@@ -594,6 +720,8 @@ class NutritionMacroNudgeBuilder {
       generatedAt: generatedAt,
       metadata: {
         'macro_focus': macroFocus,
+        'food_group': dimensions.foodGroup,
+        'nutrition_nudge_type': dimensions.nudgeType,
         'recommended_foods': recommendedFoods,
         'ai_enhanced': false,
         'deterministic_title': title,
@@ -650,6 +778,42 @@ class NutritionMacroNudgeBuilder {
     return double.tryParse(value?.toString() ?? '') ?? 0;
   }
 
+  static _NutritionNudgeDimensions _candidateDimensions(String macroFocus) {
+    switch (macroFocus) {
+      case 'complete_meal':
+        return const _NutritionNudgeDimensions('meal_log', 'meal_logging');
+      case 'protein':
+        return const _NutritionNudgeDimensions('protein', 'macro_balance');
+      case 'carbs_fiber':
+        return const _NutritionNudgeDimensions(
+          'fiber_rich_carbs',
+          'macro_balance',
+        );
+      case 'healthy_fats':
+        return const _NutritionNudgeDimensions('healthy_fats', 'macro_balance');
+      case 'protein_produce':
+        return const _NutritionNudgeDimensions(
+          'protein_produce',
+          'macro_balance',
+        );
+      case 'fiber_produce':
+        return const _NutritionNudgeDimensions(
+          'fiber_produce',
+          'macro_balance',
+        );
+      case 'produce':
+        return const _NutritionNudgeDimensions('produce', 'food_group');
+      case 'breakfast_rhythm':
+      case 'meal_timing':
+        return const _NutritionNudgeDimensions('meal_rhythm', 'meal_timing');
+      default:
+        return const _NutritionNudgeDimensions(
+          'balanced_plate',
+          'positive_reinforcement',
+        );
+    }
+  }
+
   static final RegExp _producePattern = RegExp(
     r'\b(fruit|apple|banana|orange|mango|berry|vegetable|salad|greens|spinach|kangkong|pechay|broccoli|carrot|tomato|beans|lentil|okra|cabbage)\b',
   );
@@ -665,6 +829,13 @@ class _MacroShares {
     required this.carbs,
     required this.fat,
   });
+}
+
+class _NutritionNudgeDimensions {
+  final String foodGroup;
+  final String nudgeType;
+
+  const _NutritionNudgeDimensions(this.foodGroup, this.nudgeType);
 }
 
 NutritionConfidence _confidenceFromString(String? value) {
