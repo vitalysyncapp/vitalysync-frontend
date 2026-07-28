@@ -497,8 +497,8 @@ class _OverlayAssistantShellState extends State<_OverlayAssistantShell> {
             key: const ValueKey('overlay-panel'),
             child: Align(
               alignment: Alignment.center,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 520),
+              child: SizedBox(
+                width: double.infinity,
                 child: AssistantExperiencePanel(
                   message:
                       "You're doing well today. Log sleep and hydration to keep your streak going.",

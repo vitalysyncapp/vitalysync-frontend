@@ -360,9 +360,9 @@ class OverlayAssistantService : Service() {
         val root = rootView ?: return
         flutterEngine?.lifecycleChannel?.appIsResumed()
         val metrics = resources.displayMetrics
-        val horizontalMargin = dpToPx(16)
+        val horizontalMargin = dpToPx(4)
         val verticalMargin = dpToPx(32)
-        val width = max(dpToPx(320), minOf(dpToPx(420), metrics.widthPixels - (horizontalMargin * 2)))
+        val width = metrics.widthPixels - (horizontalMargin * 2)
         val height = minOf((metrics.heightPixels * 0.76f).toInt(), metrics.heightPixels - (verticalMargin * 2))
 
         val params = windowLayoutParams ?: WindowManager.LayoutParams(
