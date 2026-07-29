@@ -52,6 +52,7 @@ class SessionResetService {
     'activity_preferred_goal_steps_',
     'assistant_exercise_prefill',
     'assistant_hydration_prefill',
+    'pending_baseline_refresh_v1_',
     'cached_daily_activity_',
     'cached_daily_logs',
     'cached_exercise_goal_',

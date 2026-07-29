@@ -52,6 +52,7 @@ class AssistantExperiencePanel extends StatefulWidget {
 
 class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
   late final PageController _pageController;
+  late final List<ScrollController> _sectionScrollControllers;
 
   late List<ExerciseRecommendationModel> _recommendations;
   late List<AdaptiveNudgeRecommendation> _adaptiveNudges;
@@ -84,9 +85,11 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     super.initState();
     _pageIndex = widget.initialSectionIndex;
     _pageController = PageController(initialPage: _pageIndex);
+    _sectionScrollControllers = List.generate(3, (_) => ScrollController());
     _recommendations = widget.recommendations;
     _adaptiveNudges = prioritizeAssistantNudges(widget.adaptiveNudges);
     _nutritionInsight = widget.nutritionInsight;
+    _recordVisibleProductEvents();
     CheckInStateCoordinator.instance.changes.addListener(
       _handleCheckInStateChanged,
     );
@@ -110,6 +113,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     if (!identical(oldWidget.recommendations, widget.recommendations) &&
         widget.recommendations.isNotEmpty) {
       _recommendations = widget.recommendations;
+      _recordExerciseRecommendationImpressions(_recommendations);
     }
     if (!identical(oldWidget.adaptiveNudges, widget.adaptiveNudges) &&
         widget.adaptiveNudges.isNotEmpty) {
@@ -118,6 +122,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     if (oldWidget.nutritionInsight != widget.nutritionInsight &&
         widget.nutritionInsight != null) {
       _nutritionInsight = widget.nutritionInsight;
+      _recordNutritionImpression(_nutritionInsight!);
     }
   }
 
@@ -127,6 +132,9 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
       _handleCheckInStateChanged,
     );
     _pageController.dispose();
+    for (final controller in _sectionScrollControllers) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -136,6 +144,65 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
       return;
     }
     _loadCheckInStatus();
+  }
+
+  void _recordVisibleProductEvents() {
+    _recordExerciseRecommendationImpressions(_recommendations);
+    final insight = _nutritionInsight;
+    if (insight != null) _recordNutritionImpression(insight);
+  }
+
+  void _recordExerciseRecommendationImpressions(
+    List<ExerciseRecommendationModel> recommendations,
+  ) {
+    final date = ExerciseGoalService.todayKey();
+    for (final recommendation in recommendations.take(5)) {
+      final key = _productEventToken(recommendation.exerciseName);
+      unawaited(
+        AdaptiveNudgeApi.recordProductEvent(
+          eventName: 'exercise_recommendation_shown',
+          eventKey: '$date:$key',
+          dimensions: {
+            'recommendation_key': recommendation.exerciseName,
+            'exercise_category': recommendation.exerciseCategory,
+            'is_none_today': recommendation.isNoneToday,
+            'source': recommendation.recommendedBy,
+          },
+        ),
+      );
+    }
+  }
+
+  void _recordNutritionImpression(NutritionInsight insight) {
+    final metadata = insight.metadata;
+    unawaited(
+      AdaptiveNudgeApi.recordProductEvent(
+        eventName: 'nutrition_nudge_shown',
+        eventKey:
+            '${ExerciseGoalService.todayKey()}:${_productEventToken(insight.id)}',
+        dimensions: {
+          if (metadata['macro_focus'] != null)
+            'macro_focus': metadata['macro_focus'].toString(),
+          if (metadata['food_group'] != null)
+            'food_group': metadata['food_group'].toString(),
+          if (metadata['nutrition_nudge_type'] != null)
+            'nutrition_nudge_type': metadata['nutrition_nudge_type'].toString(),
+          'source': insight.source,
+          'ai_enhanced': metadata['ai_enhanced'] == true,
+        },
+      ),
+    );
+  }
+
+  String _productEventToken(String value) {
+    final normalized = value
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+        .replaceAll(RegExp(r'_+'), '_')
+        .replaceAll(RegExp(r'^_|_$'), '');
+    return normalized.isEmpty
+        ? 'unspecified'
+        : normalized.substring(0, min(normalized.length, 80));
   }
 
   Future<void> _loadRecommendations() async {
@@ -155,6 +222,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
         _recommendations = recommendations;
         _isLoadingRecommendations = false;
       });
+      _recordExerciseRecommendationImpressions(recommendations);
     } catch (_) {
       if (!mounted) return;
 
@@ -223,6 +291,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
         }
         _isLoadingNutritionInsight = false;
       });
+      if (insight != null) _recordNutritionImpression(insight);
     } catch (_) {
       if (!mounted) return;
 
@@ -709,20 +778,20 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
   Widget build(BuildContext context) {
     final maxHeight =
         MediaQuery.sizeOf(context).height *
-        (widget.useSafeAreaPadding ? 0.78 : 1.0);
+        (widget.useSafeAreaPadding ? 0.9 : 1.0);
     final sections = _sections();
     final currentIndex = min(_pageIndex, sections.length - 1);
     final panel = Padding(
       padding: EdgeInsets.only(
-        left: 6,
-        right: 6,
+        left: 8,
+        right: 8,
         bottom: widget.useSafeAreaPadding
             ? MediaQuery.viewInsetsOf(context).bottom + 12
             : 0,
       ),
       child: Container(
         constraints: BoxConstraints(maxHeight: maxHeight),
-        padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
         decoration: BoxDecoration(
           color: Theme.of(context).brightness == Brightness.dark
               ? const Color(0xFF0F1B2D)
@@ -741,7 +810,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildHeader(context),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             ValueListenableBuilder<ActivityTrackingState>(
               valueListenable: ActivityService.instance.notifier,
               builder: (context, activityState, _) {
@@ -753,29 +822,44 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
                 );
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             _AssistantSectionNavigator(
               sections: sections,
               currentIndex: currentIndex,
               onSelected: _selectPage,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Flexible(
               child: PageView(
                 controller: _pageController,
+                allowImplicitScrolling: true,
+                physics: const PageScrollPhysics(
+                  parent: ClampingScrollPhysics(),
+                ),
                 onPageChanged: (index) {
                   setState(() {
                     _pageIndex = index;
                   });
                 },
-                children: sections
-                    .map(
-                      (section) => SingleChildScrollView(
-                        key: PageStorageKey<String>(section.label),
-                        child: section.child,
+                children: List.generate(sections.length, (index) {
+                  final section = sections[index];
+                  return Scrollbar(
+                    controller: _sectionScrollControllers[index],
+                    radius: const Radius.circular(999),
+                    child: SingleChildScrollView(
+                      controller: _sectionScrollControllers[index],
+                      key: PageStorageKey<String>(section.label),
+                      primary: false,
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      physics: const BouncingScrollPhysics(
+                        parent: AlwaysScrollableScrollPhysics(),
                       ),
-                    )
-                    .toList(),
+                      padding: const EdgeInsets.only(right: 2, bottom: 4),
+                      child: section.child,
+                    ),
+                  );
+                }),
               ),
             ),
             if (_showHydrationLogger) ...[
@@ -816,6 +900,13 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final isRefreshing =
+        _isLoadingAdaptiveNudges ||
+        _isLoadingNutritionInsight ||
+        _isLoadingRecommendations ||
+        _isLoadingEnvironment ||
+        _isLoadingCheckIn;
+
     return Row(
       children: [
         Container(
@@ -840,7 +931,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
             'VitalySync assistant',
             style: TextStyle(
               color: pagePrimaryTextColor(context),
-              fontSize: 18,
+              fontSize: 17,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -858,7 +949,20 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
               unawaited(_loadHydrationContext());
             }
           },
-          icon: const Icon(Icons.refresh_rounded),
+          icon: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            child: isRefreshing
+                ? const SizedBox(
+                    key: ValueKey('assistant-refreshing'),
+                    width: 19,
+                    height: 19,
+                    child: CircularProgressIndicator(strokeWidth: 2.2),
+                  )
+                : const Icon(
+                    Icons.refresh_rounded,
+                    key: ValueKey('assistant-refresh'),
+                  ),
+          ),
         ),
         IconButton(
           tooltip: 'Close',
@@ -1102,7 +1206,7 @@ class _AssistantContextStrip extends StatelessWidget {
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOutCubic,
       width: double.infinity,
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.fromLTRB(10, 8, 6, 8),
       decoration: BoxDecoration(
         color: Theme.of(context).brightness == Brightness.dark
             ? Colors.white.withValues(alpha: 0.05)
@@ -1110,38 +1214,41 @@ class _AssistantContextStrip extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: pageBorderColor(context)),
       ),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: _AssistantContextMetric(
-                  icon: Icons.wb_sunny_rounded,
-                  label: isLoadingEnvironment ? 'Weather loading' : weatherText,
-                  value: airText,
-                  isLoading: isLoadingEnvironment,
-                ),
-              ),
-              SizedBox(
-                width: 34,
-                height: 34,
-                child: IconButton(
-                  tooltip: 'Refresh weather',
-                  onPressed: isLoadingEnvironment ? null : onRefreshEnvironment,
-                  padding: EdgeInsets.zero,
-                  icon: const Icon(Icons.refresh_rounded, size: 18),
-                ),
-              ),
-            ],
+          Expanded(
+            child: _AssistantContextMetric(
+              icon: Icons.wb_sunny_rounded,
+              label: isLoadingEnvironment ? 'Weather loading' : weatherText,
+              value: airText,
+              isLoading: isLoadingEnvironment,
+            ),
           ),
-          const SizedBox(height: 8),
-          _AssistantContextMetric(
-            icon: Icons.directions_walk_rounded,
-            label: stepLabel,
-            value: dailyStepsUnavailable
-                ? null
-                : '${numberFormat.format(activityState.log.steps)} steps',
-            isLoading: !dailyStepsUnavailable && activityState.isLoading,
+          Container(
+            width: 1,
+            height: 34,
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+            color: pageBorderColor(context),
+          ),
+          Expanded(
+            child: _AssistantContextMetric(
+              icon: Icons.directions_walk_rounded,
+              label: stepLabel,
+              value: dailyStepsUnavailable
+                  ? null
+                  : '${numberFormat.format(activityState.log.steps)} steps',
+              isLoading: !dailyStepsUnavailable && activityState.isLoading,
+            ),
+          ),
+          SizedBox(
+            width: 34,
+            height: 34,
+            child: IconButton(
+              tooltip: 'Refresh weather',
+              onPressed: isLoadingEnvironment ? null : onRefreshEnvironment,
+              padding: EdgeInsets.zero,
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+            ),
           ),
         ],
       ),

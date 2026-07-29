@@ -1,12 +1,55 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vitalysync/features/exercise/data/exercise_goal_model.dart';
+import 'package:vitalysync/features/exercise/data/exercise_context_policy.dart';
 import 'package:vitalysync/features/exercise/data/exercise_log_context_policy.dart';
 import 'package:vitalysync/features/exercise/data/exercise_recommendation_model.dart';
 import 'package:vitalysync/features/exercise/data/exercise_recommendation_policy.dart';
 import 'package:vitalysync/features/exercise/presentation/widgets/assistant_exercise_card.dart';
 
 void main() {
+  test('current steady evidence overrides an old high onboarding baseline', () {
+    final result = ExerciseContextPolicy.resolve(
+      hasCurrentBurnoutEvidence: true,
+      currentBurnoutNeedsRecovery: false,
+      currentWorkloadHoursBand: '3-4 hours',
+      initialBurnoutLevel: 'High',
+      initialBurnoutScore: 60,
+      onboardingWorkloadLevel: 5,
+    );
+
+    expect(result.needsRecovery, isFalse);
+    expect(result.workloadHoursBand, '3-4 hours');
+  });
+
+  test('onboarding burnout and workload are fallback-only context', () {
+    final result = ExerciseContextPolicy.resolve(
+      hasCurrentBurnoutEvidence: false,
+      currentBurnoutNeedsRecovery: false,
+      currentWorkloadHoursBand: null,
+      initialBurnoutLevel: 'Very High',
+      initialBurnoutScore: 60,
+      onboardingWorkloadLevel: 4,
+    );
+
+    expect(result.needsRecovery, isTrue);
+    expect(result.workloadHoursBand, '8-9 hours');
+  });
+
+  test('current burnout recovery evidence always remains authoritative', () {
+    final result = ExerciseContextPolicy.resolve(
+      hasCurrentBurnoutEvidence: true,
+      currentBurnoutNeedsRecovery: true,
+      currentWorkloadHoursBand: 'None',
+      initialBurnoutLevel: 'Low',
+      initialBurnoutScore: 10,
+      onboardingWorkloadLevel: 1,
+    );
+
+    expect(result.needsRecovery, isTrue);
+    expect(result.workloadHoursBand, 'None');
+  });
+
   test('yesterday or a recent log can supply recovery context', () {
     final yesterday = <String, dynamic>{
       'log_date': '2026-06-01',

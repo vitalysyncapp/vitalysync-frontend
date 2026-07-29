@@ -5,12 +5,14 @@ class _SmartNudgeBubble extends StatelessWidget {
   final String message;
   final VoidCallback onClose;
   final bool tailOnRight;
+  final bool tailAtBottom;
 
   const _SmartNudgeBubble({
     required this.emoji,
     required this.message,
     required this.onClose,
     this.tailOnRight = true,
+    this.tailAtBottom = false,
   });
 
   @override
@@ -19,11 +21,10 @@ class _SmartNudgeBubble extends StatelessWidget {
       title: 'Smart nudge',
       onClose: onClose,
       tailOnRight: tailOnRight,
+      tailAtBottom: tailAtBottom,
       icon: _AssistantLottieIcon(emoji: emoji, size: 30, fallbackFontSize: 18),
       child: Text(
-        message,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
+        _expandedAssistantText(message),
         style: TextStyle(
           color: pageSecondaryTextColor(context),
           fontSize: 14.5,
@@ -40,11 +41,13 @@ class _NutritionNudgeBubble extends StatelessWidget {
   final NutritionInsight insight;
   final VoidCallback onClose;
   final bool tailOnRight;
+  final bool tailAtBottom;
 
   const _NutritionNudgeBubble({
     required this.insight,
     required this.onClose,
     this.tailOnRight = true,
+    this.tailAtBottom = false,
   });
 
   @override
@@ -53,6 +56,7 @@ class _NutritionNudgeBubble extends StatelessWidget {
       title: 'Nutrition nudge',
       onClose: onClose,
       tailOnRight: tailOnRight,
+      tailAtBottom: tailAtBottom,
       icon: const Icon(
         Icons.restaurant_menu_rounded,
         color: Colors.white,
@@ -60,9 +64,7 @@ class _NutritionNudgeBubble extends StatelessWidget {
       ),
       iconColors: const [Color(0xFF1EAD83), Color(0xFF5DB8F0)],
       child: Text(
-        _shortAssistantText(insight.message, maxChars: 104),
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
+        _expandedAssistantText(insight.message),
         style: TextStyle(
           color: pageSecondaryTextColor(context),
           fontSize: 14.5,
@@ -82,6 +84,7 @@ class _ExercisePreviewBubble extends StatelessWidget {
   final VoidCallback onChoose;
   final ValueChanged<ExerciseRecommendationModel> onAccept;
   final bool tailOnRight;
+  final bool tailAtBottom;
 
   const _ExercisePreviewBubble({
     required this.goalState,
@@ -90,6 +93,7 @@ class _ExercisePreviewBubble extends StatelessWidget {
     required this.onChoose,
     required this.onAccept,
     this.tailOnRight = true,
+    this.tailAtBottom = false,
   });
 
   @override
@@ -105,6 +109,7 @@ class _ExercisePreviewBubble extends StatelessWidget {
         title: 'Rest saved',
         onClose: onClose,
         tailOnRight: tailOnRight,
+        tailAtBottom: tailAtBottom,
         icon: const Icon(
           Icons.self_improvement_rounded,
           color: Colors.white,
@@ -116,8 +121,6 @@ class _ExercisePreviewBubble extends StatelessWidget {
           children: [
             Text(
               'None today',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: pagePrimaryTextColor(context),
                 fontSize: 16,
@@ -127,8 +130,6 @@ class _ExercisePreviewBubble extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               'Rest is still care. Keep it light and pick movement later if your energy changes.',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: pageSecondaryTextColor(context),
                 fontSize: 13,
@@ -157,6 +158,7 @@ class _ExercisePreviewBubble extends StatelessWidget {
         title: isCompleted ? 'Exercise done' : 'Exercise saved',
         onClose: onClose,
         tailOnRight: tailOnRight,
+        tailAtBottom: tailAtBottom,
         icon: Icon(
           isCompleted ? Icons.check_rounded : Icons.flag_rounded,
           color: Colors.white,
@@ -168,8 +170,6 @@ class _ExercisePreviewBubble extends StatelessWidget {
           children: [
             Text(
               goal.exerciseName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: pagePrimaryTextColor(context),
                 fontSize: 16,
@@ -181,8 +181,6 @@ class _ExercisePreviewBubble extends StatelessWidget {
               isCompleted
                   ? 'Nice work. This goal is complete.'
                   : '${goal.targetLabel()} - open exercise to mark done or cancel.',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: pageSecondaryTextColor(context),
                 fontSize: 13,
@@ -207,16 +205,14 @@ class _ExercisePreviewBubble extends StatelessWidget {
 
     final title = recommendation?.exerciseName ?? 'Choose today\'s movement';
     final target = recommendation?.targetLabel ?? 'Open exercise for options';
-    final reason = _shortAssistantText(
-      recommendation?.reason ?? '',
-      maxChars: 82,
-    );
+    final reason = _expandedAssistantText(recommendation?.reason ?? '');
     final subtitle = reason.isEmpty ? target : '$target - $reason';
 
     return _AssistantBubbleShell(
       title: 'Exercise',
       onClose: onClose,
       tailOnRight: tailOnRight,
+      tailAtBottom: tailAtBottom,
       icon: const Icon(
         Icons.directions_run_rounded,
         color: Colors.white,
@@ -228,8 +224,6 @@ class _ExercisePreviewBubble extends StatelessWidget {
         children: [
           Text(
             title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: pagePrimaryTextColor(context),
               fontSize: 17,
@@ -239,8 +233,6 @@ class _ExercisePreviewBubble extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             subtitle,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: pageSecondaryTextColor(context),
               fontSize: 14,
@@ -300,6 +292,7 @@ class _AssistantBubbleShell extends StatelessWidget {
   /// When true the tail points right (toward a button docked on the right).
   /// When false the tail points left (toward a button docked on the left).
   final bool tailOnRight;
+  final bool tailAtBottom;
 
   const _AssistantBubbleShell({
     required this.title,
@@ -311,6 +304,7 @@ class _AssistantBubbleShell extends StatelessWidget {
       Color(0xFF59B7EF),
     ],
     this.tailOnRight = true,
+    this.tailAtBottom = false,
   });
 
   @override
@@ -319,8 +313,10 @@ class _AssistantBubbleShell extends StatelessWidget {
     final surfaceColor = isDark
         ? const Color(0xFF132438).withValues(alpha: 0.98)
         : Colors.white.withValues(alpha: 0.98);
-        
-    final goldAccent = isDark ? const Color(0xFFF3C04F) : const Color(0xFFE2A829);
+
+    final goldAccent = isDark
+        ? const Color(0xFFF3C04F)
+        : const Color(0xFFE2A829);
     final borderColor = goldAccent.withValues(alpha: 0.4);
 
     return Stack(
@@ -427,7 +423,8 @@ class _AssistantBubbleShell extends StatelessWidget {
         Positioned(
           right: tailOnRight ? -6 : null,
           left: tailOnRight ? null : -6,
-          top: 22,
+          top: tailAtBottom ? null : 22,
+          bottom: tailAtBottom ? 22 : null,
           child: Transform.rotate(
             angle: 3.14159265 / 4,
             child: Stack(

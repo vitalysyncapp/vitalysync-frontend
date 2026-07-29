@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vitalysync/features/activity/data/activity_service.dart';
 import 'package:vitalysync/features/log/data/check_in_models.dart';
 import 'package:vitalysync/features/log/data/check_in_state_coordinator.dart';
 import 'package:vitalysync/features/log/presentation/widgets/check_in_success_view.dart';
@@ -54,6 +55,56 @@ void main() {
 
     expect(nudgesX, lessThan(checkInX));
     expect(checkInX, lessThan(exerciseX));
+  });
+
+  testWidgets('assistant sections support horizontal swiping', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+
+    await _pumpAssistant(tester, status: _incompleteStatus);
+
+    final pageView = tester.widget<PageView>(find.byType(PageView));
+    expect(pageView.controller?.page, 0);
+
+    await tester.drag(find.byType(PageView), const Offset(-320, 0));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(pageView.controller?.page, greaterThan(0.8));
+  });
+
+  testWidgets('floating assistant bubble keeps its full message', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    addTearDown(ActivityService.instance.disposeTracking);
+    const longMessage =
+        'A longer assistant preview should wrap to every line it needs so the final supportive suggestion remains readable without an ellipsis or hidden ending.';
+
+    await pumpTestApp(
+      tester,
+      const SizedBox(
+        width: 390,
+        height: 620,
+        child: FloatingSmartNudgeAssistant(
+          message: longMessage,
+          autoHideDuration: Duration(minutes: 5),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final bubbleBody = find.byWidgetPredicate(
+      (widget) => widget is Text && widget.style?.fontSize == 14.5,
+      description: 'floating assistant preview body',
+    );
+    expect(bubbleBody, findsOneWidget);
+    final message = tester.widget<Text>(bubbleBody);
+    expect(message.maxLines, isNull);
+    expect(message.overflow, isNull);
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await ActivityService.instance.disposeTracking();
   });
 
   testWidgets('assistant refreshes to shared completion after external save', (

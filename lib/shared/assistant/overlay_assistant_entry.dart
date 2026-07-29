@@ -318,8 +318,8 @@ class _OverlayAssistantShellState extends State<_OverlayAssistantShell> {
   }
 
   Future<bool> _maybePreviewSmartNudge({required bool forceRefresh}) async {
-    final insightsPaused = AppPreferencesController
-        .instance.notifier.value.pauseWellnessInsights;
+    final insightsPaused =
+        AppPreferencesController.instance.notifier.value.pauseWellnessInsights;
     if (insightsPaused) {
       return false;
     }
@@ -342,10 +342,10 @@ class _OverlayAssistantShellState extends State<_OverlayAssistantShell> {
     final wasShown = await OverlayAssistantController.instance
         .showGeneratedPreview(
           kind: 'smart',
-          title: _shortPreviewText(nudge.title, maxChars: 34).isEmpty
+          title: _cleanPreviewText(nudge.title).isEmpty
               ? 'Smart nudge'
-              : _shortPreviewText(nudge.title, maxChars: 34),
-          body: _shortPreviewText(nudge.message, maxChars: 108),
+              : _cleanPreviewText(nudge.title),
+          body: _cleanPreviewText(nudge.message),
         );
     if (!wasShown) {
       return false;
@@ -372,10 +372,10 @@ class _OverlayAssistantShellState extends State<_OverlayAssistantShell> {
     final wasShown = await OverlayAssistantController.instance
         .showGeneratedPreview(
           kind: 'nutrition',
-          title: _shortPreviewText(insight.title, maxChars: 34).isEmpty
+          title: _cleanPreviewText(insight.title).isEmpty
               ? 'Nutrition nudge'
-              : _shortPreviewText(insight.title, maxChars: 34),
-          body: _shortPreviewText(insight.message, maxChars: 108),
+              : _cleanPreviewText(insight.title),
+          body: _cleanPreviewText(insight.message),
         );
     if (!wasShown) {
       return false;
@@ -409,10 +409,9 @@ class _OverlayAssistantShellState extends State<_OverlayAssistantShell> {
     final wasShown = await OverlayAssistantController.instance
         .showGeneratedPreview(
           kind: 'exercise',
-          title: _shortPreviewText(recommendation.exerciseName, maxChars: 34),
-          body: _shortPreviewText(
+          title: _cleanPreviewText(recommendation.exerciseName),
+          body: _cleanPreviewText(
             '${recommendation.targetLabel}. ${recommendation.reason}',
-            maxChars: 108,
           ),
         );
     if (!wasShown) {
@@ -464,24 +463,8 @@ class _OverlayAssistantShellState extends State<_OverlayAssistantShell> {
     return [item.exerciseName, item.targetLabel, item.reason].join('|');
   }
 
-  String _shortPreviewText(String value, {required int maxChars}) {
-    final clean = value.replaceAll(RegExp(r'\s+'), ' ').trim();
-    if (clean.isEmpty || clean.length <= maxChars) {
-      return clean;
-    }
-
-    final sentenceMatch = RegExp(r'^(.+?[.!?])(?:\s|$)').firstMatch(clean);
-    final firstSentence = sentenceMatch?.group(1)?.trim();
-    if (firstSentence != null && firstSentence.length <= maxChars) {
-      return firstSentence;
-    }
-
-    final clipped = clean.substring(0, maxChars).trimRight();
-    final lastSpace = clipped.lastIndexOf(' ');
-    final safeClip = lastSpace > maxChars * 0.58
-        ? clipped.substring(0, lastSpace)
-        : clipped;
-    return '$safeClip...';
+  String _cleanPreviewText(String value) {
+    return value.replaceAll(RegExp(r'\s+'), ' ').trim();
   }
 
   @override
@@ -523,19 +506,31 @@ class _OverlayAssistantShellState extends State<_OverlayAssistantShell> {
           _OverlayAssistantMode.reminderPreview => SafeArea(
             key: const ValueKey('overlay-reminder-preview'),
             child: Center(
-              child: _ReminderPreviewCard(
-                title: _reminderTitle,
-                body: _reminderBody,
+              child: SingleChildScrollView(
+                primary: false,
+                physics: const BouncingScrollPhysics(
+                  parent: ClampingScrollPhysics(),
+                ),
+                child: _ReminderPreviewCard(
+                  title: _reminderTitle,
+                  body: _reminderBody,
+                ),
               ),
             ),
           ),
           _OverlayAssistantMode.generatedPreview => SafeArea(
             key: const ValueKey('overlay-generated-preview'),
             child: Center(
-              child: _GeneratedPreviewCard(
-                kind: _generatedPreviewKind,
-                title: _generatedPreviewTitle,
-                body: _generatedPreviewBody,
+              child: SingleChildScrollView(
+                primary: false,
+                physics: const BouncingScrollPhysics(
+                  parent: ClampingScrollPhysics(),
+                ),
+                child: _GeneratedPreviewCard(
+                  kind: _generatedPreviewKind,
+                  title: _generatedPreviewTitle,
+                  body: _generatedPreviewBody,
+                ),
               ),
             ),
           ),
@@ -616,8 +611,6 @@ class _ReminderPreviewCard extends StatelessWidget {
                 children: [
                   Text(
                     title.trim().isEmpty ? 'Reminder' : title.trim(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.titleSmall?.copyWith(
                       color: titleColor,
                       fontWeight: FontWeight.w800,
@@ -628,8 +621,6 @@ class _ReminderPreviewCard extends StatelessWidget {
                     const SizedBox(height: 5),
                     Text(
                       body.trim(),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: bodyColor,
                         height: 1.3,
@@ -726,8 +717,6 @@ class _GeneratedPreviewCard extends StatelessWidget {
                 children: [
                   Text(
                     title.trim().isEmpty ? fallbackTitle : title.trim(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.titleSmall?.copyWith(
                       color: titleColor,
                       fontWeight: FontWeight.w800,
@@ -738,8 +727,6 @@ class _GeneratedPreviewCard extends StatelessWidget {
                     const SizedBox(height: 5),
                     Text(
                       body.trim(),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: bodyColor,
                         height: 1.3,

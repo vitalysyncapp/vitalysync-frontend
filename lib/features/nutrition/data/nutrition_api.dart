@@ -239,6 +239,7 @@ class NutritionApi {
   static const Duration _analysisTimeout = ApiRequestTimeouts.aiAnalysis;
   static const String _dailyNutritionCache = 'nutrition_daily_summary';
   static const String _nutritionHistoryCache = 'nutrition_history';
+  static final Map<String, Future<Map<String, dynamic>>> _historyRequests = {};
 
   static String todayKey() {
     return DateFormat('yyyy-MM-dd').format(DateTime.now());
@@ -449,42 +450,91 @@ class NutritionApi {
     bool forceRefresh = false,
   }) async {
     final userId = await _currentUserId();
-    final cachedSnapshot = await OfflineCacheStore.readLatestJsonSnapshot(
-      namespace: _nutritionHistoryCache,
-      scope: _historyScope(userId, start, end),
-    );
-    if (!forceRefresh &&
-        cachedSnapshot?.isFresh(FetchPolicy.fiveMinutes.maxAge) == true) {
-      return _parseHistoryDays(cachedSnapshot!.data);
-    }
-
     try {
-      final response = await http
-          .get(
-            Uri.parse(
-              '${ApiConfig.nutrition('/history')}?user_id=$userId&start=$start&end=$end',
-            ),
-            headers: await ApiConfig.acceptJsonHeaders(),
-          )
-          .timeout(_requestTimeout);
-      final data = _decodeBody(
-        response,
-        fallbackMessage: 'Failed to load nutrition history.',
+      final result = await fetchHistoryCached(
+        userId: userId,
+        start: start,
+        end: end,
+        forceRefresh: forceRefresh,
       );
-
-      if (response.statusCode != 200) {
-        return await _readCachedHistory(userId, start, end);
+      final refresh = result.refresh;
+      if (refresh != null) {
+        unawaited(refresh.catchError((_) => result.data));
       }
-
-      await OfflineCacheStore.saveJson(
-        namespace: _nutritionHistoryCache,
-        scope: _historyScope(userId, start, end),
-        data: data,
-      );
-      return _parseHistoryDays(data);
+      return result.data;
     } catch (_) {
       return _readCachedHistory(userId, start, end);
     }
+  }
+
+  static Future<CachedFetchResult<List<NutritionHistoryDay>>>
+  fetchHistoryCached({
+    int? userId,
+    required String start,
+    required String end,
+    bool forceRefresh = false,
+  }) async {
+    final resolvedUserId = userId ?? await _currentUserId();
+    final scope = _historyScope(resolvedUserId, start, end);
+    final result = await CachedJsonFetch.load<List<NutritionHistoryDay>>(
+      namespace: _nutritionHistoryCache,
+      scope: scope,
+      policy: FetchPolicy.fiveMinutes,
+      parser: _parseHistoryDays,
+      fetcher: () => _fetchHistoryFromNetwork(
+        userId: resolvedUserId,
+        start: start,
+        end: end,
+        requestKey: scope,
+      ),
+      forceRefresh: forceRefresh,
+    );
+
+    return result!;
+  }
+
+  static Future<Map<String, dynamic>> _fetchHistoryFromNetwork({
+    required int userId,
+    required String start,
+    required String end,
+    required String requestKey,
+  }) {
+    final pending = _historyRequests[requestKey];
+    if (pending != null) {
+      return pending;
+    }
+
+    late final Future<Map<String, dynamic>> request;
+    request = () async {
+      try {
+        final response = await http
+            .get(
+              Uri.parse(
+                '${ApiConfig.nutrition('/history')}?user_id=$userId&start=$start&end=$end',
+              ),
+              headers: await ApiConfig.acceptJsonHeaders(),
+            )
+            .timeout(FetchPolicy.fiveMinutes.requestTimeout);
+        final data = _decodeBody(
+          response,
+          fallbackMessage: 'Failed to load nutrition history.',
+        );
+
+        if (response.statusCode != 200) {
+          throw Exception(
+            data['message'] ?? 'Failed to load nutrition history.',
+          );
+        }
+
+        return data;
+      } finally {
+        if (identical(_historyRequests[requestKey], request)) {
+          _historyRequests.remove(requestKey);
+        }
+      }
+    }();
+    _historyRequests[requestKey] = request;
+    return request;
   }
 
   static Future<DailyNutritionSummary?> _readCachedDaily(

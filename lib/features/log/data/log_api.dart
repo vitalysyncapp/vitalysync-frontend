@@ -12,6 +12,8 @@ import '../../../shared/offline/offline_cache_store.dart';
 import '../../dashboard/data/burnout_score_api.dart';
 import '../../exercise/data/exercise_goal_model.dart';
 import '../../exercise/data/exercise_goal_service.dart';
+import '../../onboarding/data/baseline_refresh_sync_service.dart';
+import '../../onboarding/data/pending_baseline_refresh_store.dart';
 import 'check_in_models.dart';
 
 part 'log_local_cache_helpers.dart';
@@ -937,7 +939,12 @@ class LogApi {
 
     final logDate = todayKey();
     try {
-      await _syncPendingCheckIns(userId);
+      final baselineState = await BaselineRefreshSyncService.instance
+          .syncPending(userId);
+      if (baselineState != BaselineRefreshSyncState.queued &&
+          baselineState != BaselineRefreshSyncState.needsAttention) {
+        await _syncPendingCheckIns(userId);
+      }
       final response = await http
           .get(
             Uri.parse(
@@ -1289,7 +1296,8 @@ class LogApi {
           key.startsWith(_exercisePrefillKeyPrefix) ||
           key.startsWith(_syncedStreakKeyPrefix) ||
           key.startsWith(_checkInStatusCachePrefix) ||
-          key.startsWith(_pendingCheckInsKeyPrefix),
+          key.startsWith(_pendingCheckInsKeyPrefix) ||
+          key.startsWith('pending_baseline_refresh_v1_'),
     );
 
     for (final key in logKeys.toList()) {
@@ -1309,7 +1317,12 @@ class LogApi {
 
     final pendingLogs = await _readPendingLogs(userId);
     final pendingCheckIns = await _readPendingCheckIns(userId);
-    return pendingLogs.length + pendingCheckIns.length;
+    final pendingBaseline = await PendingBaselineRefreshStore.instance.read(
+      userId,
+    );
+    return pendingLogs.length +
+        pendingCheckIns.length +
+        (pendingBaseline == null ? 0 : 1);
   }
 
   static Future<int> syncPendingLogs() async {
@@ -1318,6 +1331,13 @@ class LogApi {
       return 0;
     }
 
+    final baselineState = await BaselineRefreshSyncService.instance.syncPending(
+      userId,
+    );
+    if (baselineState == BaselineRefreshSyncState.queued ||
+        baselineState == BaselineRefreshSyncState.needsAttention) {
+      return 0;
+    }
     final unifiedSynced = await _syncPendingCheckIns(userId);
     final pendingLogs = await _readPendingLogs(userId);
     if (pendingLogs.isEmpty) {

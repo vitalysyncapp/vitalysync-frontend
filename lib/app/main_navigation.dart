@@ -14,8 +14,8 @@ import '../features/log/presentation/pages/welcome_back_baseline_page.dart';
 import '../features/nutrition/data/nutrition_reminder_engine.dart';
 import '../features/nutrition/presentation/pages/nutrition_page.dart';
 import '../features/profile/presentation/pages/profile_page.dart';
-import '../features/onboarding/data/onboarding_api.dart';
-import '../features/onboarding/services/onboarding_service.dart';
+import '../features/onboarding/data/baseline_refresh_sync_service.dart';
+import '../features/onboarding/data/pending_baseline_refresh_store.dart';
 import '../features/recovery/data/recovery_mode_service.dart';
 import '../features/recovery/presentation/pages/recovery_mode_page.dart';
 import '../features/settings/presentation/pages/assistant_settings.dart';
@@ -265,6 +265,13 @@ class _MainNavigationState extends State<MainNavigation>
           await (widget.checkInStatusLoader?.call() ??
               LogApi.fetchCheckInStatus());
       if (!mounted || !status.requiresBaselineRefresh) return true;
+      final session = await UserSessionController.instance.load();
+      final pendingRefresh = session.userId == null
+          ? null
+          : await PendingBaselineRefreshStore.instance.read(session.userId!);
+      if (pendingRefresh != null && !pendingRefresh.needsAttention) {
+        return true;
+      }
 
       _isBaselineRefreshRouteOpen = true;
       final username = widget.usernameLoader != null
@@ -304,28 +311,13 @@ class _MainNavigationState extends State<MainNavigation>
     final userId = session.userId;
     if (userId == null) return false;
 
-    try {
-      final response = await OnboardingApi.updateBurnoutBaseline(
-        userId: userId,
-        burnoutAnswers: answers,
-      );
-      final profile = response['profile'];
-      if (profile is Map) {
-        await OnboardingService.saveDefaultsFromProfile(
-          Map<String, dynamic>.from(profile),
-        );
-      }
-      final latestScore = response['latest_score'];
-      await BurnoutScoreApi.markInputsChanged(
-        latestScore: latestScore is Map
-            ? Map<String, dynamic>.from(latestScore)
-            : null,
-        clearLatestScore: latestScore is! Map,
-      );
-      return true;
-    } catch (_) {
-      return false;
-    }
+    final state = await BaselineRefreshSyncService.instance.saveOrQueue(
+      userId: userId,
+      answers: answers,
+      baselineDate: LogApi.todayKey(),
+    );
+    return state == BaselineRefreshSyncState.synced ||
+        state == BaselineRefreshSyncState.queued;
   }
 
   Future<void> _syncPendingLogs() async {

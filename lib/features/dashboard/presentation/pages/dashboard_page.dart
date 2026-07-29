@@ -349,9 +349,7 @@ class _DashboardState extends State<Dashboard> {
                         RevealOnBuild(
                           delay: const Duration(milliseconds: 320),
                           child: NutritionAnalyticsCard(
-                            key: ValueKey(
-                              'nutrition-analytics-$_refreshVersion',
-                            ),
+                            refreshVersion: _refreshVersion,
                           ),
                         ),
                         const SizedBox(height: 12),

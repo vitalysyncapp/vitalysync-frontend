@@ -43,30 +43,6 @@ enum _AssistantBubbleKind { smartNudge, nutrition, exercise }
 
 enum _AssistantDockEdge { left, right }
 
-String _shortAssistantText(String value, {int maxChars = 112}) {
-  final clean = value.replaceAll(RegExp(r'\s+'), ' ').trim();
-  if (clean.isEmpty) {
-    return '';
-  }
-
-  final sentenceMatch = RegExp(r'^(.+?[.!?])(?:\s|$)').firstMatch(clean);
-  final firstSentence = sentenceMatch?.group(1)?.trim();
-  final candidate = firstSentence != null && firstSentence.length <= maxChars
-      ? firstSentence
-      : clean;
-
-  if (candidate.length <= maxChars) {
-    return candidate;
-  }
-
-  final clipped = candidate.substring(0, maxChars).trimRight();
-  final lastSpace = clipped.lastIndexOf(' ');
-  final safeClip = lastSpace > maxChars * 0.62
-      ? clipped.substring(0, lastSpace)
-      : clipped;
-  return '$safeClip...';
-}
-
 bool _isAiEnhancedNudge(AdaptiveNudgeRecommendation recommendation) {
   return recommendation.metadata['ai_enhanced'] == true;
 }
@@ -764,6 +740,7 @@ class _FloatingSmartNudgeAssistantState
   Widget _buildActiveBubble(
     ExerciseGoalState goalState, {
     required bool tailOnRight,
+    required bool tailAtBottom,
   }) {
     final primaryNudge = _adaptiveNudges.isEmpty ? null : _adaptiveNudges.first;
 
@@ -773,11 +750,10 @@ class _FloatingSmartNudgeAssistantState
         if (insight == null) {
           return _SmartNudgeBubble(
             emoji: widget.emoji,
-            message: _shortAssistantText(
-              primaryNudge?.message ?? widget.message,
-            ),
+            message: primaryNudge?.message ?? widget.message,
             onClose: _hideBubble,
             tailOnRight: tailOnRight,
+            tailAtBottom: tailAtBottom,
           );
         }
 
@@ -785,6 +761,7 @@ class _FloatingSmartNudgeAssistantState
           insight: insight,
           onClose: _hideBubble,
           tailOnRight: tailOnRight,
+          tailAtBottom: tailAtBottom,
         );
       case _AssistantBubbleKind.exercise:
         return _ExercisePreviewBubble(
@@ -794,13 +771,15 @@ class _FloatingSmartNudgeAssistantState
           onChoose: _openExerciseDialog,
           onAccept: _acceptExercisePreview,
           tailOnRight: tailOnRight,
+          tailAtBottom: tailAtBottom,
         );
       case _AssistantBubbleKind.smartNudge:
         return _SmartNudgeBubble(
           emoji: widget.emoji,
-          message: _shortAssistantText(primaryNudge?.message ?? widget.message),
+          message: primaryNudge?.message ?? widget.message,
           onClose: _hideBubble,
           tailOnRight: tailOnRight,
+          tailAtBottom: tailAtBottom,
         );
     }
   }
@@ -826,6 +805,8 @@ class _FloatingSmartNudgeAssistantState
         final padding = _dragPadding(context, bounds);
         final buttonOffset = _effectiveButtonOffset(bounds, padding);
         final isDockedRight = _dockEdge == _AssistantDockEdge.right;
+        final bubbleOpensUpward =
+            buttonOffset.dy + (widget.buttonSize / 2) > bounds.height / 2;
         const bubbleGap = 10.0;
         // Bubble sits beside the button, on the opposite side of the dock.
         final availableWidth = isDockedRight
@@ -839,6 +820,16 @@ class _FloatingSmartNudgeAssistantState
         final bubbleLeft = isDockedRight
             ? max(padding.left, buttonOffset.dx - bubbleGap - maxBubbleWidth)
             : buttonOffset.dx + widget.buttonSize + bubbleGap;
+        final bubbleTop = bubbleOpensUpward ? null : buttonOffset.dy;
+        final bubbleBottom = bubbleOpensUpward
+            ? bounds.height - buttonOffset.dy - widget.buttonSize
+            : null;
+        final maxBubbleHeight = max(
+          1.0,
+          bubbleOpensUpward
+              ? buttonOffset.dy + widget.buttonSize - padding.top
+              : bounds.height - padding.bottom - buttonOffset.dy,
+        );
         // Horizontal slide animation toward the button.
         final bubbleSlideOffset = isDockedRight
             ? const Offset(0.08, 0)
@@ -855,7 +846,8 @@ class _FloatingSmartNudgeAssistantState
                 duration: moveDuration,
                 curve: Curves.easeOutCubic,
                 left: bubbleLeft,
-                top: buttonOffset.dy,
+                top: bubbleTop,
+                bottom: bubbleBottom,
                 width: maxBubbleWidth,
                 child: IgnorePointer(
                   ignoring: !_isBubbleVisible,
@@ -867,11 +859,38 @@ class _FloatingSmartNudgeAssistantState
                       duration: const Duration(milliseconds: 220),
                       curve: Curves.easeOut,
                       opacity: _isBubbleVisible ? 1 : 0,
-                      child: ValueListenableBuilder<ExerciseGoalState>(
-                        valueListenable: ExerciseGoalService.instance.notifier,
-                        builder: (context, goalState, _) => _buildActiveBubble(
-                          goalState,
-                          tailOnRight: isDockedRight,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxHeight: maxBubbleHeight),
+                        child: SingleChildScrollView(
+                          primary: false,
+                          physics: const BouncingScrollPhysics(
+                            parent: ClampingScrollPhysics(),
+                          ),
+                          child: AnimatedSize(
+                            duration: const Duration(milliseconds: 220),
+                            curve: Curves.easeOutCubic,
+                            alignment: bubbleOpensUpward
+                                ? Alignment.bottomCenter
+                                : Alignment.topCenter,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                              ),
+                              child: ValueListenableBuilder<ExerciseGoalState>(
+                                valueListenable:
+                                    ExerciseGoalService.instance.notifier,
+                                builder: (context, goalState, _) =>
+                                    KeyedSubtree(
+                                      key: ValueKey(_activeBubbleKind),
+                                      child: _buildActiveBubble(
+                                        goalState,
+                                        tailOnRight: isDockedRight,
+                                        tailAtBottom: bubbleOpensUpward,
+                                      ),
+                                    ),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),

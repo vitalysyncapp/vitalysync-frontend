@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../features/nutrition/data/nutrition_api.dart';
+import '../../../../shared/offline/fetch_policy.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/analytics_animation.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
@@ -17,61 +20,132 @@ const Color _carbColor = Color(0xFF1FB489);
 const Color _fatColor = Color(0xFFF59E0B);
 
 class NutritionAnalyticsCard extends StatefulWidget {
-  const NutritionAnalyticsCard({super.key});
+  final int refreshVersion;
+  final Future<CachedFetchResult<List<NutritionHistoryDay>>> Function({
+    required String start,
+    required String end,
+    bool forceRefresh,
+  })
+  historyFetcher;
+
+  const NutritionAnalyticsCard({
+    super.key,
+    this.refreshVersion = 0,
+    this.historyFetcher = NutritionApi.fetchHistoryCached,
+  });
 
   @override
   State<NutritionAnalyticsCard> createState() => _NutritionAnalyticsCardState();
 }
 
 class _NutritionAnalyticsCardState extends State<NutritionAnalyticsCard> {
-  late Future<_NutritionAnalyticsSnapshot> _future;
+  _NutritionAnalyticsSnapshot? _data;
+  bool _isLoading = true;
+  bool _isRefreshing = false;
+  int _loadToken = 0;
 
   @override
   void initState() {
     super.initState();
-    _future = _loadSnapshot();
+    unawaited(_loadSnapshot());
   }
 
-  Future<_NutritionAnalyticsSnapshot> _loadSnapshot() async {
+  @override
+  void didUpdateWidget(covariant NutritionAnalyticsCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.refreshVersion != widget.refreshVersion) {
+      unawaited(_loadSnapshot(forceRefresh: true));
+    } else if (oldWidget.historyFetcher != widget.historyFetcher) {
+      unawaited(_loadSnapshot());
+    }
+  }
+
+  Future<void> _loadSnapshot({bool forceRefresh = false}) async {
+    final loadToken = ++_loadToken;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final start = today.subtract(const Duration(days: 6));
 
+    setState(() {
+      _isLoading = _data == null;
+      _isRefreshing = _data != null;
+    });
+
     try {
-      final history = await NutritionApi.fetchHistory(
+      final result = await widget.historyFetcher(
         start: _dateKey(start),
         end: _dateKey(today),
+        forceRefresh: forceRefresh,
       );
-      return _NutritionAnalyticsSnapshot.fromHistory(
-        start: start,
-        history: history,
-      );
+      if (!mounted || loadToken != _loadToken) return;
+
+      setState(() {
+        _data = _NutritionAnalyticsSnapshot.fromHistory(
+          start: start,
+          history: result.data,
+        );
+        _isLoading = false;
+        _isRefreshing = result.isRefreshing;
+      });
+
+      final refresh = result.refresh;
+      if (refresh == null) return;
+
+      try {
+        final refreshedHistory = await refresh;
+        if (!mounted || loadToken != _loadToken) return;
+
+        setState(() {
+          _data = _NutritionAnalyticsSnapshot.fromHistory(
+            start: start,
+            history: refreshedHistory,
+          );
+          _isRefreshing = false;
+        });
+      } catch (_) {
+        if (!mounted || loadToken != _loadToken) return;
+        setState(() {
+          _isRefreshing = false;
+        });
+      }
     } catch (_) {
-      return _NutritionAnalyticsSnapshot.empty(start: start, unavailable: true);
+      if (!mounted || loadToken != _loadToken) return;
+      setState(() {
+        _data ??= _NutritionAnalyticsSnapshot.empty(
+          start: start,
+          unavailable: true,
+        );
+        _isLoading = false;
+        _isRefreshing = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<_NutritionAnalyticsSnapshot>(
-      future: _future,
-      builder: (context, snapshot) {
-        final data =
-            snapshot.data ??
-            _NutritionAnalyticsSnapshot.empty(
-              start: DateTime.now().subtract(const Duration(days: 6)),
-            );
-        final isLoading = snapshot.connectionState == ConnectionState.waiting;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _WeeklyCalorieLevelsCard(data: data, isLoading: isLoading),
-            const SizedBox(height: 12),
-            _NutritionBalanceCard(data: data, isLoading: isLoading),
-          ],
+    final data =
+        _data ??
+        _NutritionAnalyticsSnapshot.empty(
+          start: DateTime.now().subtract(const Duration(days: 6)),
         );
-      },
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _WeeklyCalorieLevelsCard(
+          data: data,
+          isLoading: _isLoading,
+          isRefreshing: _isRefreshing,
+          onRetry: () => _loadSnapshot(forceRefresh: true),
+        ),
+        const SizedBox(height: 12),
+        _NutritionBalanceCard(
+          data: data,
+          isLoading: _isLoading,
+          isRefreshing: _isRefreshing,
+          onRetry: () => _loadSnapshot(forceRefresh: true),
+        ),
+      ],
     );
   }
 
@@ -87,8 +161,15 @@ class _NutritionAnalyticsCardState extends State<NutritionAnalyticsCard> {
 class _WeeklyCalorieLevelsCard extends StatelessWidget {
   final _NutritionAnalyticsSnapshot data;
   final bool isLoading;
+  final bool isRefreshing;
+  final VoidCallback onRetry;
 
-  const _WeeklyCalorieLevelsCard({required this.data, required this.isLoading});
+  const _WeeklyCalorieLevelsCard({
+    required this.data,
+    required this.isLoading,
+    required this.isRefreshing,
+    required this.onRetry,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -107,12 +188,14 @@ class _WeeklyCalorieLevelsCard extends StatelessWidget {
                 ? 'Saved nutrition data unavailable'
                 : 'Daily energy intake made easier to read',
             gradientColors: const [Color(0xFF1FB489), Color(0xFFF59E0B)],
+            isRefreshing: isRefreshing,
+            onRetry: data.unavailable ? onRetry : null,
           ),
           const SizedBox(height: 12),
           AnalyticsContentSwitcher(
             isLoading: isLoading,
             loading: const SizedBox(
-              height: 170,
+              height: 220,
               child: AppSkeletonRows(count: 5, showLeading: true),
             ),
             child: Column(
@@ -167,8 +250,15 @@ class _WeeklyCalorieLevelsCard extends StatelessWidget {
 class _NutritionBalanceCard extends StatelessWidget {
   final _NutritionAnalyticsSnapshot data;
   final bool isLoading;
+  final bool isRefreshing;
+  final VoidCallback onRetry;
 
-  const _NutritionBalanceCard({required this.data, required this.isLoading});
+  const _NutritionBalanceCard({
+    required this.data,
+    required this.isLoading,
+    required this.isRefreshing,
+    required this.onRetry,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -179,10 +269,14 @@ class _NutritionBalanceCard extends StatelessWidget {
           _NutritionSectionHeader(
             icon: Icons.donut_small_rounded,
             title: 'Nutrition balance',
-            subtitle: data.hasMacroData
+            subtitle: data.unavailable
+                ? 'Saved nutrition data unavailable'
+                : data.hasMacroData
                 ? 'Protein, carbs, and fat from logged meals'
                 : 'Log meals with macros to build this view',
             gradientColors: const [Color(0xFF2F80ED), Color(0xFF1FB489)],
+            isRefreshing: isRefreshing,
+            onRetry: data.unavailable ? onRetry : null,
           ),
           const SizedBox(height: 12),
           AnalyticsContentSwitcher(
@@ -235,12 +329,16 @@ class _NutritionSectionHeader extends StatelessWidget {
   final String title;
   final String subtitle;
   final List<Color> gradientColors;
+  final bool isRefreshing;
+  final VoidCallback? onRetry;
 
   const _NutritionSectionHeader({
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.gradientColors,
+    this.isRefreshing = false,
+    this.onRetry,
   });
 
   @override
@@ -283,6 +381,21 @@ class _NutritionSectionHeader extends StatelessWidget {
             ],
           ),
         ),
+        if (isRefreshing)
+          const Padding(
+            padding: EdgeInsets.only(left: 8),
+            child: SizedBox.square(
+              dimension: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          )
+        else if (onRetry != null)
+          IconButton(
+            key: const ValueKey('nutrition-analytics-retry'),
+            tooltip: 'Retry nutrition data',
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh_rounded),
+          ),
       ],
     );
   }

@@ -344,8 +344,33 @@ class BurnoutAdaptiveState {
   }
 }
 
+class BurnoutBaselineEpoch {
+  final int id;
+  final String startedAt;
+  final String resetReason;
+
+  const BurnoutBaselineEpoch({
+    required this.id,
+    required this.startedAt,
+    required this.resetReason,
+  });
+
+  bool get isRefresh =>
+      resetReason == 'thirty_day_return' ||
+      resetReason == 'manual_baseline_refresh';
+
+  factory BurnoutBaselineEpoch.fromJson(Map<String, dynamic> json) {
+    return BurnoutBaselineEpoch(
+      id: _parseInt(json['id']),
+      startedAt: json['started_at']?.toString() ?? '',
+      resetReason: json['reset_reason']?.toString() ?? '',
+    );
+  }
+}
+
 class BurnoutPatternSummary {
   final BurnoutScoreSnapshot? latestScore;
+  final BurnoutBaselineEpoch? baselineEpoch;
   final BurnoutAdaptiveState adaptiveState;
   final Map<String, BurnoutWindowSummary> windows;
   final List<BurnoutPatternInsight> patterns;
@@ -353,6 +378,7 @@ class BurnoutPatternSummary {
 
   const BurnoutPatternSummary({
     required this.latestScore,
+    required this.baselineEpoch,
     required this.adaptiveState,
     required this.windows,
     required this.patterns,
@@ -375,11 +401,17 @@ class BurnoutPatternSummary {
 
     final latestScore = json['latest_score'];
     final adaptiveState = json['adaptive_state'];
+    final baselineEpoch = json['baseline_epoch'];
 
     return BurnoutPatternSummary(
       latestScore: latestScore is Map
           ? BurnoutScoreSnapshot.fromJson(
               Map<String, dynamic>.from(latestScore),
+            )
+          : null,
+      baselineEpoch: baselineEpoch is Map
+          ? BurnoutBaselineEpoch.fromJson(
+              Map<String, dynamic>.from(baselineEpoch),
             )
           : null,
       adaptiveState: adaptiveState is Map

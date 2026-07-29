@@ -337,7 +337,20 @@ void main() {
     expect(find.text(smartMessage), findsOneWidget);
     expect(find.text(nutritionMessage), findsOneWidget);
     expect(find.text('Drink water'), findsOneWidget);
+    expect(find.text('Take five quiet minutes'), findsOneWidget);
     expect(find.text('eggs'), findsOneWidget);
+
+    expect(tester.widget<Text>(find.text(smartMessage)).maxLines, isNull);
+    expect(tester.widget<Text>(find.text(nutritionMessage)).maxLines, isNull);
+
+    final nudgeScroll = find.byKey(const PageStorageKey<String>('Nudges'));
+    final scrollView = tester.widget<SingleChildScrollView>(nudgeScroll);
+    expect(scrollView.controller?.offset, 0);
+
+    await tester.drag(nudgeScroll, const Offset(0, -240));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(scrollView.controller?.offset, greaterThan(0));
   });
 
   testWidgets('assistant dialog does not refetch loaded empty nudge state', (

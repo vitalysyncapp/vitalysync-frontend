@@ -9,6 +9,7 @@ import '../../onboarding/services/onboarding_service.dart';
 import '../../../shared/offline/offline_cache_store.dart';
 import 'exercise_goal_api.dart';
 import 'exercise_goal_model.dart';
+import 'exercise_context_policy.dart';
 import 'exercise_log_context_policy.dart';
 import 'exercise_recommendation_policy.dart';
 import 'exercise_recommendation_model.dart';
@@ -77,7 +78,7 @@ class ExerciseRecommendationService {
     final energyLevel = LogApi.parseEnergyLevel(
       recoveryCheckIn?['energy_level'],
     );
-    final workloadHoursBand = LogApi.normalizeWorkloadHoursBand(
+    final currentWorkloadHoursBand = LogApi.normalizeWorkloadHoursBand(
       recoveryCheckIn?['workload_hours_band'],
     );
     final recommendedFocus = _recommendedFocus(
@@ -88,21 +89,28 @@ class ExerciseRecommendationService {
       burnoutSummary: burnoutSummary,
       adaptiveNudges: adaptiveNudges,
     );
-    final baselineLevel = defaults.initialBurnoutLevel?.trim().toLowerCase();
-    final highStress =
-        baselineLevel == 'high' ||
-        baselineLevel == 'very high' ||
-        defaults.burnoutScoreForDisplay >= 45 ||
-        (defaults.workloadLevel ?? 0) >= 4 ||
-        _hasHighBurnoutRisk(burnoutSummary) ||
-        _hasHighPriorityNudge(adaptiveNudges);
+    final hasCurrentBurnoutEvidence =
+        burnoutSummary?.latestScore != null ||
+        burnoutSummary?.patterns.isNotEmpty == true ||
+        adaptiveNudges.isNotEmpty;
+    final contextResolution = ExerciseContextPolicy.resolve(
+      hasCurrentBurnoutEvidence: hasCurrentBurnoutEvidence,
+      currentBurnoutNeedsRecovery:
+          _hasHighBurnoutRisk(burnoutSummary) ||
+          _hasHighPriorityNudge(adaptiveNudges),
+      currentWorkloadHoursBand: currentWorkloadHoursBand,
+      initialBurnoutLevel: defaults.initialBurnoutLevel,
+      initialBurnoutScore: defaults.initialBurnoutScore,
+      onboardingWorkloadLevel: defaults.workloadLevel,
+    );
     final weatherCondition = _outdoorCondition(environment);
     final airSafe = _isAirSafe(environment);
     final weatherReason = airSafe
         ? weatherCondition.reason
         : 'Air quality is elevated; indoor movement is safer today.';
     final needsRecovery =
-        highStress || _focusSuggestsRecovery(recommendedFocus);
+        contextResolution.needsRecovery ||
+        _focusSuggestsRecovery(recommendedFocus);
     final steps = activity.steps;
 
     final policyResult = ExerciseRecommendationPolicy.buildRecommendations(
@@ -114,7 +122,7 @@ class ExerciseRecommendationService {
         energyLevel: energyLevel,
         sleepHours: sleepHours,
         sleepQuality: sleepQuality,
-        workloadHoursBand: workloadHoursBand,
+        workloadHoursBand: contextResolution.workloadHoursBand,
         burnoutPatternFocus: recommendedFocus,
         burnoutPatternSeverity: burnoutSeverity,
         outdoorSafe: weatherCondition.isOutdoorSafe,

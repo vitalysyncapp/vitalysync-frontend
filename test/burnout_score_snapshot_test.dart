@@ -1,5 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vitalysync/features/dashboard/data/burnout_score_api.dart';
+import 'package:vitalysync/features/dashboard/presentation/widgets/burnout_risk_trend_card.dart';
 
 void main() {
   test(
@@ -78,5 +80,65 @@ void main() {
     expect(score.evidenceBasis.logCoveragePercent, 100);
     expect(score.evidenceBasis.topFactorKeys, ['sleep_recovery']);
     expect(score.explanationNote, contains('not a medical diagnosis'));
+  });
+
+  test('burnout pattern summary parses a refresh epoch marker', () {
+    final summary = BurnoutPatternSummary.fromJson({
+      'baseline_epoch': {
+        'id': 14,
+        'started_at': '2026-07-28',
+        'reset_reason': 'thirty_day_return',
+      },
+      'windows': <String, dynamic>{},
+      'patterns': <dynamic>[],
+      'timeline': <dynamic>[],
+    });
+
+    expect(summary.baselineEpoch?.id, 14);
+    expect(summary.baselineEpoch?.isRefresh, isTrue);
+    expect(summary.baselineEpoch?.startedAt, '2026-07-28');
+  });
+
+  testWidgets('trend card labels a recent refreshed baseline', (tester) async {
+    final summary = BurnoutPatternSummary.fromJson({
+      'baseline_epoch': {
+        'id': 14,
+        'started_at': '2026-07-28',
+        'reset_reason': 'thirty_day_return',
+      },
+      'windows': {
+        '7_day': {
+          'window_days': 7,
+          'trend_direction': 'stable',
+          'points': [
+            {
+              'score_date': '2026-07-28',
+              'overall_score': 44,
+              'risk_level': 'moderate',
+              'confidence_score': 70,
+            },
+            {
+              'score_date': '2026-07-29',
+              'overall_score': 42,
+              'risk_level': 'moderate',
+              'confidence_score': 74,
+            },
+          ],
+        },
+      },
+      'patterns': <dynamic>[],
+      'timeline': <dynamic>[],
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: BurnoutRiskTrendCard(summary: summary, isLoading: false),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Baseline refreshed · 2026-07-28'), findsOneWidget);
   });
 }

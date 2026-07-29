@@ -392,6 +392,32 @@ class AdaptiveNudgeApi {
     }
   }
 
+  static Future<void> recordProductEvent({
+    required String eventName,
+    required String eventKey,
+    Map<String, dynamic> dimensions = const <String, dynamic>{},
+  }) async {
+    final userId = await _storedUserId();
+    if (userId == null) return;
+
+    try {
+      await http
+          .post(
+            Uri.parse(ApiConfig.adaptive('/product-events')),
+            headers: await ApiConfig.jsonHeaders(),
+            body: jsonEncode({
+              'user_id': userId,
+              'event_name': eventName,
+              'event_key': eventKey,
+              'dimensions': dimensions,
+            }),
+          )
+          .timeout(_requestTimeout);
+    } catch (_) {
+      // Rollout telemetry is best-effort and must never block wellness flows.
+    }
+  }
+
   static Future<List<AdaptiveNudgeEvent>> listNudgeEvents({
     int limit = 30,
   }) async {

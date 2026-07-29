@@ -31,6 +31,7 @@ import io.flutter.embedding.engine.dart.DartExecutor
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugins.GeneratedPluginRegistrant
 import kotlin.math.abs
+import kotlin.math.ceil
 import kotlin.math.max
 
 class OverlayAssistantService : Service() {
@@ -61,6 +62,7 @@ class OverlayAssistantService : Service() {
     private var isBubbleMode = true
     private val mainHandler = Handler(Looper.getMainLooper())
     private var reminderPreviewCollapseRunnable: Runnable? = null
+    private var dismissTargetRemovalRunnable: Runnable? = null
 
     private var initialWindowX = 0
     private var initialWindowY = 0
@@ -250,6 +252,7 @@ class OverlayAssistantService : Service() {
 
     private fun handleBubbleTouch(event: MotionEvent): Boolean {
         if (!isBubbleMode) {
+            removeDismissTarget()
             return false
         }
 
@@ -258,6 +261,7 @@ class OverlayAssistantService : Service() {
 
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
+                removeDismissTarget()
                 initialWindowX = layoutParams.x
                 initialWindowY = layoutParams.y
                 initialTouchX = event.rawX
@@ -308,6 +312,7 @@ class OverlayAssistantService : Service() {
 
     private fun collapseToBubble() {
         cancelReminderPreviewCollapse()
+        removeDismissTarget()
         if (OverlayAssistantManager.isAppForeground(this)) {
             detachOverlayWindow()
             flutterEngine?.lifecycleChannel?.appIsPaused()
@@ -350,6 +355,7 @@ class OverlayAssistantService : Service() {
 
     private fun expandPanel() {
         cancelReminderPreviewCollapse()
+        removeDismissTarget()
         if (OverlayAssistantManager.isAppForeground(this)) {
             detachOverlayWindow()
             flutterEngine?.lifecycleChannel?.appIsPaused()
@@ -413,7 +419,7 @@ class OverlayAssistantService : Service() {
         val metrics = resources.displayMetrics
         val horizontalMargin = dpToPx(16)
         val width = max(dpToPx(300), minOf(dpToPx(390), metrics.widthPixels - (horizontalMargin * 2)))
-        val height = dpToPx(168)
+        val height = previewWindowHeight(title, body, minimumHeightDp = 132)
         val params = windowLayoutParams ?: WindowManager.LayoutParams(
             width,
             height,
@@ -446,7 +452,7 @@ class OverlayAssistantService : Service() {
         )
 
         reminderPreviewCollapseRunnable = Runnable { collapseToBubble() }.also {
-            mainHandler.postDelayed(it, 5000L)
+            mainHandler.postDelayed(it, previewDisplayDurationMillis(title, body))
         }
         return true
     }
@@ -487,7 +493,7 @@ class OverlayAssistantService : Service() {
         val metrics = resources.displayMetrics
         val horizontalMargin = dpToPx(16)
         val width = max(dpToPx(300), minOf(dpToPx(390), metrics.widthPixels - (horizontalMargin * 2)))
-        val height = dpToPx(172)
+        val height = previewWindowHeight(cleanTitle, cleanBody, minimumHeightDp = 136)
         val params = windowLayoutParams ?: WindowManager.LayoutParams(
             width,
             height,
@@ -519,7 +525,7 @@ class OverlayAssistantService : Service() {
         )
 
         reminderPreviewCollapseRunnable = Runnable { collapseToBubble() }.also {
-            mainHandler.postDelayed(it, 5000L)
+            mainHandler.postDelayed(it, previewDisplayDurationMillis(cleanTitle, cleanBody))
         }
         return true
     }
@@ -539,6 +545,7 @@ class OverlayAssistantService : Service() {
             true
         }.getOrElse {
             windowLayoutParams = null
+            removeDismissTarget()
             false
         }
     }
@@ -551,6 +558,7 @@ class OverlayAssistantService : Service() {
                 windowManager.updateViewLayout(root, params)
             }.onFailure {
                 windowLayoutParams = null
+                removeDismissTarget()
             }
         }
     }
@@ -637,9 +645,10 @@ class OverlayAssistantService : Service() {
     }
 
     private fun showDismissTarget() {
-        if (dismissView != null) {
+        if (dismissView?.isAttachedToWindow == true) {
             return
         }
+        removeDismissTarget()
 
         val size = dpToPx(96)
         val bottomMargin = dpToPx(32)
@@ -671,6 +680,11 @@ class OverlayAssistantService : Service() {
         runCatching {
             windowManager.addView(target, params)
             dismissView = target
+            dismissTargetRemovalRunnable = Runnable {
+                removeDismissTarget()
+            }.also {
+                mainHandler.postDelayed(it, 15_000L)
+            }
         }
     }
 
@@ -683,17 +697,18 @@ class OverlayAssistantService : Service() {
     }
 
     private fun removeDismissTarget() {
-        dismissView?.let { view ->
-            runCatching {
-                if (view.isAttachedToWindow) {
-                    windowManager.removeView(view)
-                }
-            }
-        }
+        dismissTargetRemovalRunnable?.let { mainHandler.removeCallbacks(it) }
+        dismissTargetRemovalRunnable = null
+        val view = dismissView ?: return
         dismissView = null
+        view.animate().cancel()
+        runCatching { windowManager.removeViewImmediate(view) }
     }
 
     private fun isOverDismissTarget(params: WindowManager.LayoutParams): Boolean {
+        if (dismissView?.isAttachedToWindow != true) {
+            return false
+        }
         val targetBounds = dismissTargetBounds()
         val bubbleRect = Rect(
             params.x,
@@ -711,6 +726,38 @@ class OverlayAssistantService : Service() {
         val left = (metrics.widthPixels - size) / 2
         val top = metrics.heightPixels - bottomMargin - size
         return Rect(left, top, left + size, top + size)
+    }
+
+    private fun previewWindowHeight(
+        title: String,
+        body: String,
+        minimumHeightDp: Int,
+    ): Int {
+        val metrics = resources.displayMetrics
+        val availableWidthDp = (metrics.widthPixels / metrics.density) - 112f
+        val charactersPerLine = (availableWidthDp / 7.2f).toInt().coerceAtLeast(22)
+        val titleLines = estimatedLineCount(title, charactersPerLine).coerceAtLeast(1)
+        val bodyLines = if (body.isBlank()) 0 else estimatedLineCount(body, charactersPerLine)
+        val desiredHeightDp = 72 + (titleLines * 21) + (bodyLines * 19)
+        val maximumHeightDp = minOf(
+            320,
+            ((metrics.heightPixels / metrics.density) * 0.42f).toInt(),
+        ).coerceAtLeast(minimumHeightDp)
+
+        return dpToPx(desiredHeightDp.coerceIn(minimumHeightDp, maximumHeightDp))
+    }
+
+    private fun estimatedLineCount(value: String, charactersPerLine: Int): Int {
+        val cleanLength = value.trim().length
+        if (cleanLength == 0) {
+            return 0
+        }
+        return ceil(cleanLength.toDouble() / charactersPerLine).toInt()
+    }
+
+    private fun previewDisplayDurationMillis(title: String, body: String): Long {
+        val readableCharacters = title.trim().length + body.trim().length
+        return (4_500L + (readableCharacters * 32L)).coerceIn(5_000L, 12_000L)
     }
 
     private fun buildNotification(): Notification {

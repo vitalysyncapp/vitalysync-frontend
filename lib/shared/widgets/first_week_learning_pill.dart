@@ -8,7 +8,7 @@ class FirstWeekLearningPill extends StatelessWidget {
   final String message;
   final bool onGradient;
   final IconData icon;
-  final int maxLines;
+  final int? maxLines;
 
   const FirstWeekLearningPill({
     super.key,
@@ -55,7 +55,9 @@ class FirstWeekLearningPill extends StatelessWidget {
             child: Text(
               message,
               maxLines: maxLines,
-              overflow: TextOverflow.ellipsis,
+              overflow: maxLines == null
+                  ? TextOverflow.visible
+                  : TextOverflow.ellipsis,
               style: TextStyle(
                 color: onGradient
                     ? foregroundColor.withValues(alpha: 0.94)

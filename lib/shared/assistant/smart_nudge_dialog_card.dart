@@ -112,20 +112,33 @@ class _SmartNudgeDialogCardState extends State<_SmartNudgeDialogCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SmartNudgeInsightCard(
-          emoji: widget.emoji,
-          fallbackMessage: widget.message,
-          primary: primary,
-          firstWeekLearning: widget.firstWeekLearning,
-          isLoading: widget.isLoading,
-          feedbackStatus: _nudgeStatus,
-          isUpdatingFeedback: _isUpdatingNudgeStatus,
-          onLiked: primary == null
-              ? null
-              : () => _updateNudgeStatus(primary, 'accepted'),
-          onDisliked: primary == null
-              ? null
-              : () => _updateNudgeStatus(primary, 'dismissed'),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            child: KeyedSubtree(
+              key: ValueKey(widget.isLoading && primary == null),
+              child: _SmartNudgeInsightCard(
+                emoji: widget.emoji,
+                fallbackMessage: widget.message,
+                primary: primary,
+                firstWeekLearning: widget.firstWeekLearning,
+                isLoading: widget.isLoading,
+                feedbackStatus: _nudgeStatus,
+                isUpdatingFeedback: _isUpdatingNudgeStatus,
+                onLiked: primary == null
+                    ? null
+                    : () => _updateNudgeStatus(primary, 'accepted'),
+                onDisliked: primary == null
+                    ? null
+                    : () => _updateNudgeStatus(primary, 'dismissed'),
+              ),
+            ),
+          ),
         ),
         if (widget.nutritionInsight != null || widget.isNutritionLoading) ...[
           const SizedBox(height: 12),
@@ -296,9 +309,7 @@ class _SmartNudgeInsightCard extends StatelessWidget {
     final severityColor = _severityColor(severity, isDark);
     final metadata = recommendation?.metadata ?? const <String, dynamic>{};
     final whyThisMatters = _metadataText(metadata['ai_why_this_matters']);
-    final actionSteps = _metadataTextList(
-      metadata['ai_action_steps'],
-    ).take(1).toList();
+    final actionSteps = _metadataTextList(metadata['ai_action_steps']);
     final actionLabel = recommendation?.actionLabel.trim() ?? '';
     final subtitle =
         nudgeTitle.isNotEmpty && nudgeTitle.toLowerCase() != 'smart nudge'
@@ -405,7 +416,7 @@ class _SmartNudgeInsightCard extends StatelessWidget {
               message: firstWeekLearning.assistantNudgeNote,
               onGradient: false,
               icon: Icons.psychology_alt_rounded,
-              maxLines: 2,
+              maxLines: null,
             ),
           ],
           const SizedBox(height: 14),
@@ -443,11 +454,7 @@ class _SmartNudgeInsightCard extends StatelessWidget {
           ],
           if (isLoading) ...[
             const SizedBox(height: 14),
-            LinearProgressIndicator(
-              minHeight: 4,
-              color: const Color(0xFFF3C765),
-              backgroundColor: const Color(0xFFF3C765).withValues(alpha: 0.2),
-            ),
+            const AppSkeletonLine(height: 4),
           ],
           const SizedBox(height: 16),
           _InsightFeedbackButtons(
@@ -910,11 +917,7 @@ String _metadataText(dynamic value) {
 
 List<String> _metadataTextList(dynamic value) {
   if (value is List) {
-    return value
-        .map(_metadataText)
-        .where((item) => item.isNotEmpty)
-        .take(6)
-        .toList();
+    return value.map(_metadataText).where((item) => item.isNotEmpty).toList();
   }
 
   final text = _metadataText(value);
@@ -926,7 +929,6 @@ List<String> _metadataTextList(dynamic value) {
       .split(',')
       .map((item) => item.trim())
       .where((item) => item.isNotEmpty)
-      .take(6)
       .toList();
 }
 

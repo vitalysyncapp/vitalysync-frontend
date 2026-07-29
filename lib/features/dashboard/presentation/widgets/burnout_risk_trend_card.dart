@@ -27,6 +27,7 @@ class BurnoutRiskTrendCard extends StatelessWidget {
     final pattern = summary?.patterns.isNotEmpty == true
         ? summary!.patterns.first
         : null;
+    final resetMarkerIndex = _resetMarkerIndex(points);
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -61,6 +62,23 @@ class BurnoutRiskTrendCard extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
+          if (resetMarkerIndex != null) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(Icons.refresh_rounded, size: 14),
+                const SizedBox(width: 5),
+                Text(
+                  'Baseline refreshed · ${summary!.baselineEpoch!.startedAt}',
+                  style: TextStyle(
+                    color: pageSecondaryTextColor(context),
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 12),
           AnalyticsContentSwitcher(
             isLoading: isLoading,
@@ -85,7 +103,13 @@ class BurnoutRiskTrendCard extends StatelessWidget {
                     height: 200,
                     child: AnalyticsChartReveal(
                       builder: (context, progress) => LineChart(
-                        _chartData(context, points, sevenDayWindow, progress),
+                        _chartData(
+                          context,
+                          points,
+                          sevenDayWindow,
+                          progress,
+                          resetMarkerIndex,
+                        ),
                         duration: Duration.zero,
                       ),
                     ),
@@ -221,6 +245,7 @@ class BurnoutRiskTrendCard extends StatelessWidget {
     List<BurnoutPatternPoint> points,
     BurnoutWindowSummary? window,
     double animationProgress,
+    int? resetMarkerIndex,
   ) {
     final spots = List.generate(
       points.length,
@@ -237,6 +262,28 @@ class BurnoutRiskTrendCard extends StatelessWidget {
       maxX: maxX,
       minY: 0,
       maxY: 100,
+      extraLinesData: ExtraLinesData(
+        verticalLines: resetMarkerIndex == null
+            ? const []
+            : [
+                VerticalLine(
+                  x: resetMarkerIndex.toDouble(),
+                  color: Theme.of(context).colorScheme.primary,
+                  strokeWidth: 1.5,
+                  dashArray: const [5, 4],
+                  label: VerticalLineLabel(
+                    show: true,
+                    alignment: Alignment.topRight,
+                    style: TextStyle(
+                      color: pageSecondaryTextColor(context),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    labelResolver: (_) => 'New baseline',
+                  ),
+                ),
+              ],
+      ),
       gridData: FlGridData(
         show: true,
         drawVerticalLine: true,
@@ -330,6 +377,22 @@ class BurnoutRiskTrendCard extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  int? _resetMarkerIndex(List<BurnoutPatternPoint> points) {
+    final epoch = summary?.baselineEpoch;
+    if (epoch == null || !epoch.isRefresh || points.isEmpty) return null;
+    final startedAt = DateTime.tryParse(epoch.startedAt);
+    final lastPoint = DateTime.tryParse(points.last.scoreDate);
+    if (startedAt == null || lastPoint == null) return null;
+    final ageAtLastPoint = lastPoint.difference(startedAt).inDays;
+    if (ageAtLastPoint < 0 || ageAtLastPoint > 6) return null;
+
+    for (var index = 0; index < points.length; index++) {
+      final pointDate = DateTime.tryParse(points[index].scoreDate);
+      if (pointDate != null && !pointDate.isBefore(startedAt)) return index;
+    }
+    return null;
   }
 
   Widget _buildPatternFooter(
