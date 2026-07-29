@@ -8,7 +8,9 @@ import '../widgets/streak_saver_info_dialog.dart';
 import '../widgets/streak_share_card.dart';
 import 'streak_leaderboard_page.dart';
 
-typedef StreakOverviewLoader = Future<StreakOverview> Function();
+typedef StreakOverviewLoader = Future<StreakOverview> Function({
+  bool forceRefresh,
+});
 
 class PersonalStreakPage extends StatefulWidget {
   const PersonalStreakPage({
@@ -46,19 +48,29 @@ class _PersonalStreakPageState extends State<PersonalStreakPage> {
     }
   }
 
-  Future<StreakOverview> _loadOverview() {
-    return (widget.loadOverview ?? StreakApi.fetchOverview)();
+  Future<StreakOverview> _loadOverview({bool forceRefresh = false}) {
+    return (widget.loadOverview ?? StreakApi.fetchOverview)(
+      forceRefresh: forceRefresh,
+    );
   }
 
-  Future<StreakLeaderboard> _loadLeaderboard(String section) {
+  Future<StreakLeaderboard> _loadLeaderboard(
+    String section, {
+    bool forceRefresh = false,
+  }) {
     final loader = widget.loadLeaderboard ?? StreakApi.fetchLeaderboard;
-    return loader(section: section, metric: 'current', limit: 100);
+    return loader(
+      section: section,
+      metric: 'current',
+      limit: 100,
+      forceRefresh: forceRefresh,
+    );
   }
 
-  Future<_StreakRanks> _loadRanks() async {
+  Future<_StreakRanks> _loadRanks({bool forceRefresh = false}) async {
     Future<StreakLeaderboard?> loadSafely(String section) async {
       try {
-        return await _loadLeaderboard(section);
+        return await _loadLeaderboard(section, forceRefresh: forceRefresh);
       } catch (_) {
         return null;
       }
@@ -76,8 +88,8 @@ class _PersonalStreakPageState extends State<PersonalStreakPage> {
   }
 
   Future<void> _refresh() async {
-    final nextOverview = _loadOverview();
-    final nextRanks = _loadRanks();
+    final nextOverview = _loadOverview(forceRefresh: true);
+    final nextRanks = _loadRanks(forceRefresh: true);
     setState(() {
       _overviewFuture = nextOverview;
       _rankFuture = nextRanks;

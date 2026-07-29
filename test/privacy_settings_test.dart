@@ -59,7 +59,7 @@ void main() {
 
       // The child should be hidden behind the overlay.
       expect(find.text('Content hidden'), findsOneWidget);
-      expect(find.text('Hold to peek'), findsOneWidget);
+      expect(find.text('Tap to view'), findsOneWidget);
     });
 
     testWidgets('hides "Hold to peek" when allowPeek is false', (
@@ -84,7 +84,7 @@ void main() {
       );
 
       expect(find.text('Content hidden'), findsOneWidget);
-      expect(find.text('Hold to peek'), findsNothing);
+      expect(find.text('Tap to view'), findsNothing);
     });
 
     testWidgets('responds to preference changes dynamically', (

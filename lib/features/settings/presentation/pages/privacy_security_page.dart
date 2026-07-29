@@ -122,7 +122,17 @@ class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
       }
 
       // Verify biometric works with a one-time prompt.
-      final verified = await BiometricLockService.instance.unlock();
+      bool verified = false;
+      try {
+        verified = await BiometricLockService.instance.unlock();
+      } on BiometricNotAvailableException {
+        if (mounted) {
+          _showBiometricUnavailableDialog(
+              'This device does not have a secure lock screen set up.');
+        }
+        return;
+      }
+      
       if (!mounted) return;
 
       if (!verified) {

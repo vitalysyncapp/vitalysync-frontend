@@ -12,6 +12,10 @@ class BiometricAvailability {
   const BiometricAvailability(this.isAvailable, this.reason);
 }
 
+class BiometricNotAvailableException implements Exception {
+  const BiometricNotAvailableException();
+}
+
 /// Tracks whether the app should be "locked" behind a biometric/passcode gate.
 ///
 /// This uses `local_auth` to authenticate the user on cold start.
@@ -77,7 +81,7 @@ class BiometricLockService {
       return false;
     } on PlatformException catch (e) {
       if (e.code == auth_error.notAvailable || e.code == auth_error.passcodeNotSet || e.code == auth_error.notEnrolled) {
-         // Device has no secure lock screen
+         throw const BiometricNotAvailableException();
       }
       return false;
     }

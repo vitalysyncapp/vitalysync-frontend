@@ -26,6 +26,7 @@ void main() {
       required String section,
       required String metric,
       required int limit,
+      bool forceRefresh = false,
     }) async {
       calls.add(_LeaderboardCall(section, metric, limit));
       return _leaderboard(
@@ -111,6 +112,7 @@ void main() {
       required String section,
       required String metric,
       required int limit,
+      bool forceRefresh = false,
     }) async {
       return _leaderboard(
         section: section,
@@ -182,6 +184,7 @@ void main() {
       required String section,
       required String metric,
       required int limit,
+      bool forceRefresh = false,
     }) async {
       return _leaderboard(
         section: section,
@@ -221,6 +224,7 @@ void main() {
       required String section,
       required String metric,
       required int limit,
+      bool forceRefresh = false,
     }) async {
       return _leaderboard(
         section: section,
@@ -255,6 +259,7 @@ void main() {
       required String section,
       required String metric,
       required int limit,
+      bool forceRefresh = false,
     }) async {
       return _leaderboard(
         section: section,
@@ -305,6 +310,7 @@ void main() {
       required String section,
       required String metric,
       required int limit,
+      bool forceRefresh = false,
     }) async {
       attempts++;
       if (attempts == 1) {
@@ -339,6 +345,7 @@ void main() {
       required String section,
       required String metric,
       required int limit,
+      bool forceRefresh = false,
     }) async {
       return _leaderboard(
         section: section,

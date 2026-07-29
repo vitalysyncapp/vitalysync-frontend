@@ -21,6 +21,7 @@ void main() {
       required String section,
       required String metric,
       required int limit,
+      bool forceRefresh = false,
     }) async {
       calls.add(_LeaderboardCall(section, metric, limit));
       return _leaderboard(section: section, rank: section == 'global' ? 7 : 42);
@@ -52,6 +53,7 @@ void main() {
       required String section,
       required String metric,
       required int limit,
+      bool forceRefresh = false,
     }) async {
       return _leaderboard(
         section: section,
@@ -72,6 +74,7 @@ void main() {
       required String section,
       required String metric,
       required int limit,
+      bool forceRefresh = false,
     }) async {
       return _leaderboard(
         section: section,
@@ -94,6 +97,7 @@ void main() {
       required String section,
       required String metric,
       required int limit,
+      bool forceRefresh = false,
     }) async {
       if (section == 'area') throw Exception('Local ranking unavailable');
       return _leaderboard(section: section, rank: 9);
@@ -113,7 +117,7 @@ void main() {
     var overviewCalls = 0;
     final rankCalls = <String, int>{};
 
-    Future<StreakOverview> loadOverview() async {
+    Future<StreakOverview> loadOverview({bool forceRefresh = false}) async {
       overviewCalls++;
       return _overview(displayName: 'Test User $overviewCalls');
     }
@@ -122,6 +126,7 @@ void main() {
       required String section,
       required String metric,
       required int limit,
+      bool forceRefresh = false,
     }) async {
       final call = (rankCalls[section] ?? 0) + 1;
       rankCalls[section] = call;
@@ -162,13 +167,14 @@ void main() {
       required String section,
       required String metric,
       required int limit,
+      bool forceRefresh = false,
     }) async {
       return _leaderboard(section: section, rank: 100);
     }
 
     await _pumpPage(
       tester,
-      loadOverview: () async =>
+      loadOverview: ({bool forceRefresh = false}) async =>
           _overview(displayName: 'A very long VitalySync display name'),
       loadLeaderboard: loadLeaderboard,
       mediaSize: const Size(320, 700),
@@ -186,7 +192,7 @@ void main() {
     await _pumpPage(
       tester,
       loadLeaderboard:
-          ({required section, required metric, required limit}) async =>
+          ({required section, required metric, required limit, bool forceRefresh = false}) async =>
               _leaderboard(section: section, rank: null),
     );
 
@@ -223,7 +229,7 @@ Future<void> _pumpPage(
           textScaler: textScaler,
         ),
         child: PersonalStreakPage(
-          loadOverview: loadOverview ?? () async => _overview(),
+          loadOverview: loadOverview ?? ({bool forceRefresh = false}) async => _overview(),
           loadLeaderboard: loadLeaderboard,
         ),
       ),

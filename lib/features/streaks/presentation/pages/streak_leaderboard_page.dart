@@ -19,6 +19,7 @@ typedef StreakLeaderboardLoader =
       required String section,
       required String metric,
       required int limit,
+      bool forceRefresh,
     });
 
 class StreakLeaderboardPage extends StatefulWidget {
@@ -66,9 +67,14 @@ class _StreakLeaderboardPageState extends State<StreakLeaderboardPage> {
     }
   }
 
-  Future<StreakLeaderboard> _load() {
+  Future<StreakLeaderboard> _load({bool forceRefresh = false}) {
     final loader = widget.loadLeaderboard ?? StreakApi.fetchLeaderboard;
-    return loader(section: _section, metric: _metric, limit: 50);
+    return loader(
+      section: _section,
+      metric: _metric,
+      limit: 50,
+      forceRefresh: forceRefresh,
+    );
   }
 
   Future<void> _loadSessionProfile() async {
@@ -94,7 +100,7 @@ class _StreakLeaderboardPageState extends State<StreakLeaderboardPage> {
   }
 
   Future<void> _refresh() async {
-    final nextFuture = _load();
+    final nextFuture = _load(forceRefresh: true);
     setState(() {
       _future = nextFuture;
     });
