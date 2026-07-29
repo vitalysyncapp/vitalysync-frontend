@@ -2,12 +2,40 @@ import 'package:flutter/material.dart';
 
 import 'biometric_lock_service.dart';
 
-/// Full‐screen lock overlay shown when [BiometricLockService.isLocked] is
-/// `true`. Displays the VitalySync logo and a "Tap to unlock" button.
-///
-/// In Phase 1 the button auto‐unlocks. A follow‐up will invoke `local_auth`.
-class BiometricLockScreen extends StatelessWidget {
+/// Full-screen lock overlay shown when [BiometricLockService.isLocked] is
+/// `true`. Displays the VitalySync logo and prompts for authentication.
+class BiometricLockScreen extends StatefulWidget {
   const BiometricLockScreen({super.key});
+
+  @override
+  State<BiometricLockScreen> createState() => _BiometricLockScreenState();
+}
+
+class _BiometricLockScreenState extends State<BiometricLockScreen> {
+  bool _isAuthenticating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Auto-prompt on cold start
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _promptAuth();
+    });
+  }
+
+  Future<void> _promptAuth() async {
+    if (_isAuthenticating) return;
+    
+    setState(() => _isAuthenticating = true);
+    
+    // The unlock method handles the local_auth prompt.
+    // If it succeeds, the ValueNotifier updates and this screen unmounts.
+    await BiometricLockService.instance.unlock();
+    
+    if (mounted) {
+      setState(() => _isAuthenticating = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +90,7 @@ class BiometricLockScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Tap to unlock and continue',
+                'Please authenticate to continue',
                 style: TextStyle(
                   fontSize: 14,
                   color: isDark ? Colors.white54 : Colors.black54,
@@ -70,8 +98,17 @@ class BiometricLockScreen extends StatelessWidget {
               ),
               const SizedBox(height: 32),
               FilledButton.icon(
-                onPressed: () => BiometricLockService.instance.unlock(),
-                icon: const Icon(Icons.lock_open_rounded),
+                onPressed: _isAuthenticating ? null : _promptAuth,
+                icon: _isAuthenticating 
+                  ? const SizedBox(
+                      width: 18, 
+                      height: 18, 
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2, 
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.fingerprint_rounded),
                 label: const Text('Unlock'),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(

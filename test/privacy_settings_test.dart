@@ -123,47 +123,15 @@ void main() {
       SharedPreferences.setMockInitialValues({});
     });
 
-    test('does not lock when biometric preference is disabled', () async {
+    test('does not lock on cold start when biometric preference is disabled', () async {
       SharedPreferences.setMockInitialValues(
         {'biometric_lock_enabled': false},
       );
       await AppPreferencesController.instance.load();
 
       final service = BiometricLockService.instance;
-      service.onAppBackgrounded();
-      service.onAppResumed();
+      service.lockOnColdStart();
 
-      expect(service.isLocked.value, isFalse);
-    });
-
-    test('locks after backgrounding when biometric preference is enabled',
-        () async {
-      SharedPreferences.setMockInitialValues(
-        {'biometric_lock_enabled': true},
-      );
-      await AppPreferencesController.instance.load();
-
-      final service = BiometricLockService.instance;
-      service.onAppBackgrounded();
-      service.onAppResumed();
-
-      expect(service.isLocked.value, isTrue);
-    });
-
-    test('unlock clears the locked state', () async {
-      SharedPreferences.setMockInitialValues(
-        {'biometric_lock_enabled': true},
-      );
-      await AppPreferencesController.instance.load();
-
-      final service = BiometricLockService.instance;
-      service.onAppBackgrounded();
-      service.onAppResumed();
-
-      expect(service.isLocked.value, isTrue);
-
-      final result = await service.unlock();
-      expect(result, isTrue);
       expect(service.isLocked.value, isFalse);
     });
   });
@@ -213,11 +181,6 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       await AppPreferencesController.instance.load();
 
-      await AppPreferencesController.instance.updatePauseWellnessInsights(true);
-      expect(
-        AppPreferencesController.instance.notifier.value.pauseWellnessInsights,
-        isTrue,
-      );
 
       await AppPreferencesController.instance
           .updateHideProfileFromLeaderboard(true);

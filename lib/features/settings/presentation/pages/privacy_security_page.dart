@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/preferences/app_preferences.dart';
 import '../../../../shared/preferences/user_session.dart';
+import '../../../../shared/preferences/user_settings_api.dart';
+import '../../../../shared/privacy/biometric_lock_service.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/validation_dialog.dart';
 
@@ -16,6 +18,7 @@ class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
   UserSessionSnapshot _session = UserSessionSnapshot.empty;
   bool _isLoadingSession = true;
   bool _isResendingVerification = false;
+  bool _isSyncingLeaderboard = false;
 
   @override
   void initState() {
@@ -68,6 +71,173 @@ class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
     }
   }
 
+  Future<void> _handleLeaderboardToggle(bool value) async {
+    final preferences = AppPreferencesController.instance;
+
+    // Update local preference immediately for responsiveness.
+    await preferences.updateHideProfileFromLeaderboard(value);
+
+    setState(() => _isSyncingLeaderboard = true);
+
+    try {
+      await UserSettingsApi.updateHideFromLeaderboard(value);
+    } catch (error) {
+      if (!mounted) return;
+
+      // Revert local preference on failure.
+      await preferences.updateHideProfileFromLeaderboard(!value);
+
+      if (!mounted) return;
+
+      final message = error.toString().replaceFirst('Exception: ', '');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Unable to update: $message'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSyncingLeaderboard = false);
+      }
+    }
+  }
+
+  Future<void> _handleBiometricToggle(bool value) async {
+    final preferences = AppPreferencesController.instance;
+
+    if (value) {
+      // Enabling: check availability first.
+      final availability =
+          await BiometricLockService.instance.checkBiometricAvailability();
+
+      if (!mounted) return;
+
+      if (!availability.isAvailable) {
+        _showBiometricUnavailableDialog(availability.reason);
+        return;
+      }
+
+      // Verify biometric works with a one-time prompt.
+      final verified = await BiometricLockService.instance.unlock();
+      if (!mounted) return;
+
+      if (!verified) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Biometric verification failed'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+        return;
+      }
+
+      await preferences.updateBiometricLockEnabled(true);
+    } else {
+      await preferences.updateBiometricLockEnabled(false);
+    }
+  }
+
+  void _showBiometricUnavailableDialog(String reason) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          backgroundColor: isDark
+              ? const Color(0xFF1A2332)
+              : Colors.white,
+          title: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.fingerprint_rounded,
+                  color: Color(0xFFF59E0B),
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Biometric not available',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                reason,
+                style: TextStyle(
+                  height: 1.45,
+                  color: pageSecondaryTextColor(context),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'To use biometric lock, set up a fingerprint, face '
+                'unlock, or screen lock in your device settings:',
+                style: TextStyle(
+                  height: 1.45,
+                  color: pageSecondaryTextColor(context),
+                ),
+              ),
+              const SizedBox(height: 12),
+              _BiometricGuideStep(
+                step: '1',
+                text: 'Open your device Settings app',
+              ),
+              _BiometricGuideStep(
+                step: '2',
+                text: 'Go to Security & privacy (or Biometrics)',
+              ),
+              _BiometricGuideStep(
+                step: '3',
+                text: 'Set up fingerprint, face unlock, or PIN',
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Got it'),
+            ),
+            FilledButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                BiometricLockService.instance.openSecuritySettings();
+              },
+              icon: const Icon(Icons.settings_outlined, size: 18),
+              label: const Text('Open settings'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final preferences = AppPreferencesController.instance;
@@ -117,20 +287,12 @@ class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
                       ),
                       _divider(context),
                       _PrivacySwitchTile(
-                        title: 'Pause wellness insights',
+                        title: 'Do not show in leaderboard',
                         subtitle:
-                            'Suppresses AI nudges and adaptive insight cards',
-                        value: prefs.pauseWellnessInsights,
-                        onChanged: preferences.updatePauseWellnessInsights,
-                      ),
-                      _divider(context),
-                      _PrivacySwitchTile(
-                        title: 'Hide profile from leaderboard',
-                        subtitle:
-                            'Removes your entry from the streak leaderboard display',
+                            'Your name won\'t appear on any streak leaderboard',
                         value: prefs.hideProfileFromLeaderboard,
-                        onChanged:
-                            preferences.updateHideProfileFromLeaderboard,
+                        onChanged: _handleLeaderboardToggle,
+                        isSyncing: _isSyncingLeaderboard,
                       ),
                     ],
                   ),
@@ -143,9 +305,9 @@ class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
                       _PrivacySwitchTile(
                         title: 'Biometric lock',
                         subtitle:
-                            'Shows a lock screen when the app is reopened. Biometric prompt will be added in a future update.',
+                            'Requires biometric or device passcode when the app is opened',
                         value: prefs.biometricLockEnabled,
-                        onChanged: preferences.updateBiometricLockEnabled,
+                        onChanged: _handleBiometricToggle,
                       ),
                       _divider(context),
                       _DataRetentionTile(
@@ -178,9 +340,9 @@ class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
                       Padding(
                         padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
                         child: Text(
-                          'Privacy controls are stored on this device only and '
-                          'do not sync to the server. They help you manage '
-                          'what is visible on-screen and in the app switcher.',
+                          'Most privacy controls are stored on this device. '
+                          'The leaderboard setting syncs to the server so '
+                          'your profile is hidden for all users.',
                           style: TextStyle(
                             height: 1.45,
                             color: pageSecondaryTextColor(context),
@@ -205,6 +367,55 @@ class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
       color: pageBorderColor(context),
       indent: 18,
       endIndent: 18,
+    );
+  }
+}
+
+class _BiometricGuideStep extends StatelessWidget {
+  final String step;
+  final String text;
+
+  const _BiometricGuideStep({required this.step, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.10),
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              step,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: accent,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.4,
+                color: pageSecondaryTextColor(context),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -352,12 +563,14 @@ class _PrivacySwitchTile extends StatelessWidget {
   final String subtitle;
   final bool value;
   final Future<void> Function(bool) onChanged;
+  final bool isSyncing;
 
   const _PrivacySwitchTile({
     required this.title,
     required this.subtitle,
     required this.value,
     required this.onChanged,
+    this.isSyncing = false,
   });
 
   @override
@@ -389,7 +602,14 @@ class _PrivacySwitchTile extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Switch(value: value, onChanged: onChanged),
+          if (isSyncing)
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else
+            Switch(value: value, onChanged: onChanged),
         ],
       ),
     );

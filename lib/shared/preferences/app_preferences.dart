@@ -334,11 +334,7 @@ class AppPreferencesController {
     notifier.value = notifier.value.copyWith(biometricLockEnabled: value);
   }
 
-  Future<void> updatePauseWellnessInsights(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_pauseWellnessInsightsKey, value);
-    notifier.value = notifier.value.copyWith(pauseWellnessInsights: value);
-  }
+
 
   Future<void> updateHideProfileFromLeaderboard(bool value) async {
     final prefs = await SharedPreferences.getInstance();

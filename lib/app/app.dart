@@ -49,6 +49,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     _handlePreferencesChanged();
     PrivacyScreenObserver.instance.init();
     unawaited(LocalDataRetentionService.instance.pruneIfNeeded());
+    
+    BiometricLockService.instance.lockOnColdStart();
   }
 
   @override
@@ -80,13 +82,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       isForeground: isForeground,
       prefs: prefs,
     );
-
-    // Biometric lock lifecycle integration.
-    if (isForeground) {
-      BiometricLockService.instance.onAppResumed();
-    } else {
-      BiometricLockService.instance.onAppBackgrounded();
-    }
   }
 
   void _handlePreferencesChanged() {

@@ -1,54 +1,90 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:local_auth/local_auth.dart';
+import 'package:local_auth/error_codes.dart' as auth_error;
 
 import '../preferences/app_preferences.dart';
 
+class BiometricAvailability {
+  final bool isAvailable;
+  final String reason;
+
+  const BiometricAvailability(this.isAvailable, this.reason);
+}
+
 /// Tracks whether the app should be "locked" behind a biometric/passcode gate.
 ///
-/// Phase 1 (current): The service records lock state transitions and auto‐
-/// unlocks because `local_auth` is not yet integrated. The UI scaffold
-/// ([BiometricLockScreen]) is functional and ready for the real biometric
-/// prompt in a follow‐up.
+/// This uses `local_auth` to authenticate the user on cold start.
 class BiometricLockService {
   BiometricLockService._();
 
   static final BiometricLockService instance = BiometricLockService._();
+  final LocalAuthentication _auth = LocalAuthentication();
 
   /// `true` when the app is locked and should show the lock screen.
   final ValueNotifier<bool> isLocked = ValueNotifier<bool>(false);
 
-  /// Called when the app lifecycle transitions to `resumed`. If the biometric
-  /// lock preference is enabled, the app enters the locked state.
-  void onAppResumed() {
+  /// Called on fresh app launch. If the user has the lock enabled, lock it.
+  void lockOnColdStart() {
     final prefs = AppPreferencesController.instance.notifier.value;
-    if (!prefs.biometricLockEnabled) {
-      return;
+    if (prefs.biometricLockEnabled) {
+      isLocked.value = true;
+      unlock();
     }
-
-    // Only lock if we were previously backgrounded (not on first launch).
-    if (!_hasBeenBackgrounded) {
-      return;
-    }
-
-    isLocked.value = true;
   }
 
-  /// Called when the app lifecycle transitions to paused/hidden/inactive.
-  void onAppBackgrounded() {
-    final prefs = AppPreferencesController.instance.notifier.value;
-    if (!prefs.biometricLockEnabled) {
-      return;
-    }
+  /// Checks if the device has biometric or device passcode credentials set up.
+  Future<BiometricAvailability> checkBiometricAvailability() async {
+    try {
+      final isAvailable = await _auth.canCheckBiometrics ||
+          await _auth.isDeviceSupported();
 
-    _hasBeenBackgrounded = true;
+      if (!isAvailable) {
+        return const BiometricAvailability(
+          false,
+          'This device does not support biometric or passcode authentication.',
+        );
+      }
+
+      final availableBiometrics = await _auth.getAvailableBiometrics();
+      if (availableBiometrics.isEmpty) {
+        // Technically they could still use a PIN, but usually local_auth
+        // considers the device unsupported if nothing is set up. Let's just
+        // rely on a test auth to see if it works.
+      }
+
+      return const BiometricAvailability(true, '');
+    } on PlatformException catch (e) {
+      return BiometricAvailability(false, e.message ?? 'Unknown error');
+    }
   }
 
-  /// Attempts to unlock the app. In Phase 1 this always succeeds.
-  /// In a follow‐up, this will invoke `local_auth` to authenticate.
+  /// Prompts the user to authenticate. Returns true on success.
   Future<bool> unlock() async {
-    // Phase 1: auto‐unlock.
-    isLocked.value = false;
-    return true;
+    try {
+      final authenticated = await _auth.authenticate(
+        localizedReason: 'Please authenticate to access VitalySync',
+        options: const AuthenticationOptions(
+          stickyAuth: true,
+          biometricOnly: false,
+        ),
+      );
+
+      if (authenticated) {
+        isLocked.value = false;
+        return true;
+      }
+      return false;
+    } on PlatformException catch (e) {
+      if (e.code == auth_error.notAvailable || e.code == auth_error.passcodeNotSet || e.code == auth_error.notEnrolled) {
+         // Device has no secure lock screen
+      }
+      return false;
+    }
   }
 
-  bool _hasBeenBackgrounded = false;
+  void openSecuritySettings() {
+    // Open settings is not available out of the box in local_auth.
+    // The dialog provides text instructions instead.
+  }
 }
