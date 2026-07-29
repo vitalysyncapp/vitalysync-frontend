@@ -466,7 +466,7 @@ class _FloatingSmartNudgeAssistantState
                 return Center(
                   child: SizedBox(
                     width: constraints.maxWidth,
-                    height: constraints.maxHeight,
+                    height: min(MediaQuery.sizeOf(context).height * 0.76, constraints.maxHeight),
                     child: Material(
                       color: Colors.transparent,
                       child: AssistantExperiencePanel(
