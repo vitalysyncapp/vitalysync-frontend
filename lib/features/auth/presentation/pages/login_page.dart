@@ -4,17 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../app/main_navigation.dart';
-import '../../../../features/log/data/log_api.dart';
-import '../../../../features/onboarding/presentation/pages/onboarding_page.dart';
-import '../../../../features/onboarding/services/onboarding_service.dart';
-import '../../../../features/onboarding/data/onboarding_api.dart';
+import '../../../../features/settings/data/account_lifecycle_api.dart';
 import '../../../../shared/config/api_config.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/validation_dialog.dart';
+import '../authenticated_session_coordinator.dart';
 import '../widgets/auth_chrome.dart';
 import 'forgot_password_page.dart';
+import 'reactivate_account_page.dart';
 import 'sign_up_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -86,50 +84,40 @@ class _LoginPageState extends State<LoginPage> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final authToken = data['access_token']?.toString().trim();
-
-        if (authToken == null || authToken.isEmpty) {
+        if (!mounted) return;
+        try {
+          await completeAuthenticatedSession(context, data);
+        } on FormatException {
           if (!mounted) return;
           await ValidationDialog.show(
             context,
-            message: 'Login failed: session token was missing.',
+            message: 'Login failed: the session response was incomplete.',
             type: ValidationDialogType.error,
+          );
+        }
+      } else {
+        Map<String, dynamic> data = const {};
+        try {
+          final decoded = jsonDecode(response.body);
+          if (decoded is Map<String, dynamic>) data = decoded;
+        } catch (_) {
+          // The normal error dialog below supplies a stable fallback.
+        }
+        final challenge = AccountReactivationChallenge.fromLoginResponse(
+          response.statusCode,
+          data,
+        );
+        if (challenge != null) {
+          passwordController.clear();
+          if (!mounted) return;
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ReactivateAccountPage(challenge: challenge),
+            ),
           );
           return;
         }
-
-        await UserSessionController.instance.saveUser(
-          Map<String, dynamic>.from(data['user'] as Map<String, dynamic>),
-          authToken: authToken,
-        );
-        await LogApi.persistServerStreakSnapshot(
-          data['streak'] as Map<String, dynamic>?,
-        );
-
-        final user = data['user'] as Map<String, dynamic>;
-        final userId = user['user_id'] as int;
-        final onboardingCompleted = user['onboarding_completed'] == true;
-
-        if (onboardingCompleted) {
-          try {
-            final summary = await OnboardingApi.fetchSummary(userId);
-            await OnboardingService.saveDefaultsFromSummary(summary);
-          } catch (_) {
-            // Home and Profile can still use any locally cached defaults.
-          }
-        }
-
-        if (!mounted) return;
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (_) => onboardingCompleted
-                ? const MainNavigation()
-                : OnboardingPage(userId: userId),
-          ),
-          (route) => false,
-        );
-      } else {
         if (!mounted) return;
         await ValidationDialog.show(
           context,

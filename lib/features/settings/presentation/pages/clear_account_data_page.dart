@@ -5,9 +5,17 @@ import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../auth/presentation/pages/auth_start_page.dart';
 import '../../../profile/data/profile_avatar.dart';
+import '../../data/account_lifecycle_api.dart';
 
 class ClearAccountDataPage extends StatefulWidget {
-  const ClearAccountDataPage({super.key});
+  final String verifiedPassword;
+  final AccountLifecycleApi? api;
+
+  const ClearAccountDataPage({
+    super.key,
+    required this.verifiedPassword,
+    this.api,
+  });
 
   @override
   State<ClearAccountDataPage> createState() => _ClearAccountDataPageState();
@@ -16,14 +24,14 @@ class ClearAccountDataPage extends StatefulWidget {
 class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
   bool _isSubmitting = false;
 
-  Future<void> _clearLocalAccountData() async {
+  Future<void> _clearAccountData() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Clear local account data?'),
+          title: const Text('Clear all account data?'),
           content: const Text(
-            'This removes your saved avatar, preferences, cached logs, pending offline logs, and local session on this device. Your server account will stay active.',
+            'This permanently removes synced wellness data and local data, resets your profile and onboarding state, and signs out every device. Your login account will remain active.',
           ),
           actions: [
             TextButton(
@@ -51,8 +59,16 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
     try {
       final session = await UserSessionController.instance.load();
       final userId = session.userId;
+      await (widget.api ?? AccountLifecycleApi.instance).clearData(
+        currentPassword: widget.verifiedPassword,
+      );
       if (userId != null) {
-        await ProfileAvatarController.instance.clearForUser(userId);
+        try {
+          await ProfileAvatarController.instance.clearForUser(userId);
+        } catch (error, stackTrace) {
+          debugPrint('Unable to clear the local profile avatar: $error');
+          debugPrintStack(stackTrace: stackTrace);
+        }
       }
       await SessionResetService.instance.resetForLogout();
 
@@ -64,6 +80,13 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
         context,
         MaterialPageRoute(builder: (_) => const AuthStartPage()),
         (route) => false,
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+        ),
       );
     } finally {
       if (mounted) {
@@ -108,12 +131,12 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
                 children: [
                   _InfoBlock(
                     text:
-                        'This action clears local app data tied to your account on this device, including your saved avatar, preferences, cached logs, and saved session.',
+                        'This permanently clears synced logs, nutrition, activity, goals, reports, reminders, onboarding, settings, and other wellness records from the server.',
                   ),
                   _divider(context),
                   _InfoBlock(
                     text:
-                        'Your VitalySync account and any synced server data will not be deleted. You can sign back in again afterward.',
+                        'Your email, username, password, and verified status remain. Profile and onboarding fields reset, all devices are signed out, and this device also clears its local cache.',
                   ),
                 ],
               ),
@@ -131,7 +154,7 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Clear local data',
+                        'Permanently clear data',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -140,7 +163,7 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'You will be signed out on this device after the data is removed.',
+                        'You can sign in again afterward and complete onboarding with a fresh account history.',
                         style: TextStyle(
                           height: 1.45,
                           color: pageSecondaryTextColor(context),
@@ -150,9 +173,7 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: _isSubmitting
-                              ? null
-                              : _clearLocalAccountData,
+                          onPressed: _isSubmitting ? null : _clearAccountData,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFD14343),
                             foregroundColor: Colors.white,
@@ -170,7 +191,7 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Text('Clear data on this device'),
+                              : const Text('Clear account data'),
                         ),
                       ),
                     ],

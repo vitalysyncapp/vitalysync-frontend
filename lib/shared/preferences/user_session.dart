@@ -272,40 +272,6 @@ class UserSessionController {
     return data['message']?.toString() ?? 'Password changed successfully.';
   }
 
-  Future<void> deleteAccount({required String password}) async {
-    final session = await load();
-    final email = session.email?.trim() ?? '';
-    final normalizedPassword = password.trim();
-
-    if (!session.isLoggedIn || session.userId == null) {
-      throw Exception(
-        'Delete account is only available for signed-in accounts.',
-      );
-    }
-
-    if (email.isEmpty || normalizedPassword.isEmpty) {
-      throw Exception('Email and password are required.');
-    }
-
-    final response = await http.delete(
-      Uri.parse(ApiConfig.auth('/account')),
-      headers: await ApiConfig.jsonHeaders(),
-      body: jsonEncode({
-        'user_id': session.userId,
-        'email': email,
-        'password': normalizedPassword,
-      }),
-    );
-
-    final data = _decodeResponseBody(response.body);
-
-    if (response.statusCode != 200) {
-      throw Exception(data['message'] ?? 'Failed to delete account.');
-    }
-
-    await clearSession();
-  }
-
   Future<Map<String, dynamic>> updateProfile({
     required int userId,
     required String username,

@@ -294,12 +294,12 @@ class TermsPrivacyWidget extends StatelessWidget {
       _section(
         context,
         '7. User rights',
-        'You may access, correct, delete data, or file complaints.',
+        'You may access or correct your information, clear account data, deactivate your account, or file a privacy complaint.',
       ),
       _section(
         context,
         '8. Data retention',
-        'Data is kept only as long as necessary.',
+        'A deactivated account may be reactivated for 40 days. After that, access remains blocked and retained account data is permanently deleted five years after deactivation. Clear account data permanently removes synced wellness records while preserving the login account and required authentication fields.',
       ),
       _section(context, '9. Cookies', 'Used to improve experience.'),
       _section(

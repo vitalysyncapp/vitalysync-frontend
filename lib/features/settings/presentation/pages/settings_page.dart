@@ -10,7 +10,7 @@ import 'assistant_settings.dart';
 import 'about_page.dart';
 import 'change_password_page.dart';
 import 'clear_account_data_page.dart';
-import 'delete_account_page.dart';
+import 'deactivate_account_gate_page.dart';
 import 'help_support_page.dart';
 import 'location_settings_page.dart';
 import 'notification_settings_page.dart';
@@ -198,6 +198,23 @@ class _SettingsPageState extends State<SettingsPage> {
       barrierDismissible: false,
       builder: (_) =>
           _PasswordVerificationDialog(actionTitle: actionTitle, email: email),
+    );
+  }
+
+  Future<void> _openDeactivationGate() async {
+    final session = await UserSessionController.instance.load();
+    if (!mounted) return;
+    if (!session.isLoggedIn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please sign in again to manage account settings.'),
+        ),
+      );
+      return;
+    }
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const DeactivateAccountGatePage()),
     );
   }
 
@@ -395,8 +412,11 @@ class _SettingsPageState extends State<SettingsPage> {
                           onTap: () {
                             _openProtectedAccountPage(
                               actionTitle:
-                                  'Confirm password to clear local data',
-                              builder: (_) => const ClearAccountDataPage(),
+                                  'Confirm password to clear account data',
+                              builder: (verifiedPassword) =>
+                                  ClearAccountDataPage(
+                                    verifiedPassword: verifiedPassword,
+                                  ),
                             );
                           },
                         ),
@@ -406,16 +426,11 @@ class _SettingsPageState extends State<SettingsPage> {
                           icon: Icons.person_remove_outlined,
                           iconBg: const Color(0xFFFFE3E3),
                           iconColor: const Color(0xFFD14343),
-                          title: "Delete account",
-                          subtitle: _accountActionSubtitle,
-                          onTap: () {
-                            _openProtectedAccountPage(
-                              actionTitle: 'Confirm password to delete account',
-                              builder: (verifiedPassword) => DeleteAccountPage(
-                                verifiedPassword: verifiedPassword,
-                              ),
-                            );
-                          },
+                          title: "Deactivate account",
+                          subtitle: _session.isLoggedIn
+                              ? 'Reactivate within 40 days; data retained for five years'
+                              : 'Sign in to manage account actions',
+                          onTap: _openDeactivationGate,
                         ),
                       ],
                     ),

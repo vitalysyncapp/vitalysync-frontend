@@ -16,6 +16,8 @@ class ApiConfig {
 
   static String auth(String path) => '$baseUrl/api/auth$path';
 
+  static String account(String path) => '$baseUrl/api/account$path';
+
   static String activity(String path) => '$baseUrl/api/activity$path';
 
   static String adaptive(String path) => '$baseUrl/api/adaptive$path';
