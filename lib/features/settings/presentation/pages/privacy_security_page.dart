@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../../../features/auth/presentation/pages/email_verification_page.dart';
 import '../../../../shared/preferences/app_preferences.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/preferences/user_settings_api.dart';
 import '../../../../shared/privacy/biometric_lock_service.dart';
 import '../../../../shared/theme/app_page_style.dart';
-import '../../../../shared/widgets/validation_dialog.dart';
 
 class PrivacySecurityPage extends StatefulWidget {
   const PrivacySecurityPage({super.key});
@@ -17,7 +17,6 @@ class PrivacySecurityPage extends StatefulWidget {
 class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
   UserSessionSnapshot _session = UserSessionSnapshot.empty;
   bool _isLoadingSession = true;
-  bool _isResendingVerification = false;
   bool _isSyncingLeaderboard = false;
 
   @override
@@ -36,39 +35,13 @@ class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
     });
   }
 
-  Future<void> _resendVerificationEmail() async {
-    if (_isResendingVerification) {
-      return;
-    }
-
-    setState(() => _isResendingVerification = true);
-
-    try {
-      final message = await UserSessionController.instance
-          .resendEmailVerification();
-      if (!mounted) return;
-
-      await ValidationDialog.show(
-        context,
-        title: 'Verification email sent',
-        message: message,
-        type: ValidationDialogType.success,
-      );
-    } catch (error) {
-      if (!mounted) return;
-
-      final message = error.toString().replaceFirst('Exception: ', '');
-      await ValidationDialog.show(
-        context,
-        title: 'Unable to send email',
-        message: message,
-        type: ValidationDialogType.error,
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isResendingVerification = false);
-      }
-    }
+  Future<void> _openEmailVerification() async {
+    await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const EmailVerificationPage()),
+    );
+    if (!mounted) return;
+    await _loadSession();
   }
 
   Future<void> _handleLeaderboardToggle(bool value) async {
@@ -111,8 +84,8 @@ class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
 
     if (value) {
       // Enabling: check availability first.
-      final availability =
-          await BiometricLockService.instance.checkBiometricAvailability();
+      final availability = await BiometricLockService.instance
+          .checkBiometricAvailability();
 
       if (!mounted) return;
 
@@ -128,11 +101,12 @@ class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
       } on BiometricNotAvailableException {
         if (mounted) {
           _showBiometricUnavailableDialog(
-              'This device does not have a secure lock screen set up.');
+            'This device does not have a secure lock screen set up.',
+          );
         }
         return;
       }
-      
+
       if (!mounted) return;
 
       if (!verified) {
@@ -164,9 +138,7 @@ class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(22),
           ),
-          backgroundColor: isDark
-              ? const Color(0xFF1A2332)
-              : Colors.white,
+          backgroundColor: isDark ? const Color(0xFF1A2332) : Colors.white,
           title: Row(
             children: [
               Container(
@@ -186,10 +158,7 @@ class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
               const Expanded(
                 child: Text(
                   'Biometric not available',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                 ),
               ),
             ],
@@ -336,8 +305,8 @@ class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
                         email: _session.email,
                         isLoading: _isLoadingSession,
                         isVerified: _session.emailVerified,
-                        isSending: _isResendingVerification,
-                        onResend: _resendVerificationEmail,
+                        isSending: false,
+                        onResend: _openEmailVerification,
                       ),
                     ],
                   ),
@@ -550,7 +519,7 @@ class _EmailVerificationTile extends StatelessWidget {
           if (!isLoading && !isVerified && normalizedEmail.isNotEmpty) ...[
             const SizedBox(width: 12),
             TextButton.icon(
-              key: const ValueKey('resend-email-verification-button'),
+              key: const ValueKey('open-email-verification-button'),
               onPressed: isSending ? null : onResend,
               icon: isSending
                   ? const SizedBox(
@@ -558,8 +527,8 @@ class _EmailVerificationTile extends StatelessWidget {
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.send_outlined, size: 18),
-              label: Text(isSending ? 'Sending' : 'Resend'),
+                  : const Icon(Icons.chevron_right_rounded, size: 18),
+              label: Text(isSending ? 'Opening' : 'Verify'),
             ),
           ],
         ],
@@ -680,10 +649,7 @@ class _DataRetentionTile extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
             ),
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 6,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: pageBorderColor(context)),

@@ -8,6 +8,7 @@ import '../../../../shared/theme/app_page_style.dart';
 import 'app_preferences_page.dart';
 import 'assistant_settings.dart';
 import 'about_page.dart';
+import 'change_password_page.dart';
 import 'clear_account_data_page.dart';
 import 'delete_account_page.dart';
 import 'help_support_page.dart';
@@ -366,6 +367,26 @@ class _SettingsPageState extends State<SettingsPage> {
                       children: [
                         _buildSettingsTile(
                           context: context,
+                          icon: Icons.lock_reset_rounded,
+                          iconBg: const Color(0xFFE8F5F2),
+                          iconColor: const Color(0xFF168A76),
+                          title: "Change password",
+                          subtitle: _session.isLoggedIn
+                              ? "Update your password and sign out every device"
+                              : "Sign in to change your password",
+                          onTap: () {
+                            _openProtectedAccountPage(
+                              actionTitle:
+                                  'Confirm your current password to continue',
+                              builder: (verifiedPassword) => ChangePasswordPage(
+                                verifiedPassword: verifiedPassword,
+                              ),
+                            );
+                          },
+                        ),
+                        _buildDivider(context),
+                        _buildSettingsTile(
+                          context: context,
                           icon: Icons.cleaning_services_outlined,
                           iconBg: const Color(0xFFFFF2E2),
                           iconColor: const Color(0xFFCC7A00),
@@ -482,7 +503,6 @@ class _SettingsPageState extends State<SettingsPage> {
                           },
                         ),
                       ],
-
                     ),
                   ],
                 ),

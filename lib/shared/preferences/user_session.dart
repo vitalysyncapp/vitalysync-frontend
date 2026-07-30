@@ -168,7 +168,7 @@ class UserSessionController {
     final response = await http.post(
       Uri.parse(ApiConfig.auth('/email-verification/resend')),
       headers: await ApiConfig.jsonHeaders(),
-      body: jsonEncode({'email': email}),
+      body: jsonEncode(const <String, dynamic>{}),
     );
 
     final data = _decodeResponseBody(response.body);
@@ -177,8 +177,31 @@ class UserSessionController {
       throw Exception(data['message'] ?? 'Unable to send verification email.');
     }
 
-    return data['message']?.toString() ??
-        'If this email needs verification, a link has been sent.';
+    return data['message']?.toString() ?? 'A verification code has been sent.';
+  }
+
+  Future<String> verifyEmailCode(String code) async {
+    final session = await load();
+    final normalizedCode = code.trim();
+    if (!session.isLoggedIn) {
+      throw Exception('Email verification requires a signed-in account.');
+    }
+    if (!RegExp(r'^\d{6}$').hasMatch(normalizedCode)) {
+      throw Exception('Enter the six-digit verification code.');
+    }
+
+    final response = await http.post(
+      Uri.parse(ApiConfig.auth('/email-verification/confirm')),
+      headers: await ApiConfig.jsonHeaders(),
+      body: jsonEncode({'code': normalizedCode}),
+    );
+    final data = _decodeResponseBody(response.body);
+    if (response.statusCode != 200 || data['email_verified'] != true) {
+      throw Exception(data['message'] ?? 'Unable to verify this email.');
+    }
+
+    await updateEmailVerified(true);
+    return data['message']?.toString() ?? 'Email verified successfully.';
   }
 
   Future<void> updateEmailVerified(bool value) async {
@@ -220,6 +243,33 @@ class UserSessionController {
         authToken: token,
       );
     }
+  }
+
+  Future<String> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    final session = await load();
+    if (!session.isLoggedIn || !session.hasAuthToken) {
+      throw Exception('Please sign in again to change your password.');
+    }
+
+    final response = await http.put(
+      Uri.parse(ApiConfig.auth('/password')),
+      headers: await ApiConfig.jsonHeaders(),
+      body: jsonEncode({
+        'current_password': currentPassword.trim(),
+        'new_password': newPassword.trim(),
+        'confirm_password': confirmPassword.trim(),
+      }),
+    );
+    final data = _decodeResponseBody(response.body);
+    if (response.statusCode != 200) {
+      throw Exception(data['message'] ?? 'Unable to change this password.');
+    }
+
+    return data['message']?.toString() ?? 'Password changed successfully.';
   }
 
   Future<void> deleteAccount({required String password}) async {

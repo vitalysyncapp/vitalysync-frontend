@@ -1,25 +1,41 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/validation_dialog.dart';
+import '../widgets/verification_code_field.dart';
 
 typedef EmailVerificationSender = Future<String> Function();
+typedef EmailVerificationCodeVerifier = Future<String> Function(String code);
 
 class EmailVerificationPage extends StatefulWidget {
-  const EmailVerificationPage({super.key, this.sendVerificationEmail});
+  const EmailVerificationPage({
+    super.key,
+    this.sendVerificationEmail,
+    this.verifyCode,
+    this.resendCooldown = const Duration(seconds: 60),
+  });
 
   final EmailVerificationSender? sendVerificationEmail;
+  final EmailVerificationCodeVerifier? verifyCode;
+  final Duration resendCooldown;
 
   @override
   State<EmailVerificationPage> createState() => _EmailVerificationPageState();
 }
 
 class _EmailVerificationPageState extends State<EmailVerificationPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _codeController = TextEditingController();
   UserSessionSnapshot _session = UserSessionSnapshot.empty;
   bool _isLoading = true;
   bool _isSending = false;
+  bool _isVerifying = false;
   bool _hasSent = false;
+  Timer? _cooldownTimer;
+  int _cooldownSeconds = 0;
 
   @override
   void initState() {
@@ -27,63 +43,98 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
     _loadSession();
   }
 
+  @override
+  void dispose() {
+    _cooldownTimer?.cancel();
+    _codeController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadSession() async {
     final session = await UserSessionController.instance.load();
     if (!mounted) return;
-
     setState(() {
       _session = session;
       _isLoading = false;
     });
   }
 
+  void _startCooldown() {
+    _cooldownTimer?.cancel();
+    _cooldownSeconds = widget.resendCooldown.inSeconds;
+    if (_cooldownSeconds <= 0) return;
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted || _cooldownSeconds <= 1) {
+        timer.cancel();
+        if (mounted) setState(() => _cooldownSeconds = 0);
+        return;
+      }
+      setState(() => _cooldownSeconds--);
+    });
+  }
+
   Future<void> _sendVerificationEmail() async {
-    if (_isSending || _session.emailVerified) {
-      return;
-    }
-
+    if (_isSending || _session.emailVerified) return;
     setState(() => _isSending = true);
-
     try {
       final sender =
           widget.sendVerificationEmail ??
           UserSessionController.instance.resendEmailVerification;
-      await sender();
+      final message = await sender();
       if (!mounted) return;
-
       setState(() => _hasSent = true);
-
+      _startCooldown();
       await ValidationDialog.show(
         context,
-        title: 'Email has been sent',
-        message: _sentMessage(_session.email),
+        title: 'Verification code sent',
+        message: message,
         type: ValidationDialogType.success,
-        duration: const Duration(milliseconds: 3200),
+        duration: const Duration(milliseconds: 1800),
       );
     } catch (error) {
       if (!mounted) return;
-
-      final message = error.toString().replaceFirst('Exception: ', '');
-      await ValidationDialog.show(
-        context,
-        title: 'Unable to send email',
-        message: message,
-        type: ValidationDialogType.error,
-      );
+      await _showError('Unable to send code', error);
     } finally {
-      if (mounted) {
-        setState(() => _isSending = false);
-      }
+      if (mounted) setState(() => _isSending = false);
     }
   }
 
-  String _sentMessage(String? email) {
-    final normalizedEmail = email?.trim();
-    final destination = normalizedEmail == null || normalizedEmail.isEmpty
-        ? 'your email address'
-        : normalizedEmail;
+  Future<void> _verifyCode() async {
+    if (_isVerifying || !(_formKey.currentState?.validate() ?? false)) return;
+    setState(() => _isVerifying = true);
+    try {
+      final verifier =
+          widget.verifyCode ?? UserSessionController.instance.verifyEmailCode;
+      final message = await verifier(_codeController.text.trim());
+      await UserSessionController.instance.updateEmailVerified(true);
+      if (!mounted) return;
+      await _loadSession();
+      if (!mounted) return;
+      await ValidationDialog.show(
+        context,
+        title: 'Email verified',
+        message: message,
+        type: ValidationDialogType.success,
+        duration: const Duration(milliseconds: 1800),
+      );
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop(true);
+      }
+    } catch (error) {
+      if (!mounted) return;
+      await _showError('Verification unsuccessful', error);
+    } finally {
+      if (mounted) setState(() => _isVerifying = false);
+    }
+  }
 
-    return 'We sent a verification link to $destination. Open the email, tap the link, then return to VitalySync.';
+  Future<void> _showError(String title, Object error) {
+    return ValidationDialog.show(
+      context,
+      title: title,
+      message: error.toString().replaceFirst('Exception: ', ''),
+      type: ValidationDialogType.error,
+    );
   }
 
   @override
@@ -101,7 +152,9 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
           foregroundColor: pagePrimaryTextColor(context),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new_rounded),
-            onPressed: _isSending ? null : () => Navigator.pop(context),
+            onPressed: _isSending || _isVerifying
+                ? null
+                : () => Navigator.pop(context),
           ),
           title: Text(
             'Verify email',
@@ -120,13 +173,83 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
               pageBottomContentPadding(context),
             ),
             children: [
-              _VerificationCard(
-                email: email,
-                isLoading: _isLoading,
-                isVerified: isVerified,
-                isSending: _isSending,
-                hasSent: _hasSent,
-                onSend: _sendVerificationEmail,
+              Container(
+                key: const ValueKey('email-verification-page-card'),
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: pageSurfaceColor(context),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: pageBorderColor(context)),
+                  boxShadow: pageCardShadow(context),
+                ),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _Header(
+                        email: email,
+                        isLoading: _isLoading,
+                        isVerified: isVerified,
+                      ),
+                      const SizedBox(height: 18),
+                      _GuidanceBox(isVerified: isVerified, hasSent: _hasSent),
+                      if (!isVerified && !_isLoading && email.isNotEmpty) ...[
+                        const SizedBox(height: 18),
+                        VerificationCodeField(
+                          controller: _codeController,
+                          enabled: !_isSending && !_isVerifying,
+                        ),
+                        const SizedBox(height: 14),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            key: const ValueKey('verify-email-code-button'),
+                            onPressed: _isVerifying ? null : _verifyCode,
+                            icon: _isVerifying
+                                ? const SizedBox.square(
+                                    dimension: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.verified_outlined),
+                            label: Text(
+                              _isVerifying ? 'Verifying...' : 'Verify code',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Center(
+                          child: TextButton.icon(
+                            key: const ValueKey(
+                              'send-email-verification-button',
+                            ),
+                            onPressed: _isSending || _cooldownSeconds > 0
+                                ? null
+                                : _sendVerificationEmail,
+                            icon: _isSending
+                                ? const SizedBox.square(
+                                    dimension: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.send_outlined, size: 18),
+                            label: Text(
+                              _cooldownSeconds > 0
+                                  ? 'Send again in ${_cooldownSeconds}s'
+                                  : _hasSent
+                                  ? 'Send a new code'
+                                  : 'Send verification code',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -136,127 +259,61 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
   }
 }
 
-class _VerificationCard extends StatelessWidget {
-  const _VerificationCard({
+class _Header extends StatelessWidget {
+  const _Header({
     required this.email,
     required this.isLoading,
     required this.isVerified,
-    required this.isSending,
-    required this.hasSent,
-    required this.onSend,
   });
 
   final String email;
   final bool isLoading;
   final bool isVerified;
-  final bool isSending;
-  final bool hasSent;
-  final VoidCallback onSend;
 
   @override
   Widget build(BuildContext context) {
     final accent = isVerified
         ? const Color(0xFF1EAD83)
         : Theme.of(context).colorScheme.primary;
-
-    return Container(
-      key: const ValueKey('email-verification-page-card'),
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: pageSurfaceColor(context),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: pageBorderColor(context)),
-        boxShadow: pageCardShadow(context),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Row(
+      children: [
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Icon(
+            isVerified
+                ? Icons.mark_email_read_outlined
+                : Icons.mark_email_unread_outlined,
+            color: accent,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  isVerified
-                      ? Icons.mark_email_read_outlined
-                      : Icons.mark_email_unread_outlined,
-                  color: accent,
+              Text(
+                isVerified ? 'Email verified' : 'Verify your email',
+                style: TextStyle(
+                  color: pagePrimaryTextColor(context),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isVerified ? 'Email verified' : 'Verify your email',
-                      style: TextStyle(
-                        color: pagePrimaryTextColor(context),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      isLoading
-                          ? 'Checking your account'
-                          : email.isEmpty
-                          ? 'No email is saved for this account'
-                          : email,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: pageSecondaryTextColor(context)),
-                    ),
-                  ],
-                ),
+              const SizedBox(height: 3),
+              Text(
+                isLoading ? 'Checking your account' : email,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: pageSecondaryTextColor(context)),
               ),
             ],
           ),
-          const SizedBox(height: 18),
-          _GuidanceBox(isVerified: isVerified, hasSent: hasSent),
-          const SizedBox(height: 18),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              key: const ValueKey('send-email-verification-button'),
-              onPressed: isLoading || isVerified || email.isEmpty || isSending
-                  ? null
-                  : onSend,
-              icon: isSending
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.3,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.send_outlined),
-              label: Text(
-                isSending
-                    ? 'Sending...'
-                    : hasSent
-                    ? 'Send again'
-                    : 'Send verification email',
-                style: const TextStyle(fontWeight: FontWeight.w800),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accent,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 15),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -272,12 +329,11 @@ class _GuidanceBox extends StatelessWidget {
     final color = isVerified || hasSent
         ? const Color(0xFF1EAD83)
         : const Color(0xFF2563EB);
-
     final text = isVerified
         ? 'Your email is confirmed for this account.'
         : hasSent
-        ? 'Email sent. Open your inbox, tap the verification link, then return to VitalySync.\nMake sure to check your spam folder if you don\'t see it.'
-        : 'Send a verification email, then open your inbox and tap the confirmation link. \nMake sure to check your spam folder if you don\'t see it.';
+        ? 'Enter the six-digit code we sent. It expires in 10 minutes.'
+        : 'Enter a code you already received, or send a new six-digit code.';
 
     return Container(
       key: ValueKey(
