@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -5,8 +6,19 @@ import 'package:vitalysync/app/app.dart';
 import 'package:vitalysync/features/activity/data/activity_service.dart';
 import 'package:vitalysync/features/tutorial/services/core_tutorial_replay_controller.dart';
 import 'package:vitalysync/features/tutorial/services/core_tutorial_service.dart';
+import 'package:vitalysync/shared/preferences/app_preferences.dart';
+import 'package:vitalysync/shared/privacy/biometric_lock_service.dart';
 
 import 'test_helpers.dart';
+
+const MethodChannel _localAuthChannel = MethodChannel(
+  'plugins.flutter.io/local_auth',
+);
+
+void _setLocalAuthHandler(Future<Object?> Function(MethodCall)? handler) {
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(_localAuthChannel, handler);
+}
 
 Future<void> pumpStartup(WidgetTester tester) async {
   await tester.pumpWidget(const MyApp());
@@ -20,6 +32,20 @@ void main() {
 
   setUpAll(configureTestAssets);
   tearDownAll(clearTestAssets);
+
+  setUp(() {
+    AppPreferencesController.instance.notifier.value =
+        const AppPreferencesState.defaults();
+    BiometricLockService.instance.resetForTesting();
+    _setLocalAuthHandler(null);
+  });
+
+  tearDown(() {
+    AppPreferencesController.instance.notifier.value =
+        const AppPreferencesState.defaults();
+    BiometricLockService.instance.resetForTesting();
+    _setLocalAuthHandler(null);
+  });
 
   testWidgets('shows the auth start page when no saved session exists', (
     WidgetTester tester,
@@ -77,6 +103,35 @@ void main() {
       await ActivityService.instance.disposeTracking();
     },
   );
+
+  testWidgets('shows biometric lock on cold start when enabled', (
+    WidgetTester tester,
+  ) async {
+    _setLocalAuthHandler((call) async {
+      if (call.method == 'authenticate') {
+        return false;
+      }
+      return null;
+    });
+    SharedPreferences.setMockInitialValues({
+      'email': 'tester@example.com',
+      'user_id': 1,
+      'username': 'Tester',
+      'auth_access_token': 'test-token',
+      'onboarding_completed': true,
+      'biometric_lock_enabled': true,
+    });
+
+    await tester.pumpWidget(const MyApp());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('VitalySync is locked'), findsOneWidget);
+    expect(find.text('Unlock'), findsOneWidget);
+    expect(find.text('Home'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 
   testWidgets('auth carousel advances to feature slides', (
     WidgetTester tester,

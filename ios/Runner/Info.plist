@@ -10,6 +10,8 @@
 	<string>This app uses your location to show local weather and air quality.</string>
 	<key>NSMotionUsageDescription</key>
 	<string>VitalySync uses motion data to estimate your daily steps and walking distance.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>VitalySync uses Face ID to unlock your private wellness data.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

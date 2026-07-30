@@ -13,6 +13,7 @@ class BiometricLockScreen extends StatefulWidget {
 
 class _BiometricLockScreenState extends State<BiometricLockScreen> {
   bool _isAuthenticating = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -25,13 +26,30 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
 
   Future<void> _promptAuth() async {
     if (_isAuthenticating) return;
-    
-    setState(() => _isAuthenticating = true);
-    
-    // The unlock method handles the local_auth prompt.
-    // If it succeeds, the ValueNotifier updates and this screen unmounts.
-    await BiometricLockService.instance.unlock();
-    
+
+    setState(() {
+      _isAuthenticating = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // The unlock method handles the local_auth prompt.
+      // If it succeeds, the ValueNotifier updates and this screen unmounts.
+      final didUnlock = await BiometricLockService.instance.unlock();
+      if (!didUnlock && mounted) {
+        setState(() {
+          _errorMessage = 'Authentication was not completed. Try again.';
+        });
+      }
+    } on BiometricNotAvailableException {
+      if (mounted) {
+        setState(() {
+          _errorMessage =
+              'Biometric or device passcode authentication is not available.';
+        });
+      }
+    }
+
     if (mounted) {
       setState(() => _isAuthenticating = false);
     }
@@ -96,19 +114,36 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
                   color: isDark ? Colors.white54 : Colors.black54,
                 ),
               ),
+              if (_errorMessage != null) ...[
+                const SizedBox(height: 14),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Text(
+                    _errorMessage!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      height: 1.35,
+                      color: isDark
+                          ? const Color(0xFFFFC2C2)
+                          : const Color(0xFFB42318),
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 32),
               FilledButton.icon(
                 onPressed: _isAuthenticating ? null : _promptAuth,
-                icon: _isAuthenticating 
-                  ? const SizedBox(
-                      width: 18, 
-                      height: 18, 
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2, 
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.fingerprint_rounded),
+                icon: _isAuthenticating
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.fingerprint_rounded),
                 label: const Text('Unlock'),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(

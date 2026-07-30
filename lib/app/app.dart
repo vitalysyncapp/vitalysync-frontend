@@ -40,7 +40,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _preferences.load();
+    unawaited(_loadPreferences());
     _preferences.notifier.addListener(_handlePreferencesChanged);
     LocalNotificationService.instance.onNotificationPayload =
         _handleNotificationPayload;
@@ -49,8 +49,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     _handlePreferencesChanged();
     PrivacyScreenObserver.instance.init();
     unawaited(LocalDataRetentionService.instance.pruneIfNeeded());
-    
-    BiometricLockService.instance.lockOnColdStart();
   }
 
   @override
@@ -91,6 +89,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     }
 
     OverlayAssistantController.instance.syncSettings(prefs);
+  }
+
+  Future<void> _loadPreferences() async {
+    await _preferences.load();
+    if (!mounted) {
+      return;
+    }
+
+    BiometricLockService.instance.lockOnColdStart();
   }
 
   Future<void> _consumeInitialAppLaunchPayload() async {
@@ -193,9 +200,20 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               ),
             );
           },
-          home: const LoadingScreen(),
+          home: prefs.isLoaded
+              ? const LoadingScreen()
+              : const _PreferencesLoadingScreen(),
         );
       },
     );
+  }
+}
+
+class _PreferencesLoadingScreen extends StatelessWidget {
+  const _PreferencesLoadingScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }

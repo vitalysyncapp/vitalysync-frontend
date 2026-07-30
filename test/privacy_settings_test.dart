@@ -62,9 +62,7 @@ void main() {
       expect(find.text('Tap to view'), findsOneWidget);
     });
 
-    testWidgets('hides "Hold to peek" when allowPeek is false', (
-      tester,
-    ) async {
+    testWidgets('hides "Hold to peek" when allowPeek is false', (tester) async {
       SharedPreferences.setMockInitialValues({'hide_sensitive_content': true});
       await AppPreferencesController.instance.load();
 
@@ -87,9 +85,7 @@ void main() {
       expect(find.text('Tap to view'), findsNothing);
     });
 
-    testWidgets('responds to preference changes dynamically', (
-      tester,
-    ) async {
+    testWidgets('responds to preference changes dynamically', (tester) async {
       SharedPreferences.setMockInitialValues({'hide_sensitive_content': false});
       await AppPreferencesController.instance.load();
 
@@ -121,18 +117,33 @@ void main() {
   group('BiometricLockService', () {
     setUp(() {
       SharedPreferences.setMockInitialValues({});
+      BiometricLockService.instance.resetForTesting();
     });
 
-    test('does not lock on cold start when biometric preference is disabled', () async {
-      SharedPreferences.setMockInitialValues(
-        {'biometric_lock_enabled': false},
-      );
+    test(
+      'does not lock on cold start when biometric preference is disabled',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'biometric_lock_enabled': false,
+        });
+        await AppPreferencesController.instance.load();
+
+        final service = BiometricLockService.instance;
+        service.lockOnColdStart();
+
+        expect(service.isLocked.value, isFalse);
+      },
+    );
+
+    test('locks on cold start when biometric preference is enabled', () async {
+      SharedPreferences.setMockInitialValues({'biometric_lock_enabled': true});
       await AppPreferencesController.instance.load();
 
       final service = BiometricLockService.instance;
-      service.lockOnColdStart();
+      final didLock = service.lockOnColdStart();
 
-      expect(service.isLocked.value, isFalse);
+      expect(didLock, isTrue);
+      expect(service.isLocked.value, isTrue);
     });
   });
 
@@ -181,12 +192,15 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       await AppPreferencesController.instance.load();
 
-
-      await AppPreferencesController.instance
-          .updateHideProfileFromLeaderboard(true);
+      await AppPreferencesController.instance.updateHideProfileFromLeaderboard(
+        true,
+      );
       expect(
         AppPreferencesController
-            .instance.notifier.value.hideProfileFromLeaderboard,
+            .instance
+            .notifier
+            .value
+            .hideProfileFromLeaderboard,
         isTrue,
       );
 

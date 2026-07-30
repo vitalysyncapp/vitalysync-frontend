@@ -23,25 +23,28 @@ class BiometricLockService {
   BiometricLockService._();
 
   static final BiometricLockService instance = BiometricLockService._();
-  final LocalAuthentication _auth = LocalAuthentication();
+  LocalAuthentication _auth = LocalAuthentication();
 
   /// `true` when the app is locked and should show the lock screen.
   final ValueNotifier<bool> isLocked = ValueNotifier<bool>(false);
 
   /// Called on fresh app launch. If the user has the lock enabled, lock it.
-  void lockOnColdStart() {
+  bool lockOnColdStart() {
     final prefs = AppPreferencesController.instance.notifier.value;
-    if (prefs.biometricLockEnabled) {
-      isLocked.value = true;
-      unlock();
+    if (!prefs.isLoaded || !prefs.biometricLockEnabled) {
+      isLocked.value = false;
+      return false;
     }
+
+    isLocked.value = true;
+    return true;
   }
 
   /// Checks if the device has biometric or device passcode credentials set up.
   Future<BiometricAvailability> checkBiometricAvailability() async {
     try {
-      final isAvailable = await _auth.canCheckBiometrics ||
-          await _auth.isDeviceSupported();
+      final isAvailable =
+          await _auth.canCheckBiometrics || await _auth.isDeviceSupported();
 
       if (!isAvailable) {
         return const BiometricAvailability(
@@ -80,9 +83,13 @@ class BiometricLockService {
       }
       return false;
     } on PlatformException catch (e) {
-      if (e.code == auth_error.notAvailable || e.code == auth_error.passcodeNotSet || e.code == auth_error.notEnrolled) {
-         throw const BiometricNotAvailableException();
+      if (e.code == auth_error.notAvailable ||
+          e.code == auth_error.passcodeNotSet ||
+          e.code == auth_error.notEnrolled) {
+        throw const BiometricNotAvailableException();
       }
+      return false;
+    } on MissingPluginException {
       return false;
     }
   }
@@ -90,5 +97,11 @@ class BiometricLockService {
   void openSecuritySettings() {
     // Open settings is not available out of the box in local_auth.
     // The dialog provides text instructions instead.
+  }
+
+  @visibleForTesting
+  void resetForTesting({LocalAuthentication? auth}) {
+    _auth = auth ?? LocalAuthentication();
+    isLocked.value = false;
   }
 }
