@@ -25,6 +25,8 @@ Future<void> pumpStartup(WidgetTester tester) async {
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 2500));
   await tester.pump();
+  await tester.pump(const Duration(milliseconds: 500));
+  await tester.pump();
 }
 
 void main() {
@@ -61,9 +63,7 @@ void main() {
     expect(find.text('Log in'), findsOneWidget);
     expect(find.text('Sign up'), findsOneWidget);
 
-    await tester.ensureVisible(find.text('Log in'));
-    await tester.pump();
-    await tester.tap(find.text('Log in'));
+    await tester.tap(find.byKey(const ValueKey('auth-welcome-login')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
@@ -189,6 +189,7 @@ void main() {
     expect(find.text('Welcome to your VitalySync tour'), findsNothing);
 
     await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
     await ActivityService.instance.disposeTracking();
   });
 
