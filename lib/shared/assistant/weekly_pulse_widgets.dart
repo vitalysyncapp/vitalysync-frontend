@@ -82,7 +82,7 @@ class _AssistantCheckInCard extends StatelessWidget {
                           ? currentStatus.schedule.isOverdue
                                 ? 'Weekly pulse due'
                                 : 'Weekly pulse'
-                          : 'Short daily check-in',
+                          : 'Daily Check-in',
                       style: TextStyle(
                         color: pagePrimaryTextColor(context),
                         fontSize: 16,
@@ -93,7 +93,7 @@ class _AssistantCheckInCard extends StatelessWidget {
                     Text(
                       _showWeeklyQuestions
                           ? 'Today includes the usual nine inputs plus five weekly reflections. It cannot be skipped, but it follows you to the next day you return.'
-                          : 'The same nine inputs as the Log page, sized for the assistant.',
+                          : 'Take a moment to reflect on your day and see how you are doing.',
                       style: TextStyle(
                         color: pageSecondaryTextColor(context),
                         height: 1.35,
