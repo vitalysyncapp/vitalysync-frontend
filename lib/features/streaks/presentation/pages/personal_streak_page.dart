@@ -8,19 +8,20 @@ import '../widgets/streak_saver_info_dialog.dart';
 import '../widgets/streak_share_card.dart';
 import 'streak_leaderboard_page.dart';
 
-typedef StreakOverviewLoader = Future<StreakOverview> Function({
-  bool forceRefresh,
-});
+typedef StreakOverviewLoader =
+    Future<StreakOverview> Function({bool forceRefresh});
 
 class PersonalStreakPage extends StatefulWidget {
   const PersonalStreakPage({
     super.key,
     this.loadOverview,
     this.loadLeaderboard,
+    this.tutorialHeaderKey,
   });
 
   final StreakOverviewLoader? loadOverview;
   final StreakLeaderboardLoader? loadLeaderboard;
+  final Key? tutorialHeaderKey;
 
   @override
   State<PersonalStreakPage> createState() => _PersonalStreakPageState();
@@ -129,11 +130,14 @@ class _PersonalStreakPageState extends State<PersonalStreakPage> {
             ),
             onPressed: () => Navigator.pop(context),
           ),
-          title: Text(
-            'My streak',
-            style: TextStyle(
-              color: pagePrimaryTextColor(context),
-              fontWeight: FontWeight.w900,
+          title: KeyedSubtree(
+            key: widget.tutorialHeaderKey,
+            child: Text(
+              'My streak',
+              style: TextStyle(
+                color: pagePrimaryTextColor(context),
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
           actions: [

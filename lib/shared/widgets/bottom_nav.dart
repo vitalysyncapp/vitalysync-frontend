@@ -51,6 +51,7 @@ Widget buildBottomNav({
   String logLabel = 'Log',
   bool hasLoggedToday = false,
   Key? tutorialKey,
+  Map<MainTab, Key>? tutorialTabKeys,
 }) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   final reduceMotion = MediaQuery.disableAnimationsOf(context);
@@ -100,13 +101,16 @@ Widget buildBottomNav({
           onTap: (index) => onTap(_sideNavItems[index].tab),
           tabBuilder: (index, isActive) {
             final item = _sideNavItems[index];
-            return _NavigationItem(
-              key: ValueKey('main-nav-${item.tab.name}'),
-              item: item,
-              isActive: isActive,
-              isDark: isDark,
-              isCompact: isCompact,
-              reduceMotion: reduceMotion,
+            return KeyedSubtree(
+              key: tutorialTabKeys?[item.tab],
+              child: _NavigationItem(
+                key: ValueKey('main-nav-${item.tab.name}'),
+                item: item,
+                isActive: isActive,
+                isDark: isDark,
+                isCompact: isCompact,
+                reduceMotion: reduceMotion,
+              ),
             );
           },
         ),
@@ -152,6 +156,7 @@ Widget buildLogNavigationButton({
   bool canSave = false,
   bool isSaving = false,
   VoidCallback? onSave,
+  Key? tutorialKey,
 }) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   final reduceMotion = MediaQuery.disableAnimationsOf(context);
@@ -176,126 +181,131 @@ Widget buildLogNavigationButton({
       ? 'Today\'s daily check-in is complete'
       : 'Log';
 
-  return Semantics(
-    key: const ValueKey('main-nav-log'),
-    container: true,
-    button: true,
-    selected: isSelected,
-    enabled: !isSaving,
-    label: semanticsLabel,
-    child: AnimatedScale(
-      duration: reduceMotion
-          ? Duration.zero
-          : const Duration(milliseconds: 260),
-      curve: Curves.easeOutBack,
-      scale: isSelected ? 1.06 : 1,
-      child: SizedBox.square(
-        dimension: size,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: isSelected || hasLoggedToday
-                      ? LinearGradient(
-                          colors: hasLoggedToday
-                              ? const [Color(0xFF119B68), Color(0xFF62D98D)]
-                              : const [Color(0xFF1D8CA8), Color(0xFF5DB8F0)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        )
-                      : null,
-                  color: isSelected || hasLoggedToday
-                      ? null
-                      : isDark
-                      ? const Color(0xFF15283D)
-                      : Colors.white,
-                  border: Border.all(
-                    color: isSelected || hasLoggedToday
-                        ? Colors.white.withValues(alpha: 0.78)
-                        : accent,
-                    width: isSelected ? 2.5 : 3.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: accent.withValues(alpha: isDark ? 0.32 : 0.26),
-                      blurRadius: isSelected ? 20 : 15,
-                      offset: const Offset(0, 7),
-                    ),
-                  ],
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  shape: const CircleBorder(),
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    onTap: effectiveOnTap,
-                    child: Center(
-                      child: AnimatedSwitcher(
-                        duration: reduceMotion
-                            ? Duration.zero
-                            : const Duration(milliseconds: 220),
-                        child: isSaving
-                            ? SizedBox.square(
-                                key: const ValueKey('log-nav-saving'),
-                                dimension: isCompact ? 22 : 24,
-                                child: const CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2.5,
-                                ),
-                              )
-                            : Icon(
-                                showsSaveAction
-                                    ? Icons.save_rounded
-                                    : isSelected
-                                    ? Icons.monitor_heart_rounded
-                                    : Icons.monitor_heart_outlined,
-                                key: ValueKey(
-                                  showsSaveAction
-                                      ? 'save'
-                                      : 'log-$isSelected-$hasLoggedToday',
-                                ),
-                                color: isSelected || hasLoggedToday
-                                    ? Colors.white
-                                    : accent,
-                                size: isCompact ? 24 : 26,
-                              ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            if (hasLoggedToday)
-              Positioned(
-                key: const ValueKey('log-nav-complete-badge'),
-                top: -1,
-                right: -1,
-                child: Container(
-                  width: isCompact ? 19 : 21,
-                  height: isCompact ? 19 : 21,
+  return KeyedSubtree(
+    key: tutorialKey,
+    child: Semantics(
+      key: const ValueKey('main-nav-log'),
+      container: true,
+      button: true,
+      selected: isSelected,
+      enabled: !isSaving,
+      label: semanticsLabel,
+      child: AnimatedScale(
+        duration: reduceMotion
+            ? Duration.zero
+            : const Duration(milliseconds: 260),
+        curve: Curves.easeOutBack,
+        scale: isSelected ? 1.06 : 1,
+        child: SizedBox.square(
+          dimension: size,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned.fill(
+                child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF087A53),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
+                    gradient: isSelected || hasLoggedToday
+                        ? LinearGradient(
+                            colors: hasLoggedToday
+                                ? const [Color(0xFF119B68), Color(0xFF62D98D)]
+                                : const [Color(0xFF1D8CA8), Color(0xFF5DB8F0)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
+                        : null,
+                    color: isSelected || hasLoggedToday
+                        ? null
+                        : isDark
+                        ? const Color(0xFF15283D)
+                        : Colors.white,
+                    border: Border.all(
+                      color: isSelected || hasLoggedToday
+                          ? Colors.white.withValues(alpha: 0.78)
+                          : accent,
+                      width: isSelected ? 2.5 : 3.5,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF087A53).withValues(alpha: 0.32),
-                        blurRadius: 7,
-                        offset: const Offset(0, 2),
+                        color: accent.withValues(alpha: isDark ? 0.32 : 0.26),
+                        blurRadius: isSelected ? 20 : 15,
+                        offset: const Offset(0, 7),
                       ),
                     ],
                   ),
-                  child: const Icon(
-                    Icons.check_rounded,
-                    color: Colors.white,
-                    size: 13,
+                  child: Material(
+                    color: Colors.transparent,
+                    shape: const CircleBorder(),
+                    clipBehavior: Clip.antiAlias,
+                    child: InkWell(
+                      onTap: effectiveOnTap,
+                      child: Center(
+                        child: AnimatedSwitcher(
+                          duration: reduceMotion
+                              ? Duration.zero
+                              : const Duration(milliseconds: 220),
+                          child: isSaving
+                              ? SizedBox.square(
+                                  key: const ValueKey('log-nav-saving'),
+                                  dimension: isCompact ? 22 : 24,
+                                  child: const CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2.5,
+                                  ),
+                                )
+                              : Icon(
+                                  showsSaveAction
+                                      ? Icons.save_rounded
+                                      : isSelected
+                                      ? Icons.monitor_heart_rounded
+                                      : Icons.monitor_heart_outlined,
+                                  key: ValueKey(
+                                    showsSaveAction
+                                        ? 'save'
+                                        : 'log-$isSelected-$hasLoggedToday',
+                                  ),
+                                  color: isSelected || hasLoggedToday
+                                      ? Colors.white
+                                      : accent,
+                                  size: isCompact ? 24 : 26,
+                                ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
-          ],
+              if (hasLoggedToday)
+                Positioned(
+                  key: const ValueKey('log-nav-complete-badge'),
+                  top: -1,
+                  right: -1,
+                  child: Container(
+                    width: isCompact ? 19 : 21,
+                    height: isCompact ? 19 : 21,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF087A53),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(
+                            0xFF087A53,
+                          ).withValues(alpha: 0.32),
+                          blurRadius: 7,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.check_rounded,
+                      color: Colors.white,
+                      size: 13,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     ),

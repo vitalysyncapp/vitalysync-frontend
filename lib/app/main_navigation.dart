@@ -20,6 +20,8 @@ import '../features/recovery/data/recovery_mode_service.dart';
 import '../features/recovery/presentation/pages/recovery_mode_page.dart';
 import '../features/settings/presentation/pages/assistant_settings.dart';
 import '../features/settings/presentation/pages/settings_page.dart';
+import '../features/streaks/presentation/pages/personal_streak_page.dart';
+import '../features/streaks/presentation/pages/streak_leaderboard_page.dart';
 import '../features/tutorial/presentation/widgets/core_tutorial_overlay.dart';
 import '../features/tutorial/services/core_tutorial_replay_controller.dart';
 import '../features/tutorial/services/core_tutorial_service.dart';
@@ -86,6 +88,9 @@ class _MainNavigationState extends State<MainNavigation>
     with WidgetsBindingObserver {
   static const _pageTransitionDuration = Duration(milliseconds: 360);
   static const _offlineSyncInterval = Duration(seconds: 30);
+  static const _tutorialStreakRouteName = 'core_tutorial/streak';
+  static const _tutorialLeaderboardRouteName =
+      'core_tutorial/streak_leaderboard';
   static const _tutorialSettingsRouteName = 'core_tutorial/settings';
   static const _tutorialAssistantRouteName = 'core_tutorial/assistant_settings';
 
@@ -101,6 +106,8 @@ class _MainNavigationState extends State<MainNavigation>
   bool _isRecoveryRouteOpen = false;
   bool _recoveryDismissedThisNavigation = false;
   bool _isTutorialActive = false;
+  bool _tutorialStreakRouteOpen = false;
+  bool _tutorialLeaderboardRouteOpen = false;
   bool _tutorialSettingsRouteOpen = false;
   bool _tutorialAssistantRouteOpen = false;
   bool _isBaselineRefreshRouteOpen = false;
@@ -135,6 +142,12 @@ class _MainNavigationState extends State<MainNavigation>
       CoreTutorialTarget.nutrition: GlobalKey(debugLabel: 'tutorial_nutrition'),
       CoreTutorialTarget.dashboard: GlobalKey(debugLabel: 'tutorial_dashboard'),
       CoreTutorialTarget.profile: GlobalKey(debugLabel: 'tutorial_profile'),
+      CoreTutorialTarget.streakOverview: GlobalKey(
+        debugLabel: 'tutorial_streak_overview',
+      ),
+      CoreTutorialTarget.streakLeaderboard: GlobalKey(
+        debugLabel: 'tutorial_streak_leaderboard',
+      ),
       CoreTutorialTarget.assistant: GlobalKey(debugLabel: 'tutorial_assistant'),
       CoreTutorialTarget.settingsAssistantTile: GlobalKey(
         debugLabel: 'tutorial_settings_assistant_tile',
@@ -473,7 +486,49 @@ class _MainNavigationState extends State<MainNavigation>
       case CoreTutorialRoute.main:
         _closeTutorialRoutes();
         break;
+      case CoreTutorialRoute.streak:
+        if (_tutorialSettingsRouteOpen || _tutorialAssistantRouteOpen) {
+          _closeTutorialRoutes();
+          await Future<void>.delayed(const Duration(milliseconds: 220));
+        }
+        if (!mounted ||
+            !_isTutorialActive ||
+            _tutorialRoute != CoreTutorialRoute.streak) {
+          return;
+        }
+        if (_tutorialLeaderboardRouteOpen) {
+          Navigator.of(context, rootNavigator: true).pop();
+          _tutorialLeaderboardRouteOpen = false;
+          await Future<void>.delayed(const Duration(milliseconds: 220));
+        }
+        _openTutorialStreakRoute();
+        break;
+      case CoreTutorialRoute.streakLeaderboard:
+        if (_tutorialSettingsRouteOpen || _tutorialAssistantRouteOpen) {
+          _closeTutorialRoutes();
+          await Future<void>.delayed(const Duration(milliseconds: 220));
+        }
+        if (!_tutorialStreakRouteOpen) {
+          _openTutorialStreakRoute();
+          await Future<void>.delayed(const Duration(milliseconds: 360));
+        }
+        if (!mounted ||
+            !_isTutorialActive ||
+            _tutorialRoute != CoreTutorialRoute.streakLeaderboard) {
+          return;
+        }
+        _openTutorialLeaderboardRoute();
+        break;
       case CoreTutorialRoute.settings:
+        if (_tutorialStreakRouteOpen || _tutorialLeaderboardRouteOpen) {
+          _closeTutorialRoutes();
+          await Future<void>.delayed(const Duration(milliseconds: 220));
+        }
+        if (!mounted ||
+            !_isTutorialActive ||
+            _tutorialRoute != CoreTutorialRoute.settings) {
+          return;
+        }
         if (_tutorialAssistantRouteOpen) {
           Navigator.of(context, rootNavigator: true).pop();
           _tutorialAssistantRouteOpen = false;
@@ -482,6 +537,10 @@ class _MainNavigationState extends State<MainNavigation>
         _openTutorialSettingsRoute();
         break;
       case CoreTutorialRoute.assistantSettings:
+        if (_tutorialStreakRouteOpen || _tutorialLeaderboardRouteOpen) {
+          _closeTutorialRoutes();
+          await Future<void>.delayed(const Duration(milliseconds: 220));
+        }
         if (!_tutorialSettingsRouteOpen) {
           _openTutorialSettingsRoute();
           await Future<void>.delayed(const Duration(milliseconds: 360));
@@ -496,6 +555,78 @@ class _MainNavigationState extends State<MainNavigation>
     }
 
     _tutorialOverlayEntry?.markNeedsBuild();
+  }
+
+  void _openTutorialStreakRoute() {
+    if (_tutorialStreakRouteOpen) {
+      _bringTutorialOverlayToFront();
+      return;
+    }
+
+    _tutorialStreakRouteOpen = true;
+    final navigator = Navigator.of(context, rootNavigator: true);
+    unawaited(
+      navigator
+          .push<void>(
+            MaterialPageRoute(
+              settings: const RouteSettings(name: _tutorialStreakRouteName),
+              builder: (_) => PersonalStreakPage(
+                tutorialHeaderKey:
+                    _tutorialTargetKeys[CoreTutorialTarget.streakOverview],
+              ),
+            ),
+          )
+          .whenComplete(() {
+            _tutorialStreakRouteOpen = false;
+            _tutorialLeaderboardRouteOpen = false;
+            if (mounted &&
+                _isTutorialActive &&
+                (_tutorialRoute == CoreTutorialRoute.streak ||
+                    _tutorialRoute == CoreTutorialRoute.streakLeaderboard)) {
+              _tutorialRoute = CoreTutorialRoute.main;
+              _tutorialOverlayEntry?.markNeedsBuild();
+            }
+          }),
+    );
+
+    _bringTutorialOverlayToFront(delay: const Duration(milliseconds: 90));
+    _bringTutorialOverlayToFront(delay: const Duration(milliseconds: 430));
+  }
+
+  void _openTutorialLeaderboardRoute() {
+    if (_tutorialLeaderboardRouteOpen) {
+      _bringTutorialOverlayToFront();
+      return;
+    }
+
+    _tutorialLeaderboardRouteOpen = true;
+    final navigator = Navigator.of(context, rootNavigator: true);
+    unawaited(
+      navigator
+          .push<void>(
+            MaterialPageRoute(
+              settings: const RouteSettings(
+                name: _tutorialLeaderboardRouteName,
+              ),
+              builder: (_) => StreakLeaderboardPage(
+                tutorialFiltersKey:
+                    _tutorialTargetKeys[CoreTutorialTarget.streakLeaderboard],
+              ),
+            ),
+          )
+          .whenComplete(() {
+            _tutorialLeaderboardRouteOpen = false;
+            if (mounted &&
+                _isTutorialActive &&
+                _tutorialRoute == CoreTutorialRoute.streakLeaderboard) {
+              _tutorialRoute = CoreTutorialRoute.streak;
+              _tutorialOverlayEntry?.markNeedsBuild();
+            }
+          }),
+    );
+
+    _bringTutorialOverlayToFront(delay: const Duration(milliseconds: 90));
+    _bringTutorialOverlayToFront(delay: const Duration(milliseconds: 430));
   }
 
   void _openTutorialSettingsRoute() {
@@ -572,9 +703,13 @@ class _MainNavigationState extends State<MainNavigation>
     final navigator = Navigator.of(context, rootNavigator: true);
     navigator.popUntil((route) {
       final name = route.settings.name;
-      return name != _tutorialSettingsRouteName &&
+      return name != _tutorialStreakRouteName &&
+          name != _tutorialLeaderboardRouteName &&
+          name != _tutorialSettingsRouteName &&
           name != _tutorialAssistantRouteName;
     });
+    _tutorialStreakRouteOpen = false;
+    _tutorialLeaderboardRouteOpen = false;
     _tutorialSettingsRouteOpen = false;
     _tutorialAssistantRouteOpen = false;
     _bringTutorialOverlayToFront(delay: const Duration(milliseconds: 90));
@@ -647,13 +782,7 @@ class _MainNavigationState extends State<MainNavigation>
                                 excluding: !isActive,
                                 child: TickerMode(
                                   enabled: isActive,
-                                  child: KeyedSubtree(
-                                    key:
-                                        _tutorialTargetKeys[_tutorialTargetForPage(
-                                          tab,
-                                        )]!,
-                                    child: _pages[index],
-                                  ),
+                                  child: _pages[index],
                                 ),
                               ),
                             ),
@@ -683,6 +812,7 @@ class _MainNavigationState extends State<MainNavigation>
                   onSave: () {
                     unawaited(_logPageController.save());
                   },
+                  tutorialKey: _tutorialTargetKeys[CoreTutorialTarget.log],
                 ),
                 floatingActionButtonLocation:
                     FloatingActionButtonLocation.centerDocked,
@@ -694,6 +824,15 @@ class _MainNavigationState extends State<MainNavigation>
                   hasLoggedToday: logNavigationState.hasLoggedToday,
                   tutorialKey:
                       _tutorialTargetKeys[CoreTutorialTarget.navigation],
+                  tutorialTabKeys: {
+                    for (final tab in const [
+                      MainTab.home,
+                      MainTab.nutrition,
+                      MainTab.dashboard,
+                      MainTab.profile,
+                    ])
+                      tab: _tutorialTargetKeys[_tutorialTargetForPage(tab)]!,
+                  },
                 ),
               ),
             ],

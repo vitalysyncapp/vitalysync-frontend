@@ -12,6 +12,8 @@ import 'package:vitalysync/features/log/presentation/pages/welcome_back_baseline
 import 'package:vitalysync/features/nutrition/presentation/pages/nutrition_page.dart';
 import 'package:vitalysync/features/profile/presentation/pages/profile_page.dart';
 import 'package:vitalysync/features/settings/presentation/pages/settings_page.dart';
+import 'package:vitalysync/features/streaks/presentation/pages/personal_streak_page.dart';
+import 'package:vitalysync/features/streaks/presentation/pages/streak_leaderboard_page.dart';
 import 'package:vitalysync/shared/navigation/main_tab.dart';
 import 'package:vitalysync/shared/widgets/app_bar.dart';
 import 'package:vitalysync/shared/widgets/bottom_nav.dart';
@@ -27,11 +29,17 @@ void main() {
   Future<void> pumpMainNavigation(
     WidgetTester tester, {
     MainTab initialTab = MainTab.home,
+    bool showTutorialOnStart = false,
+    int? tutorialUserId,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('en', 'US'),
-        home: MainNavigation(initialTab: initialTab),
+        home: MainNavigation(
+          initialTab: initialTab,
+          showTutorialOnStart: showTutorialOnStart,
+          tutorialUserId: tutorialUserId,
+        ),
       ),
     );
     await tester.pump();
@@ -260,6 +268,69 @@ void main() {
     await tester.pump(const Duration(milliseconds: 450));
     expect(find.byType(SettingsPage), findsOneWidget);
 
+    await disposeNavigation(tester);
+  });
+
+  testWidgets('tutorial visits My streak and its leaderboard', (tester) async {
+    configureLoggedInSession();
+    await pumpMainNavigation(
+      tester,
+      showTutorialOnStart: true,
+      tutorialUserId: 1,
+    );
+
+    expect(find.text('Welcome to your VitalySync tour'), findsOneWidget);
+
+    for (final title in const [
+      'Home is your daily snapshot',
+      'Nutrition keeps meals in context',
+      'Log is your daily check-in',
+      'Dashboard shows the bigger pattern',
+      'Profile keeps your wellness setup together',
+      'Your streak makes consistency visible',
+    ]) {
+      await tester.tap(find.byKey(const ValueKey('core-tutorial-next-button')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 850));
+      expect(find.text(title), findsOneWidget);
+
+      if (title == 'Home is your daily snapshot') {
+        await tester.pump();
+        final panelRect = tester.getRect(
+          find.byKey(const ValueKey('core-tutorial-panel')),
+        );
+        final homeTargetRect = tester.getRect(
+          find.byKey(const ValueKey('main-nav-home')),
+        );
+        expect(panelRect.bottom, lessThan(homeTargetRect.top));
+        expect(homeTargetRect.top - panelRect.bottom, lessThanOrEqualTo(28));
+      }
+    }
+
+    expect(find.byType(PersonalStreakPage), findsOneWidget);
+    expect(find.text('My streak'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('core-tutorial-next-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 850));
+
+    expect(
+      find.text('The leaderboard keeps comparisons flexible'),
+      findsOneWidget,
+    );
+    expect(find.byType(StreakLeaderboardPage), findsOneWidget);
+    expect(find.text('Streak leaderboard'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('leaderboard-section-options')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('core-tutorial-skip-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.byType(PersonalStreakPage), findsNothing);
+    expect(find.byType(StreakLeaderboardPage), findsNothing);
     await disposeNavigation(tester);
   });
 

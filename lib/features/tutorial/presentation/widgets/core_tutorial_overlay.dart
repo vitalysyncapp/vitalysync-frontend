@@ -14,13 +14,21 @@ enum CoreTutorialTarget {
   nutrition,
   dashboard,
   profile,
+  streakOverview,
+  streakLeaderboard,
   assistant,
   settingsAssistantTile,
   assistantOverlaySwitch,
   none,
 }
 
-enum CoreTutorialRoute { main, settings, assistantSettings }
+enum CoreTutorialRoute {
+  main,
+  streak,
+  streakLeaderboard,
+  settings,
+  assistantSettings,
+}
 
 enum _TutorialAssistantDock { topLeft, topRight, bottomLeft, bottomRight }
 
@@ -48,6 +56,8 @@ class _CoreTutorialOverlayState extends State<CoreTutorialOverlay>
     with SingleTickerProviderStateMixin {
   static const _transitionDuration = Duration(milliseconds: 260);
   static const _tabSwitchDelay = Duration(milliseconds: 430);
+  static const _targetRetryDelay = Duration(milliseconds: 120);
+  static const _targetMeasureAttempts = 4;
   static const _assistantAnimationPath = 'assets/animations/Assistant.json';
 
   int _currentStep = 0;
@@ -116,26 +126,35 @@ class _CoreTutorialOverlayState extends State<CoreTutorialOverlay>
   void _queueTargetUpdate({Duration delay = Duration.zero}) {
     final token = ++_measureToken;
 
-    Future<void>.delayed(delay, () {
-      if (!mounted || token != _measureToken) {
-        return;
-      }
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && token == _measureToken) {
-          _updateTargetRect();
+    void measureAfter(Duration wait, int attemptsRemaining) {
+      Future<void>.delayed(wait, () {
+        if (!mounted || token != _measureToken) {
+          return;
         }
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || token != _measureToken) {
+            return;
+          }
+
+          final foundTarget = _updateTargetRect();
+          if (!foundTarget && attemptsRemaining > 0) {
+            measureAfter(_targetRetryDelay, attemptsRemaining - 1);
+          }
+        });
       });
-    });
+    }
+
+    measureAfter(delay, _targetMeasureAttempts);
   }
 
-  void _updateTargetRect() {
+  bool _updateTargetRect() {
     final step = _coreTutorialSteps[_currentStep];
     if (step.target == CoreTutorialTarget.none) {
       if (_targetRect != null) {
         setState(() => _targetRect = null);
       }
-      return;
+      return true;
     }
 
     final targetContext = widget.targetKeys[step.target]?.currentContext;
@@ -147,7 +166,7 @@ class _CoreTutorialOverlayState extends State<CoreTutorialOverlay>
       if (_targetRect != null) {
         setState(() => _targetRect = null);
       }
-      return;
+      return false;
     }
 
     final size = MediaQuery.sizeOf(context);
@@ -158,6 +177,7 @@ class _CoreTutorialOverlayState extends State<CoreTutorialOverlay>
     if (clamped != _targetRect) {
       setState(() => _targetRect = clamped);
     }
+    return clamped != null;
   }
 
   Rect? _clampRect(Rect rect, Size size) {
@@ -290,86 +310,173 @@ class _TutorialPanel extends StatelessWidget {
     final size = mediaQuery.size;
     final padding = mediaQuery.padding;
     final dock = step.assistantDock;
-    final alignRight =
+    final fallbackAlignRight =
         dock == _TutorialAssistantDock.topRight ||
         dock == _TutorialAssistantDock.bottomRight;
-    final placeAtTop =
+    final fallbackPlaceAtTop =
         dock == _TutorialAssistantDock.topLeft ||
         dock == _TutorialAssistantDock.topRight;
-    final panelWidth = math.min(size.width - 28, 560.0);
-    final availableHeight = math.max(
-      190.0,
-      size.height - padding.top - padding.bottom - 44,
+    final safeBounds = Rect.fromLTRB(
+      14,
+      padding.top + 14,
+      size.width - 14,
+      size.height - padding.bottom - 18,
     );
+    final spaceAbove = targetRect == null
+        ? 0.0
+        : math.max(0, targetRect!.top - safeBounds.top - 12);
+    final spaceBelow = targetRect == null
+        ? 0.0
+        : math.max(0, safeBounds.bottom - targetRect!.bottom - 12);
+    final placeBelowTarget = targetRect == null
+        ? fallbackPlaceAtTop
+        : spaceBelow >= spaceAbove;
+    final alignRight = targetRect == null
+        ? fallbackAlignRight
+        : targetRect!.center.dx > safeBounds.center.dx;
+    final panelWidth = math.min(safeBounds.width, 480.0);
+    final targetSideHeight = placeBelowTarget ? spaceBelow : spaceAbove;
+    final availableHeight = targetRect == null
+        ? safeBounds.height
+        : targetSideHeight.clamp(160.0, safeBounds.height).toDouble();
     final assistantSize = size.width < 380 ? 54.0 : 62.0;
 
-    return AnimatedPositioned(
-      duration: const Duration(milliseconds: 320),
-      curve: Curves.easeOutCubic,
-      left: alignRight ? null : 14,
-      right: alignRight ? 14 : null,
-      top: placeAtTop ? padding.top + 14 : null,
-      bottom: placeAtTop ? null : padding.bottom + 18,
-      width: panelWidth,
-      child: Material(
-        type: MaterialType.transparency,
-        child: Row(
-          crossAxisAlignment: placeAtTop
-              ? CrossAxisAlignment.start
-              : CrossAxisAlignment.end,
-          textDirection: alignRight ? TextDirection.rtl : TextDirection.ltr,
-          children: [
-            _TutorialAssistantAvatar(
-              animationPath: _CoreTutorialOverlayState._assistantAnimationPath,
-              size: assistantSize,
-              pulseValue: pulseValue,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _AssistantSpeechBubble(
-                tailOnRight: alignRight,
-                tailNearTop: placeAtTop,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: availableHeight),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 220),
-                      switchInCurve: Curves.easeOutCubic,
-                      switchOutCurve: Curves.easeInCubic,
-                      transitionBuilder: (child, animation) {
-                        return FadeTransition(
-                          opacity: animation,
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0, 0.04),
-                              end: Offset.zero,
-                            ).animate(animation),
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: _TutorialBubbleContent(
-                        key: ValueKey(step.title),
-                        step: step,
-                        stepNumber: stepNumber,
-                        totalSteps: totalSteps,
-                        isFirstStep: isFirstStep,
-                        isLastStep: isLastStep,
-                        isFinishing: isFinishing,
-                        onBack: onBack,
-                        onNext: onNext,
-                        onSkip: onSkip,
+    return CustomSingleChildLayout(
+      delegate: _TutorialPanelLayoutDelegate(
+        safeBounds: safeBounds,
+        targetRect: targetRect,
+        placeBelowTarget: placeBelowTarget,
+        fallbackDock: dock,
+      ),
+      child: SizedBox(
+        key: const ValueKey('core-tutorial-panel'),
+        width: panelWidth,
+        child: Material(
+          type: MaterialType.transparency,
+          child: Row(
+            crossAxisAlignment: placeBelowTarget
+                ? CrossAxisAlignment.start
+                : CrossAxisAlignment.end,
+            textDirection: alignRight ? TextDirection.rtl : TextDirection.ltr,
+            children: [
+              _TutorialAssistantAvatar(
+                animationPath:
+                    _CoreTutorialOverlayState._assistantAnimationPath,
+                size: assistantSize,
+                pulseValue: pulseValue,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _AssistantSpeechBubble(
+                  tailOnRight: alignRight,
+                  tailNearTop: placeBelowTarget,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: availableHeight),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 220),
+                        switchInCurve: Curves.easeOutCubic,
+                        switchOutCurve: Curves.easeInCubic,
+                        transitionBuilder: (child, animation) {
+                          return FadeTransition(
+                            opacity: animation,
+                            child: SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0, 0.04),
+                                end: Offset.zero,
+                              ).animate(animation),
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: _TutorialBubbleContent(
+                          key: ValueKey(step.title),
+                          step: step,
+                          stepNumber: stepNumber,
+                          totalSteps: totalSteps,
+                          isFirstStep: isFirstStep,
+                          isLastStep: isLastStep,
+                          isFinishing: isFinishing,
+                          onBack: onBack,
+                          onNext: onNext,
+                          onSkip: onSkip,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
+  }
+}
+
+class _TutorialPanelLayoutDelegate extends SingleChildLayoutDelegate {
+  static const _targetGap = 12.0;
+
+  final Rect safeBounds;
+  final Rect? targetRect;
+  final bool placeBelowTarget;
+  final _TutorialAssistantDock fallbackDock;
+
+  const _TutorialPanelLayoutDelegate({
+    required this.safeBounds,
+    required this.targetRect,
+    required this.placeBelowTarget,
+    required this.fallbackDock,
+  });
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
+    return BoxConstraints.loose(safeBounds.size);
+  }
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) {
+    final target = targetRect;
+    late double left;
+    late double top;
+
+    if (target == null) {
+      final alignRight =
+          fallbackDock == _TutorialAssistantDock.topRight ||
+          fallbackDock == _TutorialAssistantDock.bottomRight;
+      final alignTop =
+          fallbackDock == _TutorialAssistantDock.topLeft ||
+          fallbackDock == _TutorialAssistantDock.topRight;
+      left = alignRight ? safeBounds.right - childSize.width : safeBounds.left;
+      top = alignTop ? safeBounds.top : safeBounds.bottom - childSize.height;
+    } else {
+      left = target.center.dx - (childSize.width / 2);
+      top = placeBelowTarget
+          ? target.bottom + _targetGap
+          : target.top - _targetGap - childSize.height;
+    }
+
+    final maxLeft = math.max(
+      safeBounds.left,
+      safeBounds.right - childSize.width,
+    );
+    final maxTop = math.max(
+      safeBounds.top,
+      safeBounds.bottom - childSize.height,
+    );
+    return Offset(
+      left.clamp(safeBounds.left, maxLeft).toDouble(),
+      top.clamp(safeBounds.top, maxTop).toDouble(),
+    );
+  }
+
+  @override
+  bool shouldRelayout(covariant _TutorialPanelLayoutDelegate oldDelegate) {
+    return safeBounds != oldDelegate.safeBounds ||
+        targetRect != oldDelegate.targetRect ||
+        placeBelowTarget != oldDelegate.placeBelowTarget ||
+        fallbackDock != oldDelegate.fallbackDock;
   }
 }
 
@@ -624,6 +731,7 @@ class _TutorialAssistantAvatar extends StatelessWidget {
     final ringScale = 1 + (pulseValue * 0.16);
 
     return Transform.translate(
+      key: const ValueKey('core-tutorial-assistant-avatar'),
       offset: Offset(0, wave * 3),
       child: Stack(
         alignment: Alignment.center,
@@ -890,13 +998,26 @@ const _coreTutorialSteps = [
     assistantDock: _TutorialAssistantDock.topLeft,
   ),
   _TutorialStepData(
-    target: CoreTutorialTarget.none,
+    target: CoreTutorialTarget.streakOverview,
     tab: MainTab.home,
-    icon: Icons.leaderboard_rounded,
-    title: 'Streaks now have a leaderboard',
+    route: CoreTutorialRoute.streak,
+    icon: Icons.local_fire_department_rounded,
+    title: 'Your streak makes consistency visible',
     body:
-        'Tap your streak chip in the home header to open my streak. The leaderboard compares global, local, and role streaks using privacy-safe profile details.',
+        'I opened My streak so you can review your current and best streak, available streak savers, protected days, and recent streak activity in one place.',
     assistantDock: _TutorialAssistantDock.topRight,
+    settleDelay: Duration(milliseconds: 680),
+  ),
+  _TutorialStepData(
+    target: CoreTutorialTarget.streakLeaderboard,
+    tab: MainTab.home,
+    route: CoreTutorialRoute.streakLeaderboard,
+    icon: Icons.leaderboard_rounded,
+    title: 'The leaderboard keeps comparisons flexible',
+    body:
+        'Compare current or best streaks across Global, Local, and Role views. Only the profile details needed for the selected comparison are shown.',
+    assistantDock: _TutorialAssistantDock.bottomLeft,
+    settleDelay: Duration(milliseconds: 680),
   ),
   _TutorialStepData(
     target: CoreTutorialTarget.assistant,

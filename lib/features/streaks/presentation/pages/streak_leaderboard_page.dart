@@ -23,9 +23,14 @@ typedef StreakLeaderboardLoader =
     });
 
 class StreakLeaderboardPage extends StatefulWidget {
-  const StreakLeaderboardPage({super.key, this.loadLeaderboard});
+  const StreakLeaderboardPage({
+    super.key,
+    this.loadLeaderboard,
+    this.tutorialFiltersKey,
+  });
 
   final StreakLeaderboardLoader? loadLeaderboard;
+  final Key? tutorialFiltersKey;
 
   @override
   State<StreakLeaderboardPage> createState() => _StreakLeaderboardPageState();
@@ -181,21 +186,28 @@ class _StreakLeaderboardPageState extends State<StreakLeaderboardPage> {
                   children: [
                     _LeaderboardHero(metric: _metric),
                     const SizedBox(height: 16),
-                    _OptionChips(
-                      key: const ValueKey('leaderboard-section-options'),
-                      semanticLabel: 'Leaderboard section',
-                      options: _sections,
-                      selected: _section,
-                      onSelected: _selectSection,
-                    ),
-                    const SizedBox(height: 10),
-                    _OptionChips(
-                      key: const ValueKey('leaderboard-metric-options'),
-                      semanticLabel: 'Streak category',
-                      options: _metrics,
-                      selected: _metric,
-                      onSelected: _selectMetric,
-                      compact: true,
+                    KeyedSubtree(
+                      key: widget.tutorialFiltersKey,
+                      child: Column(
+                        children: [
+                          _OptionChips(
+                            key: const ValueKey('leaderboard-section-options'),
+                            semanticLabel: 'Leaderboard section',
+                            options: _sections,
+                            selected: _section,
+                            onSelected: _selectSection,
+                          ),
+                          const SizedBox(height: 10),
+                          _OptionChips(
+                            key: const ValueKey('leaderboard-metric-options'),
+                            semanticLabel: 'Streak category',
+                            options: _metrics,
+                            selected: _metric,
+                            onSelected: _selectMetric,
+                            compact: true,
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 18),
                     AnimatedSwitcher(
