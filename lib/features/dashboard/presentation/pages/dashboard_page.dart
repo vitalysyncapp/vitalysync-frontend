@@ -44,18 +44,23 @@ class _DashboardState extends State<Dashboard> {
   bool _isLoadingBurnoutPatterns = true;
   bool _isLoadingAiInsight = true;
   bool _isLoadingWeeklyMetrics = true;
+  bool _isRefreshingWeeklyMetrics = false;
   WeeklyUserMetrics? _currentWeekMetrics;
   WeeklyUserMetrics? _previousWeekMetrics;
   int _refreshVersion = 0;
   int _burnoutLoadToken = 0;
   int _firstWeekLoadToken = 0;
   int _weeklyMetricsLoadToken = 0;
+  Timer? _weeklyMetricsRefreshDebounce;
 
   @override
   void initState() {
     super.initState();
     BurnoutScoreApi.refreshSignal.addListener(_handleBurnoutInputsChanged);
     UserGoalsService.refreshSignal.addListener(_handleGoalsChanged);
+    WeeklyUserMetricsService.refreshSignal.addListener(
+      _handleWeeklyMetricsChanged,
+    );
     _loadBurnoutPatterns();
     unawaited(_loadWeeklyMetrics());
     unawaited(_loadFirstWeekLearning());
@@ -65,6 +70,10 @@ class _DashboardState extends State<Dashboard> {
   void dispose() {
     BurnoutScoreApi.refreshSignal.removeListener(_handleBurnoutInputsChanged);
     UserGoalsService.refreshSignal.removeListener(_handleGoalsChanged);
+    WeeklyUserMetricsService.refreshSignal.removeListener(
+      _handleWeeklyMetricsChanged,
+    );
+    _weeklyMetricsRefreshDebounce?.cancel();
     super.dispose();
   }
 
@@ -83,6 +92,14 @@ class _DashboardState extends State<Dashboard> {
     });
   }
 
+  void _handleWeeklyMetricsChanged() {
+    _weeklyMetricsRefreshDebounce?.cancel();
+    _weeklyMetricsRefreshDebounce = Timer(
+      const Duration(milliseconds: 100),
+      () => unawaited(_loadWeeklyMetrics()),
+    );
+  }
+
   Future<void> _loadBurnoutPatterns() async {
     final loadToken = ++_burnoutLoadToken;
     setState(() {
@@ -94,13 +111,16 @@ class _DashboardState extends State<Dashboard> {
       final summary = await BurnoutScoreApi.fetchPatternSummary();
       AdaptiveNudgeRecommendation? aiInsight;
       try {
-      final nudgeResponse = await AdaptiveNudgeApi.fetchRecommendations(
+        final nudgeResponse = await AdaptiveNudgeApi.fetchRecommendations(
           limit: 1,
           record: false,
           ai: true,
         );
         final insightsPaused = AppPreferencesController
-            .instance.notifier.value.pauseWellnessInsights;
+            .instance
+            .notifier
+            .value
+            .pauseWellnessInsights;
         aiInsight = nudgeResponse.recommendations.isEmpty || insightsPaused
             ? null
             : nudgeResponse.recommendations.first;
@@ -144,7 +164,8 @@ class _DashboardState extends State<Dashboard> {
     }
 
     setState(() {
-      _isLoadingWeeklyMetrics = true;
+      _isLoadingWeeklyMetrics = _currentWeekMetrics == null;
+      _isRefreshingWeeklyMetrics = _currentWeekMetrics != null;
     });
 
     final now = DateTime.now();
@@ -155,15 +176,17 @@ class _DashboardState extends State<Dashboard> {
 
     try {
       final results = await Future.wait([
-        WeeklyUserMetricsService.loadRange(
+        _loadWeeklyRange(
           start: currentStart,
           end: today,
           forceRefresh: forceRefresh,
+          fallback: _currentWeekMetrics,
         ),
-        WeeklyUserMetricsService.loadRange(
+        _loadWeeklyRange(
           start: previousStart,
           end: previousEnd,
           forceRefresh: forceRefresh,
+          fallback: _previousWeekMetrics,
         ),
       ]);
 
@@ -175,6 +198,7 @@ class _DashboardState extends State<Dashboard> {
         _currentWeekMetrics = results[0];
         _previousWeekMetrics = results[1];
         _isLoadingWeeklyMetrics = false;
+        _isRefreshingWeeklyMetrics = false;
       });
     } catch (_) {
       if (!mounted || loadToken != _weeklyMetricsLoadToken) {
@@ -189,8 +213,35 @@ class _DashboardState extends State<Dashboard> {
           start: previousStart,
         );
         _isLoadingWeeklyMetrics = false;
+        _isRefreshingWeeklyMetrics = false;
       });
     }
+  }
+
+  Future<WeeklyUserMetrics> _loadWeeklyRange({
+    required DateTime start,
+    required DateTime end,
+    required bool forceRefresh,
+    required WeeklyUserMetrics? fallback,
+  }) async {
+    try {
+      return await WeeklyUserMetricsService.loadRange(
+        start: start,
+        end: end,
+        forceRefresh: forceRefresh,
+      );
+    } catch (_) {
+      return fallback ?? WeeklyUserMetricsService.empty(start: start);
+    }
+  }
+
+  Future<void> _refreshWeeklyMetrics() async {
+    try {
+      await ActivityService.instance.refresh();
+    } catch (_) {
+      // Weekly history can still refresh when today's live activity cannot.
+    }
+    await _loadWeeklyMetrics(forceRefresh: true);
   }
 
   Future<void> _refreshDashboard() async {
@@ -199,9 +250,8 @@ class _DashboardState extends State<Dashboard> {
     });
 
     await Future.wait([
-      ActivityService.instance.refresh(),
+      _refreshWeeklyMetrics(),
       _loadBurnoutPatterns(),
-      _loadWeeklyMetrics(forceRefresh: true),
       _loadFirstWeekLearning(),
       refreshAppBarStreak(),
       refreshNotificationFeed(),
@@ -335,11 +385,15 @@ class _DashboardState extends State<Dashboard> {
                         RevealOnBuild(
                           delay: const Duration(milliseconds: 260),
                           child: ValueListenableBuilder<ActivityTrackingState>(
-                            valueListenable:
-                                ActivityService.instance.notifier,
+                            valueListenable: ActivityService.instance.notifier,
                             builder: (context, activityState, _) {
                               return WeeklyStepAnalyticsCard(
                                 state: activityState,
+                                currentWeek: _currentWeekMetrics,
+                                previousWeek: _previousWeekMetrics,
+                                isLoading: _isLoadingWeeklyMetrics,
+                                isRefreshing: _isRefreshingWeeklyMetrics,
+                                onRefresh: _refreshWeeklyMetrics,
                                 compact: true,
                               );
                             },
@@ -363,9 +417,15 @@ class _DashboardState extends State<Dashboard> {
                         const SizedBox(height: 12),
                         RevealOnBuild(
                           delay: const Duration(milliseconds: 440),
-                          child: WellnessIndexCard(
-                            metrics: _currentWeekMetrics,
-                            isLoading: _isLoadingWeeklyMetrics,
+                          child: ValueListenableBuilder<ActivityTrackingState>(
+                            valueListenable: ActivityService.instance.notifier,
+                            builder: (context, activityState, _) {
+                              return WellnessIndexCard(
+                                metrics: _currentWeekMetrics
+                                    ?.withLatestActivity(activityState.log),
+                                isLoading: _isLoadingWeeklyMetrics,
+                              );
+                            },
                           ),
                         ),
                         const SizedBox(height: 12),

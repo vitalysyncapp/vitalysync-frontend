@@ -115,6 +115,44 @@ class WeeklyUserMetrics {
     return (totalSteps / days.length).round();
   }
 
+  int get stepIndex {
+    if (days.isEmpty) return 0;
+
+    final progressTotal = days.fold<double>(0, (sum, day) {
+      final activity = day.activity;
+      if (activity == null || activity.goalSteps <= 0) return sum;
+      return sum + (activity.steps / activity.goalSteps).clamp(0.0, 1.0);
+    });
+    return (progressTotal / days.length * 100).round();
+  }
+
+  WeeklyUserMetrics withLatestActivity(ActivityLog latestActivity) {
+    final matchingIndex = days.indexWhere(
+      (day) => day.dateKey == latestActivity.logDate,
+    );
+    if (matchingIndex < 0) return this;
+
+    final existingActivity = days[matchingIndex].activity;
+    if (existingActivity != null &&
+        existingActivity.steps > latestActivity.steps) {
+      return this;
+    }
+
+    return WeeklyUserMetrics(
+      days: List.generate(days.length, (index) {
+        final day = days[index];
+        if (index != matchingIndex) return day;
+        return DailyUserMetric(
+          date: day.date,
+          dateKey: day.dateKey,
+          dayLabel: day.dayLabel,
+          log: day.log,
+          activity: latestActivity,
+        );
+      }),
+    );
+  }
+
   int get consistencyScore {
     final logScore = loggedDays / 7;
     final movementScore = exerciseDays / 7;
@@ -130,7 +168,17 @@ class WeeklyUserMetrics {
 
   int get sleepIndex => ((averageSleep / 8).clamp(0.0, 1.0) * 100).round();
 
-  int get moodIndex => (((averageMood + 1) / 5).clamp(0.0, 1.0) * 100).round();
+  int get moodIndex {
+    final values = days
+        .map((day) => day.moodIndex)
+        .where((value) => value != null)
+        .cast<int>()
+        .toList();
+    if (values.isEmpty) return 0;
+
+    final average = values.reduce((a, b) => a + b) / values.length;
+    return (((average + 1) / 5).clamp(0.0, 1.0) * 100).round();
+  }
 
   int get energyIndex {
     final values = days

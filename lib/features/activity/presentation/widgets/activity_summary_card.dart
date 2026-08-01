@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/analytics_animation.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
-import '../../data/activity_api.dart';
+import '../../../dashboard/data/weekly_user_metrics.dart';
 import '../../data/activity_log.dart';
 import '../../data/activity_service.dart';
 
@@ -271,121 +270,38 @@ class ActivitySummaryCard extends StatelessWidget {
   }
 }
 
-class WeeklyStepAnalyticsCard extends StatefulWidget {
+class WeeklyStepAnalyticsCard extends StatelessWidget {
   final ActivityTrackingState state;
+  final WeeklyUserMetrics? currentWeek;
+  final WeeklyUserMetrics? previousWeek;
+  final bool isLoading;
+  final bool isRefreshing;
+  final Future<void> Function()? onRefresh;
   final bool compact;
 
   const WeeklyStepAnalyticsCard({
     super.key,
     required this.state,
+    required this.currentWeek,
+    required this.previousWeek,
+    required this.isLoading,
+    this.isRefreshing = false,
+    this.onRefresh,
     this.compact = false,
   });
 
   @override
-  State<WeeklyStepAnalyticsCard> createState() =>
-      _WeeklyStepAnalyticsCardState();
-}
-
-class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
-  static const _historyRangeDays = 7;
-
-  bool _isLoading = true;
-  bool _isOffline = false;
-  String? _errorMessage;
-  List<ActivityLog> _historyLogs = const [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadHistory();
-  }
-
-  Future<void> _loadHistory() async {
-    if (mounted) {
-      setState(() {
-        _isLoading = true;
-        _errorMessage = null;
-      });
-    }
-
-    final session = await UserSessionController.instance.load();
-    if (session.userId == null || session.userId! <= 0) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _historyLogs = const [];
-        _isLoading = false;
-        _isOffline = false;
-        _errorMessage = null;
-      });
-      return;
-    }
-
-    final endDate = DateTime.now();
-    final startDate = endDate.subtract(
-      const Duration(days: _historyRangeDays - 1),
-    );
-
-    try {
-      final logs = await ActivityApi.fetchHistory(
-        userId: session.userId!,
-        startDate: _dateKey(startDate),
-        endDate: _dateKey(endDate),
-      );
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _historyLogs = logs;
-        _isLoading = false;
-        _isOffline = false;
-        _errorMessage = null;
-      });
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _isLoading = false;
-        _isOffline = true;
-        _errorMessage = 'Weekly step history is unavailable right now.';
-      });
-    }
-  }
-
-  List<ActivityLog> _weeklyLogs(ActivityLog todayLog) {
-    final logsByDate = <String, ActivityLog>{};
-    for (final log in _historyLogs) {
-      logsByDate[log.logDate] = log;
-    }
-    logsByDate[todayLog.logDate] = todayLog;
-
-    final now = DateTime.now();
-    return List.generate(_historyRangeDays, (index) {
-      final day = now.subtract(Duration(days: _historyRangeDays - 1 - index));
-      final key = _dateKey(day);
-      return logsByDate[key] ??
-          ActivityLog.fromSteps(
-            logDate: key,
-            steps: 0,
-            goalSteps: todayLog.goalSteps,
-          );
-    });
-  }
-
-  String _dateKey(DateTime date) {
-    final month = date.month.toString().padLeft(2, '0');
-    final day = date.day.toString().padLeft(2, '0');
-    return '${date.year}-$month-$day';
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final log = widget.state.log;
-    final weeklyLogs = _weeklyLogs(log);
+    final log = state.log;
+    final resolvedCurrentWeek = currentWeek?.withLatestActivity(log);
+    final weeklyLogs = _weeklyLogs(resolvedCurrentWeek, log.goalSteps);
     final numberFormat = NumberFormat.decimalPattern();
     final totalSteps = weeklyLogs.fold<int>(0, (sum, item) => sum + item.steps);
+    final previousTotalSteps = previousWeek?.totalSteps ?? 0;
+    final comparison = _StepWeekComparison.fromTotals(
+      current: totalSteps,
+      previous: previousTotalSteps,
+    );
     final averageSteps = weeklyLogs.isEmpty
         ? 0
         : (totalSteps / weeklyLogs.length).round();
@@ -414,11 +330,13 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
         : totalSteps > 0
         ? 'Keep moving'
         : 'Start your streak';
-    final syncLabel = _isOffline ? 'Offline cache' : 'Last 7 days';
+    final syncLabel = state.isOffline
+        ? 'Saved data • Last 7 days'
+        : 'Last 7 days';
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(widget.compact ? 14 : 15),
+      padding: EdgeInsets.all(compact ? 14 : 15),
       decoration: BoxDecoration(
         color: pageSurfaceColor(context),
         borderRadius: BorderRadius.circular(18),
@@ -436,8 +354,9 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
         ],
       ),
       child: AnalyticsContentSwitcher(
-        isLoading: _isLoading,
-        contentKey: '${log.logDate}-${log.steps}',
+        isLoading: isLoading && currentWeek == null,
+        contentKey:
+            '${log.logDate}-$totalSteps-$previousTotalSteps-$isRefreshing',
         loading: const SizedBox(
           height: 110,
           child: AppSkeletonRows(count: 2, showLeading: true),
@@ -470,7 +389,7 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: widget.compact ? 14.5 : 15.5,
+                          fontSize: compact ? 14.5 : 15.5,
                           fontWeight: FontWeight.w800,
                           color: pagePrimaryTextColor(context),
                         ),
@@ -488,6 +407,21 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
                     ],
                   ),
                 ),
+                if (isRefreshing)
+                  const Padding(
+                    padding: EdgeInsets.only(left: 8),
+                    child: SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                else if (onRefresh != null)
+                  IconButton(
+                    key: const ValueKey('weekly-steps-refresh'),
+                    tooltip: 'Refresh weekly steps',
+                    onPressed: onRefresh,
+                    icon: const Icon(Icons.refresh_rounded),
+                  ),
               ],
             ),
             const SizedBox(height: 12),
@@ -511,42 +445,104 @@ class _WeeklyStepAnalyticsCardState extends State<WeeklyStepAnalyticsCard> {
             const SizedBox(height: 12),
             Row(
               children: [
+                _StatusPill(label: comparison.label, color: comparison.color),
+                const SizedBox(width: 8),
                 _StatusPill(
                   label:
                       '$bestDayLabel best: ${numberFormat.format(bestDay.steps)}',
                   color: const Color(0xFF0EA5E9),
                 ),
-                const SizedBox(width: 8),
-                _StatusPill(label: statusLabel, color: statusColor),
               ],
             ),
             const SizedBox(height: 8),
             Row(
               children: [
-                Text(
-                  '$goalDays of ${weeklyLogs.length} goal days reached',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: pagePrimaryTextColor(context),
+                _StatusPill(label: statusLabel, color: statusColor),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '$goalDays of ${weeklyLogs.length} goal days reached',
+                    textAlign: TextAlign.end,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: pagePrimaryTextColor(context),
+                    ),
                   ),
                 ),
               ],
             ),
-            if (_errorMessage != null) ...[
-              const SizedBox(height: 10),
-              Text(
-                _errorMessage!,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFFDC2626),
-                  height: 1.35,
-                ),
-              ),
-            ],
           ],
         ),
       ),
+    );
+  }
+
+  List<ActivityLog> _weeklyLogs(
+    WeeklyUserMetrics? metrics,
+    int fallbackGoalSteps,
+  ) {
+    final days = metrics?.days ?? const <DailyUserMetric>[];
+    if (days.isNotEmpty) {
+      return days
+          .map(
+            (day) =>
+                day.activity ??
+                ActivityLog.fromSteps(
+                  logDate: day.dateKey,
+                  steps: 0,
+                  goalSteps: fallbackGoalSteps,
+                ),
+          )
+          .toList();
+    }
+
+    final today = DateTime.now();
+    return List.generate(7, (index) {
+      final date = today.subtract(Duration(days: 6 - index));
+      return ActivityLog.fromSteps(
+        logDate: _dateKey(date),
+        steps: 0,
+        goalSteps: fallbackGoalSteps,
+      );
+    });
+  }
+
+  String _dateKey(DateTime date) {
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '${date.year}-$month-$day';
+  }
+}
+
+class _StepWeekComparison {
+  final String label;
+  final Color color;
+
+  const _StepWeekComparison({required this.label, required this.color});
+
+  factory _StepWeekComparison.fromTotals({
+    required int current,
+    required int previous,
+  }) {
+    if (previous <= 0) {
+      return _StepWeekComparison(
+        label: current > 0 ? 'New vs last week' : 'No comparison yet',
+        color: const Color(0xFF64748B),
+      );
+    }
+
+    final percent = ((current - previous) / previous * 100).round();
+    if (percent == 0) {
+      return const _StepWeekComparison(
+        label: 'Same as last week',
+        color: Color(0xFF64748B),
+      );
+    }
+
+    return _StepWeekComparison(
+      label: '${percent > 0 ? '+' : ''}$percent% vs last week',
+      color: percent > 0 ? const Color(0xFF16A34A) : const Color(0xFF0EA5E9),
     );
   }
 }
