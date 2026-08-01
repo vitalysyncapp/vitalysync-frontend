@@ -54,8 +54,9 @@ class CoreTutorialOverlay extends StatefulWidget {
 }
 
 class _CoreTutorialOverlayState extends State<CoreTutorialOverlay>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   static const _transitionDuration = Duration(milliseconds: 260);
+  static const _transitionOutDuration = Duration(milliseconds: 120);
   static const _tabSwitchDelay = Duration(milliseconds: 430);
   static const _targetRetryDelay = Duration(milliseconds: 120);
   static const _targetMeasureAttempts = 4;
@@ -65,7 +66,12 @@ class _CoreTutorialOverlayState extends State<CoreTutorialOverlay>
   int _measureToken = 0;
   Rect? _targetRect;
   bool _isFinishing = false;
+  bool _isTransitioning = true;
   late final AnimationController _pulseController;
+  late final AnimationController _transitionController;
+  late final Animation<double> _contentReveal;
+  late final Animation<Offset> _panelSlide;
+  late final Animation<double> _panelScale;
 
   @override
   void initState() {
@@ -74,9 +80,24 @@ class _CoreTutorialOverlayState extends State<CoreTutorialOverlay>
       vsync: this,
       duration: const Duration(milliseconds: 1700),
     )..repeat();
+    _transitionController = AnimationController(
+      vsync: this,
+      duration: _transitionDuration,
+      reverseDuration: _transitionOutDuration,
+    );
+    _contentReveal = CurvedAnimation(
+      parent: _transitionController,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    _panelSlide = Tween<Offset>(
+      begin: const Offset(0, 0.025),
+      end: Offset.zero,
+    ).animate(_contentReveal);
+    _panelScale = Tween<double>(begin: 0.985, end: 1).animate(_contentReveal);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _syncStepSideEffects();
+        unawaited(_prepareCurrentStep());
       }
     });
   }
@@ -84,19 +105,42 @@ class _CoreTutorialOverlayState extends State<CoreTutorialOverlay>
   @override
   void dispose() {
     _pulseController.dispose();
+    _transitionController.dispose();
     super.dispose();
   }
 
   @override
   void didUpdateWidget(covariant CoreTutorialOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.currentTab != widget.currentTab) {
-      _queueTargetUpdate();
+    if (oldWidget.currentTab != widget.currentTab && !_isTransitioning) {
+      unawaited(_queueTargetUpdate());
     }
   }
 
   void _goToStep(int nextStep) {
-    if (nextStep < 0 || nextStep >= _coreTutorialSteps.length) {
+    if (_isTransitioning ||
+        nextStep < 0 ||
+        nextStep >= _coreTutorialSteps.length) {
+      return;
+    }
+
+    unawaited(_transitionToStep(nextStep));
+  }
+
+  Future<void> _prepareCurrentStep() async {
+    await _syncStepSideEffects();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() => _isTransitioning = false);
+    unawaited(_transitionController.forward(from: 0));
+  }
+
+  Future<void> _transitionToStep(int nextStep) async {
+    setState(() => _isTransitioning = true);
+    await _transitionController.reverse();
+    if (!mounted) {
       return;
     }
 
@@ -104,10 +148,17 @@ class _CoreTutorialOverlayState extends State<CoreTutorialOverlay>
       _currentStep = nextStep;
       _targetRect = null;
     });
-    _syncStepSideEffects();
+
+    await _syncStepSideEffects();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() => _isTransitioning = false);
+    unawaited(_transitionController.forward(from: 0));
   }
 
-  void _syncStepSideEffects() {
+  Future<void> _syncStepSideEffects() async {
     final step = _coreTutorialSteps[_currentStep];
     final tab = step.tab;
     final willSwitchTab = tab != null && tab != widget.currentTab;
@@ -120,33 +171,42 @@ class _CoreTutorialOverlayState extends State<CoreTutorialOverlay>
       widget.onTabSelected(tab);
     }
 
-    unawaited(widget.onRouteRequested(step.route));
-    _queueTargetUpdate(delay: settleDelay);
-  }
-
-  void _queueTargetUpdate({Duration delay = Duration.zero}) {
-    final token = ++_measureToken;
-
-    void measureAfter(Duration wait, int attemptsRemaining) {
-      Future<void>.delayed(wait, () {
-        if (!mounted || token != _measureToken) {
-          return;
-        }
-
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted || token != _measureToken) {
-            return;
-          }
-
-          final foundTarget = _updateTargetRect();
-          if (!foundTarget && attemptsRemaining > 0) {
-            measureAfter(_targetRetryDelay, attemptsRemaining - 1);
-          }
-        });
-      });
+    await Future.wait<void>([
+      widget.onRouteRequested(step.route),
+      if (settleDelay > Duration.zero) Future<void>.delayed(settleDelay),
+    ]);
+    if (!mounted) {
+      return;
     }
 
-    measureAfter(delay, _targetMeasureAttempts);
+    await _queueTargetUpdate();
+  }
+
+  Future<bool> _queueTargetUpdate({Duration delay = Duration.zero}) async {
+    final token = ++_measureToken;
+    if (delay > Duration.zero) {
+      await Future<void>.delayed(delay);
+    }
+
+    for (var attempt = 0; attempt <= _targetMeasureAttempts; attempt++) {
+      if (!mounted || token != _measureToken) {
+        return false;
+      }
+
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted || token != _measureToken) {
+        return false;
+      }
+
+      if (_updateTargetRect()) {
+        return true;
+      }
+      if (attempt < _targetMeasureAttempts) {
+        await Future<void>.delayed(_targetRetryDelay);
+      }
+    }
+
+    return false;
   }
 
   bool _updateTargetRect() {
@@ -215,7 +275,7 @@ class _CoreTutorialOverlayState extends State<CoreTutorialOverlay>
     final step = _coreTutorialSteps[_currentStep];
 
     return AnimatedBuilder(
-      animation: _pulseController,
+      animation: Listenable.merge([_pulseController, _transitionController]),
       builder: (context, _) {
         final pulseValue = _pulseController.value;
 
@@ -230,45 +290,60 @@ class _CoreTutorialOverlayState extends State<CoreTutorialOverlay>
                   painter: _TutorialSpotlightPainter(
                     targetRect: _targetRect,
                     isDark: Theme.of(context).brightness == Brightness.dark,
+                    revealProgress: _contentReveal.value,
                   ),
                 ),
               ),
               const ModalBarrier(dismissible: false, color: Colors.transparent),
               if (_targetRect != null)
                 AnimatedPositioned(
+                  key: const ValueKey('core-tutorial-focus-frame'),
                   duration: _transitionDuration,
                   curve: Curves.easeOutCubic,
                   left: _targetRect!.left,
                   top: _targetRect!.top,
                   width: _targetRect!.width,
                   height: _targetRect!.height,
-                  child: IgnorePointer(
-                    child: CustomPaint(
-                      painter: _TutorialFocusFramePainter(
-                        pulseValue: pulseValue,
-                        isDark: Theme.of(context).brightness == Brightness.dark,
+                  child: FadeTransition(
+                    opacity: _contentReveal,
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        painter: _TutorialFocusFramePainter(
+                          pulseValue: pulseValue,
+                          isDark:
+                              Theme.of(context).brightness == Brightness.dark,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              _TutorialPanel(
-                step: step,
-                stepNumber: _currentStep + 1,
-                totalSteps: _coreTutorialSteps.length,
-                targetRect: _targetRect,
-                pulseValue: pulseValue,
-                isFirstStep: _currentStep == 0,
-                isLastStep: _currentStep == _coreTutorialSteps.length - 1,
-                isFinishing: _isFinishing,
-                onBack: () => _goToStep(_currentStep - 1),
-                onNext: () {
-                  if (_currentStep == _coreTutorialSteps.length - 1) {
-                    unawaited(_finishTutorial());
-                  } else {
-                    _goToStep(_currentStep + 1);
-                  }
-                },
-                onSkip: () => unawaited(_finishTutorial()),
+              FadeTransition(
+                opacity: _contentReveal,
+                child: SlideTransition(
+                  position: _panelSlide,
+                  child: ScaleTransition(
+                    scale: _panelScale,
+                    child: _TutorialPanel(
+                      step: step,
+                      stepNumber: _currentStep + 1,
+                      totalSteps: _coreTutorialSteps.length,
+                      targetRect: _targetRect,
+                      pulseValue: pulseValue,
+                      isFirstStep: _currentStep == 0,
+                      isLastStep: _currentStep == _coreTutorialSteps.length - 1,
+                      isFinishing: _isFinishing,
+                      onBack: () => _goToStep(_currentStep - 1),
+                      onNext: () {
+                        if (_currentStep == _coreTutorialSteps.length - 1) {
+                          unawaited(_finishTutorial());
+                        } else {
+                          _goToStep(_currentStep + 1);
+                        }
+                      },
+                      onSkip: () => unawaited(_finishTutorial()),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -374,6 +449,7 @@ class _TutorialPanel extends StatelessWidget {
                   child: ConstrainedBox(
                     constraints: BoxConstraints(maxHeight: availableHeight),
                     child: SingleChildScrollView(
+                      key: ValueKey('core-tutorial-scroll-$stepNumber'),
                       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 220),
@@ -673,6 +749,7 @@ class _AssistantSpeechBubble extends StatelessWidget {
           ),
         ),
         Container(
+          key: const ValueKey('core-tutorial-bubble'),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
             gradient: LinearGradient(
@@ -811,10 +888,12 @@ class _TutorialAssistantAvatar extends StatelessWidget {
 class _TutorialSpotlightPainter extends CustomPainter {
   final Rect? targetRect;
   final bool isDark;
+  final double revealProgress;
 
   const _TutorialSpotlightPainter({
     required this.targetRect,
     required this.isDark,
+    required this.revealProgress,
   });
 
   @override
@@ -828,10 +907,12 @@ class _TutorialSpotlightPainter extends CustomPainter {
     );
 
     final target = targetRect;
-    if (target != null) {
+    if (target != null && revealProgress > 0) {
       canvas.drawRRect(
         RRect.fromRectAndRadius(target, const Radius.circular(26)),
-        Paint()..blendMode = BlendMode.clear,
+        Paint()
+          ..color = Colors.white.withValues(alpha: revealProgress)
+          ..blendMode = BlendMode.dstOut,
       );
     }
 
@@ -840,7 +921,9 @@ class _TutorialSpotlightPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _TutorialSpotlightPainter oldDelegate) {
-    return targetRect != oldDelegate.targetRect || isDark != oldDelegate.isDark;
+    return targetRect != oldDelegate.targetRect ||
+        isDark != oldDelegate.isDark ||
+        revealProgress != oldDelegate.revealProgress;
   }
 }
 

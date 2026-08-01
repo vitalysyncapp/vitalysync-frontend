@@ -25,7 +25,7 @@ void main() {
     });
   });
 
-  testWidgets('deactivation gate requires password and exact CONFIRM', (
+  testWidgets('deactivation dialog requires password and exact CONFIRM', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -41,21 +41,62 @@ void main() {
       find.byKey(const ValueKey('deactivate-current-password')),
       'last-password',
     );
+    await tester.pump();
+    expect(button().onPressed, isNotNull);
+
+    await tester.tap(find.byKey(const ValueKey('deactivate-confirm-button')));
+    await tester.pumpAndSettle();
+
+    TextButton dialogButton() => tester.widget<TextButton>(
+      find.byKey(const ValueKey('deactivate-dialog-confirm-button')),
+    );
+
+    expect(dialogButton().onPressed, isNull);
     await tester.enterText(
       find.byKey(const ValueKey('deactivate-confirmation')),
       'confirm',
     );
     await tester.pump();
-    expect(button().onPressed, isNull);
+    expect(dialogButton().onPressed, isNull);
 
     await tester.enterText(
       find.byKey(const ValueKey('deactivate-confirmation')),
       'CONFIRM',
     );
     await tester.pump();
-    expect(button().onPressed, isNotNull);
+    expect(dialogButton().onPressed, isNotNull);
     expect(find.textContaining('40 days'), findsWidgets);
     expect(find.textContaining('five years'), findsOneWidget);
+  });
+
+  testWidgets('clear-data dialog requires exact CONFIRM', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ClearAccountDataPage(verifiedPassword: 'last-password'),
+      ),
+    );
+
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Clear account data'));
+    await tester.pumpAndSettle();
+
+    TextButton button() => tester.widget<TextButton>(
+      find.byKey(const ValueKey('clear-data-confirm-button')),
+    );
+
+    expect(button().onPressed, isNull);
+    await tester.enterText(
+      find.byKey(const ValueKey('clear-data-confirmation')),
+      'confirm',
+    );
+    await tester.pump();
+    expect(button().onPressed, isNull);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('clear-data-confirmation')),
+      'CONFIRM',
+    );
+    await tester.pump();
+    expect(button().onPressed, isNotNull);
   });
 
   testWidgets('settings exposes deactivation and removes permanent deletion', (
@@ -85,7 +126,12 @@ void main() {
 
     await tester.tap(find.widgetWithText(ElevatedButton, 'Clear account data'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(TextButton, 'Clear data'));
+    await tester.enterText(
+      find.byKey(const ValueKey('clear-data-confirmation')),
+      'CONFIRM',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('clear-data-confirm-button')));
     await tester.pumpAndSettle();
 
     expect(find.text('Server clear failed'), findsOneWidget);

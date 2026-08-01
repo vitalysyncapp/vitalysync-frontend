@@ -3,20 +3,95 @@ part of 'log_widgets.dart';
 extension _LogWidgetSharedBuilders on LogWidgets {
   Widget _buildCard({
     required Widget child,
-    EdgeInsetsGeometry padding = const EdgeInsets.all(12),
+    EdgeInsetsGeometry padding = const EdgeInsets.all(15),
+    Color accentColor = const Color(0xFF1FB489),
   }) {
     return Builder(
       builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
         return Container(
           width: double.infinity,
-          padding: padding,
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            color: pageSurfaceColor(context),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: pageBorderColor(context), width: 1),
-            boxShadow: pageCardShadow(context),
+            gradient: LinearGradient(
+              colors: isDark
+                  ? [
+                      const Color(0xFF18283C).withValues(alpha: 0.96),
+                      Color.alphaBlend(
+                        accentColor.withValues(alpha: 0.035),
+                        const Color(0xFF112235).withValues(alpha: 0.96),
+                      ),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.96),
+                      Color.alphaBlend(
+                        accentColor.withValues(alpha: 0.035),
+                        const Color(0xFFF8FFFC).withValues(alpha: 0.94),
+                      ),
+                    ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: Color.alphaBlend(
+                accentColor.withValues(alpha: isDark ? 0.13 : 0.09),
+                pageBorderColor(context),
+              ),
+            ),
+            boxShadow: [
+              ...pageCardShadow(context),
+              BoxShadow(
+                color: accentColor.withValues(alpha: isDark ? 0.06 : 0.045),
+                blurRadius: 22,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
-          child: child,
+          child: Stack(
+            children: [
+              Positioned(
+                right: -42,
+                top: -52,
+                child: IgnorePointer(
+                  child: Container(
+                    width: 132,
+                    height: 132,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          accentColor.withValues(alpha: isDark ? 0.11 : 0.075),
+                          accentColor.withValues(alpha: 0),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 22,
+                right: 22,
+                top: 0,
+                child: IgnorePointer(
+                  child: Container(
+                    height: 1.2,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          accentColor.withValues(alpha: 0),
+                          accentColor.withValues(alpha: isDark ? 0.3 : 0.2),
+                          accentColor.withValues(alpha: 0),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Padding(padding: padding, child: child),
+            ],
+          ),
         );
       },
     );
@@ -36,15 +111,34 @@ extension _LogWidgetSharedBuilders on LogWidgets {
         return Row(
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
-                color: isDark ? iconColor.withValues(alpha: 0.18) : iconBg,
-                borderRadius: BorderRadius.circular(12),
+                gradient: LinearGradient(
+                  colors: isDark
+                      ? [
+                          iconColor.withValues(alpha: 0.22),
+                          iconColor.withValues(alpha: 0.11),
+                        ]
+                      : [iconBg, Colors.white.withValues(alpha: 0.75)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: iconColor.withValues(alpha: isDark ? 0.2 : 0.12),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: iconColor.withValues(alpha: 0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Icon(icon, color: iconColor, size: 21),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 11),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,8 +148,9 @@ extension _LogWidgetSharedBuilders on LogWidgets {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 16.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.2,
                       color: pagePrimaryTextColor(context),
                     ),
                   ),
@@ -91,6 +186,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
     required String selectedMessagePrefix,
   }) {
     return _buildCard(
+      accentColor: iconColor,
       child: Builder(
         builder: (context) {
           return Column(
@@ -114,11 +210,11 @@ extension _LogWidgetSharedBuilders on LogWidgets {
                       padding: EdgeInsets.only(
                         right: index == labels.length - 1 ? 0 : 6,
                       ),
-                      child: GestureDetector(
+                      child: _LogPressable(
                         onTap: () => onChanged(value),
                         child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          curve: Curves.easeOut,
+                          duration: const Duration(milliseconds: 240),
+                          curve: Curves.easeOutCubic,
                           height: 56,
                           padding: const EdgeInsets.symmetric(horizontal: 4),
                           decoration: BoxDecoration(
@@ -203,9 +299,10 @@ extension _LogWidgetSharedBuilders on LogWidgets {
         builder: (context) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
 
-          return GestureDetector(
+          return _LogPressable(
             onTap: () => onHydrationAdd(addAmount),
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
               padding: const EdgeInsets.symmetric(vertical: 10),
               decoration: BoxDecoration(
                 color: isDark
@@ -238,9 +335,10 @@ extension _LogWidgetSharedBuilders on LogWidgets {
     required Color color,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return _LogPressable(
       onTap: onTap,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
         width: 34,
         height: 34,
         decoration: BoxDecoration(
@@ -271,9 +369,11 @@ extension _LogWidgetSharedBuilders on LogWidgets {
       builder: (context) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
 
-        return GestureDetector(
+        return _LogPressable(
           onTap: onTap,
-          child: Container(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 230),
+            curve: Curves.easeOutCubic,
             width: width,
             height: height,
             padding: contentPadding,
@@ -290,6 +390,15 @@ extension _LogWidgetSharedBuilders on LogWidgets {
                     : pageBorderColor(context),
                 width: selected ? 2 : 1.3,
               ),
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFF2563EB).withValues(alpha: 0.14),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : null,
             ),
             child: Align(
               alignment: alignment,

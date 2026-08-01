@@ -40,6 +40,7 @@ part 'assistant_visual_widgets.dart';
 
 const _assistantAnimationPath = 'assets/animations/Assistant.json';
 const _assistantSmartNudgeSectionIndex = 0;
+const _assistantCheckInSectionIndex = 1;
 const _assistantExerciseSectionIndex = 2;
 
 enum _AssistantBubbleKind { smartNudge, nutrition, exercise }
@@ -100,6 +101,7 @@ class FloatingSmartNudgeAssistant extends StatefulWidget {
   final Duration autoHideDuration;
   final VoidCallback? onLogMealRequested;
   final VoidCallback? onLogPageRequested;
+  final Key? tutorialButtonKey;
 
   const FloatingSmartNudgeAssistant({
     super.key,
@@ -109,6 +111,7 @@ class FloatingSmartNudgeAssistant extends StatefulWidget {
     this.autoHideDuration = const Duration(seconds: 10),
     this.onLogMealRequested,
     this.onLogPageRequested,
+    this.tutorialButtonKey,
   });
 
   @override
@@ -909,19 +912,24 @@ class _FloatingSmartNudgeAssistantState
                 left: buttonOffset.dx,
                 top: buttonOffset.dy,
                 child: GestureDetector(
+                  key: const ValueKey('floating-assistant-button'),
                   behavior: HitTestBehavior.opaque,
                   onPanStart: (_) => _handlePanStart(bounds, padding),
                   onPanUpdate: (details) =>
                       _handlePanUpdate(details, bounds, padding),
                   onPanEnd: (_) => _handlePanEnd(bounds, padding),
                   onPanCancel: () => _handlePanEnd(bounds, padding),
-                  child: _FloatingHeartButton(
-                    emoji: widget.emoji,
-                    size: widget.buttonSize,
-                    isActive: _isBubbleVisible,
-                    isDragging: _isDragging,
-                    hasPendingWeeklyPulse: _hasPendingWeeklyPulse == true,
-                    onTap: _handleAssistantTap,
+                  child: SizedBox.square(
+                    key: widget.tutorialButtonKey,
+                    dimension: widget.buttonSize,
+                    child: _FloatingHeartButton(
+                      emoji: widget.emoji,
+                      size: widget.buttonSize,
+                      isActive: _isBubbleVisible,
+                      isDragging: _isDragging,
+                      hasPendingWeeklyPulse: _hasPendingWeeklyPulse == true,
+                      onTap: _handleAssistantTap,
+                    ),
                   ),
                 ),
               ),

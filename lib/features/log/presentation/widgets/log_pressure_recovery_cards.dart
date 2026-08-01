@@ -139,7 +139,7 @@ extension _LogPressureRecoveryCards on LogWidgets {
                   padding: EdgeInsets.only(
                     right: index == stressLabels.length - 1 ? 0 : 6,
                   ),
-                  child: GestureDetector(
+                  child: _LogPressable(
                     onTap: () => onPerceivedStressChanged(value),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
@@ -216,6 +216,7 @@ extension _LogPressureRecoveryCards on LogWidgets {
     final selectedLevel = breakQualityLevel;
 
     return _buildCard(
+      accentColor: const Color(0xFF0F766E),
       child: Builder(
         builder: (context) {
           return Column(
@@ -239,7 +240,7 @@ extension _LogPressureRecoveryCards on LogWidgets {
                       padding: EdgeInsets.only(
                         right: index == breakLabels.length - 1 ? 0 : 6,
                       ),
-                      child: GestureDetector(
+                      child: _LogPressable(
                         onTap: () => onBreakQualityChanged(value),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 180),

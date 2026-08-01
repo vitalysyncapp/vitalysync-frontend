@@ -8,8 +8,10 @@ part 'log_sleep_mood_cards.dart';
 part 'log_hydration_activity_cards.dart';
 part 'log_pressure_recovery_cards.dart';
 part 'log_widget_shared_builders.dart';
+part 'log_widget_motion.dart';
 
 class LogWidgets extends StatelessWidget {
+  final bool revealCards;
   final bool showWeeklyQuestions;
   final double sleepHours;
   final int sleepQuality;
@@ -55,6 +57,7 @@ class LogWidgets extends StatelessWidget {
 
   const LogWidgets({
     super.key,
+    this.revealCards = true,
     this.showWeeklyQuestions = false,
     required this.sleepHours,
     required this.sleepQuality,
@@ -98,42 +101,43 @@ class LogWidgets extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _buildSleepDurationCard(context),
-        const SizedBox(height: 12),
-        _buildSleepQualityCard(),
-        if (showWeeklyQuestions) ...[
-          const SizedBox(height: 12),
-          _buildPerceivedStressCard(),
-        ],
-        const SizedBox(height: 12),
-        _buildEnergyCard(context),
-        const SizedBox(height: 12),
-        _buildMoodCard(),
-        const SizedBox(height: 12),
-        _buildSymptomsCard(),
-        if (showWeeklyQuestions) ...[
-          const SizedBox(height: 12),
-          _buildDailyDetachmentCard(),
-          const SizedBox(height: 12),
-          _buildBreakQualityCard(),
-        ],
-        const SizedBox(height: 12),
-        _buildHabitsCard(),
-        const SizedBox(height: 12),
-        _buildHydrationCard(),
-        if (showWeeklyQuestions) ...[
-          const SizedBox(height: 12),
-          _buildDailyFocusCard(),
-          const SizedBox(height: 12),
-          _buildDailyAccomplishmentCard(),
-        ],
-        const SizedBox(height: 12),
-        _buildWorkloadCard(),
-        const SizedBox(height: 12),
-        _buildExerciseCard(),
-      ],
-    );
+    final cards = <Widget>[];
+
+    void addCard(String id, Widget child) {
+      if (cards.isNotEmpty) {
+        cards.add(const SizedBox(height: 14));
+      }
+      cards.add(
+        _LogCardEntrance(
+          key: ValueKey('log-card-$id'),
+          order: cards.length ~/ 2,
+          reveal: revealCards,
+          child: child,
+        ),
+      );
+    }
+
+    addCard('sleep-duration', _buildSleepDurationCard(context));
+    addCard('sleep-quality', _buildSleepQualityCard());
+    if (showWeeklyQuestions) {
+      addCard('weekly-pressure', _buildPerceivedStressCard());
+    }
+    addCard('energy', _buildEnergyCard(context));
+    addCard('mood', _buildMoodCard());
+    addCard('symptoms', _buildSymptomsCard());
+    if (showWeeklyQuestions) {
+      addCard('weekly-detachment', _buildDailyDetachmentCard());
+      addCard('recovery-breaks', _buildBreakQualityCard());
+    }
+    addCard('habits', _buildHabitsCard());
+    addCard('hydration', _buildHydrationCard());
+    if (showWeeklyQuestions) {
+      addCard('weekly-focus', _buildDailyFocusCard());
+      addCard('weekly-accomplishment', _buildDailyAccomplishmentCard());
+    }
+    addCard('workload', _buildWorkloadCard());
+    addCard('exercise', _buildExerciseCard());
+
+    return Column(children: cards);
   }
 }

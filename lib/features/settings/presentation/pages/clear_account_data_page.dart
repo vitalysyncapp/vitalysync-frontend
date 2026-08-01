@@ -6,6 +6,7 @@ import '../../../../shared/theme/app_page_style.dart';
 import '../../../auth/presentation/pages/auth_start_page.dart';
 import '../../../profile/data/profile_avatar.dart';
 import '../../data/account_lifecycle_api.dart';
+import '../widgets/typed_confirmation_dialog.dart';
 import 'package:vitalysync/l10n/localized_text.dart';
 
 class ClearAccountDataPage extends StatefulWidget {
@@ -26,32 +27,17 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
   bool _isSubmitting = false;
 
   Future<void> _clearAccountData() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showTypedConfirmationDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const LocalizedText('Clear all account data?'),
-          content: const LocalizedText(
-            'This permanently removes synced wellness data and local data, resets your profile and onboarding state, and signs out every device. Your login account will remain active.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const LocalizedText('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const LocalizedText(
-                'Clear data',
-                style: TextStyle(color: Colors.red),
-              ),
-            ),
-          ],
-        );
-      },
+      title: 'Clear all account data?',
+      message:
+          'This permanently removes synced wellness data and local data, resets your profile and onboarding state, and signs out every device. Your login account will remain active.',
+      actionLabel: 'Clear data',
+      confirmationFieldKey: const ValueKey('clear-data-confirmation'),
+      actionButtonKey: const ValueKey('clear-data-confirm-button'),
     );
 
-    if (confirmed != true || !mounted) {
+    if (!confirmed || !mounted) {
       return;
     }
 
@@ -86,7 +72,9 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: LocalizedText(error.toString().replaceFirst('Exception: ', '')),
+          content: LocalizedText(
+            error.toString().replaceFirst('Exception: ', ''),
+          ),
         ),
       );
     } finally {

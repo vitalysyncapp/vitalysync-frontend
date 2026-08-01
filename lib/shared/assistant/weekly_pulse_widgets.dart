@@ -1,6 +1,7 @@
 part of 'floating_smart_nudge_assistant.dart';
 
 class _AssistantCheckInCard extends StatelessWidget {
+  final bool isActive;
   final bool isLoading;
   final bool isSaving;
   final CheckInStatus? status;
@@ -13,6 +14,7 @@ class _AssistantCheckInCard extends StatelessWidget {
   final VoidCallback onRedo;
 
   const _AssistantCheckInCard({
+    required this.isActive,
     required this.isLoading,
     required this.isSaving,
     required this.status,
@@ -29,75 +31,139 @@ class _AssistantCheckInCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) return const _AssistantLoadingCard();
+    if (isLoading) {
+      return _buildEntrance(context, const _AssistantLoadingCard());
+    }
     final currentStatus = status;
     if (currentStatus == null) {
-      return _AssistantCheckInMessage(
-        icon: Icons.cloud_off_rounded,
-        title: 'Check-in unavailable',
-        message:
-            'Reconnect and refresh the assistant to load today\'s check-in.',
+      return _buildEntrance(
+        context,
+        const _AssistantCheckInMessage(
+          icon: Icons.cloud_off_rounded,
+          title: 'Check-in unavailable',
+          message:
+              'Reconnect and refresh the assistant to load today\'s check-in.',
+        ),
       );
     }
     if (currentStatus.isComplete && !isEditing) {
-      return CheckInSuccessView(
-        isOffline:
-            currentStatus.isOffline && currentStatus.pendingSyncCount > 0,
-        hasPendingSync: currentStatus.pendingSyncCount > 0,
-        pendingSyncCount: currentStatus.pendingSyncCount,
-        currentStreak: currentStreak,
-        onRedo: onRedo,
+      return _buildEntrance(
+        context,
+        CheckInSuccessView(
+          isOffline:
+              currentStatus.isOffline && currentStatus.pendingSyncCount > 0,
+          hasPendingSync: currentStatus.pendingSyncCount > 0,
+          pendingSyncCount: currentStatus.pendingSyncCount,
+          currentStreak: currentStreak,
+          onRedo: onRedo,
+        ),
       );
     }
 
     final missing = draft.validationErrors(currentStatus.requiredMode);
     final primary = Theme.of(context).colorScheme.primary;
-    return Column(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final form = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(14),
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            color: primary.withValues(alpha: 0.09),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: primary.withValues(alpha: 0.2)),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                _showWeeklyQuestions
-                    ? Icons.calendar_view_week_rounded
-                    : Icons.bolt_rounded,
-                color: primary,
+            gradient: LinearGradient(
+              colors: isDark
+                  ? [
+                      primary.withValues(alpha: 0.18),
+                      const Color(0xFF1FB489).withValues(alpha: 0.09),
+                    ]
+                  : [
+                      primary.withValues(alpha: 0.1),
+                      const Color(0xFF1FB489).withValues(alpha: 0.06),
+                    ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: primary.withValues(alpha: 0.18)),
+            boxShadow: [
+              BoxShadow(
+                color: primary.withValues(alpha: isDark ? 0.08 : 0.06),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
+            ],
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                right: -28,
+                top: -36,
+                child: Container(
+                  width: 104,
+                  height: 104,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: primary.withValues(alpha: 0.055),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    LocalizedText(
-                      _showWeeklyQuestions
-                          ? currentStatus.schedule.isOverdue
-                                ? 'Weekly pulse due'
-                                : 'Weekly pulse'
-                          : 'Daily Check-in',
-                      style: TextStyle(
-                        color: pagePrimaryTextColor(context),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            primary.withValues(alpha: isDark ? 0.28 : 0.18),
+                            const Color(
+                              0xFF1FB489,
+                            ).withValues(alpha: isDark ? 0.2 : 0.12),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: primary.withValues(alpha: 0.16),
+                        ),
+                      ),
+                      child: Icon(
+                        _showWeeklyQuestions
+                            ? Icons.calendar_view_week_rounded
+                            : Icons.bolt_rounded,
+                        color: primary,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    LocalizedText(
-                      _showWeeklyQuestions
-                          ? 'Today includes the usual nine inputs plus five weekly reflections. It cannot be skipped, but it follows you to the next day you return.'
-                          : 'Take a moment to reflect on your day and see how you are doing.',
-                      style: TextStyle(
-                        color: pageSecondaryTextColor(context),
-                        height: 1.35,
-                        fontWeight: FontWeight.w600,
+                    const SizedBox(width: 11),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          LocalizedText(
+                            _showWeeklyQuestions
+                                ? 'How did your week feel?'
+                                : 'Daily Check-in',
+                            style: TextStyle(
+                              color: pagePrimaryTextColor(context),
+                              fontSize: 16.5,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          LocalizedText(
+                            _showWeeklyQuestions
+                                ? 'Reflect on this week\'s pressure, recovery, time to switch off, focus, and sense of accomplishment.'
+                                : 'Take a moment to reflect on your day and see how you are doing.',
+                            style: TextStyle(
+                              color: pageSecondaryTextColor(context),
+                              height: 1.4,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -108,6 +174,7 @@ class _AssistantCheckInCard extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         LogWidgets(
+          revealCards: isActive,
           showWeeklyQuestions: _showWeeklyQuestions,
           sleepHours: draft.sleepHours,
           sleepQuality: draft.sleepQuality,
@@ -223,6 +290,27 @@ class _AssistantCheckInCard extends StatelessWidget {
           ),
         ],
       ],
+    );
+    return _buildEntrance(context, form);
+  }
+
+  Widget _buildEntrance(BuildContext context, Widget child) {
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    final duration = reduceMotion
+        ? Duration.zero
+        : const Duration(milliseconds: 420);
+
+    return AnimatedSlide(
+      key: const ValueKey('assistant-check-in-entrance'),
+      offset: isActive ? Offset.zero : const Offset(0, 0.025),
+      duration: duration,
+      curve: Curves.easeOutCubic,
+      child: AnimatedOpacity(
+        opacity: isActive ? 1 : 0,
+        duration: duration,
+        curve: Curves.easeOutCubic,
+        child: child,
+      ),
     );
   }
 

@@ -6,6 +6,7 @@ extension _LogHydrationActivityCards on LogWidgets {
     final hydrationAccent = Color(hydrationStatus.colorValue);
 
     return _buildCard(
+      accentColor: const Color(0xFF00A3D7),
       child: Column(
         children: [
           Row(
@@ -98,6 +99,7 @@ extension _LogHydrationActivityCards on LogWidgets {
 
   Widget _buildExerciseCard() {
     return _buildCard(
+      accentColor: const Color(0xFF16A34A),
       padding: const EdgeInsets.all(10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -114,9 +116,7 @@ extension _LogHydrationActivityCards on LogWidgets {
             options: exercises,
             minItemWidth: 104,
             isSelected: selectedExercises.contains,
-            leadingIconFor: (exercise) => exercise == 'None'
-                ? Icons.block_rounded
-                : Icons.directions_run_rounded,
+            leadingIconFor: _exerciseIconFor,
             onSelected: onExerciseToggle,
           ),
         ],
@@ -126,6 +126,7 @@ extension _LogHydrationActivityCards on LogWidgets {
 
   Widget _buildSymptomsCard() {
     return _buildCard(
+      accentColor: const Color(0xFFEF4444),
       child: Builder(
         builder: (context) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -145,9 +146,11 @@ extension _LogHydrationActivityCards on LogWidgets {
                 runSpacing: 6,
                 children: symptoms.map((symptom) {
                   final selected = selectedSymptoms.contains(symptom);
-                  return GestureDetector(
+                  return _LogPressable(
                     onTap: () => onSymptomToggle(symptom),
-                    child: Container(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOutCubic,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
                         vertical: 6,
@@ -203,6 +206,7 @@ extension _LogHydrationActivityCards on LogWidgets {
 
   Widget _buildHabitsCard() {
     return _buildCard(
+      accentColor: const Color(0xFF16A34A),
       child: Builder(
         builder: (context) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -222,9 +226,11 @@ extension _LogHydrationActivityCards on LogWidgets {
                 runSpacing: 6,
                 children: habits.map((habit) {
                   final selected = selectedHabits.contains(habit);
-                  return GestureDetector(
+                  return _LogPressable(
                     onTap: () => onHabitToggle(habit),
-                    child: Container(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOutCubic,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
                         vertical: 6,
@@ -280,6 +286,7 @@ extension _LogHydrationActivityCards on LogWidgets {
 
   Widget _buildWorkloadCard() {
     return _buildCard(
+      accentColor: const Color(0xFF15803D),
       padding: const EdgeInsets.all(10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -383,4 +390,21 @@ extension _LogHydrationActivityCards on LogWidgets {
       },
     );
   }
+}
+
+IconData _exerciseIconFor(String exercise) {
+  return switch (exercise) {
+    'Walking' => Icons.directions_walk_rounded,
+    'Jogging' => Icons.directions_run_rounded,
+    'Running' => Icons.run_circle_rounded,
+    'Bodyweight' => Icons.sports_gymnastics_rounded,
+    'Stretching' => Icons.accessibility_new_rounded,
+    'Breathing' => Icons.air_rounded,
+    'Yoga' => Icons.self_improvement_rounded,
+    'Gym' => Icons.fitness_center_rounded,
+    'Cycling' => Icons.directions_bike_rounded,
+    'Swimming' => Icons.pool_rounded,
+    'None' => Icons.block_rounded,
+    _ => Icons.directions_run_rounded,
+  };
 }

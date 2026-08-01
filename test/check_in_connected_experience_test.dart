@@ -34,6 +34,14 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('Check-in saved!'), findsOneWidget);
+    expect(find.byKey(const ValueKey('check-in-success-card')), findsOneWidget);
+    expect(
+      find.ancestor(
+        of: find.byKey(const ValueKey('check-in-success-card')),
+        matching: find.byType(FadeTransition),
+      ),
+      findsWidgets,
+    );
     expect(
       find.textContaining('Your daily wellness log has been recorded.'),
       findsOneWidget,
@@ -71,6 +79,28 @@ void main() {
     expect(pageView.controller?.page, greaterThan(0.8));
   });
 
+  testWidgets('assistant check-in reveals when its section opens', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+
+    await _pumpAssistant(
+      tester,
+      status: _incompleteStatus,
+      initialSectionIndex: 1,
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+
+    final entrance = find.byKey(const ValueKey('assistant-check-in-entrance'));
+    expect(entrance, findsOneWidget);
+    expect(tester.widget<AnimatedSlide>(entrance).offset, Offset.zero);
+    expect(
+      find.byKey(const ValueKey('log-card-sleep-duration')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('floating assistant bubble keeps its full message', (
     tester,
   ) async {
@@ -101,6 +131,42 @@ void main() {
     final message = tester.widget<Text>(bubbleBody);
     expect(message.maxLines, isNull);
     expect(message.overflow, isNull);
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await ActivityService.instance.disposeTracking();
+  });
+
+  testWidgets('tutorial target wraps only the floating assistant button', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    addTearDown(ActivityService.instance.disposeTracking);
+    final tutorialButtonKey = GlobalKey();
+
+    await pumpTestApp(
+      tester,
+      SizedBox(
+        width: 390,
+        height: 620,
+        child: FloatingSmartNudgeAssistant(
+          message: 'A short supportive nudge.',
+          autoHideDuration: const Duration(minutes: 5),
+          tutorialButtonKey: tutorialButtonKey,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final targetRect = tester.getRect(find.byKey(tutorialButtonKey));
+    final buttonRect = tester.getRect(
+      find.byKey(const ValueKey('floating-assistant-button')),
+    );
+
+    expect(targetRect, buttonRect);
+    expect(targetRect.size, const Size.square(54));
+    expect(targetRect.size, isNot(const Size(390, 620)));
     expect(tester.takeException(), isNull);
 
     await tester.pumpWidget(const SizedBox.shrink());
@@ -141,6 +207,7 @@ Future<void> _pumpAssistant(
   CheckInStatus? status,
   Future<CheckInStatus> Function()? statusLoader,
   Future<Map<String, dynamic>> Function()? todayLogLoader,
+  int initialSectionIndex = 0,
 }) async {
   await pumpTestApp(
     tester,
@@ -159,6 +226,7 @@ Future<void> _pumpAssistant(
             const [],
         onRefreshNutritionInsight: ({bool forceRefresh = false}) async => null,
         onRefreshEnvironment: () async => null,
+        initialSectionIndex: initialSectionIndex,
         checkInStatusLoader: statusLoader ?? () async => status!,
         todayLogLoader:
             todayLogLoader ??

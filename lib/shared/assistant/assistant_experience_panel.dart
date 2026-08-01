@@ -1062,6 +1062,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
 
   Widget _buildCheckInPage() {
     return _AssistantCheckInCard(
+      isActive: _pageIndex == _assistantCheckInSectionIndex,
       isLoading: _isLoadingCheckIn,
       isSaving: _isSavingCheckIn,
       status: _checkInStatus,

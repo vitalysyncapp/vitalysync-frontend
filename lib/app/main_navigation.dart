@@ -790,15 +790,14 @@ class _MainNavigationState extends State<MainNavigation>
                         ),
                       );
                     }),
-                    KeyedSubtree(
-                      key: _tutorialTargetKeys[CoreTutorialTarget.assistant],
-                      child: FloatingSmartNudgeAssistant(
-                        message:
-                            "You're doing well today. Log sleep and hydration to keep your streak going.",
-                        buttonSize: _currentTab == MainTab.log ? 46 : 54,
-                        onLogMealRequested: _openNutritionLog,
-                        onLogPageRequested: _openLogPage,
-                      ),
+                    FloatingSmartNudgeAssistant(
+                      message:
+                          "You're doing well today. Log sleep and hydration to keep your streak going.",
+                      buttonSize: _currentTab == MainTab.log ? 46 : 54,
+                      onLogMealRequested: _openNutritionLog,
+                      onLogPageRequested: _openLogPage,
+                      tutorialButtonKey:
+                          _tutorialTargetKeys[CoreTutorialTarget.assistant],
                     ),
                   ],
                 ),

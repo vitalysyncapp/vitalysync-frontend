@@ -212,15 +212,23 @@ class WeeklyUserMetrics {
   }
 
   Map<String, int> get symptomCounts {
-    final counts = <String, int>{};
+    final countsByKey = <String, int>{};
+    final displayNames = <String, String>{};
     for (final day in days) {
+      final seenForDay = <String>{};
       for (final symptom in day.symptomNames) {
         final normalized = symptom.trim();
         if (normalized.isEmpty || normalized.toLowerCase() == 'none') continue;
-        counts[normalized] = (counts[normalized] ?? 0) + 1;
+        final key = normalized.toLowerCase();
+        if (!seenForDay.add(key)) continue;
+        displayNames.putIfAbsent(key, () => normalized);
+        countsByKey[key] = (countsByKey[key] ?? 0) + 1;
       }
     }
-    return counts;
+    return {
+      for (final entry in countsByKey.entries)
+        displayNames[entry.key]!: entry.value,
+    };
   }
 
   String get weeklyNote {
@@ -291,8 +299,10 @@ class DailyUserMetric {
 
   double get hydrationLiters => LogApi.parseDouble(log?['hydration_liters']);
 
-  int? get moodIndex =>
-      log == null ? null : LogApi.parseInt(log?['mood_index']);
+  int? get moodIndex {
+    final value = log?['mood_index'];
+    return value == null ? null : LogApi.parseInt(value);
+  }
 
   int? get energyLevel =>
       log == null ? null : LogApi.parseEnergyLevel(log?['energy_level']);

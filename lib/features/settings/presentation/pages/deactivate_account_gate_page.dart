@@ -6,6 +6,7 @@ import '../../../../shared/theme/app_page_style.dart';
 import '../../../auth/presentation/pages/auth_start_page.dart';
 import '../../../profile/data/profile_avatar.dart';
 import '../../data/account_lifecycle_api.dart';
+import '../widgets/typed_confirmation_dialog.dart';
 import 'package:vitalysync/l10n/localized_text.dart';
 
 class DeactivateAccountGatePage extends StatefulWidget {
@@ -20,18 +21,14 @@ class DeactivateAccountGatePage extends StatefulWidget {
 
 class _DeactivateAccountGatePageState extends State<DeactivateAccountGatePage> {
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmationController = TextEditingController();
   bool _obscurePassword = true;
   bool _isSubmitting = false;
 
-  bool get _canSubmit =>
-      _passwordController.text.trim().isNotEmpty &&
-      _confirmationController.text.trim() == 'CONFIRM';
+  bool get _canSubmit => _passwordController.text.trim().isNotEmpty;
 
   @override
   void dispose() {
     _passwordController.dispose();
-    _confirmationController.dispose();
     super.dispose();
   }
 
@@ -39,6 +36,21 @@ class _DeactivateAccountGatePageState extends State<DeactivateAccountGatePage> {
     if (!_canSubmit || _isSubmitting) {
       return;
     }
+
+    final confirmed = await showTypedConfirmationDialog(
+      context: context,
+      title: 'Deactivate account',
+      message:
+          'Your account will be signed out on every device. You can reactivate it within 40 days by signing in and confirming reactivation.',
+      actionLabel: 'Deactivate account',
+      confirmationFieldKey: const ValueKey('deactivate-confirmation'),
+      actionButtonKey: const ValueKey('deactivate-dialog-confirm-button'),
+    );
+
+    if (!confirmed || !mounted) {
+      return;
+    }
+
     setState(() => _isSubmitting = true);
 
     try {
@@ -46,7 +58,7 @@ class _DeactivateAccountGatePageState extends State<DeactivateAccountGatePage> {
       final userId = session.userId;
       await (widget.api ?? AccountLifecycleApi.instance).deactivate(
         currentPassword: _passwordController.text,
-        confirmation: _confirmationController.text,
+        confirmation: 'CONFIRM',
       );
 
       if (userId != null) {
@@ -69,7 +81,9 @@ class _DeactivateAccountGatePageState extends State<DeactivateAccountGatePage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: LocalizedText(error.toString().replaceFirst('Exception: ', '')),
+          content: LocalizedText(
+            error.toString().replaceFirst('Exception: ', ''),
+          ),
         ),
       );
     } finally {
@@ -170,21 +184,6 @@ class _DeactivateAccountGatePageState extends State<DeactivateAccountGatePage> {
                         border: const OutlineInputBorder(),
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      key: const ValueKey('deactivate-confirmation'),
-                      controller: _confirmationController,
-                      enabled: !_isSubmitting,
-                      onChanged: (_) => setState(() {}),
-                      autocorrect: false,
-                      enableSuggestions: false,
-                      textCapitalization: TextCapitalization.characters,
-                      decoration: InputDecoration(
-                        labelText: 'Type CONFIRM'.localizedCopy(context),
-                        helperText: 'Confirmation is case-sensitive.'.localizedCopy(context),
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
                     const SizedBox(height: 18),
                     SizedBox(
                       width: double.infinity,
@@ -207,7 +206,7 @@ class _DeactivateAccountGatePageState extends State<DeactivateAccountGatePage> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const LocalizedText('Confirm'),
+                            : const LocalizedText('Continue'),
                       ),
                     ),
                   ],

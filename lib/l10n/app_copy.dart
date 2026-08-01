@@ -245,6 +245,8 @@ const Map<String, String> _tagalogCopy = {
   'Password': 'Password',
   'Current password': 'Kasalukuyang password',
   'Type CONFIRM': 'I-type ang CONFIRM',
+  'Type CONFIRM below to continue.':
+      'I-type ang CONFIRM sa ibaba para magpatuloy.',
   'Confirmation is case-sensitive.': 'Case-sensitive ang confirmation.',
   'Verification code': 'Verification code',
   'Goal steps': 'Goal steps',

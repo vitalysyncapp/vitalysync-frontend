@@ -3,6 +3,7 @@ part of 'log_widgets.dart';
 extension _LogSleepMoodCards on LogWidgets {
   Widget _buildSleepDurationCard(BuildContext context) {
     return _buildCard(
+      accentColor: const Color(0xFF4B3FF2),
       child: Column(
         children: [
           _sectionHeader(
@@ -57,6 +58,7 @@ extension _LogSleepMoodCards on LogWidgets {
 
   Widget _buildSleepQualityCard() {
     return _buildCard(
+      accentColor: const Color(0xFF4B3FF2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -85,7 +87,7 @@ extension _LogSleepMoodCards on LogWidgets {
                     .clamp(14, 22)
                     .toDouble();
 
-                return GestureDetector(
+                return _LogPressable(
                   onTap: () => onSleepQualityChanged(index),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 220),
@@ -260,6 +262,7 @@ extension _LogSleepMoodCards on LogWidgets {
 
   Widget _buildMoodCard() {
     return _buildCard(
+      accentColor: const Color(0xFFF4B400),
       child: Builder(
         builder: (context) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -283,9 +286,11 @@ extension _LogSleepMoodCards on LogWidgets {
                       padding: EdgeInsets.only(
                         right: index == moods.length - 1 ? 0 : 8,
                       ),
-                      child: GestureDetector(
+                      child: _LogPressable(
                         onTap: () => onMoodChanged(index),
-                        child: Container(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 240),
+                          curve: Curves.easeOutCubic,
                           height: 70,
                           decoration: BoxDecoration(
                             color: selected
@@ -300,6 +305,17 @@ extension _LogSleepMoodCards on LogWidgets {
                                   : pageBorderColor(context),
                               width: selected ? 2 : 1.3,
                             ),
+                            boxShadow: selected
+                                ? [
+                                    BoxShadow(
+                                      color: const Color(
+                                        0xFFF4B400,
+                                      ).withValues(alpha: 0.14),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ]
+                                : null,
                           ),
                           child: Center(
                             child: LocalizedText(
@@ -325,6 +341,7 @@ extension _LogSleepMoodCards on LogWidgets {
     final selectedLevel = energyLevel;
 
     return _buildCard(
+      accentColor: const Color(0xFFFF8A1F),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -346,7 +363,7 @@ extension _LogSleepMoodCards on LogWidgets {
                   padding: EdgeInsets.only(
                     right: index == energyLabels.length - 1 ? 0 : 6,
                   ),
-                  child: GestureDetector(
+                  child: _LogPressable(
                     onTap: () => onEnergyChanged(value),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),

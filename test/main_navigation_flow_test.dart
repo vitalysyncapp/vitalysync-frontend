@@ -281,6 +281,20 @@ void main() {
 
     expect(find.text('Welcome to your VitalySync tour'), findsOneWidget);
 
+    Future<void> advanceTutorial() async {
+      final nextButton = find.byKey(
+        const ValueKey('core-tutorial-next-button'),
+      );
+      await tester.ensureVisible(nextButton);
+      await tester.pump();
+      await tester.tap(nextButton);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
     for (final title in const [
       'Home is your daily snapshot',
       'Nutrition keeps meals in context',
@@ -289,9 +303,7 @@ void main() {
       'Profile keeps your wellness setup together',
       'Your streak makes consistency visible',
     ]) {
-      await tester.tap(find.byKey(const ValueKey('core-tutorial-next-button')));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 850));
+      await advanceTutorial();
       expect(find.text(title), findsOneWidget);
 
       if (title == 'Home is your daily snapshot') {
@@ -310,9 +322,7 @@ void main() {
     expect(find.byType(PersonalStreakPage), findsOneWidget);
     expect(find.text('My streak'), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('core-tutorial-next-button')));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 850));
+    await advanceTutorial();
 
     expect(
       find.text('The leaderboard keeps comparisons flexible'),
@@ -323,6 +333,35 @@ void main() {
     expect(
       find.byKey(const ValueKey('leaderboard-section-options')),
       findsOneWidget,
+    );
+
+    await advanceTutorial();
+
+    expect(find.text('The assistant adapts to your day'), findsOneWidget);
+    expect(find.byType(Dashboard), findsOneWidget);
+    final assistantButtonRect = tester.getRect(
+      find.byKey(const ValueKey('floating-assistant-button')),
+    );
+    final focusRect = tester.getRect(
+      find.byKey(const ValueKey('core-tutorial-focus-frame')),
+    );
+    final panelRect = tester.getRect(
+      find.byKey(const ValueKey('core-tutorial-panel')),
+    );
+    final bubbleRect = tester.getRect(
+      find.byKey(const ValueKey('core-tutorial-bubble')),
+    );
+
+    expect(focusRect.width, lessThan(100));
+    expect(focusRect.height, lessThan(100));
+    expect(focusRect.contains(assistantButtonRect.center), isTrue);
+    expect(panelRect.top, lessThan(400));
+    expect(bubbleRect.height, greaterThan(160));
+    expect(
+      bubbleRect.bottom,
+      lessThanOrEqualTo(
+        tester.view.physicalSize.height / tester.view.devicePixelRatio - 18,
+      ),
     );
 
     await tester.tap(find.byKey(const ValueKey('core-tutorial-skip-button')));
