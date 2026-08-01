@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../data/environment_model.dart';
+import '../../data/environment_localization.dart';
+import '../../../../l10n/l10n.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class EnvironmentalCard extends StatelessWidget {
   final EnvironmentSnapshot? snapshot;
@@ -42,7 +46,7 @@ class EnvironmentalCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LocalizedText(
             'Environmental conditions',
             style: TextStyle(
               fontSize: 14.5,
@@ -72,7 +76,7 @@ class EnvironmentalCard extends StatelessWidget {
           _buildCachedBanner(context, snapshot),
           const SizedBox(height: 10),
         ],
-        Text(
+        LocalizedText(
           snapshot.location,
           style: TextStyle(
             fontSize: 12,
@@ -87,7 +91,7 @@ class EnvironmentalCard extends StatelessWidget {
           iconColor: Colors.amber,
           label: 'Weather',
           value:
-              '${snapshot.weather.description}, ${snapshot.weather.temperatureC.toStringAsFixed(1)}\u00B0C',
+              '${snapshot.weather.localizedDescription(context.l10n)}, ${snapshot.weather.temperatureC.toStringAsFixed(1)}\u00B0C',
           status: _buildWeatherStatus(snapshot.weather.main),
           statusColor: _statusColor(snapshot.weather.main),
         ),
@@ -108,7 +112,7 @@ class EnvironmentalCard extends StatelessWidget {
           iconColor: Colors.blueAccent,
           label: 'Air quality',
           value: 'AQI ${snapshot.airQuality.aqi}',
-          status: snapshot.airQuality.aqiLabel,
+          status: snapshot.airQuality.localizedLabel(context.l10n),
           statusColor: _statusColor(snapshot.airQuality.aqiLabel),
         ),
       ],
@@ -143,7 +147,7 @@ class EnvironmentalCard extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
+            child: LocalizedText(
               'Using last saved environment snapshot from ${_formatSnapshotTime(snapshot.fetchedAt)}.',
               style: TextStyle(
                 height: 1.35,
@@ -170,7 +174,7 @@ class EnvironmentalCard extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(
+          child: LocalizedText(
             message,
             style: TextStyle(height: 1.4, color: pagePrimaryTextColor(context)),
           ),
@@ -210,11 +214,7 @@ class EnvironmentalCard extends StatelessWidget {
   }
 
   String _formatSnapshotTime(DateTime fetchedAt) {
-    final localTime = fetchedAt.toLocal();
-    final hour = localTime.hour % 12 == 0 ? 12 : localTime.hour % 12;
-    final minute = localTime.minute.toString().padLeft(2, '0');
-    final period = localTime.hour >= 12 ? 'PM' : 'AM';
-    return '${localTime.month}/${localTime.day}/${localTime.year} at $hour:$minute $period';
+    return DateFormat.yMMMd().add_jm().format(fetchedAt.toLocal());
   }
 
   Widget _row({
@@ -231,7 +231,7 @@ class EnvironmentalCard extends StatelessWidget {
         Icon(icon, color: iconColor, size: 20),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(
+          child: LocalizedText(
             '$label: $value',
             style: TextStyle(
               color: pagePrimaryTextColor(context),
@@ -239,7 +239,7 @@ class EnvironmentalCard extends StatelessWidget {
             ),
           ),
         ),
-        Text(
+        LocalizedText(
           status,
           style: TextStyle(
             color: statusColor,

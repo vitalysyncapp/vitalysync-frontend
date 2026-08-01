@@ -206,7 +206,7 @@ class _ManualLogDialogState extends State<_ManualLogDialog> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            LocalizedText(
                               'Manual log',
                               style: TextStyle(
                                 fontSize: isCompact ? 18 : 20,
@@ -215,7 +215,7 @@ class _ManualLogDialogState extends State<_ManualLogDialog> {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            Text(
+                            LocalizedText(
                               'Estimate nutrition from typed meal details.',
                               style: TextStyle(
                                 fontSize: isCompact ? 12 : 13,
@@ -223,7 +223,7 @@ class _ManualLogDialogState extends State<_ManualLogDialog> {
                               ),
                             ),
                             const SizedBox(height: 6),
-                            Text(
+                            LocalizedText(
                               'Use English food names for better estimates.',
                               style: TextStyle(
                                 fontSize: isCompact ? 11.5 : 12,
@@ -236,7 +236,7 @@ class _ManualLogDialogState extends State<_ManualLogDialog> {
                       ),
                       IconButton(
                         onPressed: _addMealForm,
-                        tooltip: 'Add meal',
+                        tooltip: 'Add meal'.localizedCopy(context),
                         icon: const Icon(Icons.add_circle_outline_rounded),
                         color: const Color(0xFF16A34A),
                       ),
@@ -274,7 +274,7 @@ class _ManualLogDialogState extends State<_ManualLogDialog> {
                           const SizedBox(height: 2),
                           Align(
                             alignment: Alignment.centerLeft,
-                            child: Text(
+                            child: LocalizedText(
                               _errorText!,
                               style: const TextStyle(
                                 color: Color(0xFFDC2626),
@@ -295,7 +295,7 @@ class _ManualLogDialogState extends State<_ManualLogDialog> {
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('Cancel'),
+                          child: const LocalizedText('Cancel'),
                         ),
                       ),
                       SizedBox(width: isCompact ? 10 : 12),
@@ -303,7 +303,7 @@ class _ManualLogDialogState extends State<_ManualLogDialog> {
                         child: ElevatedButton.icon(
                           onPressed: _submit,
                           icon: const Icon(Icons.auto_awesome_rounded),
-                          label: const Text('Analyze'),
+                          label: const LocalizedText('Analyze'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: isDark
                                 ? const Color(0xFF5D4385)
@@ -402,7 +402,7 @@ class _ManualMealForm extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(
+                child: LocalizedText(
                   'Meal ${index + 1}',
                   style: TextStyle(
                     fontSize: isCompact ? 14 : 15,
@@ -562,7 +562,7 @@ class _MealNameAutocompleteField extends StatelessWidget {
                           ),
                           const SizedBox(width: 10),
                           Expanded(
-                            child: Text(
+                            child: LocalizedText(
                               option,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

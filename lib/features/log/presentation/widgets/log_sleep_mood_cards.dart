@@ -40,7 +40,7 @@ extension _LogSleepMoodCards on LogWidgets {
                 ),
               ),
               const SizedBox(width: 10),
-              Text(
+              LocalizedText(
                 "${sleepHours.round()}h",
                 style: const TextStyle(
                   fontSize: 17,
@@ -60,7 +60,7 @@ extension _LogSleepMoodCards on LogWidgets {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          const LocalizedText(
             "Sleep quality",
             style: TextStyle(
               fontSize: 16,
@@ -214,7 +214,7 @@ extension _LogSleepMoodCards on LogWidgets {
                           ),
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
-                            child: Text(
+                            child: LocalizedText(
                               sleepLabels[index],
                               maxLines: 1,
                               textAlign: TextAlign.center,
@@ -302,7 +302,7 @@ extension _LogSleepMoodCards on LogWidgets {
                             ),
                           ),
                           child: Center(
-                            child: Text(
+                            child: LocalizedText(
                               moods[index],
                               style: const TextStyle(fontSize: 28),
                             ),
@@ -386,7 +386,7 @@ extension _LogSleepMoodCards on LogWidgets {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
+                          LocalizedText(
                             '$value',
                             style: TextStyle(
                               color: selected
@@ -399,7 +399,7 @@ extension _LogSleepMoodCards on LogWidgets {
                           const SizedBox(height: 3),
                           FittedBox(
                             fit: BoxFit.scaleDown,
-                            child: Text(
+                            child: LocalizedText(
                               energyLabels[index],
                               maxLines: 1,
                               style: TextStyle(
@@ -420,7 +420,7 @@ extension _LogSleepMoodCards on LogWidgets {
             }),
           ),
           const SizedBox(height: 9),
-          Text(
+          LocalizedText(
             selectedLevel == null
                 ? 'Choose a 1-5 energy level to complete today\'s check-in.'
                 : 'Energy logged as ${energyLabels[selectedLevel - 1].toLowerCase()}.',

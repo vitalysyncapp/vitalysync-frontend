@@ -9,6 +9,7 @@ import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../profile/data/profile_avatar.dart';
 import '../../data/streak_api.dart';
 import '../../data/streak_models.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 const _streakFireAnimationPath = 'assets/animations/streak_fire.json';
 const _healthyHeartAnimationPath = 'assets/animations/healthy_heart.json';
@@ -134,7 +135,7 @@ class _StreakLeaderboardPageState extends State<StreakLeaderboardPage> {
             ),
             onPressed: () => Navigator.pop(context),
           ),
-          title: Text(
+          title: LocalizedText(
             'Streak leaderboard',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -192,7 +193,9 @@ class _StreakLeaderboardPageState extends State<StreakLeaderboardPage> {
                         children: [
                           _OptionChips(
                             key: const ValueKey('leaderboard-section-options'),
-                            semanticLabel: 'Leaderboard section',
+                            semanticLabel: 'Leaderboard section'.localizedCopy(
+                              context,
+                            ),
                             options: _sections,
                             selected: _section,
                             onSelected: _selectSection,
@@ -200,7 +203,9 @@ class _StreakLeaderboardPageState extends State<StreakLeaderboardPage> {
                           const SizedBox(height: 10),
                           _OptionChips(
                             key: const ValueKey('leaderboard-metric-options'),
-                            semanticLabel: 'Streak category',
+                            semanticLabel: 'Streak category'.localizedCopy(
+                              context,
+                            ),
                             options: _metrics,
                             selected: _metric,
                             onSelected: _selectMetric,
@@ -326,7 +331,7 @@ class _LeaderboardHero extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
+                    const LocalizedText(
                       'Small wins.\nStrong streaks.',
                       style: TextStyle(
                         color: Colors.white,
@@ -336,7 +341,7 @@ class _LeaderboardHero extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 5),
-                    Text(
+                    LocalizedText(
                       subtitle,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.86),
@@ -376,7 +381,7 @@ class _OptionChips extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       container: true,
-      label: semanticLabel,
+      label: semanticLabel.localizedCopy(context),
       child: Wrap(
         alignment: WrapAlignment.center,
         runAlignment: WrapAlignment.center,
@@ -395,7 +400,7 @@ class _OptionChips extends StatelessWidget {
                     ? Colors.white
                     : Theme.of(context).colorScheme.primary,
               ),
-              label: Text(option.label),
+              label: LocalizedText(option.label),
               labelStyle: TextStyle(
                 color: selected == option.value
                     ? Colors.white
@@ -528,7 +533,7 @@ class _TopThreePodium extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(
+                child: LocalizedText(
                   'Top 3 streaks',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -547,7 +552,7 @@ class _TopThreePodium extends StatelessWidget {
                   ).colorScheme.primary.withValues(alpha: 0.09),
                   borderRadius: BorderRadius.circular(999),
                 ),
-                child: Text(
+                child: LocalizedText(
                   metric == 'longest' ? 'Best' : 'Current',
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.primary,
@@ -620,7 +625,8 @@ class _TopThreeTile extends StatelessWidget {
 
     return Semantics(
       container: true,
-      label: 'Rank ${row.rank}, ${row.displayName}, $score, $streakKind',
+      label: 'Rank ${row.rank}, ${row.displayName}, $score, $streakKind'
+          .localizedCopy(context),
       child: Container(
         key: ValueKey('leaderboard-podium-user-${row.userId}'),
         height: tileHeight,
@@ -681,7 +687,7 @@ class _TopThreeTile extends StatelessWidget {
                         width: 1.5,
                       ),
                     ),
-                    child: Text(
+                    child: LocalizedText(
                       '${row.rank}',
                       style: const TextStyle(
                         color: Colors.white,
@@ -695,8 +701,9 @@ class _TopThreeTile extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 10),
-            Text(
+            LocalizedText(
               row.displayName,
+              translate: false,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
@@ -711,7 +718,7 @@ class _TopThreeTile extends StatelessWidget {
               width: double.infinity,
               child: FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Text(
+                child: LocalizedText(
                   score,
                   maxLines: 1,
                   style: TextStyle(
@@ -793,7 +800,8 @@ class _LeaderboardListRow extends StatelessWidget {
 
     return Semantics(
       container: true,
-      label: 'Rank ${row.rank}, ${row.displayName}, $score, $streakKind',
+      label: 'Rank ${row.rank}, ${row.displayName}, $score, $streakKind'
+          .localizedCopy(context),
       child: Container(
         key: ValueKey('leaderboard-number-row-${row.userId}'),
         margin: const EdgeInsets.symmetric(vertical: 3),
@@ -812,7 +820,7 @@ class _LeaderboardListRow extends StatelessWidget {
             SizedBox(
               key: ValueKey('leaderboard-number-marker-${row.userId}'),
               width: 31,
-              child: Text(
+              child: LocalizedText(
                 '${row.rank}',
                 maxLines: 1,
                 textAlign: TextAlign.center,
@@ -838,8 +846,9 @@ class _LeaderboardListRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LocalizedText(
                     row.displayName,
+                    translate: false,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -849,7 +858,7 @@ class _LeaderboardListRow extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
+                  LocalizedText(
                     isCurrentUser ? '$streakKind - You' : streakKind,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -868,7 +877,7 @@ class _LeaderboardListRow extends StatelessWidget {
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerRight,
-                child: Text(
+                child: LocalizedText(
                   score,
                   maxLines: 1,
                   style: TextStyle(
@@ -908,7 +917,7 @@ class _LeaderboardAvatar extends StatelessWidget {
 
     return Semantics(
       image: true,
-      label: 'Avatar for ${row.displayName}',
+      label: 'Avatar for ${row.displayName}'.localizedCopy(context),
       child: Container(
         width: size,
         height: size,
@@ -927,7 +936,9 @@ class _LeaderboardAvatar extends StatelessWidget {
         child: avatarAsset.isNotEmpty
             ? ExcludeSemantics(
                 child: _DefaultAvatar(
-                  semanticLabel: 'Avatar for ${row.displayName}',
+                  semanticLabel: 'Avatar for ${row.displayName}'.localizedCopy(
+                    context,
+                  ),
                   assetPath: avatarAsset,
                   size: size - 5,
                 ),
@@ -939,8 +950,9 @@ class _LeaderboardAvatar extends StatelessWidget {
                     shape: BoxShape.circle,
                     color: borderColor.withValues(alpha: 0.2),
                   ),
-                  child: Text(
+                  child: LocalizedText(
                     row.initials,
+                    translate: false,
                     maxLines: 1,
                     style: TextStyle(
                       color: borderColor,
@@ -970,7 +982,7 @@ class _DefaultAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       image: true,
-      label: semanticLabel,
+      label: semanticLabel.localizedCopy(context),
       child: Container(
         width: size,
         height: size,
@@ -1112,7 +1124,7 @@ class _EmptyLeaderboard extends StatelessWidget {
           else
             Icon(icon, color: pageSecondaryTextColor(context), size: 42),
           const SizedBox(height: 10),
-          Text(
+          LocalizedText(
             title,
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -1122,7 +1134,7 @@ class _EmptyLeaderboard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Text(
+          LocalizedText(
             message,
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -1166,7 +1178,7 @@ class _LeaderboardError extends StatelessWidget {
             size: 42,
           ),
           const SizedBox(height: 10),
-          Text(
+          LocalizedText(
             'Unable to load rankings',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -1176,7 +1188,7 @@ class _LeaderboardError extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Text(
+          LocalizedText(
             message,
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -1189,7 +1201,7 @@ class _LeaderboardError extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: onRetry,
             icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Try again'),
+            label: const LocalizedText('Try again'),
           ),
         ],
       ),

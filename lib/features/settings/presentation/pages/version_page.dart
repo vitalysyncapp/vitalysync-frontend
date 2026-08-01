@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class VersionPage extends StatelessWidget {
   const VersionPage({super.key});
@@ -23,7 +24,7 @@ class VersionPage extends StatelessWidget {
             icon: const Icon(Icons.arrow_back_ios_new_rounded),
             onPressed: () => Navigator.pop(context),
           ),
-          title: Text(
+          title: LocalizedText(
             'Version',
             style: TextStyle(
               fontWeight: FontWeight.bold,
@@ -104,7 +105,7 @@ class _VersionHeroCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          Text(
+          LocalizedText(
             'VitalySync',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -114,7 +115,7 @@ class _VersionHeroCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Text(
+          LocalizedText(
             'Version ${VersionPage._appVersion}',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -124,7 +125,7 @@ class _VersionHeroCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          LocalizedText(
             'Build ${VersionPage._buildNumber} - Updated ${VersionPage._updatedDate}',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -221,7 +222,7 @@ class _VersionSection extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
-            child: Text(
+            child: LocalizedText(
               title,
               style: TextStyle(
                 fontSize: 17,
@@ -261,7 +262,7 @@ class _DetailRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LocalizedText(
                   label,
                   style: TextStyle(
                     fontSize: 13,
@@ -270,7 +271,7 @@ class _DetailRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 3),
-                Text(
+                LocalizedText(
                   value,
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
@@ -305,7 +306,7 @@ class _ReleaseNote extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
+            child: LocalizedText(
               text,
               style: TextStyle(
                 height: 1.4,

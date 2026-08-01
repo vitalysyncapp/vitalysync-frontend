@@ -7,6 +7,7 @@ import '../../../../shared/preferences/app_preferences.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 part 'notification_settings_widgets.dart';
 
@@ -286,14 +287,14 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Reminder settings saved.')));
+      ).showSnackBar(const SnackBar(content: LocalizedText('Reminder settings saved.')));
     } catch (error) {
       if (!mounted) {
         return;
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unable to save reminder settings: $error')),
+        SnackBar(content: LocalizedText('Unable to save reminder settings: $error')),
       );
     } finally {
       if (mounted) {
@@ -335,7 +336,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
             icon: const Icon(Icons.arrow_back_ios_new_rounded),
             onPressed: () => Navigator.pop(context),
           ),
-          title: Text(
+          title: LocalizedText(
             'Notifications',
             style: TextStyle(
               fontWeight: FontWeight.bold,
@@ -575,7 +576,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            LocalizedText(
                               _usesLocalSettings
                                   ? 'This device is using local reminder settings.'
                                   : 'These reminder defaults are synced from your onboarding preferences.',
@@ -585,7 +586,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            Text(
+                            LocalizedText(
                               'Reminder time: $_reminderTime',
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
@@ -593,21 +594,21 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                               ),
                             ),
                             const SizedBox(height: 6),
-                            Text(
+                            LocalizedText(
                               'Preferred log time: $_preferredLogTime',
                               style: TextStyle(
                                 color: pageSecondaryTextColor(context),
                               ),
                             ),
                             const SizedBox(height: 6),
-                            Text(
+                            LocalizedText(
                               'Nudge style: $_preferredNudgeStyle',
                               style: TextStyle(
                                 color: pageSecondaryTextColor(context),
                               ),
                             ),
                             const SizedBox(height: 6),
-                            Text(
+                            LocalizedText(
                               'Primary goal: $_primaryGoal',
                               style: TextStyle(
                                 color: pageSecondaryTextColor(context),

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../preferences/app_preferences.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class OverlayAssistantController {
   OverlayAssistantController._();
@@ -199,19 +200,19 @@ class OverlayAssistantController {
       builder: (context) {
         final theme = Theme.of(context);
         return AlertDialog(
-          title: const Text('Allow floating assistant'),
-          content: Text(
+          title: const LocalizedText('Allow floating assistant'),
+          content: LocalizedText(
             'VitalySync needs the Android "display over other apps" permission so the assistant can appear outside the app.',
             style: theme.textTheme.bodyMedium,
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Not now'),
+              child: const LocalizedText('Not now'),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Open settings'),
+              child: const LocalizedText('Open settings'),
             ),
           ],
         );

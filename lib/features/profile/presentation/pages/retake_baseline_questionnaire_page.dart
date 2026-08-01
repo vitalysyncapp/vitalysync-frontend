@@ -6,6 +6,7 @@ import '../../../onboarding/data/burnout_baseline_questions.dart';
 import '../../../onboarding/models/onboarding_question.dart';
 import '../../../onboarding/widgets/likert_question.dart';
 import '../../../onboarding/widgets/onboarding_card.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 typedef RetakeBaselineSaveCallback =
     Future<bool> Function(List<Map<String, dynamic>> answers);
@@ -164,7 +165,7 @@ class _RetakeBaselineQuestionnairePageState
               ),
               onPressed: _isSubmitting ? null : () => Navigator.pop(context),
             ),
-            title: Text(
+            title: LocalizedText(
               widget.pageTitle,
               style: TextStyle(
                 color: pagePrimaryTextColor(context),
@@ -232,7 +233,7 @@ class _RetakeBaselineQuestionnairePageState
                                       ? Icons.save_outlined
                                       : Icons.arrow_forward_rounded,
                                 ),
-                          label: Text(
+                          label: LocalizedText(
                             _isSubmitting
                                 ? 'Saving...'
                                 : isLast
@@ -260,7 +261,7 @@ class _RetakeBaselineQuestionnairePageState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              LocalizedText(
                 section.title,
                 style: TextStyle(
                   fontSize: 20,
@@ -269,7 +270,7 @@ class _RetakeBaselineQuestionnairePageState
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
+              LocalizedText(
                 'Use 1 for never and 5 for always.',
                 style: TextStyle(
                   height: 1.35,
@@ -350,7 +351,7 @@ class _RetakeBaselineHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LocalizedText(
                   section.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -371,7 +372,7 @@ class _RetakeBaselineHeader extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(
+                LocalizedText(
                   '$currentStep of $totalSteps',
                   style: TextStyle(
                     fontSize: 12.5,

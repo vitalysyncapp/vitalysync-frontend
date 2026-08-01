@@ -70,7 +70,7 @@ extension _LogHydrationActivityCards on LogWidgets {
                   duration: const Duration(milliseconds: 250),
                   transitionBuilder: (child, animation) =>
                       ScaleTransition(scale: animation, child: child),
-                  child: Text(
+                  child: LocalizedText(
                     "${hydration.toStringAsFixed(hydration % 1 == 0 ? 0 : 1)}L",
                     key: ValueKey(hydration),
                     style: const TextStyle(
@@ -81,7 +81,7 @@ extension _LogHydrationActivityCards on LogWidgets {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
+                LocalizedText(
                   "Goal: 2.5L",
                   style: TextStyle(
                     fontSize: 14,
@@ -178,7 +178,7 @@ extension _LogHydrationActivityCards on LogWidgets {
                               ]
                             : [],
                       ),
-                      child: Text(
+                      child: LocalizedText(
                         symptom,
                         style: TextStyle(
                           fontSize: 12,
@@ -255,7 +255,7 @@ extension _LogHydrationActivityCards on LogWidgets {
                               ]
                             : [],
                       ),
-                      child: Text(
+                      child: LocalizedText(
                         habit,
                         style: TextStyle(
                           fontSize: 12,

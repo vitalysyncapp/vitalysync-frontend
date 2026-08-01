@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/learning/first_week_learning_service.dart';
 import '../../../../shared/widgets/first_week_learning_pill.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class DashboardHeaderCard extends StatelessWidget {
   final FirstWeekLearningState? learningState;
@@ -42,7 +43,7 @@ class DashboardHeaderCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                const LocalizedText(
                   "Your wellness analytics dashboard",
                   style: TextStyle(
                     color: Colors.white,
@@ -51,7 +52,7 @@ class DashboardHeaderCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                const LocalizedText(
                   "Track your wellness trends, sleep, mood, symptoms, and overall performance.",
                   style: TextStyle(
                     color: Colors.white70,

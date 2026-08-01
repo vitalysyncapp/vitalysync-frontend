@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class SmartNudgeCard extends StatelessWidget {
   final String message;
@@ -51,7 +52,7 @@ class SmartNudgeCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(
+                child: LocalizedText(
                   "Today's smart nudge",
                   style: TextStyle(
                     fontSize: 12.5,
@@ -65,7 +66,7 @@ class SmartNudgeCard extends StatelessWidget {
                   color: textColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(999),
                 ),
-                child: Text(
+                child: LocalizedText(
                   _severityLabel(userFacingSeverity),
                   style: TextStyle(
                     color: textColor,
@@ -77,7 +78,7 @@ class SmartNudgeCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
+          LocalizedText(
             message,
             style: TextStyle(
               fontSize: 12.5,

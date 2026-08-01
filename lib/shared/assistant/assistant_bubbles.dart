@@ -23,7 +23,7 @@ class _SmartNudgeBubble extends StatelessWidget {
       tailOnRight: tailOnRight,
       tailAtBottom: tailAtBottom,
       icon: _AssistantLottieIcon(emoji: emoji, size: 30, fallbackFontSize: 18),
-      child: Text(
+      child: LocalizedText(
         _expandedAssistantText(message),
         style: TextStyle(
           color: pageSecondaryTextColor(context),
@@ -63,7 +63,7 @@ class _NutritionNudgeBubble extends StatelessWidget {
         size: 19,
       ),
       iconColors: const [Color(0xFF1EAD83), Color(0xFF5DB8F0)],
-      child: Text(
+      child: LocalizedText(
         _expandedAssistantText(insight.message),
         style: TextStyle(
           color: pageSecondaryTextColor(context),
@@ -119,7 +119,7 @@ class _ExercisePreviewBubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            LocalizedText(
               'None today',
               style: TextStyle(
                 color: pagePrimaryTextColor(context),
@@ -128,7 +128,7 @@ class _ExercisePreviewBubble extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            Text(
+            LocalizedText(
               'Rest is still care. Keep it light and pick movement later if your energy changes.',
               style: TextStyle(
                 color: pageSecondaryTextColor(context),
@@ -143,7 +143,7 @@ class _ExercisePreviewBubble extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: onChoose,
                 icon: const Icon(Icons.tune_rounded, size: 18),
-                label: const Text('Choose'),
+                label: const LocalizedText('Choose'),
                 style: _bubbleOutlinedButtonStyle(context),
               ),
             ),
@@ -168,8 +168,9 @@ class _ExercisePreviewBubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            LocalizedText(
               goal.exerciseName,
+              translate: false,
               style: TextStyle(
                 color: pagePrimaryTextColor(context),
                 fontSize: 16,
@@ -177,7 +178,7 @@ class _ExercisePreviewBubble extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            Text(
+            LocalizedText(
               isCompleted
                   ? 'Nice work. This goal is complete.'
                   : '${goal.targetLabel()} - open exercise to mark done or cancel.',
@@ -194,7 +195,7 @@ class _ExercisePreviewBubble extends StatelessWidget {
               child: ElevatedButton.icon(
                 onPressed: onChoose,
                 icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                label: const Text('View goal'),
+                label: const LocalizedText('View goal'),
                 style: _bubbleElevatedButtonStyle(),
               ),
             ),
@@ -222,7 +223,7 @@ class _ExercisePreviewBubble extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LocalizedText(
             title,
             style: TextStyle(
               color: pagePrimaryTextColor(context),
@@ -231,7 +232,7 @@ class _ExercisePreviewBubble extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
+          LocalizedText(
             subtitle,
             style: TextStyle(
               color: pageSecondaryTextColor(context),
@@ -258,7 +259,7 @@ class _ExercisePreviewBubble extends StatelessWidget {
                           ),
                         )
                       : const Icon(Icons.check_rounded, size: 18),
-                  label: const Text('Accept'),
+                  label: const LocalizedText('Accept'),
                   style: _bubbleElevatedButtonStyle(),
                 ),
               ),
@@ -267,7 +268,7 @@ class _ExercisePreviewBubble extends StatelessWidget {
                 child: OutlinedButton.icon(
                   onPressed: onChoose,
                   icon: const Icon(Icons.tune_rounded, size: 18),
-                  label: const Text('Choose'),
+                  label: const LocalizedText('Choose'),
                   style: _bubbleOutlinedButtonStyle(context),
                 ),
               ),
@@ -384,7 +385,7 @@ class _AssistantBubbleShell extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
+                    child: LocalizedText(
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -400,7 +401,7 @@ class _AssistantBubbleShell extends StatelessWidget {
                     width: 38,
                     height: 38,
                     child: IconButton(
-                      tooltip: 'Dismiss',
+                      tooltip: 'Dismiss'.localizedCopy(context),
                       onPressed: onClose,
                       padding: EdgeInsets.zero,
                       icon: Icon(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
 import '../../data/exercise_goal_model.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class SelectedExerciseGoalCard extends StatelessWidget {
   final ExerciseGoalModel goal;
@@ -67,10 +68,11 @@ class SelectedExerciseGoalCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       goal.isCompleted
                           ? 'Exercise completed\nGood job'
                           : goal.exerciseName,
+                      translate: goal.isCompleted,
                       maxLines: goal.isCompleted ? 2 : 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -80,7 +82,7 @@ class SelectedExerciseGoalCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
+                    LocalizedText(
                       _statusLabel(),
                       style: TextStyle(
                         fontSize: 12.5,
@@ -121,7 +123,7 @@ class SelectedExerciseGoalCard extends StatelessWidget {
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerRight,
-            child: Text(
+            child: LocalizedText(
               '$progressPercent%',
               style: TextStyle(
                 fontSize: 12.5,
@@ -139,7 +141,7 @@ class SelectedExerciseGoalCard extends StatelessWidget {
                       ? null
                       : onDone,
                   icon: const Icon(Icons.check_rounded, size: 18),
-                  label: const Text('Done'),
+                  label: const LocalizedText('Done'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1FB489),
                     foregroundColor: Colors.white,
@@ -155,7 +157,7 @@ class SelectedExerciseGoalCard extends StatelessWidget {
                 child: OutlinedButton.icon(
                   onPressed: isSaving || goal.isCompleted ? null : onCancel,
                   icon: const Icon(Icons.close_rounded, size: 18),
-                  label: const Text('Cancel'),
+                  label: const LocalizedText('Cancel'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: pagePrimaryTextColor(context),
                     side: BorderSide(color: pageBorderColor(context)),
@@ -169,7 +171,7 @@ class SelectedExerciseGoalCard extends StatelessWidget {
           ),
           if (goal.isDistanceBased && !goal.isCompleted) ...[
             const SizedBox(height: 10),
-            Text(
+            LocalizedText(
               progress >= 1.0
                   ? goal.isStepTrackedMovement
                         ? 'Distance reached. This will save as complete automatically.'
@@ -252,7 +254,7 @@ class _NoneTodayGoalCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       'None today',
                       style: TextStyle(
                         fontSize: 18,
@@ -261,7 +263,7 @@ class _NoneTodayGoalCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    const Text(
+                    const LocalizedText(
                       'Rest choice saved',
                       style: TextStyle(
                         fontSize: 12.5,
@@ -275,7 +277,7 @@ class _NoneTodayGoalCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          Text(
+          LocalizedText(
             'Choosing rest today is a valid way to care for your energy; you can choose movement later if that changes.',
             style: TextStyle(
               color: pageSecondaryTextColor(context),
@@ -290,7 +292,7 @@ class _NoneTodayGoalCard extends StatelessWidget {
             child: OutlinedButton.icon(
               onPressed: isSaving ? null : onChooseAgain,
               icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text('Choose again'),
+              label: const LocalizedText('Choose again'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: pagePrimaryTextColor(context),
                 side: BorderSide(color: pageBorderColor(context)),
@@ -316,7 +318,7 @@ class _GoalDetailRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(
+        LocalizedText(
           label,
           style: TextStyle(
             fontSize: 13,
@@ -326,7 +328,7 @@ class _GoalDetailRow extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(
+          child: LocalizedText(
             value,
             textAlign: TextAlign.right,
             maxLines: 1,

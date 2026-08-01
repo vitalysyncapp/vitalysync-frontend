@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../learning/first_week_learning_service.dart';
 import '../theme/app_page_style.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class FirstWeekLearningPill extends StatelessWidget {
   final FirstWeekLearningState state;
@@ -52,7 +53,7 @@ class FirstWeekLearningPill extends StatelessWidget {
           Icon(icon, size: 13.5, color: foregroundColor),
           const SizedBox(width: 5),
           Flexible(
-            child: Text(
+            child: LocalizedText(
               message,
               maxLines: maxLines,
               overflow: maxLines == null

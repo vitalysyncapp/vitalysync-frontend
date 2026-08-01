@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class NutritionHeaderCard extends StatelessWidget {
   const NutritionHeaderCard({super.key});
@@ -37,7 +38,7 @@ class NutritionHeaderCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LocalizedText(
                   'AI-powered nutrition tracker',
                   style: TextStyle(
                     color: Colors.white,
@@ -47,7 +48,7 @@ class NutritionHeaderCard extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: isCompact ? 3 : 4),
-                Text(
+                LocalizedText(
                   'Track calories, macros, and meals with smarter daily insights.',
                   maxLines: isCompact ? 2 : 3,
                   overflow: TextOverflow.ellipsis,
@@ -67,7 +68,7 @@ class NutritionHeaderCard extends StatelessWidget {
               color: Colors.white.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(isCompact ? 11 : 13),
             ),
-            child: Text(
+            child: LocalizedText(
               '🍎',
               semanticsLabel: 'Apple',
               style: TextStyle(fontSize: isCompact ? 20 : 24, height: 1),

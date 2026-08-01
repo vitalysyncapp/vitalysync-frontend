@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../theme/app_page_style.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 enum ValidationDialogType { success, error, warning, connection }
 
@@ -142,7 +143,7 @@ class _ValidationDialogState extends State<ValidationDialog> {
                     child: Icon(spec.icon, color: spec.accent, size: 30),
                   ),
                   const SizedBox(height: 14),
-                  Text(
+                  LocalizedText(
                     widget.title ?? spec.title,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -151,7 +152,7 @@ class _ValidationDialogState extends State<ValidationDialog> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
+                  LocalizedText(
                     widget.message,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(

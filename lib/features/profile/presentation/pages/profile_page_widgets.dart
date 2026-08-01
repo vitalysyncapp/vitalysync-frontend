@@ -442,9 +442,9 @@ class _ProfileAvatarButton extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: 'Change profile avatar',
+      label: 'Change profile avatar'.localizedCopy(context),
       child: Tooltip(
-        message: 'Change profile avatar',
+        message: 'Change profile avatar'.localizedCopy(context),
         child: InkWell(
           key: const ValueKey('profile-header-avatar-edit'),
           onTap: onEditAvatar,
@@ -526,7 +526,9 @@ class _ProfileAvatarButton extends StatelessWidget {
                     gender: gender,
                     userType: role,
                     size: 86,
-                    semanticLabel: 'Current profile avatar',
+                    semanticLabel: 'Current profile avatar'.localizedCopy(
+                      context,
+                    ),
                   ),
                 ),
               ),
@@ -604,8 +606,9 @@ class _ProfileIdentity extends StatelessWidget {
           ? CrossAxisAlignment.center
           : CrossAxisAlignment.start,
       children: [
-        Text(
+        LocalizedText(
           username,
+          translate: false,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           textAlign: centered ? TextAlign.center : TextAlign.start,
@@ -628,8 +631,9 @@ class _ProfileIdentity extends StatelessWidget {
             ),
             const SizedBox(width: 5),
             Flexible(
-              child: Text(
+              child: LocalizedText(
                 email,
+                translate: false,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: centered ? TextAlign.center : TextAlign.start,
@@ -644,11 +648,11 @@ class _ProfileIdentity extends StatelessWidget {
             if (emailVerified) ...[
               const SizedBox(width: 5),
               Tooltip(
-                message: 'Email verified',
+                message: 'Email verified'.localizedCopy(context),
                 child: Semantics(
-                  label: 'Email verified',
+                  label: 'Email verified'.localizedCopy(context),
                   child: const ExcludeSemantics(
-                    child: Text(
+                    child: LocalizedText(
                       '\u{2705}',
                       key: ValueKey('profile-email-verified-badge'),
                       style: TextStyle(fontSize: 13.5, height: 1),
@@ -676,7 +680,7 @@ class _ProfileIdentity extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                child: const Text('Verify email'),
+                child: const LocalizedText('Verify email'),
               ),
             ],
           ],
@@ -723,7 +727,7 @@ class _ProfileIdentity extends StatelessWidget {
                     Icon(Icons.badge_outlined, size: 16, color: palette.accent),
                     const SizedBox(width: 7),
                     Flexible(
-                      child: Text(
+                      child: LocalizedText(
                         role == null
                             ? 'Role not set'
                             : _titleCaseCategory(role!),
@@ -825,7 +829,7 @@ class _ProfileStreakPreviewCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LocalizedText(
                     'View streak card',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -836,7 +840,7 @@ class _ProfileStreakPreviewCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 5),
-                  Text(
+                  LocalizedText(
                     'Current: ${_daysValue(currentStreak)}  -  '
                     'Best: ${_daysValue(longestStreak)}',
                     style: TextStyle(
@@ -975,7 +979,7 @@ class _ProfileStatTile extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
+                child: LocalizedText(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -996,7 +1000,7 @@ class _ProfileStatTile extends StatelessWidget {
             child: FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
-              child: Text(
+              child: LocalizedText(
                 value,
                 maxLines: 1,
                 style: TextStyle(
@@ -1064,7 +1068,7 @@ class _PersonalInformationCard extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Text(
+                child: LocalizedText(
                   'Personal information',
                   style: TextStyle(
                     fontSize: 18,
@@ -1130,7 +1134,7 @@ class _PersonalInformationCard extends StatelessWidget {
                 child: OutlinedButton.icon(
                   onPressed: isSaving ? null : onEditProfile,
                   icon: const Icon(Icons.edit_outlined),
-                  label: const Text(
+                  label: const LocalizedText(
                     'Edit profile',
                     style: TextStyle(fontWeight: FontWeight.w700),
                   ),
@@ -1210,7 +1214,7 @@ class _MyGoalsCardState extends State<MyGoalsCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       'My goals',
                       style: TextStyle(
                         fontSize: 18,
@@ -1219,7 +1223,7 @@ class _MyGoalsCardState extends State<MyGoalsCard> {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
+                    LocalizedText(
                       'Targets shared with home and nutrition',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1271,7 +1275,7 @@ class _MyGoalsCardState extends State<MyGoalsCard> {
               child: OutlinedButton.icon(
                 onPressed: widget.isSaving ? null : widget.onEdit,
                 icon: const Icon(Icons.edit_outlined),
-                label: const Text(
+                label: const LocalizedText(
                   'Edit goals',
                   style: TextStyle(fontWeight: FontWeight.w800),
                 ),
@@ -1295,7 +1299,7 @@ class _MyGoalsCardState extends State<MyGoalsCard> {
                 });
               },
               icon: Icon(_isExpanded ? Icons.expand_less : Icons.expand_more),
-              label: Text(
+              label: LocalizedText(
                 _isExpanded ? 'Hide' : 'More',
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
@@ -1350,7 +1354,7 @@ class _GoalDataRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LocalizedText(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -1361,7 +1365,7 @@ class _GoalDataRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 3),
-                Text(
+                LocalizedText(
                   value,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -1413,7 +1417,7 @@ class _ProfileInfoTile extends StatelessWidget {
         ),
         child: Icon(icon, color: iconColor, size: 24),
       ),
-      title: Text(
+      title: LocalizedText(
         title,
         style: TextStyle(
           fontSize: 15.5,
@@ -1423,7 +1427,7 @@ class _ProfileInfoTile extends StatelessWidget {
       ),
       subtitle: Padding(
         padding: const EdgeInsets.only(top: 2),
-        child: Text(
+        child: LocalizedText(
           subtitle,
           style: TextStyle(
             fontSize: 13.5,
@@ -1474,7 +1478,7 @@ class _ProfileAccountCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LocalizedText(
                     'Account',
                     style: TextStyle(
                       fontSize: 18,
@@ -1483,7 +1487,7 @@ class _ProfileAccountCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 3),
-                  Text(
+                  LocalizedText(
                     'App preferences and session controls',
                     style: TextStyle(
                       fontSize: 13,
@@ -1515,14 +1519,14 @@ class _ProfileAccountCard extends StatelessWidget {
                   color: Color(0xFF1D8CA8),
                 ),
               ),
-              title: Text(
+              title: LocalizedText(
                 'Settings',
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   color: pagePrimaryTextColor(context),
                 ),
               ),
-              subtitle: Text(
+              subtitle: LocalizedText(
                 'Notifications, privacy, preferences, and support',
                 style: TextStyle(color: pageSecondaryTextColor(context)),
               ),
@@ -1557,14 +1561,14 @@ class _ProfileAccountCard extends StatelessWidget {
                       )
                     : Icon(Icons.logout_rounded, color: dangerColor),
               ),
-              title: Text(
+              title: LocalizedText(
                 isLoggingOut ? 'Logging out...' : 'Log out',
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   color: dangerColor,
                 ),
               ),
-              subtitle: Text(
+              subtitle: LocalizedText(
                 'Sign out safely on this device',
                 style: TextStyle(color: pageSecondaryTextColor(context)),
               ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../shared/goals/user_goals.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/validation_dialog.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 typedef EditGoalsSaveCallback = Future<bool> Function(UserGoalsSnapshot goals);
 
@@ -138,7 +139,7 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
             ),
             onPressed: _isSubmitting ? null : () => Navigator.pop(context),
           ),
-          title: Text(
+          title: LocalizedText(
             'Edit goals',
             style: TextStyle(
               color: pagePrimaryTextColor(context),
@@ -217,7 +218,7 @@ class _EditGoalsPageState extends State<EditGoalsPage> {
                             ),
                           )
                         : const Icon(Icons.save_outlined),
-                    label: Text(_isSubmitting ? 'Saving...' : 'Save goals'),
+                    label: LocalizedText(_isSubmitting ? 'Saving...' : 'Save goals'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2563EB),
                       foregroundColor: Colors.white,
@@ -425,7 +426,7 @@ class _GoalChoiceTile extends StatelessWidget {
             ),
             const SizedBox(width: 11),
             Expanded(
-              child: Text(
+              child: LocalizedText(
                 label,
                 style: TextStyle(
                   color: pagePrimaryTextColor(context),
@@ -494,7 +495,7 @@ class _GoalsEditorCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       'My goals',
                       style: TextStyle(
                         color: primary,
@@ -503,7 +504,7 @@ class _GoalsEditorCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
+                    LocalizedText(
                       'Targets shared across VitalySync',
                       style: TextStyle(fontSize: 12.5, color: secondary),
                     ),

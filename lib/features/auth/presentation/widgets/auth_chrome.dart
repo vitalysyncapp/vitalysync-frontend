@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../shared/theme/animated_gradient_background.dart';
 import '../../../../shared/theme/app_page_style.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 const authHealthyLifestyleAsset = 'assets/images/auth_healthy_lifestyle.svg';
 const authMeditationAsset = 'assets/images/auth_meditation.svg';
@@ -638,7 +639,7 @@ class AuthBrandHeader extends StatelessWidget {
       children: [
         Image.asset('assets/images/logo.png', height: logoSize),
         const SizedBox(height: 8),
-        Text(
+        LocalizedText(
           'VitalySync',
           textAlign: TextAlign.center,
           style: GoogleFonts.poppins(
@@ -648,7 +649,7 @@ class AuthBrandHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 18),
-        Text(
+        LocalizedText(
           title,
           textAlign: TextAlign.center,
           style: GoogleFonts.poppins(
@@ -660,7 +661,7 @@ class AuthBrandHeader extends StatelessWidget {
         ),
         if (subtitle != null) ...[
           const SizedBox(height: 8),
-          Text(
+          LocalizedText(
             subtitle!,
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
@@ -779,7 +780,7 @@ class AuthButton extends StatelessWidget {
               Icon(icon, size: 20),
               const SizedBox(width: 9),
               Flexible(
-                child: Text(
+                child: LocalizedText(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -953,7 +954,7 @@ class AuthFinePrint extends StatelessWidget {
           Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
+            child: LocalizedText(
               text,
               style: GoogleFonts.poppins(
                 height: 1.42,

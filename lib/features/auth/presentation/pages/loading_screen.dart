@@ -15,6 +15,7 @@ import '../../../../shared/notifications/notification_payload_router.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/animated_gradient_background.dart';
 import 'auth_start_page.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
@@ -168,7 +169,7 @@ class _LoadingScreenState extends State<LoadingScreen>
                     ),
                   ),
                   const SizedBox(height: 25),
-                  Text(
+                  LocalizedText(
                     'VitalySync',
                     style: GoogleFonts.poppins(
                       fontSize: 22,
@@ -182,7 +183,7 @@ class _LoadingScreenState extends State<LoadingScreen>
                   const SizedBox(height: 20),
                   const CircularProgressIndicator(),
                   const SizedBox(height: 18),
-                  Text(
+                  LocalizedText(
                     'VitalySync provides wellness insights only and does not replace medical advice.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.poppins(

@@ -14,6 +14,7 @@ import '../../../../shared/widgets/validation_dialog.dart';
 import '../../data/email_validator.dart';
 import '../widgets/auth_chrome.dart';
 import 'login_page.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -78,7 +79,7 @@ class _SignUpPageState extends State<SignUpPage> {
     try {
       final response = await http.post(
         url,
-        headers: {"Content-Type": "application/json"},
+        headers: await ApiConfig.jsonHeaders(),
         body: jsonEncode({
           "username": _usernameController.text.trim(),
           "email": _emailController.text.trim(),
@@ -216,7 +217,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   const SizedBox(height: 14),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Text(
+                    child: LocalizedText(
                       'Terms and privacy policy',
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -343,7 +344,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       .map(
                         (gender) => DropdownMenuItem<String>(
                           value: gender,
-                          child: Text(gender),
+                          child: LocalizedText(gender),
                         ),
                       )
                       .toList(),
@@ -455,7 +456,7 @@ class _SignUpPageState extends State<SignUpPage> {
                           child: Wrap(
                             crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
-                              Text(
+                              LocalizedText(
                                 'I agree to the terms and conditions and the privacy policy ',
                                 style: TextStyle(
                                   fontSize: 13.5,
@@ -465,7 +466,7 @@ class _SignUpPageState extends State<SignUpPage> {
                               ),
                               GestureDetector(
                                 onTap: _showTermsModal,
-                                child: Text(
+                                child: LocalizedText(
                                   'View',
                                   style: TextStyle(
                                     fontSize: 13.5,
@@ -505,7 +506,7 @@ class _SignUpPageState extends State<SignUpPage> {
                     );
                   },
                   icon: const Icon(Icons.arrow_back_rounded, size: 19),
-                  label: Text(
+                  label: LocalizedText(
                     'Back to log in',
                     style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
                   ),

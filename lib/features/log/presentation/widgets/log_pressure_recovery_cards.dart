@@ -105,7 +105,7 @@ extension _LogPressureRecoveryCards on LogWidgets {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       "This week's pressure",
                       style: TextStyle(
                         color: Colors.white,
@@ -114,7 +114,7 @@ extension _LogPressureRecoveryCards on LogWidgets {
                       ),
                     ),
                     SizedBox(height: 3),
-                    Text(
+                    LocalizedText(
                       "Choose the level that best matches how much pressure you carried this week.",
                       style: TextStyle(
                         color: Colors.white,
@@ -161,7 +161,7 @@ extension _LogPressureRecoveryCards on LogWidgets {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
+                          LocalizedText(
                             '$value',
                             style: TextStyle(
                               color: selected
@@ -174,7 +174,7 @@ extension _LogPressureRecoveryCards on LogWidgets {
                           const SizedBox(height: 3),
                           FittedBox(
                             fit: BoxFit.scaleDown,
-                            child: Text(
+                            child: LocalizedText(
                               stressLabels[index],
                               maxLines: 1,
                               style: TextStyle(
@@ -195,7 +195,7 @@ extension _LogPressureRecoveryCards on LogWidgets {
             }),
           ),
           const SizedBox(height: 9),
-          Text(
+          LocalizedText(
             selectedLevel == null
                 ? 'Your answer helps VitalySync understand today with more care.'
                 : 'Logged as ${stressLabels[selectedLevel - 1].toLowerCase()} pressure.',
@@ -282,7 +282,7 @@ extension _LogPressureRecoveryCards on LogWidgets {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
+                              LocalizedText(
                                 '$value',
                                 style: TextStyle(
                                   color: selected
@@ -295,7 +295,7 @@ extension _LogPressureRecoveryCards on LogWidgets {
                               const SizedBox(height: 3),
                               FittedBox(
                                 fit: BoxFit.scaleDown,
-                                child: Text(
+                                child: LocalizedText(
                                   breakLabels[index],
                                   maxLines: 1,
                                   style: TextStyle(
@@ -316,7 +316,7 @@ extension _LogPressureRecoveryCards on LogWidgets {
                 }),
               ),
               const SizedBox(height: 9),
-              Text(
+              LocalizedText(
                 selectedLevel == null
                     ? 'Optional, but useful for spotting recovery patterns over time.'
                     : 'Recovery logged as ${breakLabels[selectedLevel - 1].toLowerCase()}.',

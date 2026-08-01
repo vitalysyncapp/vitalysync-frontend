@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../dashboard/data/burnout_score_api.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class BurnoutInfoDialog extends StatelessWidget {
   final int score;
@@ -65,7 +66,7 @@ class BurnoutInfoDialog extends StatelessWidget {
                           icon: Icons.speed_rounded,
                           color: const Color(0xFF2563EB),
                           title: 'What the score means',
-                          child: Text(
+                          child: LocalizedText(
                             'Your score is $score/100. It combines short daily signals—such as sleep, mood, energy, workload, and habits—with the latest eligible weekly pulse and your baseline.',
                             style: _bodyStyle(context),
                           ),
@@ -85,7 +86,7 @@ class BurnoutInfoDialog extends StatelessWidget {
                                 color: _riskColor(_riskLevel),
                               ),
                               const SizedBox(height: 8),
-                              Text(
+                              LocalizedText(
                                 _riskMeaning(_riskLevel),
                                 style: _bodyStyle(context),
                               ),
@@ -156,7 +157,7 @@ class BurnoutInfoDialog extends StatelessWidget {
       child: ElevatedButton.icon(
         onPressed: onLearnMore,
         icon: const Icon(Icons.menu_book_rounded, size: 18),
-        label: const Text('Learn more about burnout'),
+        label: const LocalizedText('Learn more about burnout'),
         style: ElevatedButton.styleFrom(
           elevation: 0,
           minimumSize: const Size.fromHeight(46),
@@ -199,7 +200,7 @@ class BurnoutInfoDialog extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                const LocalizedText(
                   'Burnout score details',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -210,7 +211,7 @@ class BurnoutInfoDialog extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
+                LocalizedText(
                   status,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -225,7 +226,7 @@ class BurnoutInfoDialog extends StatelessWidget {
             ),
           ),
           IconButton(
-            tooltip: 'Close',
+            tooltip: 'Close'.localizedCopy(context),
             onPressed: () => Navigator.of(context).pop(),
             color: Colors.white,
             icon: const Icon(Icons.close_rounded),
@@ -241,7 +242,7 @@ class BurnoutInfoDialog extends StatelessWidget {
     final confidence = scoreSnapshot?.confidenceScore ?? patternConfidence;
 
     if (confidence == null || confidence <= 0) {
-      return Text(
+      return LocalizedText(
         'Confidence appears after enough short daily logs and weekly context are available.',
         style: _bodyStyle(context),
       );
@@ -273,7 +274,7 @@ class BurnoutInfoDialog extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        Text(
+        LocalizedText(
           'Confidence reflects required-field coverage and the age of the weekly pulse used for this score. Limited inputs keep recommendations gentler.',
           style: _bodyStyle(context),
         ),
@@ -284,7 +285,7 @@ class BurnoutInfoDialog extends StatelessWidget {
   Widget _buildWeeklyContext(BuildContext context) {
     final weeklyContext = latestScore?.weeklyContext;
     if (weeklyContext == null) {
-      return Text(
+      return LocalizedText(
         latestScore == null
             ? 'Complete a check-in to begin building weekly context.'
             : 'This score uses short daily signals only. Weekly dimensions will be added after the first scheduled pulse.',
@@ -326,7 +327,7 @@ class BurnoutInfoDialog extends StatelessWidget {
         ),
         if (ageLabel != null) ...[
           const SizedBox(height: 8),
-          Text(
+          LocalizedText(
             '$ageLabel. Pressure, recovery, detachment, focus, and accomplishment carry forward until the next required pulse.',
             style: _bodyStyle(context),
           ),
@@ -338,7 +339,7 @@ class BurnoutInfoDialog extends StatelessWidget {
   Widget _buildEvidenceBasis(BuildContext context) {
     final snapshot = latestScore;
     if (snapshot == null) {
-      return Text(
+      return LocalizedText(
         'Evidence details appear after the first daily score is generated.',
         style: _bodyStyle(context),
       );
@@ -379,7 +380,7 @@ class BurnoutInfoDialog extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 9),
-        Text(snapshot.explanationNote, style: _bodyStyle(context)),
+        LocalizedText(snapshot.explanationNote, style: _bodyStyle(context)),
       ],
     );
   }
@@ -388,7 +389,7 @@ class BurnoutInfoDialog extends StatelessWidget {
     final fields = latestScore?.missingFields ?? const <String>[];
 
     if (fields.isEmpty) {
-      return Text(
+      return LocalizedText(
         latestScore == null
             ? 'No daily burnout score has been generated yet. Complete check-ins to unlock richer details.'
             : 'No required daily or weekly fields are missing from the inputs used for this score.',
@@ -442,7 +443,7 @@ class BurnoutInfoDialog extends StatelessWidget {
     ].where((item) => item.trim().isNotEmpty).toList();
 
     if (fallbackItems.isEmpty) {
-      return Text(
+      return LocalizedText(
         'Main factors will appear after VitalySync has enough recent score data to compare patterns.',
         style: _bodyStyle(context),
       );
@@ -462,7 +463,7 @@ class BurnoutInfoDialog extends StatelessWidget {
                 color: Color(0xFF7C3AED),
               ),
               const SizedBox(width: 7),
-              Expanded(child: Text(item, style: _bodyStyle(context))),
+              Expanded(child: LocalizedText(item, style: _bodyStyle(context))),
             ],
           ),
         );
@@ -645,7 +646,7 @@ class _InfoSection extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
+                child: LocalizedText(
                   title,
                   style: TextStyle(
                     color: pagePrimaryTextColor(context),
@@ -689,7 +690,7 @@ class _Pill extends StatelessWidget {
           ],
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 220),
-            child: Text(
+            child: LocalizedText(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -727,7 +728,7 @@ class _FactorRow extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Text(
+              child: LocalizedText(
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -739,7 +740,7 @@ class _FactorRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Text(
+            LocalizedText(
               value.round().toString(),
               style: TextStyle(
                 color: color,

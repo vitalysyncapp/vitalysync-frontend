@@ -6,6 +6,7 @@ import '../../../../shared/theme/app_page_style.dart';
 import '../../../auth/presentation/pages/auth_start_page.dart';
 import '../../../profile/data/profile_avatar.dart';
 import '../../data/account_lifecycle_api.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class DeactivateAccountGatePage extends StatefulWidget {
   final AccountLifecycleApi? api;
@@ -68,7 +69,7 @@ class _DeactivateAccountGatePageState extends State<DeactivateAccountGatePage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(error.toString().replaceFirst('Exception: ', '')),
+          content: LocalizedText(error.toString().replaceFirst('Exception: ', '')),
         ),
       );
     } finally {
@@ -88,7 +89,7 @@ class _DeactivateAccountGatePageState extends State<DeactivateAccountGatePage> {
           elevation: 0,
           backgroundColor: Colors.transparent,
           foregroundColor: pagePrimaryTextColor(context),
-          title: const Text('Deactivate account'),
+          title: const LocalizedText('Deactivate account'),
         ),
         body: SafeArea(
           child: ListView(
@@ -103,7 +104,7 @@ class _DeactivateAccountGatePageState extends State<DeactivateAccountGatePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       'Take a break without losing your history',
                       style: TextStyle(
                         fontSize: 18,
@@ -112,7 +113,7 @@ class _DeactivateAccountGatePageState extends State<DeactivateAccountGatePage> {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Text(
+                    LocalizedText(
                       'Your account will be signed out on every device. You can reactivate it within 40 days by signing in and confirming reactivation.',
                       style: TextStyle(
                         height: 1.5,
@@ -120,7 +121,7 @@ class _DeactivateAccountGatePageState extends State<DeactivateAccountGatePage> {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Text(
+                    LocalizedText(
                       'After 40 days, access stays blocked. Retained account data is permanently deleted five years after deactivation.',
                       style: TextStyle(
                         height: 1.5,
@@ -136,7 +137,7 @@ class _DeactivateAccountGatePageState extends State<DeactivateAccountGatePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       'Confirm deactivation',
                       style: TextStyle(
                         fontSize: 17,
@@ -153,7 +154,7 @@ class _DeactivateAccountGatePageState extends State<DeactivateAccountGatePage> {
                       onChanged: (_) => setState(() {}),
                       autofillHints: const [AutofillHints.password],
                       decoration: InputDecoration(
-                        labelText: 'Current password',
+                        labelText: 'Current password'.localizedCopy(context),
                         suffixIcon: IconButton(
                           onPressed: _isSubmitting
                               ? null
@@ -178,9 +179,9 @@ class _DeactivateAccountGatePageState extends State<DeactivateAccountGatePage> {
                       autocorrect: false,
                       enableSuggestions: false,
                       textCapitalization: TextCapitalization.characters,
-                      decoration: const InputDecoration(
-                        labelText: 'Type CONFIRM',
-                        helperText: 'Confirmation is case-sensitive.',
+                      decoration: InputDecoration(
+                        labelText: 'Type CONFIRM'.localizedCopy(context),
+                        helperText: 'Confirmation is case-sensitive.'.localizedCopy(context),
                         border: OutlineInputBorder(),
                       ),
                     ),
@@ -206,7 +207,7 @@ class _DeactivateAccountGatePageState extends State<DeactivateAccountGatePage> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text('Confirm'),
+                            : const LocalizedText('Confirm'),
                       ),
                     ),
                   ],

@@ -13,6 +13,8 @@ import '../../features/exercise/data/exercise_recommendation_service.dart';
 import '../../features/exercise/presentation/widgets/assistant_exercise_card.dart';
 import '../../features/exercise/presentation/widgets/selected_exercise_goal_card.dart';
 import '../../features/home/data/environment_model.dart';
+import '../../features/home/data/environment_localization.dart';
+import '../../l10n/l10n.dart';
 import '../../features/log/data/check_in_models.dart';
 import '../../features/log/data/check_in_state_coordinator.dart';
 import '../../features/log/data/log_api.dart';
@@ -27,6 +29,7 @@ import '../learning/first_week_learning_service.dart';
 import '../theme/app_page_style.dart';
 import '../widgets/app_skeleton.dart';
 import '../widgets/first_week_learning_pill.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 part 'assistant_bubbles.dart';
 part 'assistant_experience_panel.dart';
@@ -376,7 +379,7 @@ class _FloatingSmartNudgeAssistantState
 
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text(state.completionMessage!)));
+    ).showSnackBar(SnackBar(content: LocalizedText(state.completionMessage!)));
   }
 
   void _showBubble() {
@@ -466,7 +469,10 @@ class _FloatingSmartNudgeAssistantState
                 return Center(
                   child: SizedBox(
                     width: constraints.maxWidth,
-                    height: min(MediaQuery.sizeOf(context).height * 0.76, constraints.maxHeight),
+                    height: min(
+                      MediaQuery.sizeOf(context).height * 0.76,
+                      constraints.maxHeight,
+                    ),
                     child: Material(
                       color: Colors.transparent,
                       child: AssistantExperiencePanel(
@@ -557,7 +563,7 @@ class _FloatingSmartNudgeAssistantState
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
+          content: LocalizedText(
             _exerciseSelectionMessage(
               exerciseName: goal.exerciseName,
               isNoneToday: goal.isNoneToday,
@@ -585,7 +591,7 @@ class _FloatingSmartNudgeAssistantState
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
+          content: LocalizedText(
             'Unable to save exercise: ${error.toString().replaceFirst('Exception: ', '')}',
           ),
         ),

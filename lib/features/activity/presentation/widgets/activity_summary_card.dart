@@ -7,6 +7,7 @@ import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../dashboard/data/weekly_user_metrics.dart';
 import '../../data/activity_log.dart';
 import '../../data/activity_service.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class ActivitySummaryCard extends StatelessWidget {
   final ActivityTrackingState state;
@@ -42,7 +43,7 @@ class ActivitySummaryCard extends StatelessWidget {
       }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
+          content: LocalizedText(
             'Daily step goal updated to ${NumberFormat.decimalPattern().format(updatedGoal)}.',
           ),
         ),
@@ -52,7 +53,7 @@ class ActivitySummaryCard extends StatelessWidget {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to update your daily step goal.')),
+        const SnackBar(content: LocalizedText('Unable to update your daily step goal.')),
       );
     }
   }
@@ -131,7 +132,7 @@ class ActivitySummaryCard extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            LocalizedText(
                               'Daily steps',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -142,7 +143,7 @@ class ActivitySummaryCard extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 2),
-                            Text(
+                            LocalizedText(
                               syncLabel,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -160,7 +161,7 @@ class ActivitySummaryCard extends StatelessWidget {
                           children: [
                             if (onRefresh != null)
                               IconButton(
-                                tooltip: 'Retry activity sync',
+                                tooltip: 'Retry activity sync'.localizedCopy(context),
                                 onPressed: onRefresh,
                                 constraints: BoxConstraints.tightFor(
                                   width: compact ? 36 : 44,
@@ -171,7 +172,7 @@ class ActivitySummaryCard extends StatelessWidget {
                               ),
                             if (onEditGoal != null)
                               IconButton(
-                                tooltip: 'Edit daily step goal',
+                                tooltip: 'Edit daily step goal'.localizedCopy(context),
                                 onPressed: () => _handleEditGoal(context),
                                 constraints: BoxConstraints.tightFor(
                                   width: compact ? 36 : 44,
@@ -208,7 +209,7 @@ class ActivitySummaryCard extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(
+                        child: LocalizedText(
                           'Step goal',
                           style: TextStyle(
                             fontSize: 12,
@@ -217,7 +218,7 @@ class ActivitySummaryCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Text(
+                      LocalizedText(
                         '${numberFormat.format(log.goalSteps)} steps',
                         style: TextStyle(
                           fontSize: 12,
@@ -242,7 +243,7 @@ class ActivitySummaryCard extends StatelessWidget {
                     children: [
                       _StatusPill(label: log.statusLabel, color: statusColor),
                       const Spacer(),
-                      Text(
+                      LocalizedText(
                         '$progressPercent%',
                         style: TextStyle(
                           fontSize: 12,
@@ -254,7 +255,7 @@ class ActivitySummaryCard extends StatelessWidget {
                   ),
                   if (state.errorMessage != null) ...[
                     const SizedBox(height: 10),
-                    Text(
+                    LocalizedText(
                       state.errorMessage!,
                       style: const TextStyle(
                         fontSize: 12,
@@ -384,7 +385,7 @@ class WeeklyStepAnalyticsCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      LocalizedText(
                         'Weekly step analytics',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -395,7 +396,7 @@ class WeeklyStepAnalyticsCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
+                      LocalizedText(
                         syncLabel,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -418,7 +419,7 @@ class WeeklyStepAnalyticsCard extends StatelessWidget {
                 else if (onRefresh != null)
                   IconButton(
                     key: const ValueKey('weekly-steps-refresh'),
-                    tooltip: 'Refresh weekly steps',
+                    tooltip: 'Refresh weekly steps'.localizedCopy(context),
                     onPressed: onRefresh,
                     icon: const Icon(Icons.refresh_rounded),
                   ),
@@ -460,7 +461,7 @@ class WeeklyStepAnalyticsCard extends StatelessWidget {
                 _StatusPill(label: statusLabel, color: statusColor),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
+                  child: LocalizedText(
                     '$goalDays of ${weeklyLogs.length} goal days reached',
                     textAlign: TextAlign.end,
                     style: TextStyle(
@@ -560,7 +561,7 @@ Future<int?> _showStepGoalDialog(
       return StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
-            title: const Text('Edit daily step goal'),
+            title: const LocalizedText('Edit daily step goal'),
             content: TextFormField(
               initialValue: goalInput,
               autofocus: true,
@@ -574,15 +575,15 @@ Future<int?> _showStepGoalDialog(
                 }
               },
               decoration: InputDecoration(
-                labelText: 'Goal steps',
-                hintText: '5000',
+                labelText: 'Goal steps'.localizedCopy(context),
+                hintText: '5000'.localizedCopy(context),
                 errorText: errorText,
               ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(),
-                child: const Text('Cancel'),
+                child: const LocalizedText('Cancel'),
               ),
               FilledButton(
                 onPressed: () {
@@ -603,7 +604,7 @@ Future<int?> _showStepGoalDialog(
 
                   Navigator.of(dialogContext).pop(parsedGoal);
                 },
-                child: const Text('Confirm'),
+                child: const LocalizedText('Confirm'),
               ),
             ],
           );
@@ -629,7 +630,7 @@ class _ActivityMetric extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LocalizedText(
           value,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -640,7 +641,7 @@ class _ActivityMetric extends StatelessWidget {
           ),
         ),
         SizedBox(height: compact ? 2 : 3),
-        Text(
+        LocalizedText(
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -671,7 +672,7 @@ class _StatusPill extends StatelessWidget {
           borderRadius: BorderRadius.circular(999),
           border: Border.all(color: color.withValues(alpha: 0.24)),
         ),
-        child: Text(
+        child: LocalizedText(
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,

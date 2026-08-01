@@ -34,6 +34,7 @@ class OfflineCacheStore {
     required String scope,
     required Map<String, dynamic> data,
   }) async {
+    final prefs = await SharedPreferences.getInstance();
     final snapshots = await _readSnapshots(namespace: namespace, scope: scope);
     final normalizedData = Map<String, dynamic>.from(data);
 
@@ -48,6 +49,7 @@ class OfflineCacheStore {
       namespace: namespace,
       scope: scope,
       snapshots: snapshots.take(maxSnapshots).toList(),
+      prefs: prefs,
     );
   }
 
@@ -102,7 +104,8 @@ class OfflineCacheStore {
     required String scope,
   }) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_cacheKey(namespace, scope));
+    await prefs.remove(_cacheKey(namespace, scope, prefs));
+    await prefs.remove(_legacyCacheKey(namespace, scope));
   }
 
   static Future<void> removeNamespace({required String namespace}) async {
@@ -120,8 +123,12 @@ class OfflineCacheStore {
     required String scopePrefix,
   }) async {
     final prefs = await SharedPreferences.getInstance();
-    final prefix = '${_namespacePrefix(namespace)}$scopePrefix';
-    final keys = prefs.getKeys().where((key) => key.startsWith(prefix));
+    final namespacePrefix = _namespacePrefix(namespace);
+    final localePrefix = '$namespacePrefix${_localeCode(prefs)}_$scopePrefix';
+    final legacyPrefix = '$namespacePrefix$scopePrefix';
+    final keys = prefs.getKeys().where(
+      (key) => key.startsWith(localePrefix) || key.startsWith(legacyPrefix),
+    );
 
     for (final key in keys.toList()) {
       await prefs.remove(key);
@@ -133,7 +140,11 @@ class OfflineCacheStore {
     required String scope,
   }) async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_cacheKey(namespace, scope));
+    final localizedKey = _cacheKey(namespace, scope, prefs);
+    var raw = prefs.getString(localizedKey);
+    if (raw == null && _localeCode(prefs) == 'en') {
+      raw = prefs.getString(_legacyCacheKey(namespace, scope));
+    }
     if (raw == null || raw.isEmpty) {
       return [];
     }
@@ -159,10 +170,11 @@ class OfflineCacheStore {
     required String namespace,
     required String scope,
     required List<Map<String, dynamic>> snapshots,
+    SharedPreferences? prefs,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _cacheKey(namespace, scope),
+    final preferences = prefs ?? await SharedPreferences.getInstance();
+    await preferences.setString(
+      _cacheKey(namespace, scope, preferences),
       jsonEncode(snapshots.take(maxSnapshots).toList()),
     );
   }
@@ -171,12 +183,28 @@ class OfflineCacheStore {
     return {'cached_at': DateTime.now().toIso8601String(), 'data': data};
   }
 
-  static String _cacheKey(String namespace, String scope) {
+  static String _cacheKey(
+    String namespace,
+    String scope,
+    SharedPreferences prefs,
+  ) {
+    return '${_namespacePrefix(namespace)}${_localeCode(prefs)}_$scope';
+  }
+
+  static String _legacyCacheKey(String namespace, String scope) {
     return '${_namespacePrefix(namespace)}$scope';
   }
 
   static String _namespacePrefix(String namespace) {
     return '${_keyPrefix}_${namespace}_';
+  }
+
+  static String _localeCode(SharedPreferences prefs) {
+    final stored = prefs.getString('app_language');
+    return switch (stored) {
+      'tagalog' || 'filipino' || 'fil' || 'tl' => 'fil',
+      _ => 'en',
+    };
   }
 
   static bool _sameJson(dynamic first, dynamic second) {

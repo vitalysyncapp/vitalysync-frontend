@@ -7,6 +7,7 @@ import '../../features/adaptive/data/insight_report_api.dart';
 import '../offline/fetch_policy.dart';
 import '../offline/offline_cache_store.dart';
 import '../preferences/user_session.dart';
+import '../preferences/app_preferences.dart';
 import 'notification_feed_cache.dart';
 
 export 'notification_feed_cache.dart';
@@ -411,12 +412,21 @@ class NotificationFeedService {
     sources.add('Smart nudges');
     final id = 'nudge_${event.nudgeEventId}';
     final priority = event.metadata['priority']?.toString() ?? 'medium';
+    final currentLocale =
+        AppPreferencesController.instance.notifier.value.locale.languageCode;
+    final generatedLocale = event.metadata['locale']?.toString();
+    final localeMismatch =
+        generatedLocale != null &&
+        generatedLocale.isNotEmpty &&
+        generatedLocale != currentLocale;
 
     return AppNotificationItem(
       id: id,
       category: 'nudge',
-      title: event.title,
-      message: _oneSentence(event.message),
+      title: localeMismatch ? 'Wellness nudge' : event.title,
+      message: localeMismatch
+          ? _historicalNudgeSummary(event.nudgeType)
+          : _oneSentence(event.message),
       sourceLabel: 'Smart nudge',
       priority: priority,
       createdAt: event.createdAt,
@@ -428,6 +438,20 @@ class NotificationFeedService {
       showAction: event.actionLabel?.trim().isNotEmpty == true,
       isUnread: !readIds.contains(id),
     );
+  }
+
+  String _historicalNudgeSummary(String nudgeType) {
+    final normalized = nudgeType.toLowerCase();
+    if (normalized.contains('nutrition')) {
+      return 'A nutrition check-in is available from your recent logs.';
+    }
+    if (normalized.contains('recovery') || normalized.contains('sleep')) {
+      return 'A recovery check-in is available from your recent pattern.';
+    }
+    if (normalized.contains('activity') || normalized.contains('movement')) {
+      return 'An activity check-in is available from your recent pattern.';
+    }
+    return 'A wellness check-in is available from your recent pattern.';
   }
 
   Future<int?> _storedUserId() async {

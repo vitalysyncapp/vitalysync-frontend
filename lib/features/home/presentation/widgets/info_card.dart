@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class InfoCard extends StatelessWidget {
   final IconData icon;
@@ -44,7 +45,7 @@ class InfoCard extends StatelessWidget {
         children: [
           Icon(icon, color: color, size: 22),
           const SizedBox(height: 4),
-          Text(
+          LocalizedText(
             title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -64,7 +65,7 @@ class InfoCard extends StatelessWidget {
                     width: 62,
                     child: AppSkeletonLine(height: 20),
                   )
-                : Text(
+                : LocalizedText(
                     value,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -77,7 +78,7 @@ class InfoCard extends StatelessWidget {
                   ),
           ),
           const SizedBox(height: 3),
-          Text(
+          LocalizedText(
             subtitle,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -96,7 +97,7 @@ class InfoCard extends StatelessWidget {
                   ),
                 ),
               ),
-              child: Text(
+              child: LocalizedText(
                 statusHint!,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

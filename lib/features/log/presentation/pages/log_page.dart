@@ -15,6 +15,7 @@ import '../../data/check_in_state_coordinator.dart';
 import '../../data/log_api.dart';
 import '../widgets/check_in_success_view.dart';
 import '../widgets/log_widgets.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 const _streakFireAnimationPath = 'assets/animations/streak_fire.json';
 const _wellnessConfettiColors = [
@@ -252,7 +253,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       _publishNavigationState();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unable to load today\'s log: $error')),
+        SnackBar(content: LocalizedText('Unable to load today\'s log: $error')),
       );
     }
   }
@@ -324,7 +325,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     if (missingFields.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
+          content: LocalizedText(
             'Please complete ${missingFields.join(', ')} before saving.',
           ),
         ),
@@ -369,7 +370,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
+          content: LocalizedText(
             savedOffline
                 ? 'Saved offline. $pendingCount check-in${pendingCount == 1 ? '' : 's'} waiting to sync.'
                 : requiredMode == CheckInMode.weekly
@@ -388,7 +389,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
+      ).showSnackBar(SnackBar(content: LocalizedText(error.message)));
     } on BaselineRefreshRequiredException catch (error) {
       if (!mounted) return;
       setState(() {
@@ -398,7 +399,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       widget.onBaselineRefreshRequired?.call();
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
+      ).showSnackBar(SnackBar(content: LocalizedText(error.message)));
     } on StreakRestoreRequiredException catch (error) {
       if (!mounted) return;
 
@@ -423,7 +424,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Unable to save log: $error')));
+      ).showSnackBar(SnackBar(content: LocalizedText('Unable to save log: $error')));
     }
   }
 
@@ -490,7 +491,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                     ),
                   ),
                   const SizedBox(height: 14),
-                  Text(
+                  LocalizedText(
                     canRestore ? 'Restore your streak?' : 'Savers unavailable',
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -500,7 +501,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
+                  LocalizedText(
                     canRestore
                         ? 'You missed $missingDays day${missingDays == 1 ? '' : 's'}. Use $saversRequired streak saver${saversRequired == 1 ? '' : 's'} to protect your streak before saving today.'
                         : 'You need $saversRequired saver${saversRequired == 1 ? '' : 's'}, but only have ${details.availableSavers}. You can still save today and start a fresh streak.',
@@ -529,7 +530,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                         Icon(Icons.shield_outlined, color: accent, size: 20),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: Text(
+                          child: LocalizedText(
                             '${details.availableSavers} saver${details.availableSavers == 1 ? '' : 's'} available this month',
                             style: TextStyle(
                               color: primaryText,
@@ -548,7 +549,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                         ElevatedButton.icon(
                           onPressed: () => Navigator.pop(context, 'use'),
                           icon: const Icon(Icons.shield_rounded),
-                          label: Text(
+                          label: LocalizedText(
                             'Use $saversRequired saver${saversRequired == 1 ? '' : 's'} and save',
                           ),
                           style: ElevatedButton.styleFrom(
@@ -565,7 +566,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                       OutlinedButton.icon(
                         onPressed: () => Navigator.pop(context, 'skip'),
                         icon: const Icon(Icons.restart_alt_rounded),
-                        label: const Text('Save without restoring'),
+                        label: const LocalizedText('Save without restoring'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: primaryText,
                           side: BorderSide(color: pageBorderColor(context)),
@@ -578,7 +579,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                       const SizedBox(height: 8),
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('Not now'),
+                        child: const LocalizedText('Not now'),
                       ),
                     ],
                   ),
@@ -937,7 +938,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                   color: Colors.white,
                 ),
               )
-            : Text(
+            : LocalizedText(
                 showWeeklyQuestions
                     ? checkInStatus?.schedule.completedToday == true
                           ? 'Update today\'s weekly pulse'
@@ -988,7 +989,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                     ),
                     const SizedBox(width: 7),
                     Flexible(
-                      child: Text(
+                      child: LocalizedText(
                         showWeeklyQuestions ? 'WEEKLY PULSE' : 'DAILY CHECK-IN',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -1010,7 +1011,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
             ],
           ),
           SizedBox(height: isCompact ? 9 : 11),
-          Text(
+          LocalizedText(
             showWeeklyQuestions ? 'Your weekly pulse' : 'Log your day',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -1023,7 +1024,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
             ),
           ),
           SizedBox(height: isCompact ? 4 : 5),
-          Text(
+          LocalizedText(
             showWeeklyQuestions
                 ? checkInStatus?.schedule.isOverdue == true
                       ? 'Your pulse was missed earlier. Complete it now to continue logging.'
@@ -1066,7 +1067,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     final streakLabel = '$currentStreak day${currentStreak == 1 ? '' : 's'}';
 
     return Semantics(
-      label: '$streakLabel streak',
+      label: '$streakLabel streak'.localizedCopy(context),
       child: Container(
         height: isCompact ? 38 : 40,
         padding: EdgeInsets.symmetric(horizontal: isCompact ? 9 : 11),
@@ -1084,7 +1085,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
           children: [
             _buildFireAnimation(size: isCompact ? 18 : 20),
             const SizedBox(width: 5),
-            Text(
+            LocalizedText(
               streakLabel,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
                 fontSize: isCompact ? 11.5 : 12.5,
@@ -1104,10 +1105,10 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     final primary = Theme.of(context).colorScheme.primary;
 
     return Tooltip(
-      message: 'Log scoring guide',
+      message: 'Log scoring guide'.localizedCopy(context),
       child: Semantics(
         button: true,
-        label: 'Open log scoring guide',
+        label: 'Open log scoring guide'.localizedCopy(context),
         child: Material(
           color: Colors.transparent,
           shape: const CircleBorder(),
@@ -1168,7 +1169,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
         children: [
           Icon(icon, size: 14, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 5),
-          Text(
+          LocalizedText(
             label,
             style: TextStyle(
               fontSize: 11.5,
@@ -1247,7 +1248,7 @@ class _LogScoringInfoSheet extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            LocalizedText(
                               'Log and scoring guide',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -1258,7 +1259,7 @@ class _LogScoringInfoSheet extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 2),
-                            Text(
+                            LocalizedText(
                               'How today\'s answers support burnout-risk awareness.',
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
@@ -1273,7 +1274,7 @@ class _LogScoringInfoSheet extends StatelessWidget {
                         ),
                       ),
                       IconButton(
-                        tooltip: 'Close',
+                        tooltip: 'Close'.localizedCopy(context),
                         onPressed: () => Navigator.of(context).pop(),
                         icon: Icon(
                           Icons.close_rounded,
@@ -1378,7 +1379,7 @@ class _ScoringFormulaBlock extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Text(
+          LocalizedText(
             'The backend converts answers into 0-100 risk values, then combines them with weighted averages for each dimension.',
             style: TextStyle(
               color: pageSecondaryTextColor(context),
@@ -1409,7 +1410,7 @@ class _ScoringInfoBlock extends StatelessWidget {
     return _ScoringInfoContainer(
       icon: icon,
       title: title,
-      child: Text(
+      child: LocalizedText(
         text,
         style: TextStyle(
           color: pageSecondaryTextColor(context),
@@ -1464,7 +1465,7 @@ class _ScoringInfoContainer extends StatelessWidget {
               ),
               const SizedBox(width: 9),
               Expanded(
-                child: Text(
+                child: LocalizedText(
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -1501,7 +1502,7 @@ class _FormulaPill extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: primary.withValues(alpha: 0.18)),
       ),
-      child: Text(
+      child: LocalizedText(
         label,
         style: TextStyle(
           color: primary,

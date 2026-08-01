@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
 import '../../data/profile_avatar.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class AvatarCropPage extends StatefulWidget {
   const AvatarCropPage({super.key, required this.imageBytes});
@@ -39,7 +40,7 @@ class _AvatarCropPageState extends State<AvatarCropPage> {
           : 'Unable to process the cropped photo.';
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      ).showSnackBar(SnackBar(content: LocalizedText(message)));
     }
   }
 
@@ -68,9 +69,9 @@ class _AvatarCropPageState extends State<AvatarCropPage> {
                   ? null
                   : () => Navigator.of(context).pop(),
               icon: const Icon(Icons.close_rounded),
-              tooltip: 'Cancel crop',
+              tooltip: 'Cancel crop'.localizedCopy(context),
             ),
-            title: Text(
+            title: LocalizedText(
               'Adjust photo',
               style: TextStyle(
                 color: pagePrimaryTextColor(context),
@@ -84,7 +85,7 @@ class _AvatarCropPageState extends State<AvatarCropPage> {
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 14),
-                  child: Text(
+                  child: LocalizedText(
                     'Drag to reposition and pinch or scroll to zoom.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -161,7 +162,7 @@ class _AvatarCropPageState extends State<AvatarCropPage> {
                               ),
                             )
                           : const Icon(Icons.check_rounded),
-                      label: Text(
+                      label: LocalizedText(
                         _isProcessing ? 'Processing...' : 'Use photo',
                         style: const TextStyle(fontWeight: FontWeight.w800),
                       ),

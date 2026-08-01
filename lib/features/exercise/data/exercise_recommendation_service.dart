@@ -279,8 +279,7 @@ class ExerciseRecommendationService {
       return _OutdoorCondition(
         isOutdoorSafe: false,
         needsGentleOutdoor: false,
-        reason:
-            'Weather shows ${snapshot.weather.description}; indoor movement is safer today.',
+        reason: 'Weather conditions suggest indoor movement is safer today.',
       );
     }
 

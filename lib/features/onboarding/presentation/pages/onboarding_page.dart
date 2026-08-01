@@ -16,6 +16,7 @@ import '../../models/onboarding_question.dart';
 import '../../services/onboarding_service.dart';
 import '../../widgets/likert_question.dart';
 import '../../widgets/onboarding_card.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 part 'onboarding_page_widgets.dart';
 
@@ -308,7 +309,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Your VitalySync baseline is ready \u{1F499}'),
+          content: LocalizedText('Your VitalySync baseline is ready \u{1F499}'),
         ),
       );
 
@@ -327,7 +328,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(error.toString().replaceFirst('Exception: ', '')),
+          content: LocalizedText(error.toString().replaceFirst('Exception: ', '')),
         ),
       );
     } finally {
@@ -694,7 +695,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                                   mainAxisAlignment:
                                                       MainAxisAlignment.center,
                                                   children: [
-                                                    Text(
+                                                    LocalizedText(
                                                       _currentStep ==
                                                               steps.length - 1
                                                           ? 'Finish setup'
@@ -939,7 +940,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ),
                       const SizedBox(width: 14),
                       Expanded(
-                        child: Text(
+                        child: LocalizedText(
                           value == null ? 'Choose time' : value.format(context),
                           style: TextStyle(
                             fontSize: 20,

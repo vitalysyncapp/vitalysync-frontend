@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class NewPasswordFields extends StatefulWidget {
   const NewPasswordFields({
@@ -31,7 +32,7 @@ class _NewPasswordFieldsState extends State<NewPasswordFields> {
           obscureText: _obscurePassword,
           autofillHints: const [AutofillHints.newPassword],
           decoration: InputDecoration(
-            labelText: 'New password',
+            labelText: 'New password'.localizedCopy(context),
             prefixIcon: const Icon(Icons.lock_outline_rounded),
             suffixIcon: IconButton(
               onPressed: widget.enabled
@@ -61,7 +62,7 @@ class _NewPasswordFieldsState extends State<NewPasswordFields> {
           obscureText: _obscureConfirmation,
           autofillHints: const [AutofillHints.newPassword],
           decoration: InputDecoration(
-            labelText: 'Confirm new password',
+            labelText: 'Confirm new password'.localizedCopy(context),
             prefixIcon: const Icon(Icons.lock_reset_rounded),
             suffixIcon: IconButton(
               onPressed: widget.enabled

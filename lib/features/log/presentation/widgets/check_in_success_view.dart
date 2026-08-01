@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 const _streakFireAnimationPath = 'assets/animations/streak_fire.json';
 const _healthyHeartAnimationPath = 'assets/animations/healthy_heart.json';
@@ -33,7 +34,7 @@ class CheckInSuccessView extends StatelessWidget {
           children: [
             const _SuccessAnimation(),
             const SizedBox(height: 18),
-            Text(
+            LocalizedText(
               isOffline ? 'Check-in saved offline' : 'Check-in saved!',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -43,7 +44,7 @@ class CheckInSuccessView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
+            LocalizedText(
               hasPendingSync
                   ? 'Your daily wellness log is saved on this device. It will sync automatically when internet access is available again.'
                   : 'Your daily wellness log has been recorded. Come back tomorrow for your next check-in, or redo today\'s entry if you need to update it.',
@@ -72,7 +73,7 @@ class CheckInSuccessView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: const Text(
+                child: const LocalizedText(
                   'Redo today\'s log',
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                 ),
@@ -197,7 +198,7 @@ class _SuccessStreakBadge extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 3),
-          Text(
+          LocalizedText(
             streakText,
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -234,7 +235,7 @@ class _PendingSyncBanner extends StatelessWidget {
           const Icon(Icons.cloud_upload_outlined, color: Color(0xFF2563EB)),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
+            child: LocalizedText(
               '$pendingSyncCount pending check-in${pendingSyncCount == 1 ? '' : 's'} will upload in the background.',
               style: const TextStyle(
                 color: Color(0xFF1E3A8A),

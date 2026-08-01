@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../data/nutrition_api.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class TodaysMealsCard extends StatefulWidget {
   final VoidCallback onAddTap;
@@ -162,7 +163,7 @@ class _TodaysMealsCardState extends State<TodaysMealsCard>
             Row(
               children: [
                 Expanded(
-                  child: Text(
+                  child: LocalizedText(
                     "Today's meals",
                     style: TextStyle(
                       fontSize: isCompact ? 15.5 : 16.5,
@@ -185,7 +186,7 @@ class _TodaysMealsCardState extends State<TodaysMealsCard>
                       vertical: 5,
                     ),
                   ),
-                  label: Text(
+                  label: LocalizedText(
                     'Manual log',
                     style: TextStyle(
                       fontSize: isCompact ? 10.5 : 11.5,
@@ -334,9 +335,10 @@ class _MealSlotCard extends StatelessWidget {
 
     return Semantics(
       container: true,
-      label: isLogged
-          ? '${slot.label}, ${loggedMeal.totalCalories.round()} calories, $foodSummary'
-          : '${slot.label}, not logged yet',
+      label: (isLogged
+              ? '${slot.label}, ${loggedMeal.totalCalories.round()} calories, $foodSummary'
+              : '${slot.label}, not logged yet')
+          .localizedCopy(context),
       child: Material(
         key: ValueKey('meal-card-${slot.value}'),
         color: colors.first,
@@ -387,7 +389,7 @@ class _MealSlotCard extends StatelessWidget {
                         ],
                       ),
                       alignment: Alignment.center,
-                      child: Text(
+                      child: LocalizedText(
                         slot.emoji,
                         style: TextStyle(
                           fontSize: isCompact ? 24 : 27,
@@ -412,7 +414,7 @@ class _MealSlotCard extends StatelessWidget {
                   ],
                 ),
                 SizedBox(height: isCompact ? 9 : 10),
-                Text(
+                LocalizedText(
                   slot.label,
                   style: TextStyle(
                     color: Colors.white,
@@ -421,7 +423,7 @@ class _MealSlotCard extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: isCompact ? 5 : 6),
-                Text(
+                LocalizedText(
                   isLogged ? foodSummary : 'Not logged yet',
                   key: ValueKey('meal-status-${slot.value}'),
                   maxLines: 2,
@@ -442,7 +444,7 @@ class _MealSlotCard extends StatelessWidget {
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.bottomLeft,
-                          child: Text(
+                          child: LocalizedText(
                             '${loggedMeal.totalCalories.round()}',
                             style: TextStyle(
                               color: Colors.white,
@@ -456,7 +458,7 @@ class _MealSlotCard extends StatelessWidget {
                       const SizedBox(width: 3),
                       Padding(
                         padding: const EdgeInsets.only(bottom: 1),
-                        child: Text(
+                        child: LocalizedText(
                           'kcal',
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.76),
@@ -471,7 +473,7 @@ class _MealSlotCard extends StatelessWidget {
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
-                    child: Text(
+                    child: LocalizedText(
                       'P ${loggedMeal.totalProteinG.round()}g  •  C ${loggedMeal.totalCarbsG.round()}g  •  F ${loggedMeal.totalFatG.round()}g',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.78),
@@ -484,7 +486,7 @@ class _MealSlotCard extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(
+                        child: LocalizedText(
                           'Ready to log',
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.78),
@@ -495,7 +497,9 @@ class _MealSlotCard extends StatelessWidget {
                       ),
                       Semantics(
                         button: true,
-                        label: 'Log ${slot.label} manually',
+                        label: 'Log ${slot.label} manually'.localizedCopy(
+                          context,
+                        ),
                         child: InkWell(
                           key: ValueKey('add-meal-${slot.value}'),
                           onTap: onAddTap,

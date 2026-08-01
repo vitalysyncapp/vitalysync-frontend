@@ -5,6 +5,7 @@ import '../../../../shared/widgets/analytics_animation.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/widgets/reveal_on_build.dart';
 import '../../data/weekly_user_metrics.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class SymptomFrequencyCard extends StatelessWidget {
   final WeeklyUserMetrics? metrics;
@@ -29,7 +30,7 @@ class SymptomFrequencyCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LocalizedText(
             'Symptom frequency',
             style: TextStyle(
               fontSize: 15.5,
@@ -46,7 +47,7 @@ class SymptomFrequencyCard extends StatelessWidget {
           else if (visibleRows.isEmpty)
             Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text(
+              child: LocalizedText(
                 'No symptoms logged this week.',
                 style: TextStyle(
                   color: pageSecondaryTextColor(context),
@@ -89,7 +90,7 @@ class SymptomFrequencyCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(
+                child: LocalizedText(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -99,7 +100,7 @@ class SymptomFrequencyCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Text(
+              LocalizedText(
                 days,
                 style: TextStyle(
                   fontSize: 13,

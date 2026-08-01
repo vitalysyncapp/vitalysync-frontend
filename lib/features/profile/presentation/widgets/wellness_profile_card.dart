@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class WellnessProfileCard extends StatefulWidget {
   final String lifestyleType;
@@ -94,7 +95,7 @@ class _WellnessProfileCardState extends State<WellnessProfileCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       'Wellness profile',
                       style: TextStyle(
                         fontSize: 18,
@@ -103,7 +104,7 @@ class _WellnessProfileCardState extends State<WellnessProfileCard> {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
+                    LocalizedText(
                       'Baseline from your profile and onboarding',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -178,7 +179,7 @@ class _WellnessProfileCardState extends State<WellnessProfileCard> {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: themePrimary.withValues(alpha: 0.12)),
               ),
-              child: Text(
+              child: LocalizedText(
                 'Your baseline helps VitalySync compare your daily logs with your usual routine.',
                 style: TextStyle(height: 1.4, fontSize: 13, color: secondary),
               ),
@@ -189,7 +190,7 @@ class _WellnessProfileCardState extends State<WellnessProfileCard> {
               child: OutlinedButton.icon(
                 onPressed: widget.isSaving ? null : widget.onEdit,
                 icon: const Icon(Icons.edit_outlined),
-                label: const Text(
+                label: const LocalizedText(
                   'Edit wellness profile',
                   style: TextStyle(fontWeight: FontWeight.w800),
                 ),
@@ -218,7 +219,7 @@ class _WellnessProfileCardState extends State<WellnessProfileCard> {
                         ),
                       )
                     : const Icon(Icons.restart_alt_rounded),
-                label: Text(
+                label: LocalizedText(
                   widget.isSavingBaseline ? 'Saving baseline...' : 'Retake baseline',
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
@@ -244,7 +245,7 @@ class _WellnessProfileCardState extends State<WellnessProfileCard> {
                 });
               },
               icon: Icon(_isExpanded ? Icons.expand_less : Icons.expand_more),
-              label: Text(
+              label: LocalizedText(
                 _isExpanded ? 'Hide' : 'More',
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
@@ -304,7 +305,7 @@ class _WellnessProfileCardState extends State<WellnessProfileCard> {
           color: badgeColor,
           borderRadius: BorderRadius.circular(18),
         ),
-        child: Text(
+        child: LocalizedText(
           value,
           style: TextStyle(
             fontSize: 12.5,
@@ -388,7 +389,7 @@ class _WellnessDataRow extends StatelessWidget {
                 Positioned(
                   right: 2,
                   bottom: 0,
-                  child: Text(emoji, style: const TextStyle(fontSize: 12)),
+                  child: LocalizedText(emoji, style: const TextStyle(fontSize: 12)),
                 ),
               ],
             ),
@@ -398,7 +399,7 @@ class _WellnessDataRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LocalizedText(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -409,7 +410,7 @@ class _WellnessDataRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 3),
-                Text(
+                LocalizedText(
                   value ?? '',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,

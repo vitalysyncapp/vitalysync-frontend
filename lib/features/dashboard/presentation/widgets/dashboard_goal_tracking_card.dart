@@ -5,6 +5,7 @@ import '../../../../shared/widgets/analytics_animation.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../data/goal_tracking_metrics.dart';
 import '../../data/weekly_user_metrics.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class DashboardGoalTrackingCard extends StatefulWidget {
   final WeeklyUserMetrics? weeklyMetrics;
@@ -156,7 +157,7 @@ class _GoalTrackingContent extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LocalizedText(
                     'Goal tracking',
                     style: TextStyle(
                       color: pagePrimaryTextColor(context),
@@ -165,7 +166,7 @@ class _GoalTrackingContent extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
+                  LocalizedText(
                     data.isNutritionUnavailable
                         ? 'Using available weekly data'
                         : 'This week against your saved goals',
@@ -183,7 +184,7 @@ class _GoalTrackingContent extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 13),
-        Text(
+        LocalizedText(
           'Wellness goals',
           style: TextStyle(
             color: pagePrimaryTextColor(context),
@@ -256,7 +257,7 @@ class _GoalMetricRow extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(
+                      child: LocalizedText(
                         metric.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -272,7 +273,7 @@ class _GoalMetricRow extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 5),
-                Text(
+                LocalizedText(
                   '${metric.valueLabel} - ${metric.targetLabel}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -295,7 +296,7 @@ class _GoalMetricRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(
+                LocalizedText(
                   metric.detailLabel,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -345,7 +346,7 @@ class _BalanceKcalPill extends StatelessWidget {
             const Icon(Icons.balance_rounded, color: color, size: 14),
             const SizedBox(width: 5),
             Flexible(
-              child: Text(
+              child: LocalizedText(
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -382,7 +383,7 @@ class _FocusRecommendationSection extends StatelessWidget {
             ),
             const SizedBox(width: 7),
             Expanded(
-              child: Text(
+              child: LocalizedText(
                 'Focus recommendations',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -422,7 +423,7 @@ class _FocusRecommendationSection extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      LocalizedText(
                         recommendation.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -433,7 +434,7 @@ class _FocusRecommendationSection extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
+                      LocalizedText(
                         recommendation.message,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
@@ -486,7 +487,7 @@ class _WellnessGoalChip extends StatelessWidget {
           const SizedBox(width: 5),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 190),
-            child: Text(
+            child: LocalizedText(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -519,7 +520,7 @@ class _StatusPill extends StatelessWidget {
           borderRadius: BorderRadius.circular(999),
           border: Border.all(color: color.withValues(alpha: 0.22)),
         ),
-        child: Text(
+        child: LocalizedText(
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -553,7 +554,7 @@ class _GoalTrackingUnavailable extends StatelessWidget {
             size: 30,
           ),
           const SizedBox(height: 9),
-          Text(
+          LocalizedText(
             'Goal tracking is unavailable right now.',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -565,7 +566,7 @@ class _GoalTrackingUnavailable extends StatelessWidget {
           TextButton.icon(
             onPressed: onRetry,
             icon: const Icon(Icons.refresh_rounded, size: 18),
-            label: const Text('Retry'),
+            label: const LocalizedText('Retry'),
           ),
         ],
       ),

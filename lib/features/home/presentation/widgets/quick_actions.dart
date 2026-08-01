@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../app/main_navigation.dart';
 import '../../../../shared/navigation/main_tab.dart';
 import '../../../../shared/theme/app_page_style.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class QuickActionCard extends StatelessWidget {
   final IconData icon;
@@ -75,7 +76,7 @@ class QuickActionCard extends StatelessWidget {
                   ),
                   SizedBox(width: isCompact ? 7 : 8),
                   Expanded(
-                    child: Text(
+                    child: LocalizedText(
                       title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -208,7 +209,7 @@ class QuickActionsSection extends StatelessWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              LocalizedText(
                 'Quick actions',
                 style: TextStyle(
                   fontSize: 13,

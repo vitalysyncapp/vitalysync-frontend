@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
@@ -19,7 +20,7 @@ class AboutPage extends StatelessWidget {
             icon: const Icon(Icons.arrow_back_ios_new_rounded),
             onPressed: () => Navigator.pop(context),
           ),
-          title: Text(
+          title: LocalizedText(
             'About',
             style: TextStyle(
               fontWeight: FontWeight.bold,
@@ -157,7 +158,7 @@ class _HeroCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       'VitalySync',
                       style: TextStyle(
                         fontSize: 25,
@@ -166,7 +167,7 @@ class _HeroCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
+                    LocalizedText(
                       'Burnout risk awareness and adaptive lifestyle support.',
                       style: TextStyle(
                         height: 1.4,
@@ -179,7 +180,7 @@ class _HeroCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          Text(
+          LocalizedText(
             'Built as a calm wellness companion for tracking routines, reading personal insights, and supporting healthier daily patterns.',
             style: TextStyle(
               height: 1.55,
@@ -222,7 +223,7 @@ class _SectionCard extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
-            child: Text(
+            child: LocalizedText(
               title,
               style: TextStyle(
                 fontSize: 17,
@@ -247,7 +248,7 @@ class _InfoBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
-      child: Text(
+      child: LocalizedText(
         text,
         style: TextStyle(height: 1.45, color: pageSecondaryTextColor(context)),
       ),
@@ -312,7 +313,7 @@ class _FocusChip extends StatelessWidget {
             color: Theme.of(context).colorScheme.primary,
           ),
           const SizedBox(width: 8),
-          Text(
+          LocalizedText(
             item.label,
             style: TextStyle(
               fontSize: 13,
@@ -350,7 +351,7 @@ class _PersonBlock extends StatelessWidget {
             backgroundColor: Theme.of(
               context,
             ).colorScheme.primary.withValues(alpha: 0.14),
-            child: Text(
+            child: LocalizedText(
               initials,
               style: TextStyle(
                 fontWeight: FontWeight.w800,
@@ -363,7 +364,7 @@ class _PersonBlock extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LocalizedText(
                   name,
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
@@ -371,7 +372,7 @@ class _PersonBlock extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
+                LocalizedText(
                   role,
                   style: TextStyle(color: pageSecondaryTextColor(context)),
                 ),
@@ -408,7 +409,7 @@ class _CreditBlock extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LocalizedText(
                   title,
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
@@ -416,7 +417,7 @@ class _CreditBlock extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
+                LocalizedText(
                   subtitle,
                   style: TextStyle(
                     height: 1.4,

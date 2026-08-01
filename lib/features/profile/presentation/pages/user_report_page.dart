@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../data/report_service.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class UserReportPage extends StatefulWidget {
   final int userId;
@@ -24,7 +25,7 @@ class _UserReportPageState extends State<UserReportPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Failed to export report: $e')));
+      ).showSnackBar(SnackBar(content: LocalizedText('Failed to export report: $e')));
     } finally {
       if (mounted) {
         setState(() => _isExportingReport = false);
@@ -44,7 +45,7 @@ class _UserReportPageState extends State<UserReportPage> {
           elevation: 0,
           backgroundColor: Colors.transparent,
           foregroundColor: pagePrimaryTextColor(context),
-          title: Text(
+          title: LocalizedText(
             'User Report',
             style: TextStyle(
               fontWeight: FontWeight.bold,
@@ -80,7 +81,7 @@ class _UserReportPageState extends State<UserReportPage> {
                 const SizedBox(height: 16),
 
                 // Title & Subtitle
-                Text(
+                LocalizedText(
                       'Your Wellness Data',
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -96,7 +97,7 @@ class _UserReportPageState extends State<UserReportPage> {
 
                 const SizedBox(height: 8),
 
-                Text(
+                LocalizedText(
                       'Export a comprehensive report of your wellness journey. This document includes your daily logs, activity, nutrition, and burnout metrics perfectly formatted for review.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -157,7 +158,7 @@ class _UserReportPageState extends State<UserReportPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                LocalizedText(
                                   'Informational Only',
                                   style: TextStyle(
                                     fontSize: 16,
@@ -166,7 +167,7 @@ class _UserReportPageState extends State<UserReportPage> {
                                   ),
                                 ),
                                 const SizedBox(height: 6),
-                                Text(
+                                LocalizedText(
                                   'This report is for personal use and informational purposes only. It is not intended for medical diagnosis or treatment.',
                                   style: TextStyle(
                                     fontSize: 14,
@@ -225,7 +226,7 @@ class _UserReportPageState extends State<UserReportPage> {
                                       ),
                                     ),
                                     SizedBox(width: 12),
-                                    Text(
+                                    LocalizedText(
                                       'Preparing Report...',
                                       style: TextStyle(
                                         fontWeight: FontWeight.w700,
@@ -240,7 +241,7 @@ class _UserReportPageState extends State<UserReportPage> {
                                   children: [
                                     Icon(Icons.download_rounded, size: 24),
                                     SizedBox(width: 12),
-                                    Text(
+                                    LocalizedText(
                                       'Export Report (Word)',
                                       style: TextStyle(
                                         fontWeight: FontWeight.w700,

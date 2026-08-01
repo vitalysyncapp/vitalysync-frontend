@@ -4,6 +4,7 @@ import '../../../auth/data/email_validator.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/validation_dialog.dart';
 import '../widgets/profile_avatar_image.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 typedef EditProfileSaveCallback =
     Future<bool> Function({
@@ -171,7 +172,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             ),
             onPressed: _isSubmitting ? null : () => Navigator.pop(context),
           ),
-          title: Text(
+          title: LocalizedText(
             'Edit profile',
             style: TextStyle(
               color: pagePrimaryTextColor(context),
@@ -205,7 +206,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               gender: _selectedGender,
                               userType: _selectedUserType,
                               size: 104,
-                              semanticLabel: 'Current profile avatar',
+                              semanticLabel: 'Current profile avatar'.localizedCopy(context),
                             ),
                             const SizedBox(height: 14),
                             OutlinedButton.icon(
@@ -214,7 +215,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                   ? null
                                   : widget.onEditAvatar,
                               icon: const Icon(Icons.edit_rounded),
-                              label: const Text(
+                              label: const LocalizedText(
                                 'Change avatar',
                                 style: TextStyle(fontWeight: FontWeight.w800),
                               ),
@@ -312,7 +313,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             ),
                           )
                         : const Icon(Icons.save_outlined),
-                    label: Text(
+                    label: LocalizedText(
                       _isSubmitting ? 'Saving...' : 'Save changes',
                       style: const TextStyle(fontWeight: FontWeight.w800),
                     ),
@@ -375,7 +376,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             .map(
               (item) => DropdownMenuItem<String>(
                 value: item,
-                child: Text(_sentenceCaseOption(item)),
+                child: LocalizedText(_sentenceCaseOption(item)),
               ),
             )
             .toList(),
@@ -477,14 +478,14 @@ class _SectionCard extends StatelessWidget {
                     Positioned(
                       right: 3,
                       bottom: 1,
-                      child: Text(emoji, style: const TextStyle(fontSize: 13)),
+                      child: LocalizedText(emoji, style: const TextStyle(fontSize: 13)),
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
+                child: LocalizedText(
                   title,
                   style: TextStyle(
                     color: primary,

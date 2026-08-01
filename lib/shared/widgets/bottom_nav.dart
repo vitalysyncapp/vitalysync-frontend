@@ -2,6 +2,7 @@ import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.da
 import 'package:flutter/material.dart';
 
 import '../navigation/main_tab.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class _BottomNavItemData {
   final MainTab tab;
@@ -138,7 +139,7 @@ Widget buildBottomNav({
                       : FontWeight.w600,
                 ),
                 textAlign: TextAlign.center,
-                child: Text(logLabel),
+                child: LocalizedText(logLabel),
               ),
             ),
           ),
@@ -189,7 +190,7 @@ Widget buildLogNavigationButton({
       button: true,
       selected: isSelected,
       enabled: !isSaving,
-      label: semanticsLabel,
+      label: semanticsLabel.localizedCopy(context),
       child: AnimatedScale(
         duration: reduceMotion
             ? Duration.zero
@@ -341,7 +342,7 @@ class _NavigationItem extends StatelessWidget {
     return Semantics(
       button: true,
       selected: isActive,
-      label: item.label,
+      label: item.label.localizedCopy(context),
       child: ExcludeSemantics(
         child: Padding(
           padding: EdgeInsets.fromLTRB(
@@ -374,7 +375,7 @@ class _NavigationItem extends StatelessWidget {
                 ),
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: Text(item.label, maxLines: 1),
+                  child: LocalizedText(item.label, maxLines: 1),
                 ),
               ),
             ],

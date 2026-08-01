@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
 import 'white_card.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class MacroBalanceCard extends StatelessWidget {
   final double proteinG;
@@ -32,7 +33,7 @@ class MacroBalanceCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LocalizedText(
             'Macro balance',
             style: TextStyle(
               fontSize: isCompact ? 15.5 : 16.5,
@@ -99,7 +100,7 @@ class MacroProgressRow extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Text(
+              child: LocalizedText(
                 label,
                 style: TextStyle(
                   fontSize: isCompact ? 12.5 : 14,
@@ -108,7 +109,7 @@ class MacroProgressRow extends StatelessWidget {
                 ),
               ),
             ),
-            Text(
+            LocalizedText(
               '$current / $goal',
               style: TextStyle(
                 fontSize: isCompact ? 12.5 : 14,

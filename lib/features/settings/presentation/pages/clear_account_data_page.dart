@@ -6,6 +6,7 @@ import '../../../../shared/theme/app_page_style.dart';
 import '../../../auth/presentation/pages/auth_start_page.dart';
 import '../../../profile/data/profile_avatar.dart';
 import '../../data/account_lifecycle_api.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class ClearAccountDataPage extends StatefulWidget {
   final String verifiedPassword;
@@ -29,18 +30,18 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Clear all account data?'),
-          content: const Text(
+          title: const LocalizedText('Clear all account data?'),
+          content: const LocalizedText(
             'This permanently removes synced wellness data and local data, resets your profile and onboarding state, and signs out every device. Your login account will remain active.',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
+              child: const LocalizedText('Cancel'),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text(
+              child: const LocalizedText(
                 'Clear data',
                 style: TextStyle(color: Colors.red),
               ),
@@ -85,7 +86,7 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(error.toString().replaceFirst('Exception: ', '')),
+          content: LocalizedText(error.toString().replaceFirst('Exception: ', '')),
         ),
       );
     } finally {
@@ -109,7 +110,7 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
             icon: const Icon(Icons.arrow_back_ios_new_rounded),
             onPressed: () => Navigator.pop(context),
           ),
-          title: Text(
+          title: LocalizedText(
             'Clear account data',
             style: TextStyle(
               fontWeight: FontWeight.bold,
@@ -153,7 +154,7 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      LocalizedText(
                         'Permanently clear data',
                         style: TextStyle(
                           fontSize: 16,
@@ -162,7 +163,7 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
+                      LocalizedText(
                         'You can sign in again afterward and complete onboarding with a fresh account history.',
                         style: TextStyle(
                           height: 1.45,
@@ -191,7 +192,7 @@ class _ClearAccountDataPageState extends State<ClearAccountDataPage> {
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Text('Clear account data'),
+                              : const LocalizedText('Clear account data'),
                         ),
                       ),
                     ],
@@ -246,7 +247,7 @@ class _SectionCard extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
-            child: Text(
+            child: LocalizedText(
               title,
               style: TextStyle(
                 fontSize: 17,
@@ -271,7 +272,7 @@ class _InfoBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
-      child: Text(
+      child: LocalizedText(
         text,
         style: TextStyle(height: 1.45, color: pageSecondaryTextColor(context)),
       ),

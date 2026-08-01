@@ -7,6 +7,7 @@ import '../../data/burnout_score_api.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/analytics_animation.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class BurnoutRiskTrendCard extends StatelessWidget {
   final BurnoutPatternSummary? summary;
@@ -38,7 +39,7 @@ class BurnoutRiskTrendCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(
+                child: LocalizedText(
                   "Burnout risk trend",
                   style: TextStyle(
                     fontSize: 15.5,
@@ -48,13 +49,13 @@ class BurnoutRiskTrendCard extends StatelessWidget {
                 ),
               ),
               IconButton(
-                tooltip: 'Refresh',
+                tooltip: 'Refresh'.localizedCopy(context),
                 onPressed: isLoading ? null : onRefresh,
                 icon: const Icon(Icons.refresh_rounded),
               ),
             ],
           ),
-          Text(
+          LocalizedText(
             _subtitle(sevenDayWindow),
             style: TextStyle(
               color: pageSecondaryTextColor(context),
@@ -68,7 +69,7 @@ class BurnoutRiskTrendCard extends StatelessWidget {
               children: [
                 const Icon(Icons.refresh_rounded, size: 14),
                 const SizedBox(width: 5),
-                Text(
+                LocalizedText(
                   'Baseline refreshed · ${summary!.baselineEpoch!.startedAt}',
                   style: TextStyle(
                     color: pageSecondaryTextColor(context),
@@ -90,7 +91,7 @@ class BurnoutRiskTrendCard extends StatelessWidget {
                 ? SizedBox(
                     height: 200,
                     child: Center(
-                      child: Text(
+                      child: LocalizedText(
                         'No score history yet',
                         style: TextStyle(
                           color: pageSecondaryTextColor(context),
@@ -178,7 +179,7 @@ class BurnoutRiskTrendCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LocalizedText(
             dimension.label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -199,7 +200,7 @@ class BurnoutRiskTrendCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
+          LocalizedText(
             score.round().toString(),
             style: TextStyle(
               color: dimension.color,
@@ -319,7 +320,7 @@ class BurnoutRiskTrendCard extends StatelessWidget {
 
               return Padding(
                 padding: const EdgeInsets.only(top: 8),
-                child: Text(
+                child: LocalizedText(
                   _weekdayLabel(points[index].scoreDate),
                   style: TextStyle(
                     color: pageSecondaryTextColor(context),
@@ -337,7 +338,7 @@ class BurnoutRiskTrendCard extends StatelessWidget {
             interval: 25,
             reservedSize: 34,
             getTitlesWidget: (value, meta) {
-              return Text(
+              return LocalizedText(
                 value.toInt().toString(),
                 style: TextStyle(
                   color: pageSecondaryTextColor(context),
@@ -454,7 +455,7 @@ class BurnoutRiskTrendCard extends StatelessWidget {
         ),
         if (pattern != null) ...[
           const SizedBox(height: 12),
-          Text(
+          LocalizedText(
             pattern.title,
             style: TextStyle(
               color: pagePrimaryTextColor(context),
@@ -463,7 +464,7 @@ class BurnoutRiskTrendCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
+          LocalizedText(
             pattern.message,
             style: TextStyle(
               color: pageSecondaryTextColor(context),
@@ -495,7 +496,7 @@ class BurnoutRiskTrendCard extends StatelessWidget {
         children: [
           Icon(icon, size: 13, color: color),
           const SizedBox(width: 5),
-          Text(
+          LocalizedText(
             label,
             style: TextStyle(
               color: color,

@@ -4,6 +4,7 @@ import '../../../profile/presentation/pages/history_page.dart';
 import '../../../../shared/widgets/analytics_animation.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../data/weekly_user_metrics.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class WeeklyPerformanceCard extends StatelessWidget {
   final WeeklyUserMetrics? metrics;
@@ -49,7 +50,7 @@ class WeeklyPerformanceCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            const LocalizedText(
               'Weekly performance',
               style: TextStyle(
                 color: Colors.white,
@@ -77,7 +78,7 @@ class WeeklyPerformanceCard extends StatelessWidget {
             const SizedBox(height: 12),
             const Divider(color: Colors.white24),
             const SizedBox(height: 10),
-            Text(
+            LocalizedText(
               metrics?.weeklyNote ?? 'Add logs to see your weekly performance.',
               style: const TextStyle(
                 color: Colors.white,
@@ -96,7 +97,7 @@ class WeeklyPerformanceCard extends StatelessWidget {
                   );
                 },
                 icon: const Icon(Icons.history_rounded, size: 18),
-                label: const Text(
+                label: const LocalizedText(
                   'View history',
                   style: TextStyle(fontWeight: FontWeight.w800),
                 ),
@@ -129,7 +130,7 @@ class _MetricBlock extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LocalizedText(
           value,
           style: const TextStyle(
             color: Colors.white,
@@ -138,7 +139,7 @@ class _MetricBlock extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 2),
-        Text(
+        LocalizedText(
           label,
           style: const TextStyle(color: Colors.white70, fontSize: 12.5),
         ),

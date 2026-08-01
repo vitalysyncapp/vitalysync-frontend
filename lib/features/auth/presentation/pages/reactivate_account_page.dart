@@ -5,6 +5,7 @@ import '../../../settings/data/account_lifecycle_api.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/validation_dialog.dart';
 import '../authenticated_session_coordinator.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class ReactivateAccountPage extends StatefulWidget {
   final AccountReactivationChallenge challenge;
@@ -60,7 +61,7 @@ class _ReactivateAccountPageState extends State<ReactivateAccountPage> {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           foregroundColor: pagePrimaryTextColor(context),
-          title: const Text('Reactivate account'),
+          title: const LocalizedText('Reactivate account'),
         ),
         body: SafeArea(
           child: Center(
@@ -84,7 +85,7 @@ class _ReactivateAccountPageState extends State<ReactivateAccountPage> {
                         color: Theme.of(context).colorScheme.primary,
                       ),
                       const SizedBox(height: 16),
-                      Text(
+                      LocalizedText(
                         'Restore your VitalySync account?',
                         textAlign: TextAlign.center,
                         style: TextStyle(
@@ -94,7 +95,7 @@ class _ReactivateAccountPageState extends State<ReactivateAccountPage> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      Text(
+                      LocalizedText(
                         'Your account can be reactivated until ${_date(widget.challenge.reactivationDeadline)}. Your retained data is scheduled for permanent deletion on ${_date(widget.challenge.retentionExpiresAt)} if the account remains deactivated.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
@@ -114,7 +115,7 @@ class _ReactivateAccountPageState extends State<ReactivateAccountPage> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Text('Reactivate and continue'),
+                            : const LocalizedText('Reactivate and continue'),
                       ),
                       const SizedBox(height: 8),
                       TextButton(
@@ -122,7 +123,7 @@ class _ReactivateAccountPageState extends State<ReactivateAccountPage> {
                         onPressed: _isSubmitting
                             ? null
                             : () => Navigator.of(context).pop(),
-                        child: const Text('Cancel'),
+                        child: const LocalizedText('Cancel'),
                       ),
                     ],
                   ),

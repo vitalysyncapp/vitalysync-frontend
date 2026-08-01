@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../home/data/device_location_service.dart';
 import '../../../../shared/preferences/app_preferences.dart';
 import '../../../../shared/theme/app_page_style.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class LocationSettingsPage extends StatelessWidget {
   const LocationSettingsPage({super.key});
@@ -30,7 +31,7 @@ class LocationSettingsPage extends StatelessWidget {
                 icon: const Icon(Icons.arrow_back_ios_new_rounded),
                 onPressed: () => Navigator.pop(context),
               ),
-              title: Text(
+              title: LocalizedText(
                 'Location settings',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
@@ -52,7 +53,7 @@ class LocationSettingsPage extends StatelessWidget {
                     children: [
                       Padding(
                         padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
-                        child: Text(
+                        child: LocalizedText(
                           'Allow device location to improve local weather and air quality details. When this is off, VitalySync uses a fallback location instead.',
                           style: TextStyle(
                             height: 1.45,
@@ -73,7 +74,7 @@ class LocationSettingsPage extends StatelessWidget {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text(
+                                      LocalizedText(
                                         'Use device location',
                                         style: TextStyle(
                                           fontWeight: FontWeight.w700,
@@ -81,7 +82,7 @@ class LocationSettingsPage extends StatelessWidget {
                                         ),
                                       ),
                                       const SizedBox(height: 4),
-                                      Text(
+                                      LocalizedText(
                                         'This setting only affects location-based data inside the app.',
                                         style: TextStyle(
                                           height: 1.4,
@@ -108,7 +109,7 @@ class LocationSettingsPage extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 12),
-                            Text(
+                            LocalizedText(
                               'Current: ${prefs.locationPermissionLabel}',
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
@@ -121,7 +122,7 @@ class LocationSettingsPage extends StatelessWidget {
                                 onPressed: () {
                                   DeviceLocationService.openSystemLocationSettings();
                                 },
-                                child: const Text('Open system settings'),
+                                child: const LocalizedText('Open system settings'),
                               ),
                             ],
                           ],
@@ -179,7 +180,7 @@ class _SectionCard extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
-            child: Text(
+            child: LocalizedText(
               title,
               style: TextStyle(
                 fontSize: 17,

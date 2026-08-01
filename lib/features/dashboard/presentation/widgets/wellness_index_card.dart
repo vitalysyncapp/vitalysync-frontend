@@ -5,6 +5,7 @@ import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/analytics_animation.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../data/weekly_user_metrics.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class WellnessIndexCard extends StatelessWidget {
   final WeeklyUserMetrics? metrics;
@@ -26,7 +27,7 @@ class WellnessIndexCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LocalizedText(
             'Wellness index',
             style: TextStyle(
               fontSize: 15.5,
@@ -35,7 +36,7 @@ class WellnessIndexCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 3),
-          Text(
+          LocalizedText(
             'Your weekly patterns across six everyday wellness areas',
             style: TextStyle(
               fontSize: 11.5,
@@ -69,7 +70,7 @@ class WellnessIndexCard extends StatelessWidget {
             ).map((insight) => _WellnessInsightPill(insight: insight)).toList(),
           ),
           const SizedBox(height: 10),
-          Text(
+          LocalizedText(
             'Each spoke is a 0–100 habit score; Steps uses your daily goal. This is a wellness guide, not a medical assessment.',
             style: TextStyle(
               fontSize: 11.5,
@@ -253,7 +254,7 @@ class _WellnessInsightPill extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: insight.color.withValues(alpha: 0.22)),
       ),
-      child: Text(
+      child: LocalizedText(
         insight.label,
         style: TextStyle(
           color: insight.color,

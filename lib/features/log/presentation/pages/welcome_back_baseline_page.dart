@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../profile/presentation/pages/retake_baseline_questionnaire_page.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class WelcomeBackBaselinePage extends StatefulWidget {
   const WelcomeBackBaselinePage({
@@ -59,7 +60,7 @@ class _WelcomeBackBaselinePageState extends State<WelcomeBackBaselinePage> {
           elevation: 0,
           backgroundColor: Colors.transparent,
           leading: IconButton(
-            tooltip: 'Back',
+            tooltip: 'Back'.localizedCopy(context),
             onPressed: _isOpening
                 ? null
                 : () => Navigator.of(context).pop(false),
@@ -107,7 +108,7 @@ class _WelcomeBackBaselinePageState extends State<WelcomeBackBaselinePage> {
                         ),
                       ),
                       const SizedBox(height: 22),
-                      Text(
+                      LocalizedText(
                         'Welcome back, $name',
                         key: const ValueKey('baseline-welcome-title'),
                         style: TextStyle(
@@ -118,7 +119,7 @@ class _WelcomeBackBaselinePageState extends State<WelcomeBackBaselinePage> {
                         ),
                       ),
                       const SizedBox(height: 14),
-                      Text(
+                      LocalizedText(
                         "It has been a while, so VitalySync needs a fresh burnout baseline before today's check-in. This is only the baseline questions.",
                         style: TextStyle(
                           color: secondary,
@@ -128,7 +129,7 @@ class _WelcomeBackBaselinePageState extends State<WelcomeBackBaselinePage> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      Text(
+                      LocalizedText(
                         'This helps recalibrate your pattern estimate. It does not diagnose a medical condition.',
                         style: TextStyle(
                           color: secondary,
@@ -152,7 +153,7 @@ class _WelcomeBackBaselinePageState extends State<WelcomeBackBaselinePage> {
                                   ),
                                 )
                               : const Icon(Icons.refresh_rounded),
-                          label: Text(
+                          label: LocalizedText(
                             _isOpening ? 'Opening...' : 'Refresh baseline',
                           ),
                         ),

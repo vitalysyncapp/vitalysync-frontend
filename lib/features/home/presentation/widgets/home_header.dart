@@ -12,6 +12,7 @@ import '../../../../features/streaks/presentation/pages/personal_streak_page.dar
 import '../../../../shared/notifications/notification_feed_service.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class HomeHeader extends StatefulWidget {
   const HomeHeader({super.key, this.onProfileTap});
@@ -97,7 +98,7 @@ class _HomeHeaderState extends State<HomeHeader> {
                       Row(
                         children: [
                           Expanded(
-                            child: Text.rich(
+                            child: LocalizedText.rich(
                               TextSpan(
                                 children: [
                                   WidgetSpan(
@@ -132,12 +133,12 @@ class _HomeHeaderState extends State<HomeHeader> {
                           const _NotificationButton(),
                           const SizedBox(width: 8),
                           Tooltip(
-                            message: 'Open profile',
+                            message: 'Open profile'.localizedCopy(context),
                             child: Semantics(
                               key: const ValueKey('home-header-avatar'),
                               image: true,
                               button: widget.onProfileTap != null,
-                              label: 'Open profile',
+                              label: 'Open profile'.localizedCopy(context),
                               child: Material(
                                 color: Colors.transparent,
                                 shape: const CircleBorder(),
@@ -155,7 +156,8 @@ class _HomeHeaderState extends State<HomeHeader> {
                                       gender: gender,
                                       userType: userType,
                                       size: 32,
-                                      semanticLabel: 'User avatar',
+                                      semanticLabel: 'User avatar'
+                                          .localizedCopy(context),
                                     ),
                                   ),
                                 ),
@@ -175,7 +177,7 @@ class _HomeHeaderState extends State<HomeHeader> {
                                 Row(
                                   children: [
                                     Flexible(
-                                      child: Text(
+                                      child: LocalizedText(
                                         _greeting(localeCode, now.hour),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -195,8 +197,9 @@ class _HomeHeaderState extends State<HomeHeader> {
                                     _TimeIndicator(now: now),
                                   ],
                                 ),
-                                Text(
+                                LocalizedText(
                                   displayName,
+                                  translate: false,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: Theme.of(context)
@@ -265,7 +268,7 @@ class _StreakChip extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: '$streakLabel streak. Open my streak.',
+      label: '$streakLabel streak. Open my streak.'.localizedCopy(context),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -289,7 +292,7 @@ class _StreakChip extends StatelessWidget {
                   color: flameColor,
                 ),
                 const SizedBox(width: 6),
-                Text(
+                LocalizedText(
                   streakLabel,
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
                     color: pagePrimaryTextColor(context),
@@ -323,9 +326,11 @@ class _NotificationButton extends StatelessWidget {
 
             return Semantics(
               button: true,
-              label: unreadCount == 0
-                  ? 'Notifications'
-                  : '$unreadCount unread notifications',
+              label:
+                  (unreadCount == 0
+                          ? 'Notifications'
+                          : '$unreadCount unread notifications')
+                      .localizedCopy(context),
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -335,7 +340,7 @@ class _NotificationButton extends StatelessWidget {
                     decoration: _notificationDecoration(context),
                     child: IconButton(
                       key: const ValueKey('home-header-notifications'),
-                      tooltip: 'Notifications',
+                      tooltip: 'Notifications'.localizedCopy(context),
                       padding: EdgeInsets.zero,
                       visualDensity: VisualDensity.compact,
                       onPressed: () async {
@@ -412,7 +417,7 @@ class _NotificationButton extends StatelessWidget {
                           ],
                         ),
                         alignment: Alignment.center,
-                        child: Text(
+                        child: LocalizedText(
                           unreadCount > 9 ? '9+' : unreadCount.toString(),
                           style: const TextStyle(
                             color: Colors.white,

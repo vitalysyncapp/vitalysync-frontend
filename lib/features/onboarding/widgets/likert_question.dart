@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../shared/theme/app_page_style.dart';
 import '../models/onboarding_question.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class LikertQuestion extends StatelessWidget {
   final String question;
@@ -34,7 +35,7 @@ class LikertQuestion extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LocalizedText(
           question,
           style: TextStyle(
             height: 1.35,
@@ -75,7 +76,8 @@ class LikertQuestion extends StatelessWidget {
                   child: Padding(
                     padding: EdgeInsets.only(right: isLast ? 0 : 6),
                     child: Tooltip(
-                      message: '${option.value} - ${option.label}',
+                      message: '${option.value} - ${option.label}'
+                          .localizedCopy(context),
                       child: GestureDetector(
                         onTap: () {
                           HapticFeedback.selectionClick();
@@ -126,7 +128,7 @@ class LikertQuestion extends StatelessWidget {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(
+                                LocalizedText(
                                   option.value.toString(),
                                   style: TextStyle(
                                     fontSize: 16,
@@ -156,7 +158,7 @@ class LikertQuestion extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Flexible(
-              child: Text(
+              child: LocalizedText(
                 options.first.label,
                 style: TextStyle(
                   fontSize: 12,
@@ -167,7 +169,7 @@ class LikertQuestion extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Flexible(
-              child: Text(
+              child: LocalizedText(
                 options.last.label,
                 textAlign: TextAlign.right,
                 style: TextStyle(
@@ -212,7 +214,7 @@ class LikertQuestion extends StatelessWidget {
                             color: primary,
                           ),
                           const SizedBox(width: 6),
-                          Text(
+                          LocalizedText(
                             selectedLabel,
                             style: TextStyle(
                               fontSize: 12.5,

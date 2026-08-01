@@ -6,6 +6,7 @@ import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/preferences/user_settings_api.dart';
 import '../../../../shared/privacy/biometric_lock_service.dart';
 import '../../../../shared/theme/app_page_style.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class PrivacySecurityPage extends StatefulWidget {
   const PrivacySecurityPage({super.key});
@@ -65,7 +66,7 @@ class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
       final message = error.toString().replaceFirst('Exception: ', '');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Unable to update: $message'),
+          content: LocalizedText('Unable to update: $message'),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -112,7 +113,7 @@ class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
       if (!verified) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Biometric verification failed'),
+            content: const LocalizedText('Biometric verification failed'),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -156,7 +157,7 @@ class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
               ),
               const SizedBox(width: 12),
               const Expanded(
-                child: Text(
+                child: LocalizedText(
                   'Biometric not available',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                 ),
@@ -167,7 +168,7 @@ class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              LocalizedText(
                 reason,
                 style: TextStyle(
                   height: 1.45,
@@ -175,7 +176,7 @@ class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              Text(
+              LocalizedText(
                 'To use biometric lock, set up a fingerprint, face '
                 'unlock, or screen lock in your device settings:',
                 style: TextStyle(
@@ -201,7 +202,7 @@ class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Got it'),
+              child: const LocalizedText('Got it'),
             ),
             FilledButton.icon(
               onPressed: () {
@@ -209,7 +210,7 @@ class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
                 BiometricLockService.instance.openSecuritySettings();
               },
               icon: const Icon(Icons.settings_outlined, size: 18),
-              label: const Text('Open settings'),
+              label: const LocalizedText('Open settings'),
             ),
           ],
         );
@@ -236,7 +237,7 @@ class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
                 icon: const Icon(Icons.arrow_back_ios_new_rounded),
                 onPressed: () => Navigator.pop(context),
               ),
-              title: Text(
+              title: LocalizedText(
                 'Privacy and security',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
@@ -318,7 +319,7 @@ class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
                     children: [
                       Padding(
                         padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
-                        child: Text(
+                        child: LocalizedText(
                           'Most privacy controls are stored on this device. '
                           'The leaderboard setting syncs to the server so '
                           'your profile is hidden for all users.',
@@ -373,7 +374,7 @@ class _BiometricGuideStep extends StatelessWidget {
               color: accent.withValues(alpha: 0.10),
               shape: BoxShape.circle,
             ),
-            child: Text(
+            child: LocalizedText(
               step,
               style: TextStyle(
                 fontSize: 12,
@@ -384,7 +385,7 @@ class _BiometricGuideStep extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
+            child: LocalizedText(
               text,
               style: TextStyle(
                 fontSize: 13,
@@ -429,7 +430,7 @@ class _SectionCard extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
-            child: Text(
+            child: LocalizedText(
               title,
               style: TextStyle(
                 fontSize: 17,
@@ -496,7 +497,7 @@ class _EmailVerificationTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LocalizedText(
                   'Email verification',
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
@@ -504,7 +505,7 @@ class _EmailVerificationTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
+                LocalizedText(
                   normalizedEmail.isEmpty
                       ? statusText
                       : '$statusText - $normalizedEmail',
@@ -528,7 +529,7 @@ class _EmailVerificationTile extends StatelessWidget {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.chevron_right_rounded, size: 18),
-              label: Text(isSending ? 'Opening' : 'Verify'),
+              label: LocalizedText(isSending ? 'Opening' : 'Verify'),
             ),
           ],
         ],
@@ -562,7 +563,7 @@ class _PrivacySwitchTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LocalizedText(
                   title,
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
@@ -570,7 +571,7 @@ class _PrivacySwitchTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
+                LocalizedText(
                   subtitle,
                   style: TextStyle(
                     height: 1.4,
@@ -623,7 +624,7 @@ class _DataRetentionTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LocalizedText(
                   'Local data retention',
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
@@ -631,7 +632,7 @@ class _DataRetentionTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
+                LocalizedText(
                   'How long offline cached logs are kept on this device',
                   style: TextStyle(
                     height: 1.4,
@@ -657,7 +658,7 @@ class _DataRetentionTile extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
+                  LocalizedText(
                     label,
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
@@ -676,7 +677,7 @@ class _DataRetentionTile extends StatelessWidget {
                 .map(
                   (entry) => PopupMenuItem<int>(
                     value: entry.key,
-                    child: Text(entry.value),
+                    child: LocalizedText(entry.value),
                   ),
                 )
                 .toList(),

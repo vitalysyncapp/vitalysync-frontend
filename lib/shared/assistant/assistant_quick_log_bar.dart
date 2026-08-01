@@ -84,7 +84,7 @@ class _AssistantQuickLogButton extends StatelessWidget {
               Icon(icon, size: 18, color: foreground),
               const SizedBox(width: 7),
               Flexible(
-                child: Text(
+                child: LocalizedText(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -169,7 +169,7 @@ class _AssistantHydrationQuickLogSection extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       'Quick water log',
                       style: TextStyle(
                         color: pagePrimaryTextColor(context),
@@ -178,7 +178,7 @@ class _AssistantHydrationQuickLogSection extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
+                    LocalizedText(
                       isLoading ? 'Checking today...' : statusLabel,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -200,7 +200,7 @@ class _AssistantHydrationQuickLogSection extends StatelessWidget {
             children: const [0.25, 0.5, 0.75, 1.0].map((amount) {
               final selected = amountLiters == amount;
               return ChoiceChip(
-                label: Text('+${_formatLiters(amount)}'),
+                label: LocalizedText('+${_formatLiters(amount)}'),
                 selected: selected,
                 onSelected: (_) => onAmountChanged(amount),
                 selectedColor: accent.withValues(alpha: 0.18),
@@ -214,7 +214,7 @@ class _AssistantHydrationQuickLogSection extends StatelessWidget {
           ),
           if (helperText != null) ...[
             const SizedBox(height: 10),
-            Text(
+            LocalizedText(
               helperText!,
               style: TextStyle(
                 color: helperText!.startsWith('Unable')
@@ -242,7 +242,7 @@ class _AssistantHydrationQuickLogSection extends StatelessWidget {
                           ),
                         )
                       : const Icon(Icons.add_rounded, size: 18),
-                  label: Text(isSaving ? 'Saving...' : 'Add water'),
+                  label: LocalizedText(isSaving ? 'Saving...' : 'Add water'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: accent,
                     foregroundColor: Colors.white,
@@ -257,7 +257,7 @@ class _AssistantHydrationQuickLogSection extends StatelessWidget {
               if (!hasTodayLog) ...[
                 const SizedBox(width: 8),
                 IconButton.filledTonal(
-                  tooltip: 'Open daily log',
+                  tooltip: 'Open daily log'.localizedCopy(context),
                   onPressed: onOpenLog,
                   icon: const Icon(Icons.open_in_new_rounded, size: 18),
                 ),

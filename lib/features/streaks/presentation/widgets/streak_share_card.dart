@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class StreakShareCard extends StatelessWidget {
   final String displayName;
@@ -141,7 +142,7 @@ class StreakShareCard extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text(
+                      LocalizedText(
                         '$currentStreak',
                         style: const TextStyle(
                           color: Colors.white,
@@ -157,7 +158,7 @@ class StreakShareCard extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            LocalizedText(
                               'DAY${currentStreak == 1 ? '' : 'S'}',
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.7),
@@ -167,7 +168,7 @@ class StreakShareCard extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 2),
-                            const Text(
+                            const LocalizedText(
                               'STREAK',
                               style: TextStyle(
                                 color: Colors.white,
@@ -194,7 +195,7 @@ class StreakShareCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 7),
                       Flexible(
-                        child: Text(
+                        child: LocalizedText(
                           'Keep your momentum going',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -263,7 +264,7 @@ class StreakShareCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(
+                      LocalizedText(
                         'VitalySync',
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.9),
@@ -308,7 +309,7 @@ class _StreakIdentity extends StatelessWidget {
             ],
           ),
           child: Semantics(
-            label: 'Animated burning fire',
+            label: 'Animated burning fire'.localizedCopy(context),
             child: ExcludeSemantics(
               child: Lottie.asset(
                 'assets/animations/streak_fire.json',
@@ -324,8 +325,9 @@ class _StreakIdentity extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              LocalizedText(
                 displayName,
+                translate: false,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -336,7 +338,7 @@ class _StreakIdentity extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 3),
-              Text(
+              LocalizedText(
                 isOffline ? 'VitalySync streak snapshot' : 'VitalySync streak',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -416,7 +418,7 @@ class _RankBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: '$label streak rank $rank',
+      label: '$label streak rank $rank'.localizedCopy(context),
       child: ExcludeSemantics(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
@@ -430,7 +432,7 @@ class _RankBadge extends StatelessWidget {
             children: [
               Icon(icon, color: accent, size: 13),
               const SizedBox(width: 4),
-              Text(
+              LocalizedText(
                 '$label #$rank',
                 maxLines: 1,
                 style: const TextStyle(
@@ -491,7 +493,7 @@ class _ShareMetric extends StatelessWidget {
                 Icon(icon, color: const Color(0xFFFFE29A), size: 17),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: Text(
+                  child: LocalizedText(
                     label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -505,7 +507,7 @@ class _ShareMetric extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 7),
-            Text(
+            LocalizedText(
               value,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

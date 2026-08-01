@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/validation_dialog.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 typedef EditWellnessProfileSaveCallback =
     Future<bool> Function({
@@ -159,7 +160,7 @@ class _EditWellnessProfilePageState extends State<EditWellnessProfilePage> {
             ),
             onPressed: _isSubmitting ? null : () => Navigator.pop(context),
           ),
-          title: Text(
+          title: LocalizedText(
             'Edit wellness',
             style: TextStyle(
               color: pagePrimaryTextColor(context),
@@ -281,7 +282,7 @@ class _EditWellnessProfilePageState extends State<EditWellnessProfilePage> {
                             ),
                           )
                         : const Icon(Icons.save_outlined),
-                    label: Text(_isSubmitting ? 'Saving...' : 'Save changes'),
+                    label: LocalizedText(_isSubmitting ? 'Saving...' : 'Save changes'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2563EB),
                       foregroundColor: Colors.white,
@@ -386,7 +387,7 @@ class _EditWellnessProfilePageState extends State<EditWellnessProfilePage> {
             .map(
               (item) => DropdownMenuItem<String>(
                 value: item,
-                child: Text(_sentenceCaseOption(item)),
+                child: LocalizedText(_sentenceCaseOption(item)),
               ),
             )
             .toList(),
@@ -485,7 +486,7 @@ class _EditWellnessCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       'Wellness profile',
                       style: TextStyle(
                         color: primary,
@@ -494,7 +495,7 @@ class _EditWellnessCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
+                    LocalizedText(
                       'Update your baseline context',
                       style: TextStyle(fontSize: 12.5, color: secondary),
                     ),

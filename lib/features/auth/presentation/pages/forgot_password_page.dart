@@ -12,6 +12,7 @@ import '../../data/password_reset_api.dart';
 import '../widgets/auth_chrome.dart';
 import '../widgets/verification_code_field.dart';
 import 'auth_start_page.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 typedef PasswordResetRequester = Future<String> Function(String email);
 typedef PasswordResetCodeVerifier =
@@ -264,7 +265,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             AuthTextField(
               controller: _emailController,
               label: 'Email',
-              hintText: 'you@gmail.com',
+              hintText: 'you@gmail.com'.localizedCopy(context),
               icon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
               validator: (value) => EmailValidator.validate(
@@ -310,13 +311,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               onPressed: _isSubmitting || _cooldownSeconds > 0
                   ? null
                   : () => _requestCode(resend: true),
-              child: Text(
+              child: LocalizedText(
                 _cooldownSeconds > 0
                     ? 'Send again in ${_cooldownSeconds}s'
                     : 'Send a new code',
               ),
             ),
-            Text(
+            LocalizedText(
               'Code sent to ${EmailValidator.normalize(_emailController.text)}',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(

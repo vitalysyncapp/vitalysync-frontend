@@ -77,6 +77,7 @@ void main() {
       });
 
       expect(await ApiConfig.authHeaders(), {
+        'Accept-Language': 'en',
         'Authorization': 'Bearer header-token',
       });
     },

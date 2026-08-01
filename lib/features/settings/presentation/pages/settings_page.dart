@@ -17,6 +17,7 @@ import 'notification_settings_page.dart';
 import 'privacy_security_page.dart';
 import 'terms_privacy_page.dart';
 import 'version_page.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class SettingsPage extends StatefulWidget {
   final GlobalKey? tutorialAssistantTileKey;
@@ -168,7 +169,7 @@ class _SettingsPageState extends State<SettingsPage> {
     if (!session.isLoggedIn || session.email?.trim().isEmpty != false) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please sign in again to manage account settings.'),
+          content: LocalizedText('Please sign in again to manage account settings.'),
         ),
       );
       return;
@@ -207,7 +208,7 @@ class _SettingsPageState extends State<SettingsPage> {
     if (!session.isLoggedIn) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please sign in again to manage account settings.'),
+          content: LocalizedText('Please sign in again to manage account settings.'),
         ),
       );
       return;
@@ -242,7 +243,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 icon: const Icon(Icons.arrow_back_ios_new_rounded),
                 onPressed: () => Navigator.pop(context),
               ),
-              title: Text(
+              title: LocalizedText(
                 "Settings",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
@@ -586,7 +587,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       'Settings center',
                       style: TextStyle(
                         fontSize: 21,
@@ -595,7 +596,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
+                    LocalizedText(
                       'Personalize your VitalySync experience from one place.',
                       style: TextStyle(
                         height: 1.35,
@@ -650,7 +651,7 @@ class _SettingsPageState extends State<SettingsPage> {
         children: [
           Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 7),
-          Text(
+          LocalizedText(
             label,
             style: TextStyle(
               fontSize: 12.5,
@@ -690,7 +691,7 @@ class _SettingsPageState extends State<SettingsPage> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
-              child: Text(
+              child: LocalizedText(
                 title,
                 style: TextStyle(
                   fontSize: 17,
@@ -741,7 +742,7 @@ class _SettingsPageState extends State<SettingsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LocalizedText(
                     title,
                     style: TextStyle(
                       fontSize: 15.5,
@@ -753,7 +754,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   if (subtitle != null) ...[
                     const SizedBox(height: 2),
-                    Text(
+                    LocalizedText(
                       subtitle,
                       style: TextStyle(
                         fontSize: 13.5,
@@ -857,12 +858,12 @@ class _PasswordVerificationDialogState
     return PopScope(
       canPop: !_isSubmitting,
       child: AlertDialog(
-        title: Text(widget.actionTitle),
+        title: LocalizedText(widget.actionTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Enter the password for ${widget.email} before continuing.'),
+            LocalizedText('Enter the password for ${widget.email} before continuing.'),
             const SizedBox(height: 14),
             TextField(
               controller: _controller,
@@ -870,7 +871,7 @@ class _PasswordVerificationDialogState
               autofocus: true,
               enabled: !_isSubmitting,
               decoration: InputDecoration(
-                labelText: 'Password',
+                labelText: 'Password'.localizedCopy(context),
                 errorText: _errorText.isEmpty ? null : _errorText,
                 suffixIcon: IconButton(
                   onPressed: _isSubmitting
@@ -898,7 +899,7 @@ class _PasswordVerificationDialogState
         actions: [
           TextButton(
             onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: const LocalizedText('Cancel'),
           ),
           TextButton(
             onPressed: _isSubmitting ? null : _verifyPassword,
@@ -908,7 +909,7 @@ class _PasswordVerificationDialogState
                     width: 18,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Continue'),
+                : const LocalizedText('Continue'),
           ),
         ],
       ),

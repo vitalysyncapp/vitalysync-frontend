@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/terms_privacy_widget.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class TermsPrivacyPage extends StatelessWidget {
   const TermsPrivacyPage({super.key});
@@ -20,7 +21,7 @@ class TermsPrivacyPage extends StatelessWidget {
             icon: const Icon(Icons.arrow_back_ios_new_rounded),
             onPressed: () => Navigator.pop(context),
           ),
-          title: Text(
+          title: LocalizedText(
             'Terms and privacy policy',
             style: TextStyle(
               fontWeight: FontWeight.bold,

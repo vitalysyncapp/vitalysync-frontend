@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../data/profile_avatar.dart';
@@ -76,7 +77,7 @@ class ProfileAvatarImage extends StatelessWidget {
 
     return Semantics(
       image: true,
-      label: semanticLabel,
+      label: semanticLabel.localizedCopy(context),
       child: SizedBox.square(
         dimension: size,
         child: ClipOval(

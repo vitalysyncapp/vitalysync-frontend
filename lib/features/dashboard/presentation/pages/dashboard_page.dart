@@ -28,6 +28,7 @@ import '../widgets/sleep_pattern_card.dart';
 import '../widgets/symptom_frequency_card.dart';
 import '../widgets/weekly_performance_card.dart';
 import '../widgets/wellness_index_card.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -653,7 +654,7 @@ class _AiBurnoutInsightCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      LocalizedText(
                         'AI insight',
                         style: TextStyle(
                           color: pagePrimaryTextColor(context),
@@ -662,7 +663,7 @@ class _AiBurnoutInsightCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 1),
-                      Text(
+                      LocalizedText(
                         aiEnhanced
                             ? 'Personalized from daily and weekly patterns'
                             : 'Rule-based fallback insight',
@@ -689,7 +690,7 @@ class _AiBurnoutInsightCard extends StatelessWidget {
                       ).withValues(alpha: 0.14),
                       borderRadius: BorderRadius.circular(999),
                     ),
-                    child: Text(
+                    child: LocalizedText(
                       _severityLabel(severity),
                       style: TextStyle(
                         color: _severityColor(severity, isDark),
@@ -711,7 +712,7 @@ class _AiBurnoutInsightCard extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 10),
-            Text(
+            LocalizedText(
               recommendation?.title ?? 'Keep building your trend baseline',
               style: TextStyle(
                 color: pagePrimaryTextColor(context),
@@ -720,7 +721,7 @@ class _AiBurnoutInsightCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 6),
-            Text(
+            LocalizedText(
               recommendation?.message ??
                   'Log a few daily check-ins and your next weekly pulse so VitalySync can tailor this insight.',
               maxLines: 5,
@@ -734,7 +735,7 @@ class _AiBurnoutInsightCard extends StatelessWidget {
             ),
             if (why != null && why.isNotEmpty) ...[
               const SizedBox(height: 9),
-              Text(
+              LocalizedText(
                 why,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
@@ -761,7 +762,7 @@ class _AiBurnoutInsightCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Expanded(
-                        child: Text(
+                        child: LocalizedText(
                           step,
                           style: TextStyle(
                             color: pageSecondaryTextColor(context),

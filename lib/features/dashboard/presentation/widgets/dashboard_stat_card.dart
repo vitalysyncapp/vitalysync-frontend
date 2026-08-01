@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class DashboardStatCard extends StatelessWidget {
   final String title;
@@ -46,7 +47,7 @@ class DashboardStatCard extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: Text(
+                    child: LocalizedText(
                       title,
                       style: TextStyle(
                         fontSize: 13,
@@ -81,7 +82,7 @@ class DashboardStatCard extends StatelessWidget {
                     child: child,
                   ),
                 ),
-                child: Text(
+                child: LocalizedText(
                   value,
                   key: ValueKey<String>(value),
                   style: TextStyle(
@@ -92,7 +93,7 @@ class DashboardStatCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 6),
-              Text(
+              LocalizedText(
                 subtitle,
                 style: TextStyle(
                   fontSize: 12,

@@ -21,6 +21,7 @@ import '../widgets/nutrition_header_card.dart';
 import '../widgets/today_nutrition_card.dart';
 import '../widgets/todays_meals_card.dart';
 import '../widgets/white_card.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 part 'manual_log_dialog.dart';
 
@@ -245,7 +246,7 @@ class _NutritionPageState extends State<NutritionPage> {
       return;
     }
 
-    messenger.showSnackBar(SnackBar(content: Text(message)));
+    messenger.showSnackBar(SnackBar(content: LocalizedText(message)));
   }
 
   Future<void> _loadManualMealSuggestions() async {
@@ -595,7 +596,7 @@ class _NutritionPageState extends State<NutritionPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LocalizedText(
             'Review meal',
             style: TextStyle(
               fontSize: isCompact ? 15.5 : 16.5,
@@ -629,14 +630,14 @@ class _NutritionPageState extends State<NutritionPage> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: _isSaving ? null : _cancelReview,
-                  child: const Text('Cancel'),
+                  child: const LocalizedText('Cancel'),
                 ),
               ),
               SizedBox(width: isCompact ? 7 : 8),
               Expanded(
                 child: OutlinedButton(
                   onPressed: _isSaving ? null : _analyzeSelectedMeal,
-                  child: const Text('Try again'),
+                  child: const LocalizedText('Try again'),
                 ),
               ),
             ],
@@ -656,7 +657,7 @@ class _NutritionPageState extends State<NutritionPage> {
                       ),
                     )
                   : const Icon(Icons.check_circle_outline_rounded),
-              label: Text(_isSaving ? 'Saving...' : 'Confirm log'),
+              label: LocalizedText(_isSaving ? 'Saving...' : 'Confirm log'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF16A34A),
                 foregroundColor: Colors.white,

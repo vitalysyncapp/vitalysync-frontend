@@ -26,6 +26,7 @@ import 'personal_information_page.dart';
 import 'retake_baseline_questionnaire_page.dart';
 import 'user_report_page.dart';
 import '../widgets/wellness_profile_card.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 part 'profile_page_widgets.dart';
 part 'profile_page_helpers.dart';
@@ -657,7 +658,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
       setState(() => _isLoggingOut = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to log out. Please try again.')),
+        const SnackBar(content: LocalizedText('Unable to log out. Please try again.')),
       );
     }
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class TodayNutritionCard extends StatelessWidget {
   final double calories;
@@ -39,7 +40,8 @@ class TodayNutritionCard extends StatelessWidget {
     return Semantics(
       container: true,
       label:
-          "Today's nutrition. ${calories.round()} calories eaten of ${goal.round()}. ${remaining.round()} calories left.${balancedGoal == null ? '' : ' Balanced profile target $balancedGoal calories.'}",
+          "Today's nutrition. ${calories.round()} calories eaten of ${goal.round()}. ${remaining.round()} calories left.${balancedGoal == null ? '' : ' Balanced profile target $balancedGoal calories.'}"
+              .localizedCopy(context),
       child: Container(
         key: const ValueKey('today-nutrition-summary'),
         width: double.infinity,
@@ -93,7 +95,7 @@ class TodayNutritionCard extends StatelessWidget {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
+                              LocalizedText(
                                 'Eaten today',
                                 style: TextStyle(
                                   color: pageSecondaryTextColor(context),
@@ -102,7 +104,7 @@ class TodayNutritionCard extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 1),
-                              Text(
+                              LocalizedText(
                                 '${_formatInt(calories.round())} kcal',
                                 key: const ValueKey('calories-eaten'),
                                 style: TextStyle(
@@ -116,7 +118,7 @@ class TodayNutritionCard extends StatelessWidget {
                         ],
                       ),
                       SizedBox(height: isCompact ? 12 : 15),
-                      Text(
+                      LocalizedText(
                         'Daily goal',
                         style: TextStyle(
                           color: pageSecondaryTextColor(context),
@@ -125,7 +127,7 @@ class TodayNutritionCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
+                      LocalizedText(
                         '${_formatInt(goal.round())} kcal',
                         style: TextStyle(
                           color: pagePrimaryTextColor(context),
@@ -223,7 +225,7 @@ class _BalancedCalorieIndicator extends StatelessWidget {
           const Icon(Icons.balance_rounded, color: color, size: 14),
           const SizedBox(width: 5),
           Flexible(
-            child: Text(
+            child: LocalizedText(
               'Balanced kcal: ${_formatInt(calories)}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -259,7 +261,7 @@ class _CalorieProgress extends StatelessWidget {
     final size = isCompact ? 102.0 : 116.0;
 
     return Semantics(
-      label: '$remainingCalories calories left',
+      label: '$remainingCalories calories left'.localizedCopy(context),
       child: TweenAnimationBuilder<double>(
         key: const ValueKey('calorie-progress-animation'),
         tween: Tween(begin: 0, end: progress),
@@ -294,7 +296,7 @@ class _CalorieProgress extends StatelessWidget {
                     children: [
                       FittedBox(
                         fit: BoxFit.scaleDown,
-                        child: Text(
+                        child: LocalizedText(
                           _formatInt(remainingCalories),
                           key: const ValueKey('calories-remaining'),
                           style: TextStyle(
@@ -306,7 +308,7 @@ class _CalorieProgress extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
+                      LocalizedText(
                         'kcal left',
                         style: TextStyle(
                           color: pageSecondaryTextColor(context),
@@ -344,7 +346,7 @@ class _MacroColumn extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LocalizedText(
           label,
           style: TextStyle(
             color: pagePrimaryTextColor(context),
@@ -361,7 +363,7 @@ class _MacroColumn extends StatelessWidget {
           ),
         ),
         SizedBox(height: isCompact ? 5 : 6),
-        Text(
+        LocalizedText(
           value,
           style: TextStyle(
             color: pageSecondaryTextColor(context),

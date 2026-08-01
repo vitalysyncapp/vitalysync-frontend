@@ -7,6 +7,7 @@ import '../../data/streak_models.dart';
 import '../widgets/streak_saver_info_dialog.dart';
 import '../widgets/streak_share_card.dart';
 import 'streak_leaderboard_page.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 typedef StreakOverviewLoader =
     Future<StreakOverview> Function({bool forceRefresh});
@@ -132,7 +133,7 @@ class _PersonalStreakPageState extends State<PersonalStreakPage> {
           ),
           title: KeyedSubtree(
             key: widget.tutorialHeaderKey,
-            child: Text(
+            child: LocalizedText(
               'My streak',
               style: TextStyle(
                 color: pagePrimaryTextColor(context),
@@ -144,7 +145,7 @@ class _PersonalStreakPageState extends State<PersonalStreakPage> {
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: IconButton.filledTonal(
-                tooltip: 'Leaderboard',
+                tooltip: 'Leaderboard'.localizedCopy(context),
                 onPressed: _openLeaderboard,
                 style: IconButton.styleFrom(
                   backgroundColor: pageSurfaceColor(context),
@@ -308,7 +309,7 @@ class _SaverPanel extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       'Streak savers',
                       style: TextStyle(
                         color: pagePrimaryTextColor(context),
@@ -317,7 +318,7 @@ class _SaverPanel extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 3),
-                    Text(
+                    LocalizedText(
                       'Resets monthly. Earn more from milestones.',
                       style: TextStyle(
                         color: pageSecondaryTextColor(context),
@@ -329,7 +330,7 @@ class _SaverPanel extends StatelessWidget {
               ),
               IconButton(
                 key: const ValueKey('streak-saver-help'),
-                tooltip: 'How streak savers work',
+                tooltip: 'How streak savers work'.localizedCopy(context),
                 visualDensity: VisualDensity.compact,
                 onPressed: () => showStreakSaverInfoDialog(context),
                 icon: const Icon(Icons.help_outline_rounded, size: 21),
@@ -387,7 +388,7 @@ class _SaverNumber extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LocalizedText(
           value,
           style: TextStyle(
             color: pagePrimaryTextColor(context),
@@ -395,7 +396,7 @@ class _SaverNumber extends StatelessWidget {
             fontWeight: FontWeight.w900,
           ),
         ),
-        Text(
+        LocalizedText(
           label,
           style: TextStyle(
             color: pageSecondaryTextColor(context),
@@ -437,7 +438,7 @@ class _LeaderboardCta extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LocalizedText(
                     'Streak leaderboard',
                     style: TextStyle(
                       color: pagePrimaryTextColor(context),
@@ -446,7 +447,7 @@ class _LeaderboardCta extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 3),
-                  Text(
+                  LocalizedText(
                     'Compare global, local, and role streaks.',
                     style: TextStyle(
                       color: pageSecondaryTextColor(context),
@@ -485,7 +486,7 @@ class _RecentStreakEvents extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LocalizedText(
             'Recent streak activity',
             style: TextStyle(
               color: pagePrimaryTextColor(context),
@@ -495,7 +496,7 @@ class _RecentStreakEvents extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           if (events.isEmpty)
-            Text(
+            LocalizedText(
               'Saver rewards and restore activity will appear here.',
               style: TextStyle(
                 color: pageSecondaryTextColor(context),
@@ -539,7 +540,7 @@ class _EventRow extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
+            child: LocalizedText(
               _eventLabel(event),
               style: TextStyle(
                 color: pagePrimaryTextColor(context),
@@ -591,7 +592,7 @@ class _StreakErrorState extends StatelessWidget {
               size: 44,
             ),
             const SizedBox(height: 12),
-            Text(
+            LocalizedText(
               'Unable to load your streak right now.',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -601,7 +602,7 @@ class _StreakErrorState extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 6),
-            Text(
+            LocalizedText(
               message,
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -614,7 +615,7 @@ class _StreakErrorState extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Try again'),
+              label: const LocalizedText('Try again'),
             ),
           ],
         ),

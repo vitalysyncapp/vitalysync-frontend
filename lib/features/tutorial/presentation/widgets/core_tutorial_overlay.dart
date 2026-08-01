@@ -6,6 +6,7 @@ import 'package:lottie/lottie.dart';
 
 import '../../../../shared/navigation/main_tab.dart';
 import '../../../../shared/theme/app_page_style.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 enum CoreTutorialTarget {
   navigation,
@@ -220,7 +221,7 @@ class _CoreTutorialOverlayState extends State<CoreTutorialOverlay>
 
         return Semantics(
           namesRoute: true,
-          label: 'VitalySync tutorial',
+          label: 'VitalySync tutorial'.localizedCopy(context),
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -512,7 +513,7 @@ class _TutorialBubbleContent extends StatelessWidget {
       key: const ValueKey('core-tutorial-back-button'),
       onPressed: isFirstStep || isFinishing ? null : onBack,
       icon: const Icon(Icons.arrow_back_rounded),
-      label: const Text('Back'),
+      label: const LocalizedText('Back'),
     );
     final nextButton = ElevatedButton.icon(
       key: const ValueKey('core-tutorial-next-button'),
@@ -529,7 +530,7 @@ class _TutorialBubbleContent extends StatelessWidget {
           : Icon(
               isLastStep ? Icons.check_rounded : Icons.arrow_forward_rounded,
             ),
-      label: Text(isLastStep ? 'Finish' : 'Next'),
+      label: LocalizedText(isLastStep ? 'Finish' : 'Next'),
     );
 
     return Column(
@@ -556,7 +557,7 @@ class _TutorialBubbleContent extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LocalizedText(
                     'Step $stepNumber of $totalSteps',
                     style: TextStyle(
                       color: pageSecondaryTextColor(context),
@@ -583,14 +584,14 @@ class _TutorialBubbleContent extends StatelessWidget {
             const SizedBox(width: 8),
             IconButton(
               key: const ValueKey('core-tutorial-skip-button'),
-              tooltip: 'Skip tutorial',
+              tooltip: 'Skip tutorial'.localizedCopy(context),
               onPressed: isFinishing ? null : onSkip,
               icon: const Icon(Icons.close_rounded, size: 20),
             ),
           ],
         ),
         const SizedBox(height: 16),
-        Text(
+        LocalizedText(
           step.title,
           style: TextStyle(
             color: pagePrimaryTextColor(context),
@@ -601,7 +602,7 @@ class _TutorialBubbleContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 9),
-        Text(
+        LocalizedText(
           step.body,
           style: TextStyle(
             color: pageSecondaryTextColor(context),

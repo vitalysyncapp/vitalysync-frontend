@@ -5,6 +5,7 @@ import '../../../../shared/widgets/analytics_animation.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/widgets/reveal_on_build.dart';
 import '../../data/weekly_user_metrics.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class MoodVolatilityCard extends StatelessWidget {
   final WeeklyUserMetrics? metrics;
@@ -29,7 +30,7 @@ class MoodVolatilityCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            LocalizedText(
               'Mood trend',
               style: TextStyle(
                 fontSize: 15.5,
@@ -47,7 +48,7 @@ class MoodVolatilityCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 9),
                 Expanded(
-                  child: Text(
+                  child: LocalizedText(
                     'This week',
                     style: TextStyle(
                       color: pageSecondaryTextColor(context),
@@ -55,7 +56,7 @@ class MoodVolatilityCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                Text(
+                LocalizedText(
                   metrics?.moodStabilityLabel ?? 'Loading',
                   style: TextStyle(
                     color: pageSecondaryTextColor(context),
@@ -94,7 +95,7 @@ class MoodVolatilityCard extends StatelessWidget {
                       ),
                       child: Column(
                         children: [
-                          Text(
+                          LocalizedText(
                             _moodEmoji(day.moodIndex),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -105,7 +106,7 @@ class MoodVolatilityCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(
+                          LocalizedText(
                             day.dayLabel.substring(0, 1),
                             style: TextStyle(
                               color: pageSecondaryTextColor(context),

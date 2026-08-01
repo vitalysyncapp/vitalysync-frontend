@@ -3,7 +3,6 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -16,10 +15,12 @@ import '../../features/exercise/data/exercise_recommendation_service.dart';
 import '../../features/home/data/environment_model.dart';
 import '../../features/nutrition/data/nutrition_coach.dart';
 import '../../features/nutrition/data/nutrition_reminder_engine.dart';
+import '../../l10n/app_localizations.dart';
 import '../preferences/app_preferences.dart';
 import '../preferences/user_session.dart';
 import 'floating_smart_nudge_assistant.dart';
 import 'overlay_assistant_controller.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 Future<void> runOverlayAssistantApp() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,12 +56,8 @@ class _OverlayAssistantApp extends StatelessWidget {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           locale: prefs.locale,
-          supportedLocales: const [Locale('en'), Locale('fil')],
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
           themeMode: prefs.themeMode,
           theme: buildVitalySyncLightTheme(),
           darkTheme: buildVitalySyncDarkTheme(),
@@ -609,7 +606,7 @@ class _ReminderPreviewCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LocalizedText(
                     title.trim().isEmpty ? 'Reminder' : title.trim(),
                     style: theme.textTheme.titleSmall?.copyWith(
                       color: titleColor,
@@ -619,7 +616,7 @@ class _ReminderPreviewCard extends StatelessWidget {
                   ),
                   if (body.trim().isNotEmpty) ...[
                     const SizedBox(height: 5),
-                    Text(
+                    LocalizedText(
                       body.trim(),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: bodyColor,
@@ -715,7 +712,7 @@ class _GeneratedPreviewCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LocalizedText(
                     title.trim().isEmpty ? fallbackTitle : title.trim(),
                     style: theme.textTheme.titleSmall?.copyWith(
                       color: titleColor,
@@ -725,7 +722,7 @@ class _GeneratedPreviewCard extends StatelessWidget {
                   ),
                   if (body.trim().isNotEmpty) ...[
                     const SizedBox(height: 5),
-                    Text(
+                    LocalizedText(
                       body.trim(),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: bodyColor,

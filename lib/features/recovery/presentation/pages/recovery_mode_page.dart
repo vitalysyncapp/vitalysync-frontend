@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../data/recovery_mode_service.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class RecoveryModePage extends StatelessWidget {
   final RecoveryModeSnapshot snapshot;
@@ -81,7 +82,7 @@ class RecoveryModePage extends StatelessWidget {
           width: 42,
           height: 42,
           child: IconButton(
-            tooltip: 'Close recovery mode',
+            tooltip: 'Close recovery mode'.localizedCopy(context),
             onPressed: () => Navigator.of(context).maybePop(),
             icon: const Icon(Icons.close_rounded),
             color: const Color(0xFF234155),
@@ -110,7 +111,7 @@ class RecoveryModePage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              LocalizedText(
                 'Pause. Let today get lighter.',
                 style: TextStyle(
                   color: const Color(0xFF17364A),
@@ -120,7 +121,7 @@ class RecoveryModePage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
+              LocalizedText(
                 score == null
                     ? 'Your last pattern still needs recovery support. This is a signal to go gently, not a failure.'
                     : 'Your burnout risk is $score%. This is a signal to lower pressure and ask for support, not a failure.',
@@ -167,7 +168,7 @@ class RecoveryModePage extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               const Expanded(
-                child: Text(
+                child: LocalizedText(
                   'Generated insight and nudge',
                   style: TextStyle(
                     color: Color(0xFF17364A),
@@ -179,7 +180,7 @@ class RecoveryModePage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Text(
+          LocalizedText(
             title,
             style: const TextStyle(
               color: Color(0xFF17364A),
@@ -189,7 +190,7 @@ class RecoveryModePage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 7),
-          Text(
+          LocalizedText(
             _shortText(message, 190),
             style: const TextStyle(
               color: Color(0xFF536879),
@@ -299,7 +300,7 @@ class RecoveryModePage extends StatelessWidget {
               ),
               SizedBox(width: 10),
               Expanded(
-                child: Text(
+                child: LocalizedText(
                   'These tips follow common findings from sleep, movement, social support, and mindfulness research.',
                   style: TextStyle(
                     color: Color(0xFF17364A),
@@ -341,7 +342,7 @@ class RecoveryModePage extends StatelessWidget {
                     Future<void>.microtask(() => onLogRequested?.call());
                   },
             icon: const Icon(Icons.monitor_heart_rounded, size: 20),
-            label: const Text('Log a gentle check-in'),
+            label: const LocalizedText('Log a gentle check-in'),
             style: ElevatedButton.styleFrom(
               elevation: 0,
               backgroundColor: const Color(0xFF1EAD83),
@@ -360,7 +361,7 @@ class RecoveryModePage extends StatelessWidget {
         TextButton.icon(
           onPressed: () => Navigator.of(context).maybePop(),
           icon: const Icon(Icons.close_rounded, size: 18),
-          label: const Text('Close for now'),
+          label: const LocalizedText('Close for now'),
           style: TextButton.styleFrom(
             foregroundColor: const Color(0xFF234155),
             textStyle: const TextStyle(fontWeight: FontWeight.w800),
@@ -422,7 +423,7 @@ class _ScoreBadge extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
+            LocalizedText(
               label,
               textAlign: TextAlign.center,
               style: const TextStyle(
@@ -432,7 +433,7 @@ class _ScoreBadge extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 2),
-            const Text(
+            const LocalizedText(
               'pause',
               style: TextStyle(
                 color: Colors.white,
@@ -500,14 +501,14 @@ class _SectionHeader extends StatelessWidget {
             shape: BoxShape.circle,
             border: Border.all(color: Colors.white.withValues(alpha: 0.85)),
           ),
-          child: Text(emoji, style: const TextStyle(fontSize: 17)),
+          child: LocalizedText(emoji, style: const TextStyle(fontSize: 17)),
         ),
         const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              LocalizedText(
                 title,
                 style: const TextStyle(
                   color: Color(0xFF17364A),
@@ -516,7 +517,7 @@ class _SectionHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
+              LocalizedText(
                 subtitle,
                 style: const TextStyle(
                   color: Color(0xFF536879),
@@ -551,7 +552,7 @@ class _AdviceCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LocalizedText(
                   advice.title,
                   style: const TextStyle(
                     color: Color(0xFF17364A),
@@ -561,7 +562,7 @@ class _AdviceCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 5),
-                Text(
+                LocalizedText(
                   advice.body,
                   style: const TextStyle(
                     color: Color(0xFF536879),
@@ -607,7 +608,7 @@ class _HelpCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LocalizedText(
                   title,
                   style: const TextStyle(
                     color: Color(0xFF17364A),
@@ -616,7 +617,7 @@ class _HelpCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 5),
-                Text(
+                LocalizedText(
                   body,
                   style: const TextStyle(
                     color: Color(0xFF536879),
@@ -656,7 +657,7 @@ class _MiniNote extends StatelessWidget {
           Icon(icon, size: 17, color: const Color(0xFF2067C9)),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
+            child: LocalizedText(
               label,
               style: const TextStyle(
                 color: Color(0xFF25496A),
@@ -697,7 +698,7 @@ class _SoftPill extends StatelessWidget {
         children: [
           Icon(icon, size: 15, color: color),
           const SizedBox(width: 6),
-          Text(
+          LocalizedText(
             label,
             style: TextStyle(
               color: color,
@@ -746,7 +747,7 @@ class _EvidenceChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: const Color(0xFFD6EEE4)),
       ),
-      child: Text(
+      child: LocalizedText(
         label,
         style: const TextStyle(
           color: Color(0xFF177E74),

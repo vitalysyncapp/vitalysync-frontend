@@ -5,6 +5,7 @@ import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/analytics_animation.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../data/weekly_user_metrics.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class SleepPatternCard extends StatelessWidget {
   final WeeklyUserMetrics? metrics;
@@ -27,7 +28,7 @@ class SleepPatternCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LocalizedText(
             'Sleep pattern',
             style: TextStyle(
               fontSize: 15.5,
@@ -58,7 +59,7 @@ class SleepPatternCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(
+                child: LocalizedText(
                   'Recommended: 7-9 hours',
                   style: TextStyle(
                     fontSize: 12.5,
@@ -66,7 +67,7 @@ class SleepPatternCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Text(
+              LocalizedText(
                 average > 0
                     ? 'Average: ${average.toStringAsFixed(1)}h'
                     : 'No logs yet',
@@ -129,7 +130,7 @@ class SleepPatternCard extends StatelessWidget {
             showTitles: true,
             interval: 2,
             reservedSize: 28,
-            getTitlesWidget: (value, meta) => Text(
+            getTitlesWidget: (value, meta) => LocalizedText(
               value.toInt().toString(),
               style: TextStyle(
                 color: pageSecondaryTextColor(context),
@@ -148,7 +149,7 @@ class SleepPatternCard extends StatelessWidget {
               }
               return Padding(
                 padding: const EdgeInsets.only(top: 6),
-                child: Text(
+                child: LocalizedText(
                   chartDays[index].dayLabel,
                   style: TextStyle(
                     color: pageSecondaryTextColor(context),

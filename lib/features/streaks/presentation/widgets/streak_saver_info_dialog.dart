@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 const _saverOrange = Color(0xFFFF7A2F);
 const _saverAmber = Color(0xFFFFB800);
@@ -152,7 +153,7 @@ class _DialogHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LocalizedText(
                   'How streak savers work',
                   maxLines: 2,
                   style: TextStyle(
@@ -163,7 +164,7 @@ class _DialogHeader extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
+                LocalizedText(
                   'A little backup for real-life days',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.9),
@@ -176,7 +177,7 @@ class _DialogHeader extends StatelessWidget {
           ),
           IconButton(
             key: const ValueKey('streak-saver-dialog-close'),
-            tooltip: 'Close',
+            tooltip: 'Close'.localizedCopy(context),
             onPressed: () => Navigator.of(context).pop(),
             color: Colors.white,
             style: IconButton.styleFrom(
@@ -225,7 +226,7 @@ class _HowItWorksCard extends StatelessWidget {
           ),
           const SizedBox(width: 11),
           Expanded(
-            child: Text(
+            child: LocalizedText(
               'A streak saver can protect one missed day. When you next log, '
               'you can choose whether to use enough savers to keep your streak.',
               style: TextStyle(
@@ -249,7 +250,7 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
+    return LocalizedText(
       label,
       style: TextStyle(
         color: pageSecondaryTextColor(context),
@@ -304,7 +305,7 @@ class _RewardRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LocalizedText(
                   title,
                   style: TextStyle(
                     color: pagePrimaryTextColor(context),
@@ -313,7 +314,7 @@ class _RewardRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
+                LocalizedText(
                   description,
                   style: TextStyle(
                     color: pageSecondaryTextColor(context),
@@ -335,7 +336,7 @@ class _RewardRow extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(999),
             ),
-            child: Text(
+            child: LocalizedText(
               reward,
               textAlign: TextAlign.center,
               style: const TextStyle(
@@ -373,7 +374,7 @@ class _ResetNotice extends StatelessWidget {
           const Icon(Icons.refresh_rounded, color: color, size: 20),
           const SizedBox(width: 9),
           Expanded(
-            child: Text(
+            child: LocalizedText(
               'Your saver balance resets each month, so unused and earned '
               'savers do not carry over.',
               style: TextStyle(
@@ -413,7 +414,7 @@ class _DialogFooter extends StatelessWidget {
         key: const ValueKey('streak-saver-dialog-done'),
         onPressed: () => Navigator.of(context).pop(),
         icon: const Icon(Icons.check_rounded, size: 19),
-        label: const Text('Got it'),
+        label: const LocalizedText('Got it'),
         style: ElevatedButton.styleFrom(
           elevation: 0,
           minimumSize: const Size.fromHeight(48),

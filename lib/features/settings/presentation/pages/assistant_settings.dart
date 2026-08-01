@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../shared/assistant/overlay_assistant_controller.dart';
 import '../../../../shared/preferences/app_preferences.dart';
 import '../../../../shared/theme/app_page_style.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class AssistantSettings extends StatefulWidget {
   final GlobalKey? tutorialOverlaySwitchKey;
@@ -71,7 +72,7 @@ class _AssistantSettingsState extends State<AssistantSettings>
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text(
+        content: LocalizedText(
           'Floating assistant is ready and will appear when you leave VitalySync.',
         ),
       ),
@@ -93,7 +94,7 @@ class _AssistantSettingsState extends State<AssistantSettings>
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Floating assistant is turned off outside the app.'),
+          content: LocalizedText('Floating assistant is turned off outside the app.'),
         ),
       );
       return;
@@ -112,7 +113,7 @@ class _AssistantSettingsState extends State<AssistantSettings>
         _pendingAssistantOverlayEnable = false;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
+            content: LocalizedText(
               'Turn on the Android overlay permission, then try enabling the assistant again.',
             ),
           ),
@@ -133,7 +134,7 @@ class _AssistantSettingsState extends State<AssistantSettings>
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text(
+        content: LocalizedText(
           'Floating assistant is ready and will appear when you leave VitalySync.',
         ),
       ),
@@ -171,7 +172,7 @@ class _AssistantSettingsState extends State<AssistantSettings>
                 icon: const Icon(Icons.arrow_back_ios_new_rounded),
                 onPressed: () => Navigator.pop(context),
               ),
-              title: Text(
+              title: LocalizedText(
                 'Assistant',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
@@ -243,7 +244,7 @@ class _AssistantSettingsState extends State<AssistantSettings>
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
-            child: Text(
+            child: LocalizedText(
               title,
               style: TextStyle(
                 fontSize: 17,
@@ -288,7 +289,7 @@ class _AssistantSettingsState extends State<AssistantSettings>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LocalizedText(
                   title,
                   style: TextStyle(
                     fontSize: 15.5,
@@ -299,7 +300,7 @@ class _AssistantSettingsState extends State<AssistantSettings>
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
+                LocalizedText(
                   subtitle,
                   style: TextStyle(
                     fontSize: 13.5,

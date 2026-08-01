@@ -79,7 +79,7 @@ class AccountLifecycleApi {
   ) async {
     final response = await _client.post(
       Uri.parse(ApiConfig.account('/reactivate')),
-      headers: const {'Content-Type': 'application/json'},
+      headers: await ApiConfig.jsonHeaders(),
       body: jsonEncode({'reactivation_token': challenge.reactivationToken}),
     );
     final data = _decode(response.body);

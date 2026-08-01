@@ -357,7 +357,9 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     }
 
     final label = status == 'dismissed' ? 'Insight hidden.' : 'Saved to likes.';
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(label)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: LocalizedText(label)));
   }
 
   Future<void> _handleNutritionInsightStatus(
@@ -398,7 +400,9 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     final label = status == 'dismissed'
         ? 'Nutrition insight hidden.'
         : 'Nutrition insight liked.';
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(label)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: LocalizedText(label)));
   }
 
   bool _isSameAdaptiveNudge(
@@ -508,7 +512,9 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     final callback = widget.onLogPageRequested;
     if (callback == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Open VitalySync to finish this log.')),
+        const SnackBar(
+          content: LocalizedText('Open VitalySync to finish this log.'),
+        ),
       );
       return;
     }
@@ -521,7 +527,9 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     final callback = widget.onLogMealRequested;
     if (callback == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Open VitalySync to log a meal.')),
+        const SnackBar(
+          content: LocalizedText('Open VitalySync to log a meal.'),
+        ),
       );
       return;
     }
@@ -582,7 +590,9 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     final missing = _checkInDraft.validationErrors(status.requiredMode);
     if (missing.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please complete ${missing.join(', ')}.')),
+        SnackBar(
+          content: LocalizedText('Please complete ${missing.join(', ')}.'),
+        ),
       );
       return;
     }
@@ -611,7 +621,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
       final savedOffline = data['is_offline'] == true;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
+          content: LocalizedText(
             savedOffline
                 ? 'Check-in saved offline and queued to sync.'
                 : status.requiredMode == CheckInMode.weekly
@@ -630,7 +640,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
+      ).showSnackBar(SnackBar(content: LocalizedText(error.message)));
     } on StreakRestoreRequiredException catch (error) {
       if (!mounted) return;
       setState(() {
@@ -649,7 +659,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
+          content: LocalizedText(
             'Unable to save check-in: ${error.toString().replaceFirst('Exception: ', '')}',
           ),
         ),
@@ -666,8 +676,8 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     return showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Save today\'s check-in?'),
-        content: Text(
+        title: const LocalizedText('Save today\'s check-in?'),
+        content: LocalizedText(
           canRestore
               ? 'Use $required streak saver${required == 1 ? '' : 's'} to protect your streak, or save without restoring it.'
               : 'Your check-in can still be saved, but the missed days cannot be restored with the savers currently available.',
@@ -675,16 +685,16 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Not now'),
+            child: const LocalizedText('Not now'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, 'skip'),
-            child: const Text('Save without restoring'),
+            child: const LocalizedText('Save without restoring'),
           ),
           if (canRestore)
             FilledButton(
               onPressed: () => Navigator.pop(dialogContext, 'use'),
-              child: const Text('Use savers and save'),
+              child: const LocalizedText('Use savers and save'),
             ),
         ],
       ),
@@ -735,7 +745,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
 
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text(snackBarMessage)));
+    ).showSnackBar(SnackBar(content: LocalizedText(snackBarMessage)));
 
     _pageController.animateToPage(
       _assistantExerciseSectionIndex,
@@ -769,7 +779,9 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Today\'s exercise goal canceled.')),
+      const SnackBar(
+        content: LocalizedText('Today\'s exercise goal canceled.'),
+      ),
     );
     await _loadRecommendations();
   }
@@ -927,7 +939,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(
+          child: LocalizedText(
             'VitalySync assistant',
             style: TextStyle(
               color: pagePrimaryTextColor(context),
@@ -937,7 +949,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
           ),
         ),
         IconButton(
-          tooltip: 'Refresh assistant',
+          tooltip: 'Refresh assistant'.localizedCopy(context),
           onPressed: () {
             unawaited(_loadAdaptiveNudges(forceRefresh: true));
             unawaited(_loadNutritionInsight(forceRefresh: true));
@@ -965,7 +977,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
           ),
         ),
         IconButton(
-          tooltip: 'Close',
+          tooltip: 'Close'.localizedCopy(context),
           onPressed: widget.onClose ?? () => Navigator.pop(context),
           icon: const Icon(Icons.close_rounded),
         ),
@@ -1149,7 +1161,7 @@ class _AssistantSectionNavigator extends StatelessWidget {
                             children: [
                               Icon(section.icon, size: 17, color: foreground),
                               const SizedBox(width: 6),
-                              Text(
+                              LocalizedText(
                                 section.label,
                                 style: TextStyle(
                                   color: foreground,
@@ -1189,10 +1201,10 @@ class _AssistantContextStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final numberFormat = NumberFormat.decimalPattern();
-    final weatherText = _weatherText();
+    final weatherText = _weatherText(context);
     final airText = environmentSnapshot == null
         ? 'Air quality pending'
-        : 'AQI ${environmentSnapshot!.airQuality.aqi} ${environmentSnapshot!.airQuality.aqiLabel}';
+        : 'AQI ${environmentSnapshot!.airQuality.aqi} ${environmentSnapshot!.airQuality.localizedLabel(context.l10n)}';
     final dailyStepsUnavailable = !activityState.isStepTrackingSupported;
     final stepLabel = dailyStepsUnavailable
         ? 'Daily steps unavailable'
@@ -1244,7 +1256,7 @@ class _AssistantContextStrip extends StatelessWidget {
             width: 34,
             height: 34,
             child: IconButton(
-              tooltip: 'Refresh weather',
+              tooltip: 'Refresh weather'.localizedCopy(context),
               onPressed: isLoadingEnvironment ? null : onRefreshEnvironment,
               padding: EdgeInsets.zero,
               icon: const Icon(Icons.refresh_rounded, size: 18),
@@ -1255,13 +1267,13 @@ class _AssistantContextStrip extends StatelessWidget {
     );
   }
 
-  String _weatherText() {
+  String _weatherText(BuildContext context) {
     final snapshot = environmentSnapshot;
     if (snapshot == null) {
       return 'Weather pending';
     }
 
-    return '${snapshot.weather.description}, ${snapshot.weather.temperatureC.toStringAsFixed(0)}\u00B0C';
+    return '${snapshot.weather.localizedDescription(context.l10n)}, ${snapshot.weather.temperatureC.toStringAsFixed(0)}\u00B0C';
   }
 }
 
@@ -1299,7 +1311,7 @@ class _AssistantContextMetric extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LocalizedText(
                   label,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -1311,7 +1323,7 @@ class _AssistantContextMetric extends StatelessWidget {
                 ),
                 if (value != null && value!.isNotEmpty) ...[
                   const SizedBox(height: 1),
-                  Text(
+                  LocalizedText(
                     value!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

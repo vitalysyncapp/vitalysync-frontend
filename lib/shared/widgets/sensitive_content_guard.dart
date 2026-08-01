@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../preferences/app_preferences.dart';
 import '../theme/app_page_style.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 /// Wraps [child] and obscures it when the "Hide sensitive content" preference
 /// is active. The card shell stays visible; only the inner data area receives a
@@ -151,7 +152,7 @@ class _SensitiveContentGuardState extends State<SensitiveContentGuard>
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
+                      LocalizedText(
                         'Content hidden',
                         style: TextStyle(
                           fontSize: 13,
@@ -179,7 +180,7 @@ class _SensitiveContentGuardState extends State<SensitiveContentGuard>
                                 color: accent.withValues(alpha: 0.7),
                               ),
                               const SizedBox(width: 4),
-                              Text(
+                              LocalizedText(
                                 'Tap to view',
                                 style: TextStyle(
                                   fontSize: 11,
@@ -234,7 +235,7 @@ class _RevealedBadge extends StatelessWidget {
               color: accent,
             ),
             const SizedBox(width: 4),
-            Text(
+            LocalizedText(
               'Tap to hide',
               style: TextStyle(
                 fontSize: 11,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'biometric_lock_service.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 /// Full-screen lock overlay shown when [BiometricLockService.isLocked] is
 /// `true`. Displays the VitalySync logo and prompts for authentication.
@@ -98,7 +99,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              Text(
+              LocalizedText(
                 'VitalySync is locked',
                 style: TextStyle(
                   fontSize: 22,
@@ -107,7 +108,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
+              LocalizedText(
                 'Please authenticate to continue',
                 style: TextStyle(
                   fontSize: 14,
@@ -118,7 +119,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
                 const SizedBox(height: 14),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 32),
-                  child: Text(
+                  child: LocalizedText(
                     _errorMessage!,
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -144,7 +145,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
                         ),
                       )
                     : const Icon(Icons.fingerprint_rounded),
-                label: const Text('Unlock'),
+                label: const LocalizedText('Unlock'),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 28,

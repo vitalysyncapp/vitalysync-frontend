@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../features/auth/presentation/pages/loading_screen.dart';
 import '../features/tutorial/services/core_tutorial_service.dart';
+import '../l10n/app_localizations.dart';
 import '../shared/assistant/overlay_assistant_controller.dart';
 import '../shared/notifications/local_notification_service.dart';
 import '../shared/notifications/notification_payload_router.dart';
@@ -172,12 +172,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           title: 'VitalySync',
           debugShowCheckedModeBanner: false,
           locale: prefs.locale,
-          supportedLocales: const [Locale('en'), Locale('fil')],
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
           themeMode: prefs.themeMode,
           theme: buildVitalySyncLightTheme(),
           darkTheme: buildVitalySyncDarkTheme(),

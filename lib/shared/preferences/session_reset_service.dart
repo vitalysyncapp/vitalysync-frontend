@@ -90,7 +90,9 @@ class SessionResetService {
     );
 
     await UserSessionController.instance.clearSession();
-    await AppPreferencesController.instance.resetToDefaults();
+    await AppPreferencesController.instance.resetToDefaults(
+      preserveLanguage: true,
+    );
     await LogApi.clearLocalAccountData();
     await OnboardingService.clearDefaults();
     await _clearKnownLocalAccountData();

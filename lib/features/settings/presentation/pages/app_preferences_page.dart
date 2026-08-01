@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 
+import '../../../../l10n/l10n.dart';
+import '../../../../shared/localization/language_change_coordinator.dart';
 import '../../../../shared/preferences/app_preferences.dart';
 import '../../../../shared/theme/app_page_style.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class AppPreferencesPage extends StatelessWidget {
-  const AppPreferencesPage({super.key});
+  const AppPreferencesPage({super.key, this.languageCoordinator});
+
+  final LanguageChangeCoordinator? languageCoordinator;
 
   @override
   Widget build(BuildContext context) {
@@ -28,8 +33,8 @@ class AppPreferencesPage extends StatelessWidget {
                 icon: const Icon(Icons.arrow_back_ios_new_rounded),
                 onPressed: () => Navigator.pop(context),
               ),
-              title: Text(
-                'App preferences',
+              title: LocalizedText(
+                context.l10n.appPreferencesTitle,
                 style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
               ),
             ),
@@ -45,13 +50,13 @@ class AppPreferencesPage extends StatelessWidget {
                   children: [
                     _buildSectionCard(
                       context: context,
-                      title: 'Appearance',
+                      title: context.l10n.appearanceSection,
                       children: [
                         _buildThemeTile(
                           context: context,
                           prefs: prefs,
-                          label: 'Light mode',
-                          subtitle: 'Bright surfaces and default daytime look',
+                          label: context.l10n.lightMode,
+                          subtitle: context.l10n.lightModeDescription,
                           value: ThemeMode.light,
                           icon: Icons.light_mode_rounded,
                           onSelected: preferences.updateThemeMode,
@@ -60,8 +65,8 @@ class AppPreferencesPage extends StatelessWidget {
                         _buildThemeTile(
                           context: context,
                           prefs: prefs,
-                          label: 'Dark mode',
-                          subtitle: 'Low-light colors for evening use',
+                          label: context.l10n.darkMode,
+                          subtitle: context.l10n.darkModeDescription,
                           value: ThemeMode.dark,
                           icon: Icons.dark_mode_rounded,
                           onSelected: preferences.updateThemeMode,
@@ -71,38 +76,43 @@ class AppPreferencesPage extends StatelessWidget {
                     const SizedBox(height: 16),
                     _buildSectionCard(
                       context: context,
-                      title: 'Language',
+                      title: context.l10n.languageSection,
                       children: [
                         _buildChoiceTile<AppLanguage>(
                           context: context,
-                          title: 'App language',
-                          subtitle:
-                              'Used for shell display like greetings and date formatting',
-                          currentLabel: prefs.languageLabel,
-                          options: const {
-                            AppLanguage.english: 'English',
-                            AppLanguage.filipino: 'Filipino',
+                          title: context.l10n.appLanguage,
+                          subtitle: context.l10n.appLanguageDescription,
+                          currentLabel: context.l10n.languageLabel(
+                            prefs.language,
+                          ),
+                          options: {
+                            AppLanguage.english: context.l10n.englishLanguage,
+                            AppLanguage.tagalog: context.l10n.tagalogLanguage,
                           },
                           groupValue: prefs.language,
-                          onChanged: preferences.updateLanguage,
+                          onChanged: (language) =>
+                              (languageCoordinator ??
+                                      LanguageChangeCoordinator.instance)
+                                  .changeLanguage(language),
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
                     _buildSectionCard(
                       context: context,
-                      title: 'Display',
+                      title: context.l10n.displaySection,
                       children: [
                         _buildChoiceTile<AppFontSize>(
                           context: context,
-                          title: 'Font size',
-                          subtitle:
-                              'Small is a bit smaller, medium matches the default UI, and large is a bit bigger',
-                          currentLabel: prefs.fontSizeLabel,
-                          options: const {
-                            AppFontSize.small: 'Small',
-                            AppFontSize.medium: 'Medium',
-                            AppFontSize.large: 'Large',
+                          title: context.l10n.fontSize,
+                          subtitle: context.l10n.fontSizeDescription,
+                          currentLabel: context.l10n.fontSizeLabel(
+                            prefs.fontSize,
+                          ),
+                          options: {
+                            AppFontSize.small: context.l10n.smallSize,
+                            AppFontSize.medium: context.l10n.mediumSize,
+                            AppFontSize.large: context.l10n.largeSize,
                           },
                           groupValue: prefs.fontSize,
                           onChanged: preferences.updateFontSize,
@@ -126,16 +136,16 @@ class AppPreferencesPage extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  'Preview',
+                                LocalizedText(
+                                  context.l10n.preview,
                                   style: TextStyle(
                                     fontWeight: FontWeight.w700,
                                     color: textColor,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
-                                Text(
-                                  'VitalySync will scale text throughout the app using your selected size.',
+                                LocalizedText(
+                                  context.l10n.fontPreviewDescription,
                                   style: TextStyle(
                                     color: secondaryTextColor,
                                     height: 1.4,
@@ -185,7 +195,7 @@ class AppPreferencesPage extends StatelessWidget {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
-            child: Text(
+            child: LocalizedText(
               title,
               style: TextStyle(
                 fontSize: 17,
@@ -229,7 +239,7 @@ class AppPreferencesPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LocalizedText(
                     label,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
@@ -237,7 +247,7 @@ class AppPreferencesPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
+                  LocalizedText(
                     subtitle,
                     style: TextStyle(
                       color: pageSecondaryTextColor(context),
@@ -268,7 +278,7 @@ class AppPreferencesPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LocalizedText(
             title,
             style: TextStyle(
               fontSize: 15.5,
@@ -277,7 +287,7 @@ class AppPreferencesPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
+          LocalizedText(
             subtitle,
             style: TextStyle(
               color: pageSecondaryTextColor(context),
@@ -292,15 +302,15 @@ class AppPreferencesPage extends StatelessWidget {
               final selected = entry.key == groupValue;
 
               return ChoiceChip(
-                label: Text(entry.value),
+                label: LocalizedText(entry.value),
                 selected: selected,
                 onSelected: (_) => onChanged(entry.key),
               );
             }).toList(),
           ),
           const SizedBox(height: 12),
-          Text(
-            'Current: $currentLabel',
+          LocalizedText(
+            context.l10n.currentValue(value: currentLabel),
             style: TextStyle(
               fontWeight: FontWeight.w600,
               color: Theme.of(context).colorScheme.primary,

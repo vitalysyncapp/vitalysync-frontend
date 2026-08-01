@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class HelpSupportPage extends StatelessWidget {
   const HelpSupportPage({super.key});
@@ -19,7 +20,7 @@ class HelpSupportPage extends StatelessWidget {
             icon: const Icon(Icons.arrow_back_ios_new_rounded),
             onPressed: () => Navigator.pop(context),
           ),
-          title: Text(
+          title: LocalizedText(
             'Help and support',
             style: TextStyle(
               fontWeight: FontWeight.bold,
@@ -133,7 +134,7 @@ class HelpSupportPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          Text(
+          LocalizedText(
             'Need help?',
             style: TextStyle(
               fontSize: 24,
@@ -142,7 +143,7 @@ class HelpSupportPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          LocalizedText(
             'Reach the VitalySync team through the channels below for account, app, or project concerns.',
             style: TextStyle(
               height: 1.5,
@@ -157,7 +158,7 @@ class HelpSupportPage extends StatelessWidget {
   Widget _buildSectionLabel(BuildContext context, String label) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 2),
-      child: Text(
+      child: LocalizedText(
         label,
         style: TextStyle(
           fontSize: 15.5,
@@ -216,7 +217,7 @@ class HelpSupportPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LocalizedText(
                   title,
                   style: TextStyle(
                     fontSize: 16,
@@ -225,7 +226,7 @@ class HelpSupportPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
+                LocalizedText(
                   subtitle,
                   style: TextStyle(
                     color: pageSecondaryTextColor(context),
@@ -275,7 +276,7 @@ class HelpSupportPage extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
+            child: LocalizedText(
               'For urgent health, safety, or mental health emergencies, contact local emergency services or a qualified professional.',
               style: TextStyle(
                 height: 1.45,

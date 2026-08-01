@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class VerificationCodeField extends StatelessWidget {
   const VerificationCodeField({
@@ -33,9 +34,9 @@ class VerificationCodeField extends StatelessWidget {
         fontWeight: FontWeight.w800,
         letterSpacing: 9,
       ),
-      decoration: const InputDecoration(
-        labelText: 'Verification code',
-        hintText: '000000',
+      decoration: InputDecoration(
+        labelText: 'Verification code'.localizedCopy(context),
+        hintText: '000000'.localizedCopy(context),
         counterText: '',
         prefixIcon: Icon(Icons.password_rounded),
       ),

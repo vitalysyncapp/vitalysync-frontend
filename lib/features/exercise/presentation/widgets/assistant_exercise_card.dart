@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
 import '../../data/exercise_recommendation_model.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class AssistantExerciseCard extends StatelessWidget {
   final List<ExerciseRecommendationModel> recommendations;
@@ -92,8 +93,9 @@ class _RecommendationTile extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(
+                        child: LocalizedText(
                           recommendation.exerciseName,
+                          translate: false,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -104,7 +106,7 @@ class _RecommendationTile extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(
+                      LocalizedText(
                         recommendation.targetLabel,
                         style: TextStyle(
                           fontSize: 12,
@@ -115,7 +117,7 @@ class _RecommendationTile extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text(
+                  LocalizedText(
                     recommendation.reason,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -182,7 +184,7 @@ class _AssistantCardShell extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -193,7 +195,7 @@ class _AssistantCardShell extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
+                    LocalizedText(
                       subtitle,
                       style: TextStyle(
                         fontSize: 12.5,

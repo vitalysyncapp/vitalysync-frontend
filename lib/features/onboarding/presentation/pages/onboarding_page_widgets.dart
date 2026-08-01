@@ -115,7 +115,7 @@ class _OnboardingHeader extends StatelessWidget {
                         key: ValueKey(step.sectionTitle),
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          LocalizedText(
                             step.sectionTitle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -126,7 +126,7 @@ class _OnboardingHeader extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(
+                          LocalizedText(
                             subtitle,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -194,7 +194,7 @@ class _OnboardingHeader extends StatelessWidget {
                   const SizedBox(width: 12),
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 180),
-                    child: Text(
+                    child: LocalizedText(
                       '$currentStep / $totalSteps',
                       key: ValueKey(currentStep),
                       style: TextStyle(
@@ -376,7 +376,7 @@ class _PromptBadge extends StatelessWidget {
         children: [
           Icon(icon, size: 17, color: primary),
           const SizedBox(width: 7),
-          Text(
+          LocalizedText(
             _sentenceCaseOption(label),
             style: TextStyle(
               fontSize: 11.5,
@@ -402,7 +402,7 @@ class _QuestionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
+    return LocalizedText(
       text,
       style: TextStyle(
         height: 1.2,
@@ -426,7 +426,7 @@ class _HelperText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
+    return LocalizedText(
       text,
       style: TextStyle(
         height: 1.45,
@@ -521,7 +521,7 @@ class _OptionTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       _sentenceCaseOption(label),
                       style: TextStyle(
                         fontSize: 16,
@@ -531,7 +531,7 @@ class _OptionTile extends StatelessWidget {
                     ),
                     if (description != null) ...[
                       const SizedBox(height: 4),
-                      Text(
+                      LocalizedText(
                         description!,
                         style: TextStyle(
                           height: 1.3,

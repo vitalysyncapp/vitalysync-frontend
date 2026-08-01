@@ -77,7 +77,7 @@ class _AssistantCheckInCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       _showWeeklyQuestions
                           ? currentStatus.schedule.isOverdue
                                 ? 'Weekly pulse due'
@@ -90,7 +90,7 @@ class _AssistantCheckInCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
+                    LocalizedText(
                       _showWeeklyQuestions
                           ? 'Today includes the usual nine inputs plus five weekly reflections. It cannot be skipped, but it follows you to the next day you return.'
                           : 'Take a moment to reflect on your day and see how you are doing.',
@@ -196,7 +196,7 @@ class _AssistantCheckInCard extends StatelessWidget {
                     ),
                   )
                 : const Icon(Icons.check_circle_outline_rounded),
-            label: Text(
+            label: LocalizedText(
               isSaving
                   ? 'Saving...'
                   : _showWeeklyQuestions
@@ -213,7 +213,7 @@ class _AssistantCheckInCard extends StatelessWidget {
         ),
         if (missing.isNotEmpty) ...[
           const SizedBox(height: 8),
-          Text(
+          LocalizedText(
             'Still needed: ${missing.join(', ')}',
             style: TextStyle(
               color: pageSecondaryTextColor(context),
@@ -274,7 +274,7 @@ class _AssistantCheckInMessage extends StatelessWidget {
             child: Icon(icon, color: primary, size: 30),
           ),
           const SizedBox(height: 14),
-          Text(
+          LocalizedText(
             title,
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -284,7 +284,7 @@ class _AssistantCheckInMessage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 7),
-          Text(
+          LocalizedText(
             message,
             textAlign: TextAlign.center,
             style: TextStyle(

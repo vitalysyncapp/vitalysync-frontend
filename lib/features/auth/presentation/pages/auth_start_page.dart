@@ -9,6 +9,7 @@ import 'package:liquid_swipe/liquid_swipe.dart';
 import '../widgets/auth_chrome.dart';
 import 'login_page.dart';
 import 'sign_up_page.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class AuthStartPage extends StatefulWidget {
   const AuthStartPage({super.key});
@@ -342,7 +343,7 @@ class _WelcomeBrandStrip extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        LocalizedText(
                           'VitalySync',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -355,7 +356,7 @@ class _WelcomeBrandStrip extends StatelessWidget {
                         ),
                         if (!compact) ...[
                           const SizedBox(height: 2),
-                          Text(
+                          LocalizedText(
                             'Your daily wellness rhythm',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -450,7 +451,7 @@ class _WelcomeSlide extends StatelessWidget {
                     children: [
                       _WelcomeVisual(data: data, height: visualHeight),
                       SizedBox(height: shortSlide ? 12 : 20),
-                      Text(
+                      LocalizedText(
                         data.title,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
@@ -468,7 +469,7 @@ class _WelcomeSlide extends StatelessWidget {
                         ),
                       ),
                       SizedBox(height: shortSlide ? 7 : 10),
-                      Text(
+                      LocalizedText(
                         data.subtitle,
                         maxLines: shortSlide ? 3 : 4,
                         overflow: TextOverflow.ellipsis,
@@ -615,7 +616,7 @@ class _FeatureChip extends StatelessWidget {
             children: [
               Icon(feature.icon, size: 15, color: accentColor),
               const SizedBox(width: 6),
-              Text(
+              LocalizedText(
                 feature.label,
                 style: GoogleFonts.poppins(
                   fontSize: 11.5,
@@ -961,7 +962,7 @@ class _GradientPrimaryCta extends StatelessWidget {
                 children: [
                   Icon(icon, size: 20, color: Colors.white),
                   const SizedBox(width: 9),
-                  Text(
+                  LocalizedText(
                     label,
                     style: GoogleFonts.poppins(
                       fontSize: 15,
@@ -1011,7 +1012,7 @@ class _CompactDisclaimer extends StatelessWidget {
           ),
           const SizedBox(width: 9),
           Expanded(
-            child: Text(
+            child: LocalizedText(
               text,
               style: GoogleFonts.poppins(
                 height: 1.32,

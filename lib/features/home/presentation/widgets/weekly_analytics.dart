@@ -6,6 +6,7 @@ import '../../../../shared/navigation/main_tab.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/widgets/sensitive_content_guard.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class WeeklyAnalyticsCard extends StatelessWidget {
   final String title;
@@ -58,7 +59,7 @@ class WeeklyAnalyticsCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
+                LocalizedText(
                   title,
                   style: TextStyle(
                     fontSize: 15.5,
@@ -92,7 +93,7 @@ class WeeklyAnalyticsCard extends StatelessWidget {
                     minimumSize: const Size(0, 0),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: Text(
+                  child: LocalizedText(
                     'View all',
                     style: TextStyle(
                       fontSize: 12.5,
@@ -140,7 +141,7 @@ class WeeklyAnalyticsCard extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Expanded(
-          child: Text(
+          child: LocalizedText(
             label,
             style: TextStyle(
               fontSize: 13,
@@ -150,7 +151,7 @@ class WeeklyAnalyticsCard extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        Text(
+        LocalizedText(
           value,
           textAlign: TextAlign.right,
           style: TextStyle(

@@ -6,6 +6,7 @@ import 'package:vitalysync/features/nutrition/presentation/widgets/today_nutriti
 import 'package:vitalysync/features/nutrition/presentation/widgets/todays_meals_card.dart';
 import 'package:vitalysync/features/nutrition/presentation/widgets/white_card.dart';
 import 'package:vitalysync/shared/widgets/app_skeleton.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -35,7 +36,9 @@ void main() {
     expect(find.byKey(const ValueKey('calories-remaining')), findsOneWidget);
     expect(
       tester
-          .widget<Text>(find.byKey(const ValueKey('calories-remaining')))
+          .widget<LocalizedText>(
+            find.byKey(const ValueKey('calories-remaining')),
+          )
           .data,
       '750',
     );
@@ -66,7 +69,9 @@ void main() {
 
     expect(
       tester
-          .widget<Text>(find.byKey(const ValueKey('calories-remaining')))
+          .widget<LocalizedText>(
+            find.byKey(const ValueKey('calories-remaining')),
+          )
           .data,
       '0',
     );

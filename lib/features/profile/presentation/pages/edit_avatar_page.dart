@@ -7,6 +7,7 @@ import '../../../../shared/theme/app_page_style.dart';
 import '../../data/profile_avatar.dart';
 import '../widgets/profile_avatar_image.dart';
 import 'avatar_crop_page.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 typedef ProfileAvatarImagePicker = Future<XFile?> Function();
 typedef ProfileAvatarCropper =
@@ -106,7 +107,7 @@ class _EditAvatarPageState extends State<EditAvatarPage> {
           : 'Unable to open that photo. Please try another image.';
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      ).showSnackBar(SnackBar(content: LocalizedText(message)));
     } finally {
       if (mounted) setState(() => _isPicking = false);
     }
@@ -129,7 +130,7 @@ class _EditAvatarPageState extends State<EditAvatarPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Profile avatar updated.')));
+      ).showSnackBar(const SnackBar(content: LocalizedText('Profile avatar updated.')));
       Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) return;
@@ -138,7 +139,7 @@ class _EditAvatarPageState extends State<EditAvatarPage> {
           : 'Unable to save the profile avatar.';
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      ).showSnackBar(SnackBar(content: LocalizedText(message)));
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -165,7 +166,7 @@ class _EditAvatarPageState extends State<EditAvatarPage> {
               onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
               icon: const Icon(Icons.arrow_back_ios_new_rounded),
             ),
-            title: Text(
+            title: LocalizedText(
               'Edit avatar',
               style: TextStyle(
                 color: pagePrimaryTextColor(context),
@@ -219,7 +220,7 @@ class _EditAvatarPageState extends State<EditAvatarPage> {
                                       : const Icon(
                                           Icons.add_photo_alternate_outlined,
                                         ),
-                                  label: Text(
+                                  label: LocalizedText(
                                     _isPicking
                                         ? 'Opening gallery...'
                                         : 'Choose and crop photo',
@@ -270,7 +271,7 @@ class _EditAvatarPageState extends State<EditAvatarPage> {
                                       });
                                     },
                               icon: const Icon(Icons.person_outline_rounded),
-                              label: const Text(
+                              label: const LocalizedText(
                                 'Use suggested avatar',
                                 style: TextStyle(fontWeight: FontWeight.w800),
                               ),
@@ -290,7 +291,7 @@ class _EditAvatarPageState extends State<EditAvatarPage> {
                                       ),
                                     )
                                   : const Icon(Icons.save_outlined),
-                              label: Text(
+                              label: LocalizedText(
                                 _isSaving ? 'Saving...' : 'Save avatar',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w800,
@@ -357,11 +358,11 @@ class _AvatarPreviewCard extends StatelessWidget {
               selection: selection,
               suggestedAssetPath: suggestedAsset,
               size: 142,
-              semanticLabel: 'Avatar preview',
+              semanticLabel: 'Avatar preview'.localizedCopy(context),
             ),
           ),
           const SizedBox(height: 14),
-          const Text(
+          const LocalizedText(
             'Your profile avatar',
             style: TextStyle(
               color: Colors.white,
@@ -370,7 +371,7 @@ class _AvatarPreviewCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
+          LocalizedText(
             'Preview changes before saving',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.86),
@@ -407,7 +408,7 @@ class _AvatarSectionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LocalizedText(
             title,
             style: TextStyle(
               color: pagePrimaryTextColor(context),
@@ -416,7 +417,7 @@ class _AvatarSectionCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
+          LocalizedText(
             subtitle,
             style: TextStyle(
               color: pageSecondaryTextColor(context),
@@ -487,7 +488,7 @@ class _AvatarOption extends StatelessWidget {
     return Semantics(
       selected: selected,
       button: true,
-      label: entry.semanticLabel,
+      label: entry.semanticLabel.localizedCopy(context),
       child: InkWell(
         key: ValueKey('avatar-option-${entry.id}'),
         onTap: onTap,

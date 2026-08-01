@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../preferences/app_preferences.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 /// Pushes a branded privacy overlay when the app leaves the foreground so that
 /// the Android/iOS app‐switcher thumbnail does not reveal wellness data.
@@ -107,7 +108,7 @@ class _PrivacyScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            Text(
+            LocalizedText(
               'VitalySync',
               style: TextStyle(
                 fontSize: 20,

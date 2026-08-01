@@ -30,7 +30,7 @@ class _SettingsBlock extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
-            child: Text(
+            child: LocalizedText(
               title,
               style: TextStyle(
                 fontSize: 17,
@@ -75,7 +75,7 @@ class _SwitchTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LocalizedText(
                   title,
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
@@ -83,7 +83,7 @@ class _SwitchTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
+                LocalizedText(
                   subtitle,
                   style: TextStyle(
                     height: 1.4,
@@ -132,7 +132,7 @@ class _TimeTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LocalizedText(
                     title,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
@@ -140,7 +140,7 @@ class _TimeTile extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
+                  LocalizedText(
                     subtitle,
                     style: TextStyle(
                       height: 1.4,
@@ -151,7 +151,7 @@ class _TimeTile extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            Text(
+            LocalizedText(
               _displayTime(context, value),
               style: TextStyle(fontWeight: FontWeight.w800, color: titleColor),
             ),
@@ -215,7 +215,7 @@ class _SelectTile<T> extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LocalizedText(
                   title,
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
@@ -223,7 +223,7 @@ class _SelectTile<T> extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
+                LocalizedText(
                   subtitle,
                   style: TextStyle(
                     height: 1.4,
@@ -241,7 +241,7 @@ class _SelectTile<T> extends StatelessWidget {
                 .map(
                   (option) => DropdownMenuItem<T>(
                     value: option,
-                    child: Text(labelFor(option)),
+                    child: LocalizedText(labelFor(option)),
                   ),
                 )
                 .toList(),

@@ -6,6 +6,7 @@ import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/new_password_fields.dart';
 import '../../../../shared/widgets/validation_dialog.dart';
 import '../../../auth/presentation/pages/auth_start_page.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 typedef PasswordChanger =
     Future<String> Function(
@@ -106,7 +107,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             onPressed: _isSubmitting ? null : () => Navigator.pop(context),
             icon: const Icon(Icons.arrow_back_ios_new_rounded),
           ),
-          title: Text(
+          title: LocalizedText(
             'Change password',
             style: TextStyle(
               color: pagePrimaryTextColor(context),
@@ -154,7 +155,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: Text(
+                            child: LocalizedText(
                               'Choose a new account password',
                               style: TextStyle(
                                 color: pagePrimaryTextColor(context),
@@ -166,7 +167,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      Text(
+                      LocalizedText(
                         'For your security, changing your password signs out every device, including this one.',
                         style: TextStyle(
                           color: pageSecondaryTextColor(context),
@@ -194,7 +195,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                                   ),
                                 )
                               : const Icon(Icons.check_rounded),
-                          label: Text(
+                          label: LocalizedText(
                             _isSubmitting ? 'Changing...' : 'Change password',
                           ),
                         ),

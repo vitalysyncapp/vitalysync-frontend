@@ -8,6 +8,7 @@ import '../../features/profile/presentation/widgets/profile_avatar_image.dart';
 import '../../features/streaks/presentation/pages/personal_streak_page.dart';
 import '../notifications/notification_feed_service.dart';
 import '../theme/app_page_style.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 final ValueNotifier<int> streakRefreshNotifier = ValueNotifier<int>(0);
 
@@ -94,7 +95,7 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
+            LocalizedText(
               greeting(),
               style: const TextStyle(
                 fontSize: 12,
@@ -103,8 +104,9 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
               ),
             ),
             const SizedBox(height: 2),
-            Text(
+            LocalizedText(
               username,
+              translate: false,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
@@ -114,7 +116,7 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
               ),
             ),
             const SizedBox(height: 3),
-            Text(
+            LocalizedText(
               today,
               style: const TextStyle(fontSize: 11.5, color: Colors.white70),
             ),
@@ -170,7 +172,7 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
                           decoration: actionChipDecoration(),
                           child: Row(
                             children: [
-                              Text(
+                              LocalizedText(
                                 '$currentStreak',
                                 style: const TextStyle(
                                   color: Colors.white,
@@ -241,7 +243,7 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
                                         shape: BoxShape.circle,
                                       ),
                                       alignment: Alignment.center,
-                                      child: Text(
+                                      child: LocalizedText(
                                         unreadCount > 9
                                             ? '9+'
                                             : unreadCount.toString(),
@@ -265,7 +267,7 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
                     child: Semantics(
                       key: const ValueKey('main-app-bar-avatar'),
                       image: true,
-                      label: 'User avatar',
+                      label: 'User avatar'.localizedCopy(context),
                       child: Container(
                         padding: const EdgeInsets.all(2),
                         decoration: BoxDecoration(
@@ -280,7 +282,7 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
                           gender: gender,
                           userType: userType,
                           size: 28,
-                          semanticLabel: 'User avatar',
+                          semanticLabel: 'User avatar'.localizedCopy(context),
                         ),
                       ),
                     ),
@@ -310,7 +312,7 @@ class LogoutConfirmationDialog extends StatelessWidget {
       key: const ValueKey('logout-stay-button'),
       onPressed: () => Navigator.pop(context, false),
       icon: const Icon(Icons.close_rounded, size: 18),
-      label: const Text('Stay'),
+      label: const LocalizedText('Stay'),
       style: OutlinedButton.styleFrom(
         foregroundColor: pagePrimaryTextColor(context),
         side: BorderSide(color: pageBorderColor(context)),
@@ -323,7 +325,7 @@ class LogoutConfirmationDialog extends StatelessWidget {
       key: const ValueKey('logout-confirm-button'),
       onPressed: () => Navigator.pop(context, true),
       icon: const Icon(Icons.logout_rounded, size: 18),
-      label: const Text('Log out'),
+      label: const LocalizedText('Log out'),
       style: ElevatedButton.styleFrom(
         backgroundColor: accent,
         foregroundColor: Colors.white,
@@ -374,7 +376,7 @@ class LogoutConfirmationDialog extends StatelessWidget {
                 ),
               ),
               SizedBox(height: isCompact ? 14 : 16),
-              Text(
+              LocalizedText(
                 'Log out of VitalySync?',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -384,7 +386,7 @@ class LogoutConfirmationDialog extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
+              LocalizedText(
                 'You will return to the welcome screen and can sign back in anytime.',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -409,7 +411,7 @@ class LogoutConfirmationDialog extends StatelessWidget {
                     Icon(Icons.info_outline_rounded, color: accent, size: 18),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: Text(
+                      child: LocalizedText(
                         'Assistant access pauses until you sign in again.',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: pageSecondaryTextColor(context),

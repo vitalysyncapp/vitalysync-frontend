@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_page_style.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class TermsPrivacyWidget extends StatelessWidget {
   final EdgeInsetsGeometry padding;
@@ -83,7 +84,7 @@ class TermsPrivacyWidget extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LocalizedText(
                   'Terms and privacy policy',
                   style: TextStyle(
                     fontSize: 22,
@@ -92,7 +93,7 @@ class TermsPrivacyWidget extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(
+                LocalizedText(
                   'Clear terms, privacy commitments, and data-use notes for VitalySync.',
                   style: TextStyle(
                     height: 1.45,
@@ -121,7 +122,7 @@ class TermsPrivacyWidget extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
+            child: LocalizedText(
               'VitalySync is a wellness support tool for awareness and routine tracking. It is not a medical diagnosis or treatment service.',
               style: TextStyle(
                 fontSize: 14.5,
@@ -166,7 +167,7 @@ class TermsPrivacyWidget extends StatelessWidget {
             ),
             child: Icon(icon, color: color, size: 21),
           ),
-          title: Text(
+          title: LocalizedText(
             title,
             style: TextStyle(
               fontWeight: FontWeight.w800,
@@ -354,7 +355,7 @@ class TermsPrivacyWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LocalizedText(
             title,
             style: TextStyle(
               fontWeight: FontWeight.w700,
@@ -363,7 +364,7 @@ class TermsPrivacyWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Text(
+          LocalizedText(
             content,
             style: TextStyle(fontSize: 14, height: 1.5, color: bodyColor),
           ),
@@ -384,7 +385,7 @@ class TermsPrivacyWidget extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(
+                      child: LocalizedText(
                         item,
                         style: TextStyle(color: bodyColor, height: 1.4),
                       ),
@@ -395,7 +396,7 @@ class TermsPrivacyWidget extends StatelessWidget {
             ),
           if (footer != null) ...[
             const SizedBox(height: 8),
-            Text(footer, style: TextStyle(color: bodyColor, height: 1.4)),
+            LocalizedText(footer, style: TextStyle(color: bodyColor, height: 1.4)),
           ],
         ],
       ),

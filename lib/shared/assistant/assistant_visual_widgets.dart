@@ -35,7 +35,7 @@ class _AssistantLottieIcon extends StatelessWidget {
       repeat: true,
       animate: true,
       errorBuilder: (context, error, stackTrace) {
-        return Text(
+        return LocalizedText(
           emoji,
           style: TextStyle(fontSize: fallbackFontSize, height: 1),
         );
@@ -66,10 +66,10 @@ class _FloatingHeartButton extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Tooltip(
-      message: 'Wellness assistant',
+      message: 'Wellness assistant'.localizedCopy(context),
       child: Semantics(
         button: true,
-        label: 'Open wellness assistant',
+        label: 'Open wellness assistant'.localizedCopy(context),
         child: Material(
           color: Colors.transparent,
           shape: const CircleBorder(),

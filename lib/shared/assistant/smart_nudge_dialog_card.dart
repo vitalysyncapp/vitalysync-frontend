@@ -90,7 +90,7 @@ class _SmartNudgeDialogCardState extends State<_SmartNudgeDialogCard> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
+            content: LocalizedText(
               'Unable to save feedback: ${error.toString().replaceFirst('Exception: ', '')}',
             ),
           ),
@@ -233,7 +233,7 @@ class _NutritionNudgeDialogCardState extends State<_NutritionNudgeDialogCard> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
+            content: LocalizedText(
               'Unable to save nutrition feedback: ${error.toString().replaceFirst('Exception: ', '')}',
             ),
           ),
@@ -362,7 +362,7 @@ class _SmartNudgeInsightCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       'Smart nudge',
                       style: TextStyle(
                         color: pagePrimaryTextColor(context),
@@ -372,7 +372,7 @@ class _SmartNudgeInsightCard extends StatelessWidget {
                     ),
                     if (subtitle.isNotEmpty) ...[
                       const SizedBox(height: 2),
-                      Text(
+                      LocalizedText(
                         subtitle,
                         style: TextStyle(
                           color: pageSecondaryTextColor(context),
@@ -398,7 +398,7 @@ class _SmartNudgeInsightCard extends StatelessWidget {
                     color: severityColor.withValues(alpha: 0.38),
                   ),
                 ),
-                child: Text(
+                child: LocalizedText(
                   _humanizeMetadataLabel(severity),
                   style: TextStyle(
                     color: severityColor,
@@ -420,7 +420,7 @@ class _SmartNudgeInsightCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 14),
-          Text(
+          LocalizedText(
             body,
             style: TextStyle(
               color: pagePrimaryTextColor(context),
@@ -540,7 +540,7 @@ class _NutritionInsightDialogCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       'Nutrition nudge',
                       style: TextStyle(
                         color: pagePrimaryTextColor(context),
@@ -549,7 +549,7 @@ class _NutritionInsightDialogCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
+                    LocalizedText(
                       _humanizeMetadataLabel(insight.confidence.label),
                       style: TextStyle(
                         color: accent,
@@ -563,7 +563,7 @@ class _NutritionInsightDialogCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Text(
+          LocalizedText(
             _expandedAssistantText(insight.message),
             style: TextStyle(
               color: pageSecondaryTextColor(context),
@@ -619,7 +619,7 @@ class _NutritionMacroDetails extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (macroFocus.isNotEmpty)
-            Text(
+            LocalizedText(
               macroFocus,
               style: TextStyle(
                 color: pagePrimaryTextColor(context),
@@ -646,7 +646,7 @@ class _NutritionMacroDetails extends StatelessWidget {
                           color: accent.withValues(alpha: 0.22),
                         ),
                       ),
-                      child: Text(
+                      child: LocalizedText(
                         food,
                         style: TextStyle(
                           color: pagePrimaryTextColor(context),
@@ -684,7 +684,7 @@ class _NudgeDetailLine extends StatelessWidget {
         Icon(icon, color: foregroundColor.withValues(alpha: 0.86), size: 17),
         const SizedBox(width: 7),
         Expanded(
-          child: Text(
+          child: LocalizedText(
             text,
             style: TextStyle(
               color: foregroundColor.withValues(alpha: 0.9),
@@ -773,7 +773,7 @@ class _NutritionInsightEmptyCard extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(
+                child: LocalizedText(
                   'Nutrition nudge',
                   style: TextStyle(
                     color: pagePrimaryTextColor(context),
@@ -785,7 +785,7 @@ class _NutritionInsightEmptyCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Text(
+          LocalizedText(
             'No nutrition nudge right now. Keep meals simple and steady today.',
             style: TextStyle(
               color: pageSecondaryTextColor(context),
@@ -871,7 +871,7 @@ class _InsightFeedbackIconButton extends StatelessWidget {
         : foregroundColor.withValues(alpha: 0.82);
 
     return Tooltip(
-      message: tooltip,
+      message: tooltip.localizedCopy(context),
       child: SizedBox(
         width: 44,
         height: 40,

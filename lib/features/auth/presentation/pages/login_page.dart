@@ -14,6 +14,7 @@ import '../widgets/auth_chrome.dart';
 import 'forgot_password_page.dart';
 import 'reactivate_account_page.dart';
 import 'sign_up_page.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -167,7 +168,7 @@ class _LoginPageState extends State<LoginPage> {
             AuthTextField(
               controller: emailController,
               label: 'Email',
-              hintText: 'you@gmail.com',
+              hintText: 'you@gmail.com'.localizedCopy(context),
               icon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
             ),
@@ -195,7 +196,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         );
                       },
-                child: Text(
+                child: LocalizedText(
                   'Forgot password?',
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w700,
@@ -216,7 +217,7 @@ class _LoginPageState extends State<LoginPage> {
               alignment: WrapAlignment.center,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Text(
+                LocalizedText(
                   'New to VitalySync? ',
                   style: GoogleFonts.poppins(
                     color: pageSecondaryTextColor(context),
@@ -229,7 +230,7 @@ class _LoginPageState extends State<LoginPage> {
                       MaterialPageRoute(builder: (_) => const SignUpPage()),
                     );
                   },
-                  child: Text(
+                  child: LocalizedText(
                     'Create account',
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.w800,

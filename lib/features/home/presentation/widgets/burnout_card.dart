@@ -5,6 +5,7 @@ import '../../../../shared/widgets/sensitive_content_guard.dart';
 import '../../../dashboard/data/burnout_score_api.dart';
 import '../pages/about_burnout_page.dart';
 import 'burnout_info_dialog.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class BurnoutCard extends StatelessWidget {
   final int score;
@@ -167,7 +168,7 @@ class BurnoutCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(
+                  child: LocalizedText(
                     'Burnout risk score',
                     style: TextStyle(
                       color: textColor.withValues(alpha: 0.7),
@@ -184,7 +185,7 @@ class BurnoutCard extends StatelessWidget {
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      tooltip: 'About burnout score',
+                      tooltip: 'About burnout score'.localizedCopy(context),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                       iconSize: 11,
@@ -200,7 +201,7 @@ class BurnoutCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
+                LocalizedText(
                   '$score/100',
                   style: TextStyle(
                     color: textColor,
@@ -242,7 +243,7 @@ class BurnoutCard extends StatelessWidget {
                 color: Colors.white24,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Text(
+              child: LocalizedText(
                 status,
                 style: TextStyle(
                   color: textColor,

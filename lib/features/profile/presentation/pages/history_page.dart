@@ -8,6 +8,7 @@ import '../../../../features/log/data/log_api.dart';
 import '../../../../features/nutrition/data/nutrition_api.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 enum _HistoryCategory { dailyLogs, burnout, nutrition, activity }
 
@@ -168,7 +169,7 @@ class _HistoryPageState extends State<HistoryPage> {
             ),
             onPressed: () => Navigator.pop(context),
           ),
-          title: Text(
+          title: LocalizedText(
             'History',
             style: TextStyle(
               color: pagePrimaryTextColor(context),
@@ -241,7 +242,7 @@ class _HistoryPageState extends State<HistoryPage> {
             padding: const EdgeInsets.only(right: 6),
             child: ChoiceChip(
               selected: selected,
-              label: Text('${_categoryLabel(category)} $count'),
+              label: LocalizedText('${_categoryLabel(category)} $count'),
               avatar: Icon(
                 _categoryIcon(category),
                 size: 14,
@@ -445,7 +446,7 @@ class _HistoryHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 7),
-              Text(
+              LocalizedText(
                 'WELLNESS DATA',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: pageSecondaryTextColor(context),
@@ -466,7 +467,7 @@ class _HistoryHeader extends StatelessWidget {
               ),
               const SizedBox(width: 9),
               Expanded(
-                child: Text(
+                child: LocalizedText(
                   'Wellness history',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -482,7 +483,7 @@ class _HistoryHeader extends StatelessWidget {
             ],
           ),
           SizedBox(height: isCompact ? 4 : 5),
-          Text(
+          LocalizedText(
             '$rangeLabel  •  $totalCount saved ${totalCount == 1 ? 'entry' : 'entries'}',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -673,7 +674,7 @@ class _HistoryEntryCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -684,7 +685,7 @@ class _HistoryEntryCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 3),
-                    Text(
+                    LocalizedText(
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -727,7 +728,7 @@ class _HistoryMetric extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
+          LocalizedText(
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -738,7 +739,7 @@ class _HistoryMetric extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 2),
-          Text(
+          LocalizedText(
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -788,7 +789,7 @@ class _FilterButton extends StatelessWidget {
           children: [
             Icon(icon, size: 17, color: selected ? Colors.white : primary),
             const SizedBox(width: 6),
-            Text(
+            LocalizedText(
               label,
               style: TextStyle(
                 color: selected ? Colors.white : pagePrimaryTextColor(context),
@@ -837,7 +838,7 @@ class _HistoryStateCard extends StatelessWidget {
         children: [
           Icon(icon, color: Theme.of(context).colorScheme.primary, size: 34),
           const SizedBox(height: 10),
-          Text(
+          LocalizedText(
             title,
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -847,7 +848,7 @@ class _HistoryStateCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Text(
+          LocalizedText(
             message,
             textAlign: TextAlign.center,
             style: TextStyle(

@@ -1,4 +1,5 @@
 import '../preferences/auth_token_store.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiConfig {
   static const String _configuredBaseUrl = String.fromEnvironment(
@@ -60,12 +61,18 @@ class ApiConfig {
   }
 
   static Future<Map<String, String>> authHeaders() async {
+    final prefs = await SharedPreferences.getInstance();
+    final storedLanguage = prefs.getString('app_language');
+    final languageCode = switch (storedLanguage) {
+      'tagalog' || 'filipino' || 'fil' || 'tl' => 'fil',
+      _ => 'en',
+    };
     final token = await AuthTokenStore.instance.readToken();
 
     if (token == null || token.isEmpty) {
-      return const <String, String>{};
+      return <String, String>{'Accept-Language': languageCode};
     }
 
-    return {'Authorization': 'Bearer $token'};
+    return {'Accept-Language': languageCode, 'Authorization': 'Bearer $token'};
   }
 }

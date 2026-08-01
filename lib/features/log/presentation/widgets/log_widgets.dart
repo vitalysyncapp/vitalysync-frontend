@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
 import '../../data/log_api.dart';

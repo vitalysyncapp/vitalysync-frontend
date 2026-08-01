@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum AppLanguage { english, filipino }
+enum AppLanguage { english, tagalog }
 
 enum AppFontSize { small, medium, large }
 
@@ -130,7 +130,7 @@ class AppPreferencesState {
 
   Locale get locale {
     switch (language) {
-      case AppLanguage.filipino:
+      case AppLanguage.tagalog:
         return const Locale('fil');
       case AppLanguage.english:
         return const Locale('en');
@@ -150,8 +150,8 @@ class AppPreferencesState {
 
   String get languageLabel {
     switch (language) {
-      case AppLanguage.filipino:
-        return 'Filipino';
+      case AppLanguage.tagalog:
+        return 'Tagalog';
       case AppLanguage.english:
         return 'English';
     }
@@ -233,9 +233,7 @@ class AppPreferencesController {
       final sleepWindDownTime = prefs.getString(_sleepWindDownTimeKey);
       final hideSensitiveContent = prefs.getBool(_hideSensitiveContentKey);
       final biometricLockEnabled = prefs.getBool(_biometricLockKey);
-      final pauseWellnessInsights = prefs.getBool(
-        _pauseWellnessInsightsKey,
-      );
+      final pauseWellnessInsights = prefs.getBool(_pauseWellnessInsightsKey);
       final hideProfileFromLeaderboard = prefs.getBool(
         _hideProfileFromLeaderboardKey,
       );
@@ -246,10 +244,14 @@ class AppPreferencesController {
       final assistantOverlayEnabled = prefs.getBool(
         _assistantOverlayEnabledKey,
       );
+      final language = _languageFromString(languageName);
+      if (language == AppLanguage.tagalog && languageName != 'tagalog') {
+        await prefs.setString(_languageKey, AppLanguage.tagalog.name);
+      }
 
       notifier.value = AppPreferencesState(
         themeMode: _themeModeFromString(themeModeName),
-        language: _languageFromString(languageName),
+        language: language,
         fontSize: _fontSizeFromString(fontSizeName),
         notificationsEnabled: notificationsEnabled ?? true,
         bedtimeReminderEnabled: bedtimeReminderEnabled ?? true,
@@ -334,14 +336,10 @@ class AppPreferencesController {
     notifier.value = notifier.value.copyWith(biometricLockEnabled: value);
   }
 
-
-
   Future<void> updateHideProfileFromLeaderboard(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_hideProfileFromLeaderboardKey, value);
-    notifier.value = notifier.value.copyWith(
-      hideProfileFromLeaderboard: value,
-    );
+    notifier.value = notifier.value.copyWith(hideProfileFromLeaderboard: value);
   }
 
   Future<void> updateDataRetentionDays(int days) async {
@@ -419,10 +417,15 @@ class AppPreferencesController {
     );
   }
 
-  Future<void> resetToDefaults() async {
+  Future<void> resetToDefaults({bool preserveLanguage = false}) async {
     final prefs = await SharedPreferences.getInstance();
+    final preservedLanguage = _languageFromString(
+      prefs.getString(_languageKey),
+    );
     await prefs.remove(_themeModeKey);
-    await prefs.remove(_languageKey);
+    if (!preserveLanguage) {
+      await prefs.remove(_languageKey);
+    }
     await prefs.remove(_fontSizeKey);
     await prefs.remove(_notificationsEnabledKey);
     await prefs.remove(_bedtimeReminderKey);
@@ -440,7 +443,10 @@ class AppPreferencesController {
     await prefs.remove(_dataRetentionDaysKey);
     await prefs.remove(_locationPermissionChoiceKey);
     await prefs.remove(_assistantOverlayEnabledKey);
-    notifier.value = AppPreferencesState.defaults().copyWith(isLoaded: true);
+    notifier.value = AppPreferencesState.defaults().copyWith(
+      language: preserveLanguage ? preservedLanguage : AppLanguage.english,
+      isLoaded: true,
+    );
   }
 
   ThemeMode _themeModeFromString(String? value) {
@@ -451,6 +457,9 @@ class AppPreferencesController {
   }
 
   AppLanguage _languageFromString(String? value) {
+    if (value == 'filipino' || value == 'fil' || value == 'tl') {
+      return AppLanguage.tagalog;
+    }
     return AppLanguage.values.firstWhere(
       (language) => language.name == value,
       orElse: () => AppLanguage.english,

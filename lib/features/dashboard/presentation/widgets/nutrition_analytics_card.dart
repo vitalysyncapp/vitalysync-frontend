@@ -10,6 +10,7 @@ import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/analytics_animation.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/widgets/reveal_on_build.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 const double _dailyCalorieGoal = 2000;
 const double _proteinCaloriesPerGram = 4;
@@ -359,7 +360,7 @@ class _NutritionSectionHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              LocalizedText(
                 title,
                 style: TextStyle(
                   color: pagePrimaryTextColor(context),
@@ -368,7 +369,7 @@ class _NutritionSectionHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 1),
-              Text(
+              LocalizedText(
                 subtitle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -392,7 +393,7 @@ class _NutritionSectionHeader extends StatelessWidget {
         else if (onRetry != null)
           IconButton(
             key: const ValueKey('nutrition-analytics-retry'),
-            tooltip: 'Retry nutrition data',
+            tooltip: 'Retry nutrition data'.localizedCopy(context),
             onPressed: onRetry,
             icon: const Icon(Icons.refresh_rounded),
           ),
@@ -436,7 +437,7 @@ class _CalorieLevelListItem extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
+                LocalizedText(
                   day.dayLabel,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -447,7 +448,7 @@ class _CalorieLevelListItem extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 1),
-                Text(
+                LocalizedText(
                   day.dateLabel,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -468,7 +469,7 @@ class _CalorieLevelListItem extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(
+                      child: LocalizedText(
                         hasLog ? '${_formatCalories(day.calories)} cal' : '--',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -495,7 +496,7 @@ class _CalorieLevelListItem extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 5),
-                Text(
+                LocalizedText(
                   hasLog
                       ? '${day.mealCount} $mealText logged'
                       : 'No meal logged',
@@ -530,7 +531,7 @@ class _CalorieLevelPill extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: level.color.withValues(alpha: 0.22)),
       ),
-      child: Text(
+      child: LocalizedText(
         level.label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
@@ -641,7 +642,7 @@ class _MacroPieChart extends StatelessWidget {
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
+              LocalizedText(
                 hasMacroData ? 'Balance' : 'No data',
                 style: TextStyle(
                   color: primaryTextColor,
@@ -650,7 +651,7 @@ class _MacroPieChart extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
+              LocalizedText(
                 hasMacroData ? '${data.loggedDays} days' : 'yet',
                 style: TextStyle(
                   color: pageSecondaryTextColor(context),
@@ -726,7 +727,7 @@ class _MacroBalanceLegend extends StatelessWidget {
             color: pageBorderColor(context).withValues(alpha: 0.28),
             borderRadius: BorderRadius.circular(14),
           ),
-          child: Text(
+          child: LocalizedText(
             data.balanceMessage,
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
@@ -769,7 +770,7 @@ class _MacroLegendRow extends StatelessWidget {
         ),
         const SizedBox(width: 9),
         Expanded(
-          child: Text(
+          child: LocalizedText(
             label,
             style: TextStyle(
               color: pagePrimaryTextColor(context),
@@ -777,7 +778,7 @@ class _MacroLegendRow extends StatelessWidget {
             ),
           ),
         ),
-        Text(
+        LocalizedText(
           hasData ? '${percent.round()}% - ${gramsPerDay.round()}g/day' : '--',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -803,7 +804,7 @@ class _NutritionMetric extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LocalizedText(
           value,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -814,7 +815,7 @@ class _NutritionMetric extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 2),
-        Text(
+        LocalizedText(
           label,
           style: TextStyle(
             color: pageSecondaryTextColor(context),

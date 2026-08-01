@@ -7,6 +7,7 @@ import '../../../adaptive/data/daily_report_schedule.dart';
 import '../../../../shared/notifications/notification_feed_service.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
@@ -208,7 +209,7 @@ class _NotificationPageState extends State<NotificationPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LocalizedText(
                     'Notifications',
                     style: TextStyle(
                       fontSize: 18,
@@ -217,7 +218,7 @@ class _NotificationPageState extends State<NotificationPage> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
+                  LocalizedText(
                     '$unreadCount unread',
                     style: TextStyle(
                       fontSize: 14,
@@ -243,7 +244,7 @@ class _NotificationPageState extends State<NotificationPage> {
                       if (!mounted) return;
                       setState(() => _feed = updated);
                     },
-              child: const Text('Mark all read'),
+              child: const LocalizedText('Mark all read'),
             ),
           ),
         ],
@@ -278,7 +279,7 @@ class _NotificationPageState extends State<NotificationPage> {
                 ),
               ),
               const SizedBox(width: 7),
-              Text(
+              LocalizedText(
                 'PERSONALIZED INSIGHTS',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: pageSecondaryTextColor(context),
@@ -299,7 +300,7 @@ class _NotificationPageState extends State<NotificationPage> {
               ),
               const SizedBox(width: 9),
               Expanded(
-                child: Text(
+                child: LocalizedText(
                   'Insight history',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -315,7 +316,7 @@ class _NotificationPageState extends State<NotificationPage> {
             ],
           ),
           SizedBox(height: isCompact ? 4 : 5),
-          Text(
+          LocalizedText(
             refreshedText,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: pageSecondaryTextColor(context),
@@ -344,7 +345,7 @@ class _NotificationPageState extends State<NotificationPage> {
 
           return ChoiceChip(
             selected: selected,
-            label: Text('${filter.label} $count'),
+            label: LocalizedText('${filter.label} $count'),
             onSelected: (_) => setState(() => _selectedFilter = filter.key),
             selectedColor: const Color(0xFF246BFF),
             labelPadding: const EdgeInsets.symmetric(horizontal: 3),
@@ -420,7 +421,7 @@ class _NotificationPageState extends State<NotificationPage> {
             size: 34,
           ),
           const SizedBox(height: 12),
-          Text(
+          LocalizedText(
             'No insights yet',
             style: TextStyle(
               color: pagePrimaryTextColor(context),
@@ -429,7 +430,7 @@ class _NotificationPageState extends State<NotificationPage> {
             ),
           ),
           const SizedBox(height: 6),
-          Text(
+          LocalizedText(
             "Daily reports arrive after 7:00 AM with yesterday's wellness data. Weekly reports and smart nudges appear here too.",
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -517,7 +518,7 @@ class NotificationCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: Text(
+                        child: LocalizedText(
                           item.title,
                           style: TextStyle(
                             fontSize: 15,
@@ -531,7 +532,7 @@ class NotificationCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Text(
+                  LocalizedText(
                     item.message,
                     style: TextStyle(
                       fontSize: 14,
@@ -567,7 +568,7 @@ class NotificationCard extends StatelessWidget {
                         const SizedBox(width: 6),
                       ],
                       Expanded(
-                        child: Text(
+                        child: LocalizedText(
                           '${item.sourceLabel} \u2022 ${item.time}',
                           maxLines: isSmartNudge ? 2 : 1,
                           overflow: TextOverflow.ellipsis,
@@ -582,7 +583,7 @@ class NotificationCard extends StatelessWidget {
                         const SizedBox(width: 10),
                         GestureDetector(
                           onTap: onActionTap,
-                          child: const Text(
+                          child: const LocalizedText(
                             'Mark read',
                             style: TextStyle(
                               fontSize: 13,
@@ -683,7 +684,7 @@ class NotificationCard extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Text(
+                      LocalizedText(
                         title,
                         style: TextStyle(
                           fontSize: 16,
@@ -722,7 +723,7 @@ class NotificationCard extends StatelessWidget {
             ),
             if (item.metricChips.isNotEmpty) ...[
               const SizedBox(height: 14),
-              Text(
+              LocalizedText(
                 'Key signals',
                 style: TextStyle(
                   color: pagePrimaryTextColor(context),
@@ -743,7 +744,7 @@ class NotificationCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: Text(
+                  child: LocalizedText(
                     [
                       item.sourceLabel,
                       periodLabel,
@@ -762,7 +763,7 @@ class NotificationCard extends StatelessWidget {
                   const SizedBox(width: 10),
                   GestureDetector(
                     onTap: onActionTap,
-                    child: const Text(
+                    child: const LocalizedText(
                       'Mark read',
                       style: TextStyle(
                         fontSize: 13,
@@ -931,7 +932,7 @@ class _MetricChip extends StatelessWidget {
             Icon(Icons.auto_awesome_rounded, size: 12, color: textColor),
             const SizedBox(width: 5),
           ],
-          Text(
+          LocalizedText(
             label,
             style: TextStyle(
               color: textColor,
@@ -965,7 +966,7 @@ class _ReportTypePill extends StatelessWidget {
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(
+      child: LocalizedText(
         label,
         style: TextStyle(
           color: color,
@@ -992,7 +993,7 @@ class _ReportSummaryText extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LocalizedText(
           paragraphs.first,
           style: TextStyle(
             fontSize: 14.25,
@@ -1012,7 +1013,7 @@ class _ReportSummaryText extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          LocalizedText(
             paragraph,
             style: TextStyle(
               fontSize: 13.75,
@@ -1125,7 +1126,7 @@ class _ReportMetricTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
+                LocalizedText(
                   parts.label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -1136,7 +1137,7 @@ class _ReportMetricTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
+                LocalizedText(
                   parts.value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -1206,7 +1207,7 @@ class _PriorityBadge extends StatelessWidget {
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(11),
       ),
-      child: Text(
+      child: LocalizedText(
         normalized.isEmpty
             ? 'Normal'
             : '${normalized[0].toUpperCase()}${normalized.substring(1)}',

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class PersonalInformationPage extends StatelessWidget {
   final String username;
@@ -46,7 +47,7 @@ class PersonalInformationPage extends StatelessWidget {
             ),
             onPressed: () => Navigator.pop(context),
           ),
-          title: Text(
+          title: LocalizedText(
             'Personal info',
             style: TextStyle(
               color: pagePrimaryTextColor(context),
@@ -106,8 +107,9 @@ class PersonalInformationPage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          LocalizedText(
                             username,
+                            translate: false,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -117,8 +119,9 @@ class PersonalInformationPage extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(
+                          LocalizedText(
                             email,
+                            translate: false,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -236,14 +239,17 @@ class _InfoGroupCard extends StatelessWidget {
                     Positioned(
                       right: 3,
                       bottom: 1,
-                      child: Text(emoji, style: const TextStyle(fontSize: 13)),
+                      child: LocalizedText(
+                        emoji,
+                        style: const TextStyle(fontSize: 13),
+                      ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
+                child: LocalizedText(
                   title,
                   style: TextStyle(
                     fontSize: 17,
@@ -290,7 +296,7 @@ class _InfoRow extends StatelessWidget {
           Icon(icon, size: 19, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
+            child: LocalizedText(
               label,
               style: TextStyle(
                 fontSize: 13.5,
@@ -301,7 +307,7 @@ class _InfoRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Flexible(
-            child: Text(
+            child: LocalizedText(
               value,
               textAlign: TextAlign.right,
               style: TextStyle(

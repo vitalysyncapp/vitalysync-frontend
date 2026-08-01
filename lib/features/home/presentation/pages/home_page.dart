@@ -20,6 +20,7 @@ import '../widgets/home_header.dart';
 import '../widgets/info_card.dart';
 import '../widgets/quick_actions.dart';
 import '../widgets/weekly_analytics.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 enum _HomeLiveDataIssue { offline, unavailable }
 
@@ -550,7 +551,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               ),
               const SizedBox(width: 8),
               Flexible(
-                child: Text(
+                child: LocalizedText(
                   message,
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -598,7 +599,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             Icon(Icons.directions_walk_rounded, size: 19, color: accentColor),
             const SizedBox(width: 8),
             Flexible(
-              child: Text(
+              child: LocalizedText(
                 'Daily steps is not supported on this device.',
                 textAlign: TextAlign.center,
                 style: TextStyle(

@@ -6,6 +6,7 @@ import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/validation_dialog.dart';
 import '../widgets/verification_code_field.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 typedef EmailVerificationSender = Future<String> Function();
 typedef EmailVerificationCodeVerifier = Future<String> Function(String code);
@@ -156,7 +157,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                 ? null
                 : () => Navigator.pop(context),
           ),
-          title: Text(
+          title: LocalizedText(
             'Verify email',
             style: TextStyle(
               color: pagePrimaryTextColor(context),
@@ -215,7 +216,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                                     ),
                                   )
                                 : const Icon(Icons.verified_outlined),
-                            label: Text(
+                            label: LocalizedText(
                               _isVerifying ? 'Verifying...' : 'Verify code',
                             ),
                           ),
@@ -237,7 +238,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                                     ),
                                   )
                                 : const Icon(Icons.send_outlined, size: 18),
-                            label: Text(
+                            label: LocalizedText(
                               _cooldownSeconds > 0
                                   ? 'Send again in ${_cooldownSeconds}s'
                                   : _hasSent
@@ -296,7 +297,7 @@ class _Header extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              LocalizedText(
                 isVerified ? 'Email verified' : 'Verify your email',
                 style: TextStyle(
                   color: pagePrimaryTextColor(context),
@@ -305,8 +306,9 @@ class _Header extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 3),
-              Text(
+              LocalizedText(
                 isLoading ? 'Checking your account' : email,
+                translate: isLoading,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(color: pageSecondaryTextColor(context)),
               ),
@@ -358,7 +360,7 @@ class _GuidanceBox extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
+            child: LocalizedText(
               text,
               style: TextStyle(
                 height: 1.42,

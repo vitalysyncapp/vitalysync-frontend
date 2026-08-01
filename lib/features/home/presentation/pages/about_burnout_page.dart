@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class AboutBurnoutPage extends StatelessWidget {
   const AboutBurnoutPage({super.key});
@@ -19,7 +20,7 @@ class AboutBurnoutPage extends StatelessWidget {
             icon: const Icon(Icons.arrow_back_ios_new_rounded),
             onPressed: () => Navigator.pop(context),
           ),
-          title: Text(
+          title: LocalizedText(
             'About burnout',
             style: TextStyle(
               fontWeight: FontWeight.bold,
@@ -223,7 +224,7 @@ class _HeroCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LocalizedText(
                   'Burnout is a chronic stress signal',
                   style: TextStyle(
                     fontSize: 24,
@@ -234,7 +235,7 @@ class _HeroCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
+                LocalizedText(
                   'It usually builds gradually when pressure keeps outpacing recovery.',
                   style: TextStyle(
                     fontSize: 15,
@@ -292,7 +293,7 @@ class _SectionCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
+                  child: LocalizedText(
                     title,
                     style: TextStyle(
                       fontSize: 17,
@@ -321,7 +322,7 @@ class _Paragraph extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
-      child: Text(
+      child: LocalizedText(
         text,
         style: TextStyle(
           height: 1.48,
@@ -359,7 +360,7 @@ class _SignalItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LocalizedText(
                   title,
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
@@ -367,7 +368,7 @@ class _SignalItem extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 3),
-                Text(
+                LocalizedText(
                   text,
                   style: TextStyle(
                     height: 1.38,
@@ -400,7 +401,7 @@ class _BulletItem extends StatelessWidget {
           Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
+            child: LocalizedText(
               text,
               style: TextStyle(
                 height: 1.38,
@@ -464,7 +465,7 @@ class _SourceItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LocalizedText(
                   label,
                   style: TextStyle(
                     color: pagePrimaryTextColor(context),
@@ -512,7 +513,7 @@ class _SupportNote extends StatelessWidget {
           Icon(Icons.health_and_safety_outlined, color: color, size: 22),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
+            child: LocalizedText(
               'VitalySync can help you notice patterns, but it does not diagnose or replace professional care. If stress feels unmanageable, consider talking with a trusted person or a qualified health professional.',
               style: TextStyle(
                 height: 1.42,
@@ -556,7 +557,7 @@ class _IconBadge extends StatelessWidget {
         Positioned(
           right: -4,
           bottom: -4,
-          child: Text(emoji, style: const TextStyle(fontSize: 16)),
+          child: LocalizedText(emoji, style: const TextStyle(fontSize: 16)),
         ),
       ],
     );
@@ -597,7 +598,7 @@ class _ReasonChip extends StatelessWidget {
             color: Theme.of(context).colorScheme.primary,
           ),
           const SizedBox(width: 7),
-          Text(
+          LocalizedText(
             item.label,
             style: TextStyle(
               color: pagePrimaryTextColor(context),

@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 import '../offline/fetch_policy.dart';
 import '../preferences/user_session.dart';
+import '../preferences/app_preferences.dart';
 
 class NotificationEventRecord {
   final int notificationEventId;
@@ -67,6 +68,17 @@ class NotificationEventApi {
     if (userId == null || userId <= 0) {
       return;
     }
+    final preferences = AppPreferencesController.instance;
+    if (!preferences.notifier.value.isLoaded) {
+      await preferences.load();
+    }
+    final locale = preferences.notifier.value.locale.languageCode;
+    final localizedMetadata = <String, dynamic>{
+      ...metadata,
+      'locale': locale,
+      'message_key':
+          metadata['message_key'] ?? 'notification.$notificationType',
+    };
 
     final response = await http
         .post(
@@ -80,7 +92,7 @@ class NotificationEventApi {
             'scheduled_for': scheduledFor?.toIso8601String(),
             'sent_at': sentAt?.toIso8601String(),
             'status': status,
-            'metadata': metadata,
+            'metadata': localizedMetadata,
           }),
         )
         .timeout(_requestTimeout);

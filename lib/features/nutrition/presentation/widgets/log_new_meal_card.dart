@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
 import 'white_card.dart';
+import 'package:vitalysync/l10n/localized_text.dart';
 
 class LogNewMealCard extends StatelessWidget {
   final VoidCallback onTakePhoto;
@@ -77,7 +78,7 @@ class LogNewMealCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       'Log new meal',
                       style: TextStyle(
                         fontSize: isCompact ? 15.5 : 17,
@@ -88,7 +89,7 @@ class LogNewMealCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
+                    LocalizedText(
                       'Choose a meal type, then add a photo',
                       style: TextStyle(
                         fontSize: isCompact ? 10.5 : 11.5,
@@ -189,7 +190,7 @@ class LogNewMealCard extends StatelessWidget {
                     ),
                     SizedBox(height: isCompact ? 6 : 7),
                   ],
-                  Text(
+                  LocalizedText(
                     'Take photo',
                     style: TextStyle(
                       fontSize: isCompact ? 12.5 : 13.5,
@@ -198,7 +199,7 @@ class LogNewMealCard extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: isCompact ? 2 : 3),
-                  Text(
+                  LocalizedText(
                     selectedImage == null
                         ? 'Snap a picture of your meal'
                         : 'Tap to retake meal photo',
@@ -238,7 +239,7 @@ class LogNewMealCard extends StatelessWidget {
                     size: isCompact ? 17 : 19,
                   ),
                   SizedBox(width: isCompact ? 6 : 8),
-                  Text(
+                  LocalizedText(
                     'Choose from gallery',
                     style: TextStyle(
                       fontSize: isCompact ? 11.5 : 12.5,
@@ -265,7 +266,7 @@ class LogNewMealCard extends StatelessWidget {
                       ),
                     )
                   : const Icon(Icons.auto_awesome_rounded),
-              label: Text(isAnalyzing ? 'Analyzing...' : 'Analyze meal'),
+              label: LocalizedText(isAnalyzing ? 'Analyzing...' : 'Analyze meal'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: isDark
                     ? const Color(0xFF5D4385)
@@ -318,7 +319,7 @@ class MealTypeChoices extends StatelessWidget {
         final isSelected = selectedMealType == choice.value;
         final isDark = Theme.of(context).brightness == Brightness.dark;
         return ChoiceChip(
-          label: Text(choice.label),
+          label: LocalizedText(choice.label),
           selected: isSelected,
           onSelected: (_) {
             final canSelect = canSelectMealType?.call(choice.value) ?? true;

@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../l10n/l10n.dart';
 import '../../../shared/config/api_config.dart';
+import '../../../shared/preferences/app_preferences.dart';
 import '../../../shared/offline/fetch_policy.dart';
 import '../../../shared/offline/offline_cache_store.dart';
 
@@ -620,11 +622,18 @@ class AdaptiveNudgeApi {
   }
 
   static Future<AdaptiveNudgeResponse> _fallbackResponse() async {
+    final preferences = AppPreferencesController.instance;
+    if (!preferences.notifier.value.isLoaded) {
+      await preferences.load();
+    }
+    final strings = await loadAppLocalizations(
+      preferences.notifier.value.locale,
+    );
     final username = await _storedUsername();
     final displayName = username == null ? null : _displayName(username);
     final message = displayName == null
-        ? 'Keep one recovery habit simple today.'
-        : '$displayName, keep one recovery habit simple today.';
+        ? strings.smartNudgeFallbackBody
+        : strings.smartNudgeFallbackBodyWithName(name: displayName);
     final metadata = <String, dynamic>{
       'local_fallback': true,
       'ai_fallback': true,
@@ -639,10 +648,10 @@ class AdaptiveNudgeApi {
           nudgeEventId: null,
           nudgeType: 'steady_routine',
           priority: 'low',
-          title: 'Keep today steady',
+          title: strings.smartNudgeFallbackTitle,
           message: message,
-          actionLabel: 'Keep it simple',
-          triggerReason: 'Local fallback',
+          actionLabel: strings.keepItSimple,
+          triggerReason: strings.localFallback,
           recommendedFocus: 'maintenance',
           patternType: null,
           severity: 'steady',

@@ -62,6 +62,7 @@ class EnvironmentCoordinates {
 
 class EnvironmentWeather {
   const EnvironmentWeather({
+    required this.conditionCode,
     required this.main,
     required this.description,
     required this.icon,
@@ -72,6 +73,7 @@ class EnvironmentWeather {
     required this.windSpeed,
   });
 
+  final int conditionCode;
   final String main;
   final String description;
   final String icon;
@@ -83,6 +85,7 @@ class EnvironmentWeather {
 
   factory EnvironmentWeather.fromJson(Map<String, dynamic> json) {
     return EnvironmentWeather(
+      conditionCode: _readInt(json['condition_code']),
       main: (json['main'] ?? 'Unknown').toString(),
       description: (json['description'] ?? 'No description available')
           .toString(),
@@ -97,6 +100,7 @@ class EnvironmentWeather {
 
   Map<String, dynamic> toJson() {
     return {
+      'condition_code': conditionCode,
       'main': main,
       'description': description,
       'icon': icon,

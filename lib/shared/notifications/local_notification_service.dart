@@ -5,6 +5,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../../l10n/app_localizations.dart';
+import '../../l10n/l10n.dart';
 import 'notification_event_api.dart';
 import 'notification_presentation.dart';
 import '../assistant/overlay_assistant_controller.dart';
@@ -192,11 +194,12 @@ class LocalNotificationService {
   Future<void> scheduleDailyLogReminder({
     required int hour,
     required int minute,
-  }) {
-    return _scheduleDaily(
+  }) async {
+    final strings = await _localizedStrings();
+    await _scheduleDaily(
       id: _dailyLogReminderId,
-      title: 'Daily check-in',
-      body: "Log today's stress, workload, recovery, and energy.",
+      title: strings.dailyCheckInNotificationTitle,
+      body: strings.dailyCheckInNotificationBody,
       hour: hour,
       minute: minute,
       payload: 'daily_log',
@@ -209,6 +212,7 @@ class LocalNotificationService {
     required String endTime,
     required int intervalMinutes,
   }) async {
+    final strings = await _localizedStrings();
     final start = _parseTime(startTime);
     final end = _parseTime(endTime);
     final boundedInterval = intervalMinutes.clamp(30, 360).toInt();
@@ -227,8 +231,8 @@ class LocalNotificationService {
       final normalizedMinute = minuteOfDay % (24 * 60);
       await _scheduleDaily(
         id: _hydrationReminderBaseId + index,
-        title: 'Hydration reset',
-        body: 'Take a quick water break before your next task.',
+        title: strings.hydrationNotificationTitle,
+        body: strings.hydrationNotificationBody,
         hour: normalizedMinute ~/ 60,
         minute: normalizedMinute % 60,
         payload: 'hydration',
@@ -246,11 +250,12 @@ class LocalNotificationService {
   Future<void> scheduleHydrationReminder({
     required int hour,
     required int minute,
-  }) {
-    return _scheduleDaily(
+  }) async {
+    final strings = await _localizedStrings();
+    await _scheduleDaily(
       id: _hydrationReminderBaseId,
-      title: 'Hydration reset',
-      body: 'Take a quick water break before your next task.',
+      title: strings.hydrationNotificationTitle,
+      body: strings.hydrationNotificationBody,
       hour: hour,
       minute: minute,
       payload: 'hydration',
@@ -258,11 +263,15 @@ class LocalNotificationService {
     );
   }
 
-  Future<void> scheduleSleepReminder({required int hour, required int minute}) {
-    return _scheduleDaily(
+  Future<void> scheduleSleepReminder({
+    required int hour,
+    required int minute,
+  }) async {
+    final strings = await _localizedStrings();
+    await _scheduleDaily(
       id: _sleepReminderId,
-      title: 'Wind down soon',
-      body: 'Start easing your workload so sleep has room to happen.',
+      title: strings.sleepNotificationTitle,
+      body: strings.sleepNotificationBody,
       hour: hour,
       minute: minute,
       payload: 'sleep_wind_down',
@@ -497,6 +506,14 @@ class LocalNotificationService {
       hour: (hour ?? 0).clamp(0, 23).toInt(),
       minute: (minute ?? 0).clamp(0, 59).toInt(),
     );
+  }
+
+  Future<AppLocalizations> _localizedStrings() async {
+    final preferences = AppPreferencesController.instance;
+    if (!preferences.notifier.value.isLoaded) {
+      await preferences.load();
+    }
+    return loadAppLocalizations(preferences.notifier.value.locale);
   }
 
   String _shortOverlayPreviewText(String value, {required int maxChars}) {

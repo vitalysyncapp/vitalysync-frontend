@@ -49,7 +49,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LocalizedText(
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -60,7 +60,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
                     ),
                   ),
                   const SizedBox(height: 1),
-                  Text(
+                  LocalizedText(
                     subtitle,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -145,7 +145,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
+                              LocalizedText(
                                 '$value',
                                 style: TextStyle(
                                   color: selected
@@ -158,7 +158,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
                               const SizedBox(height: 3),
                               FittedBox(
                                 fit: BoxFit.scaleDown,
-                                child: Text(
+                                child: LocalizedText(
                                   labels[index],
                                   maxLines: 1,
                                   style: TextStyle(
@@ -179,7 +179,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
                 }),
               ),
               const SizedBox(height: 9),
-              Text(
+              LocalizedText(
                 selectedLevel == null
                     ? emptyMessage
                     : '$selectedMessagePrefix ${labels[selectedLevel - 1].toLowerCase()}.',
@@ -215,7 +215,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
                 border: Border.all(color: pageBorderColor(context)),
               ),
               child: Center(
-                child: Text(
+                child: LocalizedText(
                   label,
                   style: TextStyle(
                     fontSize: 13,
@@ -306,7 +306,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
                     const SizedBox(width: 6),
                   ],
                   Expanded(
-                    child: Text(
+                    child: LocalizedText(
                       label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
