@@ -272,7 +272,8 @@ class ExerciseGoalService {
         notifier.value.copyWith(
           goal: canceledGoal,
           isSaving: false,
-          errorMessage: 'Canceled locally. The server will update later.',
+          errorMessage:
+              'Cancellation saved on this device. Your account will update when you are back online.',
         ),
       );
       await invalidateNotificationFeedCache();

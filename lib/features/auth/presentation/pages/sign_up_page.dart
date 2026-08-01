@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../features/log/data/log_api.dart';
 import '../../../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../../../shared/config/api_config.dart';
+import '../../../../shared/offline/fetch_policy.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/terms_privacy_widget.dart';
@@ -77,17 +78,19 @@ class _SignUpPageState extends State<SignUpPage> {
     final url = Uri.parse(ApiConfig.auth('/signup'));
 
     try {
-      final response = await http.post(
-        url,
-        headers: await ApiConfig.jsonHeaders(),
-        body: jsonEncode({
-          "username": _usernameController.text.trim(),
-          "email": _emailController.text.trim(),
-          "age": int.tryParse(_ageController.text.trim()),
-          "gender": _selectedGender,
-          "password": _passwordController.text.trim(),
-        }),
-      );
+      final response = await http
+          .post(
+            url,
+            headers: await ApiConfig.jsonHeaders(),
+            body: jsonEncode({
+              "username": _usernameController.text.trim(),
+              "email": _emailController.text.trim(),
+              "age": int.tryParse(_ageController.text.trim()),
+              "gender": _selectedGender,
+              "password": _passwordController.text.trim(),
+            }),
+          )
+          .timeout(ApiRequestTimeouts.standard);
 
       final data = _decodeResponseBody(response);
 
@@ -97,7 +100,8 @@ class _SignUpPageState extends State<SignUpPage> {
           if (!mounted) return;
           await ValidationDialog.show(
             context,
-            message: 'Signup failed: session token was missing.',
+            message:
+                'Your account was created, but we could not sign you in. Please log in.',
             type: ValidationDialogType.error,
           );
           return;
@@ -158,7 +162,7 @@ class _SignUpPageState extends State<SignUpPage> {
       await ValidationDialog.show(
         context,
         message:
-            'Unable to reach the server right now. Please check your connection and try again.',
+            'VitalySync could not connect right now. Please check your connection and try again.',
         type: ValidationDialogType.connection,
       );
     }

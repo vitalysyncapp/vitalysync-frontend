@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../../../shared/config/api_config.dart';
+import '../../../shared/offline/fetch_policy.dart';
 
 class AccountLifecycleException implements Exception {
   final String message;
@@ -63,25 +64,29 @@ class AccountLifecycleApi {
     required String currentPassword,
     required String confirmation,
   }) async {
-    final response = await _client.post(
-      Uri.parse(ApiConfig.account('/deactivate')),
-      headers: await ApiConfig.jsonHeaders(),
-      body: jsonEncode({
-        'current_password': currentPassword.trim(),
-        'confirmation': confirmation.trim(),
-      }),
-    );
+    final response = await _client
+        .post(
+          Uri.parse(ApiConfig.account('/deactivate')),
+          headers: await ApiConfig.jsonHeaders(),
+          body: jsonEncode({
+            'current_password': currentPassword.trim(),
+            'confirmation': confirmation.trim(),
+          }),
+        )
+        .timeout(ApiRequestTimeouts.standard);
     _requireSuccess(response, 'Unable to deactivate this account.');
   }
 
   Future<Map<String, dynamic>> reactivate(
     AccountReactivationChallenge challenge,
   ) async {
-    final response = await _client.post(
-      Uri.parse(ApiConfig.account('/reactivate')),
-      headers: await ApiConfig.jsonHeaders(),
-      body: jsonEncode({'reactivation_token': challenge.reactivationToken}),
-    );
+    final response = await _client
+        .post(
+          Uri.parse(ApiConfig.account('/reactivate')),
+          headers: await ApiConfig.jsonHeaders(),
+          body: jsonEncode({'reactivation_token': challenge.reactivationToken}),
+        )
+        .timeout(ApiRequestTimeouts.standard);
     final data = _decode(response.body);
     if (response.statusCode != 200) {
       throw AccountLifecycleException(
@@ -93,11 +98,13 @@ class AccountLifecycleApi {
   }
 
   Future<void> clearData({required String currentPassword}) async {
-    final response = await _client.delete(
-      Uri.parse(ApiConfig.account('/data')),
-      headers: await ApiConfig.jsonHeaders(),
-      body: jsonEncode({'current_password': currentPassword.trim()}),
-    );
+    final response = await _client
+        .delete(
+          Uri.parse(ApiConfig.account('/data')),
+          headers: await ApiConfig.jsonHeaders(),
+          body: jsonEncode({'current_password': currentPassword.trim()}),
+        )
+        .timeout(ApiRequestTimeouts.standard);
     _requireSuccess(response, 'Unable to clear this account data.');
   }
 

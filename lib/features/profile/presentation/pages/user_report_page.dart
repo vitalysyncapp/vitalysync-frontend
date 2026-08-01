@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/readable_page_body.dart';
 import '../../data/report_service.dart';
 import 'package:vitalysync/l10n/localized_text.dart';
 
@@ -21,11 +22,15 @@ class _UserReportPageState extends State<UserReportPage> {
     setState(() => _isExportingReport = true);
     try {
       await ReportService().exportAndOpenUserReport(widget.userId);
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: LocalizedText('Failed to export report: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: LocalizedText(
+            'Your report could not be prepared right now. Please try again.',
+          ),
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _isExportingReport = false);
@@ -46,7 +51,7 @@ class _UserReportPageState extends State<UserReportPage> {
           backgroundColor: Colors.transparent,
           foregroundColor: pagePrimaryTextColor(context),
           title: LocalizedText(
-            'User Report',
+            'Wellness report',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: pagePrimaryTextColor(context),
@@ -59,7 +64,7 @@ class _UserReportPageState extends State<UserReportPage> {
           ),
         ),
         body: SafeArea(
-          child: SingleChildScrollView(
+          child: ReadablePageBody(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -82,7 +87,7 @@ class _UserReportPageState extends State<UserReportPage> {
 
                 // Title & Subtitle
                 LocalizedText(
-                      'Your Wellness Data',
+                      'Your wellness report',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 28,
@@ -98,7 +103,7 @@ class _UserReportPageState extends State<UserReportPage> {
                 const SizedBox(height: 8),
 
                 LocalizedText(
-                      'Export a comprehensive report of your wellness journey. This document includes your daily logs, activity, nutrition, and burnout metrics perfectly formatted for review.',
+                      'Create a Word document with your daily check-ins, activity, nutrition, and wellness patterns in one clear summary.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 16,
@@ -159,7 +164,7 @@ class _UserReportPageState extends State<UserReportPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 LocalizedText(
-                                  'Informational Only',
+                                  'For your information',
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -194,7 +199,11 @@ class _UserReportPageState extends State<UserReportPage> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: (isDark ? const Color(0xFF2C3E50) : const Color(0xFFFDE68A)).withValues(alpha: 0.15),
+                            color:
+                                (isDark
+                                        ? const Color(0xFF2C3E50)
+                                        : const Color(0xFFFDE68A))
+                                    .withValues(alpha: 0.15),
                             blurRadius: 24,
                             offset: const Offset(0, 8),
                           ),
@@ -203,8 +212,12 @@ class _UserReportPageState extends State<UserReportPage> {
                       child: FilledButton(
                         onPressed: _isExportingReport ? null : _exportReport,
                         style: FilledButton.styleFrom(
-                          backgroundColor: isDark ? const Color(0xFF2C3E50) : const Color(0xFFFDE68A),
-                          foregroundColor: isDark ? Colors.white : const Color(0xFF451A03),
+                          backgroundColor: isDark
+                              ? const Color(0xFF2C3E50)
+                              : const Color(0xFFFDE68A),
+                          foregroundColor: isDark
+                              ? Colors.white
+                              : const Color(0xFF451A03),
                           padding: const EdgeInsets.symmetric(vertical: 18),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
@@ -227,7 +240,7 @@ class _UserReportPageState extends State<UserReportPage> {
                                     ),
                                     SizedBox(width: 12),
                                     LocalizedText(
-                                      'Preparing Report...',
+                                      'Preparing report…',
                                       style: TextStyle(
                                         fontWeight: FontWeight.w700,
                                         fontSize: 17,
@@ -242,7 +255,7 @@ class _UserReportPageState extends State<UserReportPage> {
                                     Icon(Icons.download_rounded, size: 24),
                                     SizedBox(width: 12),
                                     LocalizedText(
-                                      'Export Report (Word)',
+                                      'Export Word report',
                                       style: TextStyle(
                                         fontWeight: FontWeight.w700,
                                         fontSize: 17,

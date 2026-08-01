@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/readable_page_body.dart';
 import 'package:vitalysync/l10n/localized_text.dart';
 
 class AboutBurnoutPage extends StatelessWidget {
@@ -29,133 +30,136 @@ class AboutBurnoutPage extends StatelessWidget {
           ),
         ),
         body: SafeArea(
-          child: ListView(
+          child: ReadablePageBody(
             padding: EdgeInsets.fromLTRB(
               16,
               8,
               16,
               pageBottomContentPadding(context),
             ),
-            children: const [
-              _HeroCard(),
-              SizedBox(height: 16),
-              _SectionCard(
-                icon: Icons.psychology_alt_outlined,
-                color: Color(0xFF2563EB),
-                title: 'What burnout means',
-                children: [
-                  _Paragraph(
-                    text:
-                        'The World Health Organization describes burnout as an occupational phenomenon from chronic workplace stress that has not been successfully managed. It is not a medical diagnosis, but it can be an important warning sign that your demands and recovery are out of balance.',
-                  ),
-                  _Paragraph(
-                    text:
-                        'Work is the formal definition, but students, caregivers, and people carrying long-term responsibilities can notice similar chronic-stress patterns.',
-                  ),
-                ],
-              ),
-              SizedBox(height: 16),
-              _SectionCard(
-                icon: Icons.bubble_chart_outlined,
-                color: Color(0xFF7C3AED),
-                title: 'Three core signals',
-                children: [
-                  _SignalItem(
-                    emoji: '🔥',
-                    icon: Icons.battery_alert_rounded,
-                    title: 'Exhaustion',
-                    text:
-                        'Feeling emotionally or physically drained, even after ordinary rest.',
-                  ),
-                  _SignalItem(
-                    emoji: '🧠',
-                    icon: Icons.cloud_outlined,
-                    title: 'Distance or cynicism',
-                    text:
-                        'Feeling detached, negative, numb, or unusually irritable toward work or responsibilities.',
-                  ),
-                  _SignalItem(
-                    emoji: '📉',
-                    icon: Icons.trending_down_rounded,
-                    title: 'Reduced effectiveness',
-                    text:
-                        'Feeling less capable, less focused, or less satisfied with what you can accomplish.',
-                  ),
-                ],
-              ),
-              SizedBox(height: 16),
-              _SectionCard(
-                icon: Icons.favorite_border_rounded,
-                color: Color(0xFFDC2626),
-                title: 'How it can affect people',
-                children: [
-                  _BulletItem(
-                    icon: Icons.bedtime_outlined,
-                    text:
-                        'Sleep can become lighter, shorter, or less restorative.',
-                  ),
-                  _BulletItem(
-                    icon: Icons.mood_bad_outlined,
-                    text:
-                        'Low mood, anxiety, irritability, or depressive symptoms may become more likely.',
-                  ),
-                  _BulletItem(
-                    icon: Icons.speed_rounded,
-                    text:
-                        'Attention, memory, motivation, and performance can drop.',
-                  ),
-                  _BulletItem(
-                    icon: Icons.people_outline_rounded,
-                    text:
-                        'People may withdraw socially, feel less patient, or recover more slowly after stress.',
-                  ),
-                ],
-              ),
-              SizedBox(height: 16),
-              _SectionCard(
-                icon: Icons.balance_rounded,
-                color: Color(0xFFF97316),
-                title: 'Main reasons it grows',
-                children: [
-                  _Paragraph(
-                    text:
-                        'Research models often describe burnout as an imbalance: demands stay high while resources, control, support, and recovery stay too low.',
-                  ),
-                  _ReasonChips(),
-                ],
-              ),
-              SizedBox(height: 16),
-              _SectionCard(
-                icon: Icons.fact_check_outlined,
-                color: Color(0xFF0F766E),
-                title: 'Evidence base',
-                children: [
-                  _SourceItem(
-                    label: 'WHO ICD-11 burnout page',
-                    url:
-                        'https://www.who.int/standards/classifications/frequently-asked-questions/burn-out-an-occupational-phenomenon',
-                  ),
-                  _SourceItem(
-                    label: 'Maslach burnout dimensions via PubMed',
-                    url: 'https://pubmed.ncbi.nlm.nih.gov/1981064/',
-                  ),
-                  _SourceItem(
-                    label: 'Job Demands-Resources model via PubMed',
-                    url: 'https://pubmed.ncbi.nlm.nih.gov/11419809/',
-                  ),
-                  _SourceItem(
-                    label: 'Burnout consequences systematic review',
-                    url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC5627926/',
-                  ),
-                  _SourceItem(
-                    label: 'Burnout, depression, and anxiety meta-analysis',
-                    url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC6424886/',
-                  ),
-                ],
-              ),
-              SizedBox(height: 16),
-              _SupportNote(),
-            ],
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _HeroCard(),
+                SizedBox(height: 16),
+                _SectionCard(
+                  icon: Icons.psychology_alt_outlined,
+                  color: Color(0xFF2563EB),
+                  title: 'What burnout means',
+                  children: [
+                    _Paragraph(
+                      text:
+                          'The World Health Organization describes burnout as an occupational phenomenon from chronic workplace stress that has not been successfully managed. It is not a medical diagnosis, but it can be an important warning sign that your demands and recovery are out of balance.',
+                    ),
+                    _Paragraph(
+                      text:
+                          'Work is the formal definition, but students, caregivers, and people carrying long-term responsibilities can notice similar chronic-stress patterns.',
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16),
+                _SectionCard(
+                  icon: Icons.bubble_chart_outlined,
+                  color: Color(0xFF7C3AED),
+                  title: 'Three core signals',
+                  children: [
+                    _SignalItem(
+                      emoji: '🔥',
+                      icon: Icons.battery_alert_rounded,
+                      title: 'Exhaustion',
+                      text:
+                          'Feeling emotionally or physically drained, even after ordinary rest.',
+                    ),
+                    _SignalItem(
+                      emoji: '🧠',
+                      icon: Icons.cloud_outlined,
+                      title: 'Distance or cynicism',
+                      text:
+                          'Feeling detached, negative, numb, or unusually irritable toward work or responsibilities.',
+                    ),
+                    _SignalItem(
+                      emoji: '📉',
+                      icon: Icons.trending_down_rounded,
+                      title: 'Reduced effectiveness',
+                      text:
+                          'Feeling less capable, less focused, or less satisfied with what you can accomplish.',
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16),
+                _SectionCard(
+                  icon: Icons.favorite_border_rounded,
+                  color: Color(0xFFDC2626),
+                  title: 'How it can affect people',
+                  children: [
+                    _BulletItem(
+                      icon: Icons.bedtime_outlined,
+                      text:
+                          'Sleep can become lighter, shorter, or less restorative.',
+                    ),
+                    _BulletItem(
+                      icon: Icons.mood_bad_outlined,
+                      text:
+                          'Low mood, anxiety, irritability, or depressive symptoms may become more likely.',
+                    ),
+                    _BulletItem(
+                      icon: Icons.speed_rounded,
+                      text:
+                          'Attention, memory, motivation, and performance can drop.',
+                    ),
+                    _BulletItem(
+                      icon: Icons.people_outline_rounded,
+                      text:
+                          'People may withdraw socially, feel less patient, or recover more slowly after stress.',
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16),
+                _SectionCard(
+                  icon: Icons.balance_rounded,
+                  color: Color(0xFFF97316),
+                  title: 'Main reasons it grows',
+                  children: [
+                    _Paragraph(
+                      text:
+                          'Research models often describe burnout as an imbalance: demands stay high while resources, control, support, and recovery stay too low.',
+                    ),
+                    _ReasonChips(),
+                  ],
+                ),
+                SizedBox(height: 16),
+                _SectionCard(
+                  icon: Icons.fact_check_outlined,
+                  color: Color(0xFF0F766E),
+                  title: 'Evidence base',
+                  children: [
+                    _SourceItem(
+                      label: 'WHO ICD-11 burnout page',
+                      url:
+                          'https://www.who.int/standards/classifications/frequently-asked-questions/burn-out-an-occupational-phenomenon',
+                    ),
+                    _SourceItem(
+                      label: 'Maslach burnout dimensions via PubMed',
+                      url: 'https://pubmed.ncbi.nlm.nih.gov/1981064/',
+                    ),
+                    _SourceItem(
+                      label: 'Job Demands-Resources model via PubMed',
+                      url: 'https://pubmed.ncbi.nlm.nih.gov/11419809/',
+                    ),
+                    _SourceItem(
+                      label: 'Burnout consequences systematic review',
+                      url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC5627926/',
+                    ),
+                    _SourceItem(
+                      label: 'Burnout, depression, and anxiety meta-analysis',
+                      url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC6424886/',
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16),
+                _SupportNote(),
+              ],
+            ),
           ),
         ),
       ),
@@ -183,12 +187,16 @@ class _HeroCard extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.1)
+              : Colors.black.withValues(alpha: 0.05),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: isDark ? Colors.black.withValues(alpha: 0.2) : Colors.blue.withValues(alpha: 0.05),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.2)
+                : Colors.blue.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -203,14 +211,22 @@ class _HeroCard extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: isDark
-                    ? [const Color(0xFFFFB86B).withValues(alpha: 0.2), const Color(0xFFFF9A44).withValues(alpha: 0.1)]
-                    : [const Color(0xFFF97316).withValues(alpha: 0.15), const Color(0xFFFB923C).withValues(alpha: 0.05)],
+                    ? [
+                        const Color(0xFFFFB86B).withValues(alpha: 0.2),
+                        const Color(0xFFFF9A44).withValues(alpha: 0.1),
+                      ]
+                    : [
+                        const Color(0xFFF97316).withValues(alpha: 0.15),
+                        const Color(0xFFFB923C).withValues(alpha: 0.05),
+                      ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(22),
               border: Border.all(
-                color: isDark ? const Color(0xFFFFB86B).withValues(alpha: 0.3) : const Color(0xFFF97316).withValues(alpha: 0.2),
+                color: isDark
+                    ? const Color(0xFFFFB86B).withValues(alpha: 0.3)
+                    : const Color(0xFFF97316).withValues(alpha: 0.2),
               ),
             ),
             child: Icon(
@@ -527,8 +543,6 @@ class _SupportNote extends StatelessWidget {
     );
   }
 }
-
-
 
 class _IconBadge extends StatelessWidget {
   final String emoji;

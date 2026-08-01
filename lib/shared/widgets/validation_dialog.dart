@@ -105,62 +105,71 @@ class _ValidationDialogState extends State<ValidationDialog> {
 
     return Material(
       color: Colors.transparent,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: _dismiss,
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 320),
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 28),
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF132235).withValues(alpha: 0.96)
-                    : Colors.white.withValues(alpha: 0.96),
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: spec.accent.withValues(alpha: 0.24)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.34 : 0.16),
-                    blurRadius: 28,
-                    offset: const Offset(0, 18),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 54,
-                    height: 54,
-                    decoration: BoxDecoration(
-                      color: spec.accent.withValues(
-                        alpha: isDark ? 0.18 : 0.12,
+      child: SafeArea(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _dismiss,
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 320),
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF132235).withValues(alpha: 0.96)
+                        : Colors.white.withValues(alpha: 0.96),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(
+                      color: spec.accent.withValues(alpha: 0.24),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(
+                          alpha: isDark ? 0.34 : 0.16,
+                        ),
+                        blurRadius: 28,
+                        offset: const Offset(0, 18),
                       ),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(spec.icon, color: spec.accent, size: 30),
+                    ],
                   ),
-                  const SizedBox(height: 14),
-                  LocalizedText(
-                    widget.title ?? spec.title,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: pagePrimaryTextColor(context),
-                      fontWeight: FontWeight.w800,
-                    ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 54,
+                        height: 54,
+                        decoration: BoxDecoration(
+                          color: spec.accent.withValues(
+                            alpha: isDark ? 0.18 : 0.12,
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(spec.icon, color: spec.accent, size: 30),
+                      ),
+                      const SizedBox(height: 14),
+                      LocalizedText(
+                        widget.title ?? spec.title,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              color: pagePrimaryTextColor(context),
+                              fontWeight: FontWeight.w800,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      LocalizedText(
+                        widget.message,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: pageSecondaryTextColor(context),
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  LocalizedText(
-                    widget.message,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: pageSecondaryTextColor(context),
-                      height: 1.35,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),

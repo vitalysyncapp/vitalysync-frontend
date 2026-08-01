@@ -1236,5 +1236,5 @@ String _leaderboardErrorMessage(Object? error) {
 
   return message?.isNotEmpty == true
       ? message!
-      : 'Unable to reach the VitalySync API right now.';
+      : 'VitalySync could not load the leaderboard right now. Please try again.';
 }

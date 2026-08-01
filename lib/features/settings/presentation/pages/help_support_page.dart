@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/readable_page_body.dart';
 import 'package:vitalysync/l10n/localized_text.dart';
 
 class HelpSupportPage extends StatelessWidget {
@@ -29,7 +30,7 @@ class HelpSupportPage extends StatelessWidget {
           ),
         ),
         body: SafeArea(
-          child: SingleChildScrollView(
+          child: ReadablePageBody(
             padding: EdgeInsets.fromLTRB(
               16,
               8,
@@ -49,7 +50,7 @@ class HelpSupportPage extends StatelessWidget {
                   iconColor: const Color(0xFF1877F2),
                   title: 'Facebook',
                   subtitle: 'Message us on our Facebook page',
-                  value: 'facebook.com/VitalySyncOfficial',
+                  value: 'Coming soon',
                 ),
                 const SizedBox(height: 12),
                 _buildContactCard(
@@ -58,7 +59,7 @@ class HelpSupportPage extends StatelessWidget {
                   iconColor: const Color(0xFF111111),
                   title: 'TikTok',
                   subtitle: 'Follow updates and short wellness tips',
-                  value: '@vitalysync.app',
+                  value: 'Coming soon',
                 ),
                 const SizedBox(height: 12),
                 _buildContactCard(
@@ -67,7 +68,7 @@ class HelpSupportPage extends StatelessWidget {
                   iconColor: const Color(0xFF16A34A),
                   title: 'Contact number',
                   subtitle: 'Support hotline',
-                  value: '+63 917 123 4567',
+                  value: 'Coming soon',
                 ),
                 const SizedBox(height: 12),
                 _buildContactCard(
@@ -76,7 +77,7 @@ class HelpSupportPage extends StatelessWidget {
                   iconColor: const Color(0xFF2563EB),
                   title: 'Email',
                   subtitle: 'Reach out for account or app concerns',
-                  value: 'support@vitalysyncapp.com',
+                  value: 'Coming soon',
                 ),
                 const SizedBox(height: 16),
                 _buildCareNote(context),

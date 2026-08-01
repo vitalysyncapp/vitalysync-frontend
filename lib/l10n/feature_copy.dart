@@ -1,4 +1,70 @@
 const Map<String, String> tagalogFeatureCopy = {
+  'Body metrics': 'Mga sukat ng katawan',
+  'Routine time': 'Oras ng routine',
+  'Baseline scale': 'Baseline scale',
+  'Responsibilities': 'Mga responsibilidad',
+  'Burnout baseline': 'Burnout baseline',
+  'Waiting to sync': 'Naghihintay mag-sync',
+  'Saved offline': 'Naka-save offline',
+  'Updating': 'Nag-a-update',
+  'Saved view': 'Huling saved view',
+  'Personal insight': 'Personal na insight',
+  'Based on your daily and weekly patterns':
+      'Batay sa daily at weekly patterns mo',
+  'Guidance based on your recent check-ins':
+      'Gabay batay sa recent check-ins mo',
+  'Wellness report': 'Wellness report',
+  'Your wellness report': 'Wellness report mo',
+  'Create a Word document with your daily check-ins, activity, nutrition, and wellness patterns in one clear summary.':
+      'Gumawa ng Word document na may daily check-ins, activity, nutrition, at wellness patterns mo sa isang malinaw na summary.',
+  'For your information': 'Para sa iyong kaalaman',
+  'Preparing report…': 'Inihahanda ang report…',
+  'Export Word report': 'I-export ang Word report',
+  'Your report could not be prepared right now. Please try again.':
+      'Hindi maihanda ang report mo ngayon. Subukan ulit.',
+  'VitalySync helps you notice burnout risk patterns, track routines, set reminders, and understand your wellness history.':
+      'Tinutulungan ka ng VitalySync na mapansin ang burnout risk patterns, i-track ang routines, mag-set ng reminders, at maintindihan ang wellness history mo.',
+  'A calmer way to notice patterns and care for your daily routines.':
+      'Mas kalmadong paraan para mapansin ang patterns at alagaan ang daily routines mo.',
+  'Use daily check-ins, reminders, and clear summaries to learn what supports your wellbeing over time.':
+      'Gamitin ang daily check-ins, reminders, at malinaw na summaries para malaman kung ano ang nakakatulong sa wellbeing mo.',
+  'Coming soon': 'Malapit na',
+  'VitalySync could not connect right now. Please check your connection and try again.':
+      'Hindi makakonekta ang VitalySync ngayon. Tingnan ang connection mo at subukan ulit.',
+  'We could not finish signing you in. Please try again.':
+      'Hindi namin natapos ang pag-sign in. Subukan ulit.',
+  'Your account was created, but we could not sign you in. Please log in.':
+      'Nagawa ang account mo pero hindi ka namin ma-sign in. Mag-log in ulit.',
+  'Your streak is taking longer than expected to load. Try again in a moment.':
+      'Mas matagal kaysa inaasahan ang pag-load ng streak mo. Subukan ulit maya-maya.',
+  'VitalySync could not load your streak right now. Check your connection and try again.':
+      'Hindi ma-load ng VitalySync ang streak mo ngayon. Tingnan ang connection at subukan ulit.',
+  'VitalySync could not load your streak right now. Please try again.':
+      'Hindi ma-load ng VitalySync ang streak mo ngayon. Subukan ulit.',
+  'VitalySync could not load the leaderboard right now. Please try again.':
+      'Hindi ma-load ng VitalySync ang leaderboard ngayon. Subukan ulit.',
+  'Nutrition is temporarily unavailable. Please try again later.':
+      'Pansamantalang hindi available ang nutrition. Subukan ulit mamaya.',
+  'Cancellation saved on this device. Your account will update when you are back online.':
+      'Naka-save ang cancellation sa device na ito. Mag-a-update ang account mo kapag online ka na ulit.',
+  'Most privacy choices are stored on this device. Your leaderboard choice applies wherever you use VitalySync.':
+      'Karamihan ng privacy choices ay naka-save sa device na ito. Ang leaderboard choice mo ay susundin saan mo man gamitin ang VitalySync.',
+  'How long saved offline logs stay on this device':
+      'Gaano katagal mananatili sa device na ito ang saved offline logs',
+  'Release channel': 'Release channel',
+  'Academic testing': 'Academic testing',
+  'Last updated': 'Huling na-update',
+  'Testing build': 'Testing build',
+  'This build is prepared for supervised academic testing. Features and saved data may change before a public release.':
+      'Inihanda ang build na ito para sa supervised academic testing. Maaaring magbago ang features at saved data bago ang public release.',
+  'More dependable loading and clearer offline updates.':
+      'Mas maaasahang loading at mas malinaw na offline updates.',
+  'Smoother navigation across phones, tablets, and web.':
+      'Mas smooth na navigation sa phones, tablets, at web.',
+  'Clearer wellness guidance and more consistent page layouts.':
+      'Mas malinaw na wellness guidance at mas consistent na page layouts.',
+  'Build': 'Build',
+  'Updated': 'Na-update',
   'Wellness nudge': 'Wellness nudge',
   'A nutrition check-in is available from your recent logs.':
       'May nutrition check-in mula sa recent logs mo.',

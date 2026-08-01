@@ -100,6 +100,64 @@ void main() {
     expect(result?.isStale, isFalse);
   });
 
+  test('malformed cached model data is replaced by a fresh response', () async {
+    await OfflineCacheStore.saveJson(
+      namespace: 'policy',
+      scope: 'malformed',
+      data: {'unexpected': true},
+    );
+
+    var fetchCount = 0;
+    final result = await CachedJsonFetch.load<String>(
+      namespace: 'policy',
+      scope: 'malformed',
+      policy: FetchPolicy.perMinute,
+      parser: (data) {
+        final value = data['value'];
+        if (value is! String) {
+          throw const FormatException('Missing value');
+        }
+        return value;
+      },
+      fetcher: () async {
+        fetchCount++;
+        return {'value': 'remote'};
+      },
+    );
+
+    expect(result?.data, 'remote');
+    expect(result?.isFromCache, isFalse);
+    expect(fetchCount, 1);
+  });
+
+  test('matching concurrent refreshes share one network request', () async {
+    final remote = Completer<Map<String, dynamic>>();
+    var fetchCount = 0;
+
+    Future<CachedFetchResult<String>?> load() {
+      return CachedJsonFetch.load<String>(
+        namespace: 'policy',
+        scope: 'deduplicated',
+        policy: FetchPolicy.perMinute,
+        parser: _valueParser,
+        fetcher: () {
+          fetchCount++;
+          return remote.future;
+        },
+      );
+    }
+
+    final first = load();
+    final second = load();
+    await Future<void>.delayed(Duration.zero);
+
+    expect(fetchCount, 1);
+    remote.complete({'value': 'remote'});
+
+    final results = await Future.wait([first, second]);
+    expect(results.map((result) => result?.data), everyElement('remote'));
+  });
+
   test('namespace invalidation clears only matching cache keys', () async {
     await OfflineCacheStore.saveJson(
       namespace: 'policy',

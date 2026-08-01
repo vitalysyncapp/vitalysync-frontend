@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/readable_page_body.dart';
 import 'package:vitalysync/l10n/localized_text.dart';
 
 class AboutPage extends StatelessWidget {
@@ -29,74 +30,80 @@ class AboutPage extends StatelessWidget {
           ),
         ),
         body: SafeArea(
-          child: ListView(
+          child: ReadablePageBody(
             padding: EdgeInsets.fromLTRB(
               16,
               8,
               16,
               pageBottomContentPadding(context),
             ),
-            children: [
-              _HeroCard(),
-              const SizedBox(height: 16),
-              _SectionCard(
-                title: 'What VitalySync does',
-                children: const [
-                  _InfoBlock(
-                    text:
-                        'VitalySync is a wellness-focused app experience for burnout risk awareness, routine tracking, reminders, and personal health insights.',
-                  ),
-                  _FocusChips(),
-                ],
-              ),
-              const SizedBox(height: 16),
-              _SectionCard(
-                title: 'Team',
-                children: const [
-                  _PersonBlock(
-                    name: 'Orlandone Estoce',
-                    role: 'Lead developer',
-                  ),
-                  _PersonBlock(name: 'Rynhard Mencede', role: 'Developer'),
-                  _PersonBlock(name: 'Krischalyn Estorgio', role: 'Developer'),
-                  _PersonBlock(name: 'Jomel Logroño', role: 'Developer'),
-                ],
-              ),
-              const SizedBox(height: 16),
-              _SectionCard(
-                title: 'Guidance',
-                children: const [
-                  _CreditBlock(
-                    icon: Icons.school_outlined,
-                    title: 'Adviser',
-                    subtitle: 'Ms. Sheila Mae Anud Lumayag',
-                  ),
-                  _CreditBlock(
-                    icon: Icons.health_and_safety_outlined,
-                    title: 'Mental health professional',
-                    subtitle: 'To be added',
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              _SectionCard(
-                title: 'Illustration credits',
-                children: const [
-                  _CreditBlock(
-                    icon: Icons.face_retouching_natural_outlined,
-                    title: 'Personas avatars',
-                    subtitle:
-                        'Personas by Draftbit, generated with DiceBear · CC BY 4.0',
-                  ),
-                  _CreditBlock(
-                    icon: Icons.badge_outlined,
-                    title: 'Professional avatars',
-                    subtitle:
-                        'Avataaars by Pablo Stanley, generated with DiceBear',
-                  ),
-                ],
-              ),
-            ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _HeroCard(),
+                const SizedBox(height: 16),
+                _SectionCard(
+                  title: 'What VitalySync does',
+                  children: const [
+                    _InfoBlock(
+                      text:
+                          'VitalySync helps you notice burnout risk patterns, track routines, set reminders, and understand your wellness history.',
+                    ),
+                    _FocusChips(),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _SectionCard(
+                  title: 'Team',
+                  children: const [
+                    _PersonBlock(
+                      name: 'Orlandone Estoce',
+                      role: 'Lead developer',
+                    ),
+                    _PersonBlock(name: 'Rynhard Mencede', role: 'Developer'),
+                    _PersonBlock(
+                      name: 'Krischalyn Estorgio',
+                      role: 'Developer',
+                    ),
+                    _PersonBlock(name: 'Jomel Logroño', role: 'Developer'),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _SectionCard(
+                  title: 'Guidance',
+                  children: const [
+                    _CreditBlock(
+                      icon: Icons.school_outlined,
+                      title: 'Adviser',
+                      subtitle: 'Ms. Sheila Mae Anud Lumayag',
+                    ),
+                    _CreditBlock(
+                      icon: Icons.health_and_safety_outlined,
+                      title: 'Mental health professional',
+                      subtitle: 'To be added',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _SectionCard(
+                  title: 'Illustration credits',
+                  children: const [
+                    _CreditBlock(
+                      icon: Icons.face_retouching_natural_outlined,
+                      title: 'Personas avatars',
+                      subtitle:
+                          'Personas by Draftbit, generated with DiceBear · CC BY 4.0',
+                    ),
+                    _CreditBlock(
+                      icon: Icons.badge_outlined,
+                      title: 'Professional avatars',
+                      subtitle:
+                          'Avataaars by Pablo Stanley, generated with DiceBear',
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -168,7 +175,7 @@ class _HeroCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     LocalizedText(
-                      'Burnout risk awareness and adaptive lifestyle support.',
+                      'A calmer way to notice patterns and care for your daily routines.',
                       style: TextStyle(
                         height: 1.4,
                         color: pageSecondaryTextColor(context),
@@ -181,7 +188,7 @@ class _HeroCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           LocalizedText(
-            'Built as a calm wellness companion for tracking routines, reading personal insights, and supporting healthier daily patterns.',
+            'Use daily check-ins, reminders, and clear summaries to learn what supports your wellbeing over time.',
             style: TextStyle(
               height: 1.55,
               color: pageSecondaryTextColor(context),

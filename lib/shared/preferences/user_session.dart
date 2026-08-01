@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/api_config.dart';
+import '../offline/fetch_policy.dart';
 import 'auth_token_store.dart';
 
 class UserSessionSnapshot {
@@ -165,11 +166,13 @@ class UserSessionController {
       );
     }
 
-    final response = await http.post(
-      Uri.parse(ApiConfig.auth('/email-verification/resend')),
-      headers: await ApiConfig.jsonHeaders(),
-      body: jsonEncode(const <String, dynamic>{}),
-    );
+    final response = await http
+        .post(
+          Uri.parse(ApiConfig.auth('/email-verification/resend')),
+          headers: await ApiConfig.jsonHeaders(),
+          body: jsonEncode(const <String, dynamic>{}),
+        )
+        .timeout(ApiRequestTimeouts.standard);
 
     final data = _decodeResponseBody(response.body);
 
@@ -190,11 +193,13 @@ class UserSessionController {
       throw Exception('Enter the six-digit verification code.');
     }
 
-    final response = await http.post(
-      Uri.parse(ApiConfig.auth('/email-verification/confirm')),
-      headers: await ApiConfig.jsonHeaders(),
-      body: jsonEncode({'code': normalizedCode}),
-    );
+    final response = await http
+        .post(
+          Uri.parse(ApiConfig.auth('/email-verification/confirm')),
+          headers: await ApiConfig.jsonHeaders(),
+          body: jsonEncode({'code': normalizedCode}),
+        )
+        .timeout(ApiRequestTimeouts.standard);
     final data = _decodeResponseBody(response.body);
     if (response.statusCode != 200 || data['email_verified'] != true) {
       throw Exception(data['message'] ?? 'Unable to verify this email.');
@@ -224,11 +229,13 @@ class UserSessionController {
       throw Exception('Password is required.');
     }
 
-    final response = await http.post(
-      Uri.parse(ApiConfig.auth('/login')),
-      headers: await ApiConfig.jsonHeaders(),
-      body: jsonEncode({'email': email, 'password': normalizedPassword}),
-    );
+    final response = await http
+        .post(
+          Uri.parse(ApiConfig.auth('/login')),
+          headers: await ApiConfig.jsonHeaders(),
+          body: jsonEncode({'email': email, 'password': normalizedPassword}),
+        )
+        .timeout(ApiRequestTimeouts.standard);
 
     final data = _decodeResponseBody(response.body);
 
@@ -255,15 +262,17 @@ class UserSessionController {
       throw Exception('Please sign in again to change your password.');
     }
 
-    final response = await http.put(
-      Uri.parse(ApiConfig.auth('/password')),
-      headers: await ApiConfig.jsonHeaders(),
-      body: jsonEncode({
-        'current_password': currentPassword.trim(),
-        'new_password': newPassword.trim(),
-        'confirm_password': confirmPassword.trim(),
-      }),
-    );
+    final response = await http
+        .put(
+          Uri.parse(ApiConfig.auth('/password')),
+          headers: await ApiConfig.jsonHeaders(),
+          body: jsonEncode({
+            'current_password': currentPassword.trim(),
+            'new_password': newPassword.trim(),
+            'confirm_password': confirmPassword.trim(),
+          }),
+        )
+        .timeout(ApiRequestTimeouts.standard);
     final data = _decodeResponseBody(response.body);
     if (response.statusCode != 200) {
       throw Exception(data['message'] ?? 'Unable to change this password.');
@@ -289,11 +298,13 @@ class UserSessionController {
       'user_type': _normalizedNullable(userType),
     };
 
-    final response = await http.put(
-      Uri.parse(ApiConfig.auth('/profile')),
-      headers: await ApiConfig.jsonHeaders(),
-      body: jsonEncode(payload),
-    );
+    final response = await http
+        .put(
+          Uri.parse(ApiConfig.auth('/profile')),
+          headers: await ApiConfig.jsonHeaders(),
+          body: jsonEncode(payload),
+        )
+        .timeout(ApiRequestTimeouts.standard);
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
 

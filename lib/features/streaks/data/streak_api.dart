@@ -158,14 +158,14 @@ class StreakApi {
 
     if (error is TimeoutException) {
       return StreakApiException(
-        'The VitalySync API took too long to respond. Try again in a moment.',
+        'Your streak is taking longer than expected to load. Try again in a moment.',
         isNetworkError: true,
       );
     }
 
     if (error is http.ClientException) {
       return StreakApiException(
-        'Unable to reach the VitalySync API right now.',
+        'VitalySync could not load your streak right now. Check your connection and try again.',
         isNetworkError: true,
       );
     }

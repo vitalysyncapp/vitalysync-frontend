@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/api_config.dart';
+import '../offline/fetch_policy.dart';
 import 'user_session.dart';
 
 /// API client for server-persisted user privacy settings.
@@ -13,7 +14,7 @@ import 'user_session.dart';
 class UserSettingsApi {
   UserSettingsApi._();
 
-  static const Duration _requestTimeout = Duration(seconds: 10);
+  static const Duration _requestTimeout = ApiRequestTimeouts.standard;
 
   /// Fetches the user's current settings from the server.
   static Future<UserSettingsSnapshot> fetchSettings() async {
@@ -32,9 +33,7 @@ class UserSettingsApi {
 
     if (response.statusCode != 200) {
       final data = _decode(response.body);
-      throw Exception(
-        data['message'] ?? 'Failed to fetch settings',
-      );
+      throw Exception(data['message'] ?? 'Failed to fetch settings');
     }
 
     return UserSettingsSnapshot.fromJson(_decode(response.body));
@@ -62,9 +61,7 @@ class UserSettingsApi {
 
     if (response.statusCode != 200) {
       final data = _decode(response.body);
-      throw Exception(
-        data['message'] ?? 'Failed to update settings',
-      );
+      throw Exception(data['message'] ?? 'Failed to update settings');
     }
 
     return UserSettingsSnapshot.fromJson(_decode(response.body));

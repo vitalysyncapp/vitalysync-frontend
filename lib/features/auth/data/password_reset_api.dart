@@ -3,16 +3,19 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../../../shared/config/api_config.dart';
+import '../../../shared/offline/fetch_policy.dart';
 
 class PasswordResetApi {
   const PasswordResetApi._();
 
   static Future<String> requestCode(String email) async {
-    final response = await http.post(
-      Uri.parse(ApiConfig.auth('/password-reset/request')),
-      headers: await ApiConfig.jsonHeaders(),
-      body: jsonEncode({'email': email}),
-    );
+    final response = await http
+        .post(
+          Uri.parse(ApiConfig.auth('/password-reset/request')),
+          headers: await ApiConfig.jsonHeaders(),
+          body: jsonEncode({'email': email}),
+        )
+        .timeout(ApiRequestTimeouts.standard);
     final data = _decode(response.body);
     if (response.statusCode != 200) {
       throw Exception(data['message'] ?? 'Unable to send reset code.');
@@ -22,11 +25,13 @@ class PasswordResetApi {
   }
 
   static Future<String> verifyCode(String email, String code) async {
-    final response = await http.post(
-      Uri.parse(ApiConfig.auth('/password-reset/verify-code')),
-      headers: await ApiConfig.jsonHeaders(),
-      body: jsonEncode({'email': email, 'code': code}),
-    );
+    final response = await http
+        .post(
+          Uri.parse(ApiConfig.auth('/password-reset/verify-code')),
+          headers: await ApiConfig.jsonHeaders(),
+          body: jsonEncode({'email': email, 'code': code}),
+        )
+        .timeout(ApiRequestTimeouts.standard);
     final data = _decode(response.body);
     if (response.statusCode != 200) {
       throw Exception(data['message'] ?? 'Unable to verify this code.');
@@ -43,15 +48,17 @@ class PasswordResetApi {
     required String newPassword,
     required String confirmPassword,
   }) async {
-    final response = await http.post(
-      Uri.parse(ApiConfig.auth('/password-reset/confirm')),
-      headers: await ApiConfig.jsonHeaders(),
-      body: jsonEncode({
-        'reset_token': resetToken,
-        'new_password': newPassword,
-        'confirm_password': confirmPassword,
-      }),
-    );
+    final response = await http
+        .post(
+          Uri.parse(ApiConfig.auth('/password-reset/confirm')),
+          headers: await ApiConfig.jsonHeaders(),
+          body: jsonEncode({
+            'reset_token': resetToken,
+            'new_password': newPassword,
+            'confirm_password': confirmPassword,
+          }),
+        )
+        .timeout(ApiRequestTimeouts.standard);
     final data = _decode(response.body);
     if (response.statusCode != 200) {
       throw Exception(data['message'] ?? 'Unable to reset this password.');

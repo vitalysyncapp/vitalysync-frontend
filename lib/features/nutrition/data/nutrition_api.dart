@@ -631,12 +631,10 @@ class NutritionApi {
     http.Response response,
     String fallbackMessage,
   ) {
-    final url = response.request?.url.toString() ?? ApiConfig.baseUrl;
     final body = response.body.trimLeft();
 
     if (response.statusCode == 404 || body.startsWith('<!DOCTYPE html>')) {
-      return 'Nutrition service returned an HTML page instead of JSON. '
-          'Check that $url is deployed and points to the API backend.';
+      return 'Nutrition is temporarily unavailable. Please try again later.';
     }
 
     return '$fallbackMessage Please try again later.';

@@ -655,7 +655,7 @@ class _AiBurnoutInsightCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       LocalizedText(
-                        'AI insight',
+                        'Personal insight',
                         style: TextStyle(
                           color: pagePrimaryTextColor(context),
                           fontSize: 15,
@@ -665,8 +665,8 @@ class _AiBurnoutInsightCard extends StatelessWidget {
                       const SizedBox(height: 1),
                       LocalizedText(
                         aiEnhanced
-                            ? 'Personalized from daily and weekly patterns'
-                            : 'Rule-based fallback insight',
+                            ? 'Based on your daily and weekly patterns'
+                            : 'Guidance based on your recent check-ins',
                         style: TextStyle(
                           color: pageSecondaryTextColor(context),
                           fontSize: 11.5,

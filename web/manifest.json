@@ -1,11 +1,11 @@
 {
-    "name": "vitalysync",
-    "short_name": "vitalysync",
+    "name": "VitalySync",
+    "short_name": "VitalySync",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#F3FBF8",
+    "theme_color": "#1EAD83",
+    "description": "Track daily wellness patterns, routines, and supportive reminders.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

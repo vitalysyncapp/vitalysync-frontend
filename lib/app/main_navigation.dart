@@ -86,7 +86,6 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation>
     with WidgetsBindingObserver {
-  static const _pageTransitionDuration = Duration(milliseconds: 360);
   static const _offlineSyncInterval = Duration(seconds: 30);
   static const _tutorialStreakRouteName = 'core_tutorial/streak';
   static const _tutorialLeaderboardRouteName =
@@ -757,39 +756,21 @@ class _MainNavigationState extends State<MainNavigation>
                 body: Stack(
                   fit: StackFit.expand,
                   children: [
-                    ...List.generate(_pages.length, (index) {
-                      final tab = MainTab.values[index];
-                      final isActive = tab == _currentTab;
-                      final hiddenOffset = index < _currentTab.index
-                          ? const Offset(-0.05, 0.02)
-                          : const Offset(0.05, 0.02);
-
-                      return IgnorePointer(
-                        ignoring: !isActive,
-                        child: AnimatedSlide(
-                          duration: _pageTransitionDuration,
-                          curve: Curves.easeOutCubic,
-                          offset: isActive ? Offset.zero : hiddenOffset,
-                          child: AnimatedScale(
-                            duration: _pageTransitionDuration,
-                            curve: Curves.easeOutCubic,
-                            scale: isActive ? 1 : 0.985,
-                            child: AnimatedOpacity(
-                              duration: const Duration(milliseconds: 260),
-                              curve: Curves.easeOut,
-                              opacity: isActive ? 1 : 0,
-                              child: ExcludeSemantics(
-                                excluding: !isActive,
-                                child: TickerMode(
-                                  enabled: isActive,
-                                  child: _pages[index],
-                                ),
-                              ),
-                            ),
+                    IndexedStack(
+                      key: const ValueKey('main-tab-stack'),
+                      index: _currentTab.index,
+                      sizing: StackFit.expand,
+                      children: List.generate(_pages.length, (index) {
+                        final isActive = index == _currentTab.index;
+                        return ExcludeSemantics(
+                          excluding: !isActive,
+                          child: TickerMode(
+                            enabled: isActive,
+                            child: _pages[index],
                           ),
-                        ),
-                      );
-                    }),
+                        );
+                      }),
+                    ),
                     FloatingSmartNudgeAssistant(
                       message:
                           "You're doing well today. Log sleep and hydration to keep your streak going.",

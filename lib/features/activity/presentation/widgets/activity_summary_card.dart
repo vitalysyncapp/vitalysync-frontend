@@ -53,7 +53,9 @@ class ActivitySummaryCard extends StatelessWidget {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: LocalizedText('Unable to update your daily step goal.')),
+        const SnackBar(
+          content: LocalizedText('Unable to update your daily step goal.'),
+        ),
       );
     }
   }
@@ -70,12 +72,12 @@ class ActivitySummaryCard extends StatelessWidget {
         ? const Color(0xFF16A34A)
         : const Color(0xFF1EAD83);
     final syncLabel = state.pendingSyncCount > 0
-        ? 'Sync pending'
+        ? 'Waiting to sync'
         : state.isOffline
-        ? 'Offline cache'
+        ? 'Saved offline'
         : state.isTracking
-        ? 'Live sensor'
-        : 'Cached';
+        ? 'Updating'
+        : 'Saved view';
 
     return Container(
       width: double.infinity,
@@ -161,7 +163,9 @@ class ActivitySummaryCard extends StatelessWidget {
                           children: [
                             if (onRefresh != null)
                               IconButton(
-                                tooltip: 'Retry activity sync'.localizedCopy(context),
+                                tooltip: 'Retry activity sync'.localizedCopy(
+                                  context,
+                                ),
                                 onPressed: onRefresh,
                                 constraints: BoxConstraints.tightFor(
                                   width: compact ? 36 : 44,
@@ -172,7 +176,9 @@ class ActivitySummaryCard extends StatelessWidget {
                               ),
                             if (onEditGoal != null)
                               IconButton(
-                                tooltip: 'Edit daily step goal'.localizedCopy(context),
+                                tooltip: 'Edit daily step goal'.localizedCopy(
+                                  context,
+                                ),
                                 onPressed: () => _handleEditGoal(context),
                                 constraints: BoxConstraints.tightFor(
                                   width: compact ? 36 : 44,

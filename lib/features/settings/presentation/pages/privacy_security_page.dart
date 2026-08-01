@@ -320,9 +320,8 @@ class _PrivacySecurityPageState extends State<PrivacySecurityPage> {
                       Padding(
                         padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
                         child: LocalizedText(
-                          'Most privacy controls are stored on this device. '
-                          'The leaderboard setting syncs to the server so '
-                          'your profile is hidden for all users.',
+                          'Most privacy choices are stored on this device. '
+                          'Your leaderboard choice applies wherever you use VitalySync.',
                           style: TextStyle(
                             height: 1.45,
                             color: pageSecondaryTextColor(context),
@@ -633,7 +632,7 @@ class _DataRetentionTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 LocalizedText(
-                  'How long offline cached logs are kept on this device',
+                  'How long saved offline logs stay on this device',
                   style: TextStyle(
                     height: 1.4,
                     color: pageSecondaryTextColor(context),

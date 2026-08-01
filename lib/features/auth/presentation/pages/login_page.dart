@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../features/settings/data/account_lifecycle_api.dart';
 import '../../../../shared/config/api_config.dart';
+import '../../../../shared/offline/fetch_policy.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/validation_dialog.dart';
@@ -74,14 +75,16 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => isLoading = true);
 
     try {
-      final response = await http.post(
-        Uri.parse(loginUrl),
-        headers: await ApiConfig.jsonHeaders(),
-        body: jsonEncode({
-          'email': emailController.text.trim(),
-          'password': passwordController.text.trim(),
-        }),
-      );
+      final response = await http
+          .post(
+            Uri.parse(loginUrl),
+            headers: await ApiConfig.jsonHeaders(),
+            body: jsonEncode({
+              'email': emailController.text.trim(),
+              'password': passwordController.text.trim(),
+            }),
+          )
+          .timeout(ApiRequestTimeouts.standard);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -92,7 +95,7 @@ class _LoginPageState extends State<LoginPage> {
           if (!mounted) return;
           await ValidationDialog.show(
             context,
-            message: 'Login failed: the session response was incomplete.',
+            message: 'We could not finish signing you in. Please try again.',
             type: ValidationDialogType.error,
           );
         }
@@ -131,7 +134,7 @@ class _LoginPageState extends State<LoginPage> {
       await ValidationDialog.show(
         context,
         message:
-            'Unable to reach the server right now. Please check your connection and try again.',
+            'VitalySync could not connect right now. Please check your connection and try again.',
         type: ValidationDialogType.connection,
       );
     } finally {

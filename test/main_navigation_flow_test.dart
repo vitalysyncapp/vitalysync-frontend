@@ -68,10 +68,14 @@ void main() {
 
     expect(find.byType(HomePage), findsOneWidget);
     expect(find.byType(GlassCard), findsNothing);
-    expect(find.byType(NutritionPage), findsOneWidget);
-    expect(find.byType(LogPage), findsOneWidget);
-    expect(find.byType(Dashboard), findsOneWidget);
-    expect(find.byType(ProfilePage), findsOneWidget);
+    expect(find.byType(NutritionPage, skipOffstage: false), findsOneWidget);
+    expect(find.byType(LogPage, skipOffstage: false), findsOneWidget);
+    expect(find.byType(Dashboard, skipOffstage: false), findsOneWidget);
+    expect(find.byType(ProfilePage, skipOffstage: false), findsOneWidget);
+    final tabStack = tester.widget<IndexedStack>(
+      find.byKey(const ValueKey('main-tab-stack')),
+    );
+    expect(tabStack.index, MainTab.home.index);
     expect(controller(tester).currentTab, MainTab.home);
 
     await tester.tap(find.byKey(const ValueKey('home-header-avatar')));
@@ -121,7 +125,10 @@ void main() {
 
     expect(find.byType(PopupMenuButton<int>), findsNothing);
     expect(find.byType(AppBar), findsNothing);
-    expect(find.byKey(const ValueKey('home-header-avatar')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('home-header-avatar'), skipOffstage: false),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
 
     await disposeNavigation(tester);

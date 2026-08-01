@@ -328,7 +328,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: LocalizedText(error.toString().replaceFirst('Exception: ', '')),
+          content: LocalizedText(
+            error.toString().replaceFirst('Exception: ', ''),
+          ),
         ),
       );
     } finally {
@@ -679,9 +681,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                                 width: 20,
                                                 child:
                                                     CircularProgressIndicator(
-                                                  strokeWidth: 2.4,
-                                                  color: Colors.white,
-                                                ),
+                                                      strokeWidth: 2.4,
+                                                      color: Colors.white,
+                                                    ),
                                               )
                                             : AnimatedSwitcher(
                                                 duration: const Duration(
@@ -713,7 +715,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                                               steps.length - 1
                                                           ? Icons.check_rounded
                                                           : Icons
-                                                              .arrow_forward_rounded,
+                                                                .arrow_forward_rounded,
                                                       size: 20,
                                                       color: Colors.white,
                                                     ),
@@ -837,7 +839,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             children: [
               _PromptBadge(
                 icon: _iconForQuestion('body_metrics'),
-                label: 'body metrics',
+                label: 'Body metrics',
               ),
               const SizedBox(height: 14),
               const _QuestionTitle('What are your height and weight?'),
@@ -902,7 +904,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             children: [
               const _PromptBadge(
                 icon: Icons.schedule_rounded,
-                label: 'routine time',
+                label: 'Routine time',
               ),
               const SizedBox(height: 14),
               _QuestionTitle(title),
@@ -981,7 +983,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             children: [
               const _PromptBadge(
                 icon: Icons.tune_rounded,
-                label: 'baseline scale',
+                label: 'Baseline scale',
               ),
               const SizedBox(height: 14),
               LikertQuestion(
@@ -1011,7 +1013,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             children: [
               const _PromptBadge(
                 icon: Icons.task_alt_rounded,
-                label: 'responsibilities',
+                label: 'Responsibilities',
               ),
               const SizedBox(height: 14),
               const _QuestionTitle(
@@ -1054,7 +1056,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             children: [
               const _PromptBadge(
                 icon: Icons.local_fire_department_rounded,
-                label: 'burnout baseline',
+                label: 'Burnout baseline',
               ),
               const SizedBox(height: 14),
               _QuestionTitle(section.title),

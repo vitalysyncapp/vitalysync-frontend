@@ -1,14 +1,31 @@
 import 'package:flutter/material.dart';
 
+import '../../data/app_version_info.dart';
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/readable_page_body.dart';
 import 'package:vitalysync/l10n/localized_text.dart';
 
-class VersionPage extends StatelessWidget {
+class VersionPage extends StatefulWidget {
   const VersionPage({super.key});
 
-  static const String _appVersion = '1.0.0';
-  static const String _buildNumber = '1';
-  static const String _updatedDate = 'May 28, 2026';
+  @override
+  State<VersionPage> createState() => _VersionPageState();
+}
+
+class _VersionPageState extends State<VersionPage> {
+  static const _fallbackVersion = AppVersionInfo(
+    version: '1.0.0',
+    buildNumber: '1',
+  );
+  static const String _updatedDate = 'August 2, 2026';
+
+  late final Future<AppVersionInfo> _versionInfo;
+
+  @override
+  void initState() {
+    super.initState();
+    _versionInfo = AppVersionInfo.load();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,20 +50,38 @@ class VersionPage extends StatelessWidget {
           ),
         ),
         body: SafeArea(
-          child: ListView(
+          child: ReadablePageBody(
             padding: EdgeInsets.fromLTRB(
               16,
               8,
               16,
               pageBottomContentPadding(context),
             ),
-            children: const [
-              _VersionHeroCard(),
-              SizedBox(height: 16),
-              _DetailsCard(),
-              SizedBox(height: 16),
-              _ReleaseNotesCard(),
-            ],
+            child: FutureBuilder<AppVersionInfo>(
+              future: _versionInfo,
+              initialData: _fallbackVersion,
+              builder: (context, snapshot) {
+                final versionInfo = snapshot.data ?? _fallbackVersion;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _VersionHeroCard(
+                      versionInfo: versionInfo,
+                      updatedDate: _updatedDate,
+                    ),
+                    const SizedBox(height: 16),
+                    _DetailsCard(
+                      versionInfo: versionInfo,
+                      updatedDate: _updatedDate,
+                    ),
+                    const SizedBox(height: 16),
+                    const _TestingNoticeCard(),
+                    const SizedBox(height: 16),
+                    const _ReleaseNotesCard(),
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -55,7 +90,13 @@ class VersionPage extends StatelessWidget {
 }
 
 class _VersionHeroCard extends StatelessWidget {
-  const _VersionHeroCard();
+  const _VersionHeroCard({
+    required this.versionInfo,
+    required this.updatedDate,
+  });
+
+  final AppVersionInfo versionInfo;
+  final String updatedDate;
 
   @override
   Widget build(BuildContext context) {
@@ -115,8 +156,9 @@ class _VersionHeroCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          LocalizedText(
-            'Version ${VersionPage._appVersion}',
+          _LocalizedLabelValue(
+            label: 'Version',
+            value: versionInfo.version,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 17,
@@ -125,8 +167,9 @@ class _VersionHeroCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          LocalizedText(
-            'Build ${VersionPage._buildNumber} - Updated ${VersionPage._updatedDate}',
+          _BuildSummary(
+            buildNumber: versionInfo.buildNumber,
+            updatedDate: updatedDate,
             textAlign: TextAlign.center,
             style: TextStyle(
               height: 1.4,
@@ -141,34 +184,93 @@ class _VersionHeroCard extends StatelessWidget {
 }
 
 class _DetailsCard extends StatelessWidget {
-  const _DetailsCard();
+  const _DetailsCard({required this.versionInfo, required this.updatedDate});
+
+  final AppVersionInfo versionInfo;
+  final String updatedDate;
 
   @override
   Widget build(BuildContext context) {
     return _VersionSection(
       title: 'Build details',
-      children: const [
+      children: [
         _DetailRow(
           icon: Icons.verified_outlined,
           label: 'App version',
-          value: VersionPage._appVersion,
+          value: versionInfo.version,
+          translateValue: false,
         ),
         _DetailRow(
           icon: Icons.tag_rounded,
           label: 'Build number',
-          value: VersionPage._buildNumber,
+          value: versionInfo.buildNumber,
+          translateValue: false,
         ),
-        _DetailRow(
+        const _DetailRow(
           icon: Icons.school_outlined,
-          label: 'Project status',
-          value: 'Academic preview',
+          label: 'Release channel',
+          value: 'Academic testing',
         ),
         _DetailRow(
-          icon: Icons.groups_outlined,
-          label: 'Developer',
-          value: 'VitalySync team',
+          icon: Icons.calendar_today_outlined,
+          label: 'Last updated',
+          value: updatedDate,
+          translateValue: false,
         ),
       ],
+    );
+  }
+}
+
+class _TestingNoticeCard extends StatelessWidget {
+  const _TestingNoticeCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.09),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.24),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.science_outlined,
+            color: Theme.of(context).colorScheme.primary,
+            size: 24,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                LocalizedText(
+                  'Testing build',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: pagePrimaryTextColor(context),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                LocalizedText(
+                  'This build is prepared for supervised academic testing. Features and saved data may change before a public release.',
+                  style: TextStyle(
+                    height: 1.45,
+                    fontWeight: FontWeight.w600,
+                    color: pageSecondaryTextColor(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -181,10 +283,14 @@ class _ReleaseNotesCard extends StatelessWidget {
     return _VersionSection(
       title: 'Latest updates',
       children: const [
-        _ReleaseNote(text: 'Refined settings layout and section hierarchy.'),
-        _ReleaseNote(text: 'Improved help and support contact presentation.'),
         _ReleaseNote(
-          text: 'Polished terms, privacy, about, and version pages.',
+          text: 'More dependable loading and clearer offline updates.',
+        ),
+        _ReleaseNote(
+          text: 'Smoother navigation across phones, tablets, and web.',
+        ),
+        _ReleaseNote(
+          text: 'Clearer wellness guidance and more consistent page layouts.',
         ),
       ],
     );
@@ -242,11 +348,13 @@ class _DetailRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
+  final bool translateValue;
 
   const _DetailRow({
     required this.icon,
     required this.label,
     required this.value,
+    this.translateValue = true,
   });
 
   @override
@@ -273,6 +381,7 @@ class _DetailRow extends StatelessWidget {
                 const SizedBox(height: 3),
                 LocalizedText(
                   value,
+                  translate: translateValue,
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
                     color: pagePrimaryTextColor(context),
@@ -283,6 +392,64 @@ class _DetailRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _LocalizedLabelValue extends StatelessWidget {
+  const _LocalizedLabelValue({
+    required this.label,
+    required this.value,
+    required this.style,
+    required this.textAlign,
+  });
+
+  final String label;
+  final String value;
+  final TextStyle style;
+  final TextAlign textAlign;
+
+  @override
+  Widget build(BuildContext context) {
+    return LocalizedText.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: label),
+          TextSpan(text: ' $value'),
+        ],
+      ),
+      textAlign: textAlign,
+      style: style,
+    );
+  }
+}
+
+class _BuildSummary extends StatelessWidget {
+  const _BuildSummary({
+    required this.buildNumber,
+    required this.updatedDate,
+    required this.style,
+    required this.textAlign,
+  });
+
+  final String buildNumber;
+  final String updatedDate;
+  final TextStyle style;
+  final TextAlign textAlign;
+
+  @override
+  Widget build(BuildContext context) {
+    return LocalizedText.rich(
+      TextSpan(
+        children: [
+          const TextSpan(text: 'Build'),
+          TextSpan(text: ' $buildNumber • '),
+          const TextSpan(text: 'Updated'),
+          TextSpan(text: ' $updatedDate'),
+        ],
+      ),
+      textAlign: textAlign,
+      style: style,
     );
   }
 }
