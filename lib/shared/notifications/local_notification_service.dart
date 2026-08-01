@@ -6,6 +6,7 @@ import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'notification_event_api.dart';
+import 'notification_presentation.dart';
 import '../assistant/overlay_assistant_controller.dart';
 import '../preferences/app_preferences.dart';
 import '../preferences/user_session.dart';
@@ -22,10 +23,6 @@ class LocalNotificationService {
   static const int _adaptiveReminderId = 1100;
   static const int _adaptiveNowId = 1101;
   static const int _nutritionNowId = 1200;
-  static const String _generalReminderChannelId = 'vitalysync_reminders';
-  static const String _hydrationReminderChannelId =
-      'vitalysync_hydration_reminders';
-
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
@@ -552,28 +549,30 @@ class LocalNotificationService {
   }
 
   NotificationDetails _notificationDetails({required String notificationType}) {
-    final android = notificationType == 'hydration_reminder'
-        ? const AndroidNotificationDetails(
-            _hydrationReminderChannelId,
-            'Hydration reminders',
-            channelDescription:
-                'Water break reminders that should stay visible even while the floating assistant is active.',
-            importance: Importance.high,
-            priority: Priority.high,
-            category: AndroidNotificationCategory.reminder,
-            visibility: NotificationVisibility.public,
-          )
-        : const AndroidNotificationDetails(
-            _generalReminderChannelId,
-            'VitalySync reminders',
-            channelDescription:
-                'Daily check-ins, hydration prompts, meal reminders, sleep wind-downs, and adaptive nudges.',
-            importance: Importance.defaultImportance,
-            priority: Priority.defaultPriority,
-            category: AndroidNotificationCategory.reminder,
-            visibility: NotificationVisibility.public,
-          );
-    const darwin = DarwinNotificationDetails();
+    final presentation = NotificationPresentation.forNotificationType(
+      notificationType,
+    );
+    final android = AndroidNotificationDetails(
+      presentation.androidChannelId,
+      presentation.androidChannelName,
+      channelDescription: presentation.androidChannelDescription,
+      importance: presentation.usesHighPriority
+          ? Importance.high
+          : Importance.defaultImportance,
+      priority: presentation.usesHighPriority
+          ? Priority.high
+          : Priority.defaultPriority,
+      category: AndroidNotificationCategory.reminder,
+      visibility: NotificationVisibility.public,
+      playSound: true,
+      sound: RawResourceAndroidNotificationSound(
+        presentation.androidSoundResource,
+      ),
+    );
+    final darwin = DarwinNotificationDetails(
+      presentSound: true,
+      sound: presentation.darwinSoundFile,
+    );
 
     return NotificationDetails(android: android, iOS: darwin, macOS: darwin);
   }
