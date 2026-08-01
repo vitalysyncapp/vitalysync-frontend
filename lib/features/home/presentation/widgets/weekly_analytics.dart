@@ -41,15 +41,7 @@ class WeeklyAnalyticsCard extends StatelessWidget {
         color: cardColor,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? Colors.black.withValues(alpha: 0.25)
-                : Colors.black.withValues(alpha: 0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: pageCardShadow(context),
       ),
       child: AppSkeleton(
         enabled: isLoading,

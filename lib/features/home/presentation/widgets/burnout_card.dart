@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/widgets/sensitive_content_guard.dart';
 import '../../../dashboard/data/burnout_score_api.dart';
@@ -134,12 +135,8 @@ class BurnoutCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.12)
-              : Colors.white.withValues(alpha: 0.18),
-        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: pageBorderColor(context)),
         boxShadow: glowColor != Colors.transparent
             ? [
                 BoxShadow(

@@ -12,7 +12,6 @@ import '../../../../features/onboarding/services/onboarding_service.dart';
 import '../../../../shared/notifications/notification_feed_service.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
-import '../../../../shared/widgets/glass_card.dart';
 import '../../../../shared/widgets/reveal_on_build.dart';
 import '../widgets/burnout_card.dart';
 import '../widgets/environmental_card.dart';
@@ -357,14 +356,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   ],
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 100),
-                    child: GlassCard(
-                      child: BurnoutCard(
-                        score: _burnoutScore,
-                        status: _burnoutStatus,
-                        isLoading: _isLoadingBurnout,
-                        latestScore: _latestBurnoutScore,
-                        patternSummary: _burnoutPatternSummary,
-                      ),
+                    child: BurnoutCard(
+                      score: _burnoutScore,
+                      status: _burnoutStatus,
+                      isLoading: _isLoadingBurnout,
+                      latestScore: _latestBurnoutScore,
+                      patternSummary: _burnoutPatternSummary,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -373,32 +370,28 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     child: Row(
                       children: [
                         Expanded(
-                          child: GlassCard(
-                            child: InfoCard(
-                              icon: Icons.bedtime,
-                              title: 'Sleep',
-                              value: _sleepValue,
-                              subtitle: _sleepSubtitle,
-                              color: Colors.blue,
-                              isLoading: _isLoadingSummary,
-                              statusHint: _sleepQualityLabel,
-                              statusColor: _sleepQualityColor,
-                            ),
+                          child: InfoCard(
+                            icon: Icons.bedtime,
+                            title: 'Sleep',
+                            value: _sleepValue,
+                            subtitle: _sleepSubtitle,
+                            color: Colors.blue,
+                            isLoading: _isLoadingSummary,
+                            statusHint: _sleepQualityLabel,
+                            statusColor: _sleepQualityColor,
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: GlassCard(
-                            child: InfoCard(
-                              icon: Icons.opacity,
-                              title: 'Hydration',
-                              value: _hydrationValue,
-                              subtitle: _hydrationSubtitle,
-                              color: Colors.green,
-                              isLoading: _isLoadingSummary,
-                              statusHint: _hydrationLevel,
-                              statusColor: _hydrationLevelColor,
-                            ),
+                          child: InfoCard(
+                            icon: Icons.opacity,
+                            title: 'Hydration',
+                            value: _hydrationValue,
+                            subtitle: _hydrationSubtitle,
+                            color: Colors.green,
+                            isLoading: _isLoadingSummary,
+                            statusHint: _hydrationLevel,
+                            statusColor: _hydrationLevelColor,
                           ),
                         ),
                       ],
@@ -412,13 +405,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   const SizedBox(height: 12),
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 280),
-                    child: GlassCard(
-                      child: EnvironmentalCard(
-                        snapshot: _environmentSnapshot,
-                        isLoading: _isLoadingEnvironment,
-                        isCached: _isUsingCachedEnvironment,
-                        errorMessage: _environmentError,
-                      ),
+                    child: EnvironmentalCard(
+                      snapshot: _environmentSnapshot,
+                      isLoading: _isLoadingEnvironment,
+                      isCached: _isUsingCachedEnvironment,
+                      errorMessage: _environmentError,
                     ),
                   ),
                   const SizedBox(height: 12),

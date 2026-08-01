@@ -17,6 +17,7 @@ import 'package:vitalysync/features/streaks/presentation/pages/streak_leaderboar
 import 'package:vitalysync/shared/navigation/main_tab.dart';
 import 'package:vitalysync/shared/widgets/app_bar.dart';
 import 'package:vitalysync/shared/widgets/bottom_nav.dart';
+import 'package:vitalysync/shared/widgets/glass_card.dart';
 
 import 'test_helpers.dart';
 
@@ -66,6 +67,7 @@ void main() {
     await pumpMainNavigation(tester);
 
     expect(find.byType(HomePage), findsOneWidget);
+    expect(find.byType(GlassCard), findsNothing);
     expect(find.byType(NutritionPage), findsOneWidget);
     expect(find.byType(LogPage), findsOneWidget);
     expect(find.byType(Dashboard), findsOneWidget);

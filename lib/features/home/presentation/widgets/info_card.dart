@@ -36,7 +36,7 @@ class InfoCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
       decoration: BoxDecoration(
         color: pageSurfaceColor(context),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: pageBorderColor(context)),
         boxShadow: pageCardShadow(context),
       ),
