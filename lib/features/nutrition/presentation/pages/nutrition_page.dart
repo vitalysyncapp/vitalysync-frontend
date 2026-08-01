@@ -18,6 +18,7 @@ import '../../data/nutrition_reminder_engine.dart';
 import '../widgets/log_new_meal_card.dart';
 import '../widgets/macro_balance_card.dart';
 import '../widgets/nutrition_header_card.dart';
+import '../widgets/nutrition_quantity_field.dart';
 import '../widgets/today_nutrition_card.dart';
 import '../widgets/todays_meals_card.dart';
 import '../widgets/white_card.dart';

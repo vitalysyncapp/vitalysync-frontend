@@ -432,9 +432,9 @@ class _ManualMealForm extends StatelessWidget {
             textInputAction: TextInputAction.next,
           ),
           SizedBox(height: isCompact ? 8 : 10),
-          TextField(
-            controller: draft.quantityController,
-            textInputAction: TextInputAction.next,
+          NutritionQuantityField(
+            mealNameController: draft.mealNameController,
+            quantityController: draft.quantityController,
             decoration: _inputDecoration(context, 'Quantity'),
           ),
           SizedBox(height: isCompact ? 8 : 10),
