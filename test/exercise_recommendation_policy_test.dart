@@ -324,6 +324,41 @@ void main() {
   });
 
   testWidgets(
+    'assistant exercise recommendations use activity-specific icons',
+    (tester) async {
+      final recommendations = [
+        _recommendation('Short walk', 'walking'),
+        _recommendation('Easy jog', 'jogging'),
+        _recommendation('Run', 'running'),
+        _recommendation('Light stretching', 'stretching'),
+        _recommendation('Gentle yoga', 'yoga'),
+      ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: AssistantExerciseCard(
+              recommendations: recommendations,
+              isSaving: false,
+              onChoose: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      for (final icon in const [
+        Icons.directions_walk_rounded,
+        Icons.directions_run_rounded,
+        Icons.run_circle_rounded,
+        Icons.accessibility_new_rounded,
+        Icons.self_improvement_rounded,
+      ]) {
+        expect(find.byIcon(icon), findsOneWidget);
+      }
+    },
+  );
+
+  testWidgets(
     'assistant exercise card presents rest as an intentional choice',
     (tester) async {
       const noneToday = ExerciseRecommendationModel(
@@ -379,6 +414,18 @@ String _daysAgo(int days) {
   final month = date.month.toString().padLeft(2, '0');
   final day = date.day.toString().padLeft(2, '0');
   return '${date.year}-$month-$day';
+}
+
+ExerciseRecommendationModel _recommendation(String name, String category) {
+  return ExerciseRecommendationModel(
+    exerciseName: name,
+    exerciseCategory: category,
+    targetDistanceMeters: null,
+    targetMinutes: 10,
+    targetReps: null,
+    completionMethod: 'manual',
+    reason: 'This option fits your energy today.',
+  );
 }
 
 ExerciseRecommendationPolicyContext _context({

@@ -116,7 +116,7 @@ extension _LogHydrationActivityCards on LogWidgets {
             options: exercises,
             minItemWidth: 104,
             isSelected: selectedExercises.contains,
-            leadingIconFor: _exerciseIconFor,
+            leadingIconFor: (exercise) => exerciseIconFor(name: exercise),
             onSelected: onExerciseToggle,
           ),
         ],
@@ -390,21 +390,4 @@ extension _LogHydrationActivityCards on LogWidgets {
       },
     );
   }
-}
-
-IconData _exerciseIconFor(String exercise) {
-  return switch (exercise) {
-    'Walking' => Icons.directions_walk_rounded,
-    'Jogging' => Icons.directions_run_rounded,
-    'Running' => Icons.run_circle_rounded,
-    'Bodyweight' => Icons.sports_gymnastics_rounded,
-    'Stretching' => Icons.accessibility_new_rounded,
-    'Breathing' => Icons.air_rounded,
-    'Yoga' => Icons.self_improvement_rounded,
-    'Gym' => Icons.fitness_center_rounded,
-    'Cycling' => Icons.directions_bike_rounded,
-    'Swimming' => Icons.pool_rounded,
-    'None' => Icons.block_rounded,
-    _ => Icons.directions_run_rounded,
-  };
 }

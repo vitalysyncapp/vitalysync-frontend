@@ -18,6 +18,7 @@ import '../../features/nutrition/data/nutrition_reminder_engine.dart';
 import '../../l10n/app_localizations.dart';
 import '../preferences/app_preferences.dart';
 import '../preferences/user_session.dart';
+import '../widgets/exercise_icon_mapper.dart';
 import 'floating_smart_nudge_assistant.dart';
 import 'overlay_assistant_controller.dart';
 import 'package:vitalysync/l10n/localized_text.dart';
@@ -657,7 +658,7 @@ class _GeneratedPreviewCard extends StatelessWidget {
     };
     final icon = switch (kind) {
       'nutrition' => Icons.restaurant_menu_rounded,
-      'exercise' => Icons.directions_walk_rounded,
+      'exercise' => exerciseIconFor(name: title),
       _ => Icons.auto_awesome_rounded,
     };
     final fallbackTitle = switch (kind) {

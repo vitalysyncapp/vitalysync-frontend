@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_page_style.dart';
+import '../../../../shared/widgets/exercise_icon_mapper.dart';
 import '../../data/exercise_recommendation_model.dart';
 import 'package:vitalysync/l10n/localized_text.dart';
+
+IconData assistantExerciseIconFor(ExerciseRecommendationModel recommendation) {
+  return exerciseIconFor(
+    name: recommendation.exerciseName,
+    category: recommendation.exerciseCategory,
+  );
+}
 
 class AssistantExerciseCard extends StatelessWidget {
   final List<ExerciseRecommendationModel> recommendations;
@@ -80,7 +88,7 @@ class _RecommendationTile extends StatelessWidget {
               child: Icon(
                 isNone
                     ? Icons.self_improvement_rounded
-                    : Icons.directions_run_rounded,
+                    : assistantExerciseIconFor(recommendation),
                 color: accent,
                 size: 21,
               ),

@@ -214,8 +214,10 @@ class _ExercisePreviewBubble extends StatelessWidget {
       onClose: onClose,
       tailOnRight: tailOnRight,
       tailAtBottom: tailAtBottom,
-      icon: const Icon(
-        Icons.directions_run_rounded,
+      icon: Icon(
+        recommendation == null
+            ? Icons.fitness_center_rounded
+            : assistantExerciseIconFor(recommendation),
         color: Colors.white,
         size: 19,
       ),
