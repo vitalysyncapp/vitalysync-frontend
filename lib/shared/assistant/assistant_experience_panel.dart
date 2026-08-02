@@ -788,12 +788,13 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
 
   @override
   Widget build(BuildContext context) {
+    final mediaSize = MediaQuery.sizeOf(context);
+    final isLandscape = mediaSize.width > mediaSize.height;
     final maxHeight =
-        MediaQuery.sizeOf(context).height *
-        (widget.useSafeAreaPadding ? 0.9 : 1.0);
+        mediaSize.height * (widget.useSafeAreaPadding ? 0.9 : 1.0);
     final sections = _sections();
     final currentIndex = min(_pageIndex, sections.length - 1);
-    final panel = Padding(
+    Widget panel = Padding(
       padding: EdgeInsets.only(
         left: 8,
         right: 8,
@@ -802,6 +803,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
             : 0,
       ),
       child: Container(
+        key: const ValueKey('assistant-experience-panel-surface'),
         constraints: BoxConstraints(maxHeight: maxHeight),
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
         decoration: BoxDecoration(
@@ -903,6 +905,18 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
         ),
       ),
     );
+
+    if (isLandscape) {
+      panel = Align(
+        alignment: Alignment.center,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: _assistantLandscapeMaxWidth,
+          ),
+          child: panel,
+        ),
+      );
+    }
 
     if (!widget.useSafeAreaPadding) {
       return panel;

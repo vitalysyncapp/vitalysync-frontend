@@ -47,6 +47,7 @@ class OverlayAssistantService : Service() {
         private const val keyBubbleDockSide = "bubble_dock_side"
         private const val bubbleWindowSizeDp = 58
         private const val bubbleVisualSizeDp = 58
+        private const val landscapePanelMaxWidthDp = 680
         private const val dockSideLeft = "left"
         private const val dockSideRight = "right"
     }
@@ -366,9 +367,15 @@ class OverlayAssistantService : Service() {
         val root = rootView ?: return
         flutterEngine?.lifecycleChannel?.appIsResumed()
         val metrics = resources.displayMetrics
-        val horizontalMargin = dpToPx(4)
+        val isLandscape = metrics.widthPixels > metrics.heightPixels
+        val horizontalMargin = dpToPx(if (isLandscape) 16 else 4)
         val verticalMargin = dpToPx(32)
-        val width = metrics.widthPixels - (horizontalMargin * 2)
+        val availableWidth = metrics.widthPixels - (horizontalMargin * 2)
+        val width = if (isLandscape) {
+            minOf(dpToPx(landscapePanelMaxWidthDp), availableWidth)
+        } else {
+            availableWidth
+        }
         val height = minOf((metrics.heightPixels * 0.76f).toInt(), metrics.heightPixels - (verticalMargin * 2))
 
         val params = windowLayoutParams ?: WindowManager.LayoutParams(
