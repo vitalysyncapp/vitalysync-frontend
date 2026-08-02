@@ -13,9 +13,14 @@ class MainActivity : FlutterFragmentActivity() {
     companion object {
         const val launchPayloadExtra = "vitalysync_launch_payload"
         private const val appLaunchChannelName = "vitalysync/app_launch"
+        private const val notificationSettingsChannelName =
+            "vitalysync/notification_settings"
+        private const val notificationSettingsRequestCode = 7301
     }
 
     private var appLaunchChannel: MethodChannel? = null
+    private var notificationSettingsChannel: MethodChannel? = null
+    private var notificationSettingsResult: MethodChannel.Result? = null
     private var pendingLaunchPayload: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,6 +55,16 @@ class MainActivity : FlutterFragmentActivity() {
         appLaunchChannel?.invokeMethod("launchPayload", payload)
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != notificationSettingsRequestCode) {
+            return
+        }
+
+        notificationSettingsResult?.success(true)
+        notificationSettingsResult = null
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
@@ -63,6 +78,18 @@ class MainActivity : FlutterFragmentActivity() {
                         result.success(consumePendingLaunchPayload())
                     }
 
+                    else -> result.notImplemented()
+                }
+            }
+        }
+
+        notificationSettingsChannel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            notificationSettingsChannelName,
+        ).apply {
+            setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "openNotificationSettings" -> openNotificationSettings(result)
                     else -> result.notImplemented()
                 }
             }
@@ -173,7 +200,37 @@ class MainActivity : FlutterFragmentActivity() {
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
         appLaunchChannel?.setMethodCallHandler(null)
         appLaunchChannel = null
+        notificationSettingsChannel?.setMethodCallHandler(null)
+        notificationSettingsChannel = null
+        notificationSettingsResult?.success(false)
+        notificationSettingsResult = null
         super.cleanUpFlutterEngine(flutterEngine)
+    }
+
+    private fun openNotificationSettings(result: MethodChannel.Result) {
+        if (notificationSettingsResult != null) {
+            result.success(false)
+            return
+        }
+
+        val settingsIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+            }
+        } else {
+            Intent(
+                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.parse("package:$packageName"),
+            )
+        }
+
+        notificationSettingsResult = result
+        runCatching {
+            startActivityForResult(settingsIntent, notificationSettingsRequestCode)
+        }.onFailure {
+            notificationSettingsResult = null
+            result.success(false)
+        }
     }
 
     private fun consumePendingLaunchPayload(): String? {

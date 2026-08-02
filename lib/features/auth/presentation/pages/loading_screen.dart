@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/main_navigation.dart';
+import '../../../../app/permissions/first_install_permission_gate.dart';
 import '../../../../features/log/data/log_api.dart';
 import '../../../../features/onboarding/data/onboarding_api.dart';
 import '../../../../features/onboarding/presentation/pages/onboarding_page.dart';
@@ -70,13 +71,15 @@ class _LoadingScreenState extends State<LoadingScreen>
         context,
         MaterialPageRoute(
           builder: (_) => onboardingCompleted
-              ? MainNavigation(
-                  initialTab: tabForNotificationPayload(launchPayload),
-                  openNutritionLogOnStart: shouldOpenNutritionLog(
-                    launchPayload,
+              ? FirstInstallPermissionGate(
+                  child: MainNavigation(
+                    initialTab: tabForNotificationPayload(launchPayload),
+                    openNutritionLogOnStart: shouldOpenNutritionLog(
+                      launchPayload,
+                    ),
+                    tutorialUserId: signedInUserId,
+                    showTutorialOnStart: showTutorialOnStart,
                   ),
-                  tutorialUserId: signedInUserId,
-                  showTutorialOnStart: showTutorialOnStart,
                 )
               : OnboardingPage(userId: signedInUserId),
         ),

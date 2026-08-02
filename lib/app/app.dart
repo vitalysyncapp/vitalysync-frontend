@@ -18,6 +18,7 @@ import '../shared/privacy/local_data_retention_service.dart';
 import '../shared/privacy/privacy_screen_observer.dart';
 import 'app_theme.dart';
 import 'main_navigation.dart';
+import 'permissions/first_install_permission_gate.dart';
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -149,11 +150,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
     navigator.pushAndRemoveUntil(
       MaterialPageRoute(
-        builder: (_) => MainNavigation(
-          initialTab: tabForNotificationPayload(payload),
-          openNutritionLogOnStart: shouldOpenNutritionLog(payload),
-          tutorialUserId: userId,
-          showTutorialOnStart: showTutorialOnStart,
+        builder: (_) => FirstInstallPermissionGate(
+          child: MainNavigation(
+            initialTab: tabForNotificationPayload(payload),
+            openNutritionLogOnStart: shouldOpenNutritionLog(payload),
+            tutorialUserId: userId,
+            showTutorialOnStart: showTutorialOnStart,
+          ),
         ),
       ),
       (_) => false,

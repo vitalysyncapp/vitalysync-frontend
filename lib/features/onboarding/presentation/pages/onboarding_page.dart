@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../../../app/main_navigation.dart';
+import '../../../../app/permissions/first_install_permission_gate.dart';
 import '../../../../shared/goals/user_goals.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/animated_gradient_background.dart';
@@ -316,9 +317,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
-          builder: (_) => MainNavigation(
-            tutorialUserId: widget.userId,
-            showTutorialOnStart: true,
+          builder: (_) => FirstInstallPermissionGate(
+            child: MainNavigation(
+              tutorialUserId: widget.userId,
+              showTutorialOnStart: true,
+            ),
           ),
         ),
         (route) => false,

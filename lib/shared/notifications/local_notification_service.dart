@@ -125,7 +125,49 @@ class LocalNotificationService {
     return androidGranted && iosGranted && macGranted;
   }
 
-  Future<void> refreshReminderScheduleFromPreferences() async {
+  Future<void> createAndroidNotificationChannels() async {
+    await initialize();
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+      return;
+    }
+
+    final androidPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    if (androidPlugin == null) {
+      return;
+    }
+
+    for (final notificationType in const [
+      'daily_log_reminder',
+      'hydration_reminder',
+      'adaptive_nudge_reminder',
+      'sleep_wind_down_reminder',
+    ]) {
+      final presentation = NotificationPresentation.forNotificationType(
+        notificationType,
+      );
+      await androidPlugin.createNotificationChannel(
+        AndroidNotificationChannel(
+          presentation.androidChannelId,
+          presentation.androidChannelName,
+          description: presentation.androidChannelDescription,
+          importance: presentation.usesHighPriority
+              ? Importance.high
+              : Importance.defaultImportance,
+          playSound: true,
+          sound: RawResourceAndroidNotificationSound(
+            presentation.androidSoundResource,
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> refreshReminderScheduleFromPreferences({
+    bool requestPermission = true,
+  }) async {
     await initialize();
     if (kIsWeb) {
       return;
@@ -148,7 +190,9 @@ class LocalNotificationService {
       return;
     }
 
-    await requestPermissions();
+    if (requestPermission) {
+      await requestPermissions();
+    }
     final dailyTime = _parseTime(prefs.dailyLogReminderTime);
     await scheduleDailyLogReminder(
       hour: dailyTime.hour,
@@ -293,7 +337,9 @@ class LocalNotificationService {
       return;
     }
 
-    await requestPermissions();
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      await requestPermissions();
+    }
     final scheduledDate = _zonedFromLocal(DateTime.now().add(delay));
     await _plugin.zonedSchedule(
       id: _adaptiveReminderId,
@@ -331,7 +377,9 @@ class LocalNotificationService {
       return;
     }
 
-    await requestPermissions();
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      await requestPermissions();
+    }
     await _plugin.show(
       id: _adaptiveNowId,
       title: title,
@@ -375,7 +423,9 @@ class LocalNotificationService {
       return;
     }
 
-    await requestPermissions();
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      await requestPermissions();
+    }
     await _plugin.show(
       id: _nutritionNowId,
       title: title,

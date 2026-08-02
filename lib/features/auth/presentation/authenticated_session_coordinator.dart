@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/main_navigation.dart';
+import '../../../app/permissions/first_install_permission_gate.dart';
 import '../../log/data/log_api.dart';
 import '../../onboarding/data/onboarding_api.dart';
 import '../../onboarding/presentation/pages/onboarding_page.dart';
@@ -47,7 +48,7 @@ Future<void> completeAuthenticatedSession(
     context,
     MaterialPageRoute(
       builder: (_) => onboardingCompleted
-          ? const MainNavigation()
+          ? const FirstInstallPermissionGate(child: MainNavigation())
           : OnboardingPage(userId: userId),
     ),
     (route) => false,

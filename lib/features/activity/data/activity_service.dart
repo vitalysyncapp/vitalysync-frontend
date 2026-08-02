@@ -103,7 +103,10 @@ class ActivityService {
     return '${now.year}-$month-$day';
   }
 
-  Future<void> startTracking({bool refreshFromBackend = true}) async {
+  Future<void> startTracking({
+    bool refreshFromBackend = true,
+    bool requestPermission = false,
+  }) async {
     if (_hasStarted || _isStarting) {
       await _loadCachedActivity(markLoading: false);
       _scheduleDayBoundaryRefresh();
@@ -135,7 +138,9 @@ class ActivityService {
         return;
       }
 
-      final hasPermission = await requestActivityRecognitionPermission();
+      final hasPermission = requestPermission
+          ? await requestActivityRecognitionPermission()
+          : await hasActivityRecognitionPermission();
       if (!hasPermission) {
         _emit(
           notifier.value.copyWith(

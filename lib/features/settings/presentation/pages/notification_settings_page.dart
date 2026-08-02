@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../features/adaptive/data/adaptive_reminder_api.dart';
 import '../../../../features/onboarding/data/onboarding_api.dart';
 import '../../../../shared/notifications/local_notification_service.dart';
+import '../../../../shared/notifications/notification_system_settings_controller.dart';
 import '../../../../shared/preferences/app_preferences.dart';
 import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/app_page_style.dart';
@@ -249,6 +250,19 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
         .refreshReminderScheduleFromPreferences();
   }
 
+  Future<void> _openSystemNotificationSettings() async {
+    final opened = await NotificationSystemSettingsController.instance.open();
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: LocalizedText(
+            'Unable to open Android notification settings on this device.',
+          ),
+        ),
+      );
+    }
+  }
+
   Future<void> _saveRemotePreferences() async {
     if (_usesLocalSettings || _userId == null) {
       await _syncLocalNotificationState();
@@ -285,16 +299,18 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
         return;
       }
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: LocalizedText('Reminder settings saved.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: LocalizedText('Reminder settings saved.')),
+      );
     } catch (error) {
       if (!mounted) {
         return;
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: LocalizedText('Unable to save reminder settings: $error')),
+        SnackBar(
+          content: LocalizedText('Unable to save reminder settings: $error'),
+        ),
       );
     } finally {
       if (mounted) {
@@ -363,6 +379,22 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                     pageBottomContentPadding(context),
                   ),
                   children: [
+                    if (NotificationSystemSettingsController
+                        .instance
+                        .isSupported) ...[
+                      _SettingsBlock(
+                        title: 'Notification sound',
+                        child: _ActionTile(
+                          icon: Icons.volume_up_rounded,
+                          title: 'Turn on Ring in Android',
+                          subtitle:
+                              'Android controls the final sound setting. Open system settings and turn on Ring for VitalySync and its reminder categories.',
+                          actionLabel: 'Open sound settings',
+                          onPressed: _openSystemNotificationSettings,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     _SettingsBlock(
                       title: 'Reminder preferences',
                       child: Column(

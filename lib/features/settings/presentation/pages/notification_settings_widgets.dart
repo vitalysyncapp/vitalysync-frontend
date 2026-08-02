@@ -46,6 +46,73 @@ class _SettingsBlock extends StatelessWidget {
   }
 }
 
+class _ActionTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String actionLabel;
+  final Future<void> Function() onPressed;
+
+  const _ActionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.actionLabel,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    LocalizedText(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: pagePrimaryTextColor(context),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    LocalizedText(
+                      subtitle,
+                      style: TextStyle(
+                        height: 1.4,
+                        color: pageSecondaryTextColor(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              key: const ValueKey('open-system-notification-settings'),
+              onPressed: onPressed,
+              icon: const Icon(Icons.open_in_new_rounded),
+              label: LocalizedText(actionLabel),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _SwitchTile extends StatelessWidget {
   final String title;
   final String subtitle;
