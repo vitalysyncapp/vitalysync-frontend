@@ -122,20 +122,16 @@ class LogWidgets extends StatelessWidget {
     addCard('sleep-quality', _buildSleepQualityCard());
     if (showWeeklyQuestions) {
       addCard('weekly-pressure', _buildPerceivedStressCard());
+      addCard('weekly-detachment', _buildDailyDetachmentCard());
+      addCard('recovery-breaks', _buildBreakQualityCard());
+      addCard('weekly-focus', _buildDailyFocusCard());
+      addCard('weekly-accomplishment', _buildDailyAccomplishmentCard());
     }
     addCard('energy', _buildEnergyCard(context));
     addCard('mood', _buildMoodCard());
     addCard('symptoms', _buildSymptomsCard());
-    if (showWeeklyQuestions) {
-      addCard('weekly-detachment', _buildDailyDetachmentCard());
-      addCard('recovery-breaks', _buildBreakQualityCard());
-    }
     addCard('habits', _buildHabitsCard());
     addCard('hydration', _buildHydrationCard());
-    if (showWeeklyQuestions) {
-      addCard('weekly-focus', _buildDailyFocusCard());
-      addCard('weekly-accomplishment', _buildDailyAccomplishmentCard());
-    }
     addCard('workload', _buildWorkloadCard());
     addCard('exercise', _buildExerciseCard());
 

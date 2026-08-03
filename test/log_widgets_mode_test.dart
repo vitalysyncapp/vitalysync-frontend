@@ -30,6 +30,31 @@ void main() {
     expect(find.text('Reduced accomplishment'), findsNothing);
   });
 
+  testWidgets('weekly reflections follow sleep cards before daily inputs', (
+    tester,
+  ) async {
+    await _pumpLogWidgets(tester, showWeeklyQuestions: true);
+
+    final orderedCardIds = [
+      'sleep-duration',
+      'sleep-quality',
+      'weekly-pressure',
+      'weekly-detachment',
+      'recovery-breaks',
+      'weekly-focus',
+      'weekly-accomplishment',
+      'energy',
+    ];
+
+    final cardOffsets = orderedCardIds
+        .map((id) => tester.getTopLeft(find.byKey(ValueKey('log-card-$id'))).dy)
+        .toList();
+
+    for (var index = 1; index < cardOffsets.length; index++) {
+      expect(cardOffsets[index], greaterThan(cardOffsets[index - 1]));
+    }
+  });
+
   testWidgets('logging cards use a staggered calm entrance', (tester) async {
     await _pumpLogWidgets(tester, showWeeklyQuestions: false);
 
