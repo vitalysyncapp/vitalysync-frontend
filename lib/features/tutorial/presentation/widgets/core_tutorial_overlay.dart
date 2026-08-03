@@ -583,31 +583,56 @@ class _TutorialBubbleContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isNarrow = MediaQuery.sizeOf(context).width < 360;
+    final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
 
-    final backButton = OutlinedButton.icon(
-      key: const ValueKey('core-tutorial-back-button'),
-      onPressed: isFirstStep || isFinishing ? null : onBack,
-      icon: const Icon(Icons.arrow_back_rounded),
-      label: const LocalizedText('Back'),
-    );
-    final nextButton = ElevatedButton.icon(
-      key: const ValueKey('core-tutorial-next-button'),
-      onPressed: isFinishing ? null : onNext,
-      icon: isFinishing
-          ? const SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.2,
-                color: Colors.white,
+    Widget buildBackButton({required bool compact}) {
+      return OutlinedButton.icon(
+        key: const ValueKey('core-tutorial-back-button'),
+        onPressed: isFirstStep || isFinishing ? null : onBack,
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(0, 48),
+          padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 16),
+          iconSize: compact ? 20 : 22,
+        ),
+        icon: const Icon(Icons.arrow_back_rounded),
+        label: const LocalizedText(
+          'Back',
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+        ),
+      );
+    }
+
+    Widget buildNextButton({required bool compact}) {
+      return ElevatedButton.icon(
+        key: const ValueKey('core-tutorial-next-button'),
+        onPressed: isFinishing ? null : onNext,
+        style: ElevatedButton.styleFrom(
+          minimumSize: const Size(0, 48),
+          padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 16),
+          iconSize: compact ? 20 : 22,
+        ),
+        icon: isFinishing
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  color: Colors.white,
+                ),
+              )
+            : Icon(
+                isLastStep ? Icons.check_rounded : Icons.arrow_forward_rounded,
               ),
-            )
-          : Icon(
-              isLastStep ? Icons.check_rounded : Icons.arrow_forward_rounded,
-            ),
-      label: LocalizedText(isLastStep ? 'Finish' : 'Next'),
-    );
+        label: LocalizedText(
+          isLastStep ? 'Finish' : 'Next',
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+        ),
+      );
+    }
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -689,18 +714,33 @@ class _TutorialBubbleContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 18),
-        if (isNarrow) ...[
-          SizedBox(width: double.infinity, child: nextButton),
-          const SizedBox(height: 10),
-          SizedBox(width: double.infinity, child: backButton),
-        ] else
-          Row(
-            children: [
-              Expanded(child: backButton),
-              const SizedBox(width: 12),
-              Expanded(flex: 2, child: nextButton),
-            ],
-          ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final availableWidth = constraints.maxWidth;
+            final stackButtons = availableWidth < 210 * textScale;
+            final useEqualWidths = availableWidth < 320 * textScale;
+            final backButton = buildBackButton(compact: useEqualWidths);
+            final nextButton = buildNextButton(compact: useEqualWidths);
+
+            if (stackButtons) {
+              return Column(
+                children: [
+                  SizedBox(width: double.infinity, child: nextButton),
+                  const SizedBox(height: 8),
+                  SizedBox(width: double.infinity, child: backButton),
+                ],
+              );
+            }
+
+            return Row(
+              children: [
+                Expanded(child: backButton),
+                SizedBox(width: useEqualWidths ? 8 : 12),
+                Expanded(flex: useEqualWidths ? 1 : 2, child: nextButton),
+              ],
+            );
+          },
+        ),
       ],
     );
   }

@@ -67,6 +67,65 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('keeps tutorial action labels on one line on narrow phones', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(360, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final navigationTargetKey = GlobalKey();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MediaQuery(
+          data: const MediaQueryData(size: Size(360, 800)),
+          child: Scaffold(
+            body: Stack(
+              children: [
+                Positioned(
+                  left: 16,
+                  right: 16,
+                  bottom: 24,
+                  height: 68,
+                  child: SizedBox(key: navigationTargetKey),
+                ),
+                Positioned.fill(
+                  child: CoreTutorialOverlay(
+                    currentTab: MainTab.home,
+                    onTabSelected: (_) {},
+                    targetKeys: {
+                      CoreTutorialTarget.navigation: navigationTargetKey,
+                    },
+                    onRouteRequested: (_) async {},
+                    onFinished: () async {},
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 150));
+    }
+
+    final backButtonRect = tester.getRect(
+      find.byKey(const ValueKey('core-tutorial-back-button')),
+    );
+    final nextButtonRect = tester.getRect(
+      find.byKey(const ValueKey('core-tutorial-next-button')),
+    );
+    final backLabelSize = tester.getSize(find.text('Back'));
+    final nextLabelSize = tester.getSize(find.text('Next'));
+
+    expect(backButtonRect.width, greaterThanOrEqualTo(100));
+    expect(backButtonRect.width, closeTo(nextButtonRect.width, 1));
+    expect(backButtonRect.center.dy, closeTo(nextButtonRect.center.dy, 1));
+    expect(backLabelSize.height, lessThan(24));
+    expect(nextLabelSize.height, lessThan(24));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('step 9 stays high enough to show the full assistant bubble', (
     tester,
   ) async {
