@@ -8,6 +8,9 @@ import '../../data/weekly_user_metrics.dart';
 import 'package:vitalysync/l10n/localized_text.dart';
 
 const Color _moodAccent = Color(0xFF1FB489);
+const double _moodScaleMin = 1;
+const double _moodScaleMax = 5;
+const double _chartVerticalPadding = 0.3;
 
 class MoodVolatilityCard extends StatelessWidget {
   final WeeklyUserMetrics? metrics;
@@ -116,8 +119,10 @@ class MoodVolatilityCard extends StatelessWidget {
     return LineChartData(
       minX: -0.18,
       maxX: 6.18,
-      minY: 1,
-      maxY: 5,
+      // Keep the true 1-5 scale inset from the clipped plot boundary so the
+      // marker stroke remains fully visible at either extreme.
+      minY: _moodScaleMin - _chartVerticalPadding,
+      maxY: _moodScaleMax + _chartVerticalPadding,
       clipData: const FlClipData.all(),
       gridData: FlGridData(
         show: true,

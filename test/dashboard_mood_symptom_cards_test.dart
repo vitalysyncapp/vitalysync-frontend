@@ -49,8 +49,13 @@ void main() {
     expect(spots[1], FlSpot.nullSpot);
     expect(spots[4], FlSpot.nullSpot);
     expect(spots[6], const FlSpot(6, 5));
-    expect(chart.data.minY, 1);
-    expect(chart.data.maxY, 5);
+    expect(chart.data.minY, lessThan(1));
+    expect(chart.data.maxY, greaterThan(5));
+    expect(
+      chart.data.maxY - spots[6].y,
+      greaterThanOrEqualTo(0.25),
+      reason: 'A maximum-score marker needs room below the clipped top edge.',
+    );
     expect(tester.takeException(), isNull);
   });
 
