@@ -65,6 +65,7 @@ class OverlayAssistantService : Service() {
     private var flutterView: FlutterView? = null
     private var rootView: FrameLayout? = null
     private var dismissView: View? = null
+    private var overlayTransitionController: OverlayAssistantTransitionController? = null
     private var overlayChannel: MethodChannel? = null
     private var overlayWindowChannel: MethodChannel? = null
     private var windowLayoutParams: WindowManager.LayoutParams? = null
@@ -223,11 +224,18 @@ class OverlayAssistantService : Service() {
         flutterEngine = engine
         flutterView = view
         rootView = container
+        overlayTransitionController = OverlayAssistantTransitionController(
+            context = this,
+            rootView = container,
+            flutterView = view,
+            mainHandler = mainHandler,
+        )
     }
 
     private fun destroyOverlayEngine() {
         cancelBubbleSnapAnimation()
         recycleVelocityTracker()
+        overlayTransitionController?.cancel()
         cancelReminderPreviewCollapse()
         removeDismissTarget()
         rootView?.let { view ->
@@ -244,6 +252,7 @@ class OverlayAssistantService : Service() {
         flutterEngine = null
         overlayChannel = null
         overlayWindowChannel = null
+        overlayTransitionController = null
         rootView = null
         windowLayoutParams = null
         isBubbleMode = true
@@ -252,6 +261,7 @@ class OverlayAssistantService : Service() {
     private fun detachOverlayWindow() {
         cancelBubbleSnapAnimation()
         recycleVelocityTracker()
+        overlayTransitionController?.cancel()
         cancelReminderPreviewCollapse()
         removeDismissTarget()
         rootView?.let { view ->
@@ -350,8 +360,16 @@ class OverlayAssistantService : Service() {
             return
         }
 
-        isBubbleMode = true
         val root = rootView ?: return
+        val shouldAnimateTransition = root.isAttachedToWindow && !isBubbleMode
+        val transitionResult = if (shouldAnimateTransition) {
+            overlayTransitionController?.begin(
+                OverlayAssistantTransitionController.Target.BUBBLE,
+            )
+        } else {
+            null
+        }
+        isBubbleMode = true
         flutterEngine?.lifecycleChannel?.appIsResumed()
         val metrics = resources.displayMetrics
         val bubbleSize = dpToPx(bubbleWindowSizeDp)
@@ -379,9 +397,14 @@ class OverlayAssistantService : Service() {
         windowLayoutParams = params
 
         if (!attachOrUpdateRootView(root, params)) {
+            overlayTransitionController?.cancel()
             return
         }
-        overlayWindowChannel?.invokeMethod("setOverlayMode", "bubble")
+        invokeOverlayMethodAfterFrame(
+            method = "setOverlayMode",
+            arguments = "bubble",
+            transitionResult = transitionResult,
+        )
     }
 
     private fun expandPanel() {
@@ -394,8 +417,11 @@ class OverlayAssistantService : Service() {
             return
         }
 
-        isBubbleMode = false
         val root = rootView ?: return
+        val transitionResult = overlayTransitionController?.begin(
+            OverlayAssistantTransitionController.Target.PANEL,
+        )
+        isBubbleMode = false
         flutterEngine?.lifecycleChannel?.appIsResumed()
         val metrics = resources.displayMetrics
         val isLandscape = metrics.widthPixels > metrics.heightPixels
@@ -428,9 +454,14 @@ class OverlayAssistantService : Service() {
         windowLayoutParams = params
 
         if (!attachOrUpdateRootView(root, params)) {
+            overlayTransitionController?.cancel()
             return
         }
-        overlayWindowChannel?.invokeMethod("setOverlayMode", "panel")
+        invokeOverlayMethodAfterFrame(
+            method = "setOverlayMode",
+            arguments = "panel",
+            transitionResult = transitionResult,
+        )
     }
 
     private fun showReminderPreview(intent: Intent?): Boolean {
@@ -451,8 +482,11 @@ class OverlayAssistantService : Service() {
         cancelBubbleSnapAnimation()
         cancelReminderPreviewCollapse()
         removeDismissTarget()
-        isBubbleMode = false
         val root = rootView ?: return false
+        val transitionResult = overlayTransitionController?.begin(
+            OverlayAssistantTransitionController.Target.PREVIEW,
+        )
+        isBubbleMode = false
         flutterEngine?.lifecycleChannel?.appIsResumed()
 
         val metrics = resources.displayMetrics
@@ -478,16 +512,18 @@ class OverlayAssistantService : Service() {
         windowLayoutParams = params
 
         if (!attachOrUpdateRootView(root, params)) {
+            overlayTransitionController?.cancel()
             return false
         }
-        overlayWindowChannel?.invokeMethod(
-            "showReminderPreview",
-            mapOf(
+        invokeOverlayMethodAfterFrame(
+            method = "showReminderPreview",
+            arguments = mapOf(
                 "title" to title,
                 "body" to body,
                 "payload" to intent?.getStringExtra(OverlayAssistantManager.extraReminderPayload).orEmpty(),
                 "notificationType" to intent?.getStringExtra(OverlayAssistantManager.extraReminderType).orEmpty(),
             ),
+            transitionResult = transitionResult,
         )
 
         reminderPreviewCollapseRunnable = Runnable { collapseToBubble() }.also {
@@ -526,8 +562,11 @@ class OverlayAssistantService : Service() {
         cancelBubbleSnapAnimation()
         cancelReminderPreviewCollapse()
         removeDismissTarget()
-        isBubbleMode = false
         val root = rootView ?: return false
+        val transitionResult = overlayTransitionController?.begin(
+            OverlayAssistantTransitionController.Target.PREVIEW,
+        )
+        isBubbleMode = false
         flutterEngine?.lifecycleChannel?.appIsResumed()
 
         val metrics = resources.displayMetrics
@@ -553,15 +592,17 @@ class OverlayAssistantService : Service() {
         windowLayoutParams = params
 
         if (!attachOrUpdateRootView(root, params)) {
+            overlayTransitionController?.cancel()
             return false
         }
-        overlayWindowChannel?.invokeMethod(
-            "showGeneratedPreview",
-            mapOf(
+        invokeOverlayMethodAfterFrame(
+            method = "showGeneratedPreview",
+            arguments = mapOf(
                 "kind" to kind,
                 "title" to cleanTitle,
                 "body" to cleanBody,
             ),
+            transitionResult = transitionResult,
         )
 
         reminderPreviewCollapseRunnable = Runnable { collapseToBubble() }.also {
@@ -573,6 +614,23 @@ class OverlayAssistantService : Service() {
     private fun cancelReminderPreviewCollapse() {
         reminderPreviewCollapseRunnable?.let { mainHandler.removeCallbacks(it) }
         reminderPreviewCollapseRunnable = null
+    }
+
+    private fun invokeOverlayMethodAfterFrame(
+        method: String,
+        arguments: Any?,
+        transitionResult: MethodChannel.Result?,
+    ) {
+        val channel = overlayWindowChannel
+        if (channel == null) {
+            transitionResult?.success(null)
+            return
+        }
+        if (transitionResult == null) {
+            channel.invokeMethod(method, arguments)
+        } else {
+            channel.invokeMethod(method, arguments, transitionResult)
+        }
     }
 
     private fun attachOrUpdateRootView(root: FrameLayout, params: WindowManager.LayoutParams): Boolean {

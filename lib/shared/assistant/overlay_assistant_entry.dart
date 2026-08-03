@@ -142,6 +142,7 @@ class _OverlayAssistantShellState extends State<_OverlayAssistantShell> {
       return null;
     }
 
+    var scheduledVisualUpdate = false;
     switch (call.method) {
       case 'setOverlayMode':
         final modeName = call.arguments?.toString() ?? 'bubble';
@@ -153,6 +154,7 @@ class _OverlayAssistantShellState extends State<_OverlayAssistantShell> {
             _ => _OverlayAssistantMode.bubble,
           };
         });
+        scheduledVisualUpdate = true;
         break;
       case 'showReminderPreview':
         final args = Map<String, dynamic>.from(call.arguments as Map? ?? {});
@@ -161,6 +163,7 @@ class _OverlayAssistantShellState extends State<_OverlayAssistantShell> {
           _reminderBody = args['body']?.toString() ?? '';
           _mode = _OverlayAssistantMode.reminderPreview;
         });
+        scheduledVisualUpdate = true;
         break;
       case 'showGeneratedPreview':
         final args = Map<String, dynamic>.from(call.arguments as Map? ?? {});
@@ -170,7 +173,13 @@ class _OverlayAssistantShellState extends State<_OverlayAssistantShell> {
           _generatedPreviewBody = args['body']?.toString() ?? '';
           _mode = _OverlayAssistantMode.generatedPreview;
         });
+        scheduledVisualUpdate = true;
         break;
+    }
+
+    if (scheduledVisualUpdate) {
+      // Keep the native resize cover visible until this layout has been painted.
+      await WidgetsBinding.instance.endOfFrame;
     }
 
     return null;
