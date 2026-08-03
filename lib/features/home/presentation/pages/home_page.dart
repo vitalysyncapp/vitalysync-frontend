@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 
 import '../../data/device_location_service.dart';
 import '../../data/environment_api.dart';
@@ -73,7 +72,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   bool _isLoadingEnvironment = true;
   _HomeLiveDataIssue? _summaryIssue;
   bool _isUsingCachedEnvironment = false;
-  String? _environmentError;
+  bool _hasEnvironmentError = false;
   EnvironmentSnapshot? _environmentSnapshot;
   int _refreshVersion = 0;
   int _burnoutLoadToken = 0;
@@ -285,7 +284,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       if (showLoader) {
         _isLoadingEnvironment = true;
       }
-      _environmentError = null;
+      _hasEnvironmentError = false;
     });
 
     try {
@@ -301,7 +300,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       setState(() {
         _environmentSnapshot = snapshot;
         _isUsingCachedEnvironment = false;
-        _environmentError = null;
+        _hasEnvironmentError = false;
         _isLoadingEnvironment = false;
       });
     } catch (error) {
@@ -312,13 +311,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       setState(() {
         _environmentSnapshot = cachedSnapshot;
         _isUsingCachedEnvironment = cachedSnapshot != null;
-        final fallbackMessage =
-            'Live environment data is unavailable right now.';
-        _environmentError = cachedSnapshot == null
-            ? kDebugMode
-                  ? '$fallbackMessage\n$error'
-                  : fallbackMessage
-            : null;
+        _hasEnvironmentError = cachedSnapshot == null;
         _isLoadingEnvironment = false;
       });
     }
@@ -409,7 +402,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       snapshot: _environmentSnapshot,
                       isLoading: _isLoadingEnvironment,
                       isCached: _isUsingCachedEnvironment,
-                      errorMessage: _environmentError,
+                      hasError: _hasEnvironmentError,
                     ),
                   ),
                   const SizedBox(height: 12),

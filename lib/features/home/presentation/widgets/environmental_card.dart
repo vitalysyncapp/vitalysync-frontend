@@ -12,14 +12,14 @@ class EnvironmentalCard extends StatelessWidget {
   final EnvironmentSnapshot? snapshot;
   final bool isLoading;
   final bool isCached;
-  final String? errorMessage;
+  final bool hasError;
 
   const EnvironmentalCard({
     super.key,
     required this.snapshot,
     required this.isLoading,
     this.isCached = false,
-    this.errorMessage,
+    this.hasError = false,
   });
 
   @override
@@ -47,12 +47,12 @@ class EnvironmentalCard extends StatelessWidget {
           const SizedBox(height: 12),
           if (isLoading)
             _buildLoadingState(context)
-          else if (errorMessage != null)
-            _buildErrorState(context, errorMessage!)
+          else if (hasError)
+            _buildErrorState(context)
           else if (snapshot != null)
             _buildContent(context, snapshot!)
           else
-            _buildErrorState(context, 'Environment data is unavailable'),
+            _buildErrorState(context),
         ],
       ),
     );
@@ -154,7 +154,7 @@ class EnvironmentalCard extends StatelessWidget {
     return const AppSkeletonRows(count: 3, spacing: 9, showLeading: true);
   }
 
-  Widget _buildErrorState(BuildContext context, String message) {
+  Widget _buildErrorState(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -165,7 +165,7 @@ class EnvironmentalCard extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: LocalizedText(
-            message,
+            'Environment data is unavailable',
             style: TextStyle(height: 1.4, color: pagePrimaryTextColor(context)),
           ),
         ),
