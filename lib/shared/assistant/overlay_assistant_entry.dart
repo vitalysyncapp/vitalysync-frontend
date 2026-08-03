@@ -56,6 +56,7 @@ class _OverlayAssistantApp extends StatelessWidget {
 
         return MaterialApp(
           debugShowCheckedModeBanner: false,
+          color: Colors.transparent,
           locale: prefs.locale,
           supportedLocales: AppLocalizations.supportedLocales,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -537,7 +538,7 @@ class _OverlayAssistantShellState extends State<_OverlayAssistantShell> {
             child: SizedBox(
               width: 58,
               height: 58,
-              child: AssistantFloatingBubbleVisual(),
+              child: AssistantFloatingBubbleVisual(showOuterShadow: false),
             ),
           ),
         },

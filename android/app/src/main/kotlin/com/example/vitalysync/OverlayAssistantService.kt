@@ -1,5 +1,8 @@
 package com.example.vitalysync
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -19,7 +22,9 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
+import android.view.VelocityTracker
 import android.view.WindowManager
+import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.core.app.NotificationCompat
@@ -47,6 +52,9 @@ class OverlayAssistantService : Service() {
         private const val keyBubbleDockSide = "bubble_dock_side"
         private const val bubbleWindowSizeDp = 58
         private const val bubbleVisualSizeDp = 58
+        private const val bubbleDockOverlapDp = 8
+        private const val bubbleFlingVelocityDpPerSecond = 700
+        private const val bubbleSnapDurationMillis = 220L
         private const val landscapePanelMaxWidthDp = 680
         private const val dockSideLeft = "left"
         private const val dockSideRight = "right"
@@ -70,6 +78,8 @@ class OverlayAssistantService : Service() {
     private var initialTouchX = 0f
     private var initialTouchY = 0f
     private var didDrag = false
+    private var velocityTracker: VelocityTracker? = null
+    private var bubbleSnapAnimator: ValueAnimator? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -216,6 +226,8 @@ class OverlayAssistantService : Service() {
     }
 
     private fun destroyOverlayEngine() {
+        cancelBubbleSnapAnimation()
+        recycleVelocityTracker()
         cancelReminderPreviewCollapse()
         removeDismissTarget()
         rootView?.let { view ->
@@ -238,6 +250,8 @@ class OverlayAssistantService : Service() {
     }
 
     private fun detachOverlayWindow() {
+        cancelBubbleSnapAnimation()
+        recycleVelocityTracker()
         cancelReminderPreviewCollapse()
         removeDismissTarget()
         rootView?.let { view ->
@@ -262,6 +276,10 @@ class OverlayAssistantService : Service() {
 
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
+                cancelBubbleSnapAnimation()
+                recycleVelocityTracker()
+                velocityTracker = VelocityTracker.obtain()
+                trackRawTouchMovement(event)
                 removeDismissTarget()
                 initialWindowX = layoutParams.x
                 initialWindowY = layoutParams.y
@@ -272,6 +290,7 @@ class OverlayAssistantService : Service() {
             }
 
             MotionEvent.ACTION_MOVE -> {
+                trackRawTouchMovement(event)
                 val deltaX = (event.rawX - initialTouchX).toInt()
                 val deltaY = (event.rawY - initialTouchY).toInt()
                 if (!didDrag && (abs(deltaX) > touchSlop || abs(deltaY) > touchSlop)) {
@@ -289,22 +308,32 @@ class OverlayAssistantService : Service() {
                 return true
             }
 
-            MotionEvent.ACTION_UP,
-            MotionEvent.ACTION_CANCEL -> {
+            MotionEvent.ACTION_UP -> {
+                trackRawTouchMovement(event)
+                velocityTracker?.computeCurrentVelocity(1000)
+                val horizontalVelocity = velocityTracker?.xVelocity ?: 0f
+                recycleVelocityTracker()
                 val shouldDismiss = didDrag && isOverDismissTarget(layoutParams)
                 removeDismissTarget()
                 return if (shouldDismiss) {
                     stopSelf()
                     true
                 } else if (didDrag) {
-                    snapBubbleToEdge(layoutParams)
-                    persistBubblePosition(layoutParams)
-                    updateOverlayLayout()
+                    settleBubbleToEdge(layoutParams, horizontalVelocity)
                     true
                 } else {
                     expandPanel()
                     true
                 }
+            }
+
+            MotionEvent.ACTION_CANCEL -> {
+                recycleVelocityTracker()
+                removeDismissTarget()
+                if (didDrag) {
+                    settleBubbleToEdge(layoutParams)
+                }
+                return true
             }
         }
 
@@ -312,6 +341,7 @@ class OverlayAssistantService : Service() {
     }
 
     private fun collapseToBubble() {
+        cancelBubbleSnapAnimation()
         cancelReminderPreviewCollapse()
         removeDismissTarget()
         if (OverlayAssistantManager.isAppForeground(this)) {
@@ -355,6 +385,7 @@ class OverlayAssistantService : Service() {
     }
 
     private fun expandPanel() {
+        cancelBubbleSnapAnimation()
         cancelReminderPreviewCollapse()
         removeDismissTarget()
         if (OverlayAssistantManager.isAppForeground(this)) {
@@ -417,6 +448,7 @@ class OverlayAssistantService : Service() {
             return false
         }
 
+        cancelBubbleSnapAnimation()
         cancelReminderPreviewCollapse()
         removeDismissTarget()
         isBubbleMode = false
@@ -491,6 +523,7 @@ class OverlayAssistantService : Service() {
             return false
         }
 
+        cancelBubbleSnapAnimation()
         cancelReminderPreviewCollapse()
         removeDismissTarget()
         isBubbleMode = false
@@ -580,20 +613,65 @@ class OverlayAssistantService : Service() {
         params.y = params.y.coerceIn(verticalMargin, maxY)
     }
 
-    private fun snapBubbleToEdge(params: WindowManager.LayoutParams) {
+    private fun settleBubbleToEdge(
+        params: WindowManager.LayoutParams,
+        horizontalVelocity: Float = 0f,
+    ) {
+        cancelBubbleSnapAnimation()
         val metrics = resources.displayMetrics
         val middle = metrics.widthPixels / 2
-        val dockSide = if (params.x + (params.width / 2) < middle) {
+        val flingThreshold = dpToPx(bubbleFlingVelocityDpPerSecond).toFloat()
+        val dockSide = if (abs(horizontalVelocity) >= flingThreshold) {
+            if (horizontalVelocity < 0) dockSideLeft else dockSideRight
+        } else if (params.x + (params.width / 2) < middle) {
             dockSideLeft
         } else {
             dockSideRight
         }
-        params.x = if (dockSide == dockSideLeft) {
+        val targetX = if (dockSide == dockSideLeft) {
             bubbleMinDockX(params)
         } else {
             bubbleMaxDockX(params)
         }
         clampBubblePosition(params)
+
+        if (params.x == targetX) {
+            persistBubblePosition(params)
+            updateOverlayLayout()
+            return
+        }
+
+        val animator = ValueAnimator.ofInt(params.x, targetX).apply {
+            duration = bubbleSnapDurationMillis
+            interpolator = DecelerateInterpolator(1.6f)
+            addUpdateListener { animation ->
+                if (windowLayoutParams !== params) {
+                    return@addUpdateListener
+                }
+                params.x = animation.animatedValue as Int
+                updateOverlayLayout()
+            }
+            addListener(object : AnimatorListenerAdapter() {
+                private var wasCancelled = false
+
+                override fun onAnimationCancel(animation: Animator) {
+                    wasCancelled = true
+                }
+
+                override fun onAnimationEnd(animation: Animator) {
+                    if (bubbleSnapAnimator === animation) {
+                        bubbleSnapAnimator = null
+                    }
+                    if (!wasCancelled && windowLayoutParams === params) {
+                        params.x = targetX
+                        persistBubblePosition(params)
+                        updateOverlayLayout()
+                    }
+                }
+            })
+        }
+        bubbleSnapAnimator = animator
+        animator.start()
     }
 
     private fun resolveBubbleDockSide(savedX: Int): String {
@@ -626,12 +704,33 @@ class OverlayAssistantService : Service() {
     }
 
     private fun bubbleMinDockX(params: WindowManager.LayoutParams): Int {
-        return -bubbleHorizontalVisualInset(params)
+        return -bubbleHorizontalVisualInset(params) - dpToPx(bubbleDockOverlapDp)
     }
 
     private fun bubbleMaxDockX(params: WindowManager.LayoutParams): Int {
         val metrics = resources.displayMetrics
-        return metrics.widthPixels - params.width + bubbleHorizontalVisualInset(params)
+        return metrics.widthPixels -
+            params.width +
+            bubbleHorizontalVisualInset(params) +
+            dpToPx(bubbleDockOverlapDp)
+    }
+
+    private fun cancelBubbleSnapAnimation() {
+        bubbleSnapAnimator?.cancel()
+        bubbleSnapAnimator = null
+    }
+
+    private fun recycleVelocityTracker() {
+        velocityTracker?.recycle()
+        velocityTracker = null
+    }
+
+    private fun trackRawTouchMovement(event: MotionEvent) {
+        val tracker = velocityTracker ?: return
+        val screenEvent = MotionEvent.obtain(event)
+        screenEvent.offsetLocation(event.rawX - event.x, event.rawY - event.y)
+        tracker.addMovement(screenEvent)
+        screenEvent.recycle()
     }
 
     private fun currentBubbleDockSide(params: WindowManager.LayoutParams): String {

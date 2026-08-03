@@ -123,11 +123,13 @@ class FloatingSmartNudgeAssistant extends StatefulWidget {
 class AssistantFloatingBubbleVisual extends StatefulWidget {
   final String emoji;
   final double size;
+  final bool showOuterShadow;
 
   const AssistantFloatingBubbleVisual({
     super.key,
     this.emoji = '\u{1F499}',
     this.size = 58,
+    this.showOuterShadow = true,
   });
 
   @override
@@ -172,6 +174,7 @@ class _AssistantFloatingBubbleVisualState
         isActive: false,
         isDragging: false,
         hasPendingWeeklyPulse: _hasPendingWeeklyPulse == true,
+        showOuterShadow: widget.showOuterShadow,
         onTap: () {},
       ),
     );

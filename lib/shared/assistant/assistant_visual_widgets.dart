@@ -50,6 +50,7 @@ class _FloatingHeartButton extends StatelessWidget {
   final bool isActive;
   final bool isDragging;
   final bool? hasPendingWeeklyPulse;
+  final bool showOuterShadow;
   final VoidCallback onTap;
 
   const _FloatingHeartButton({
@@ -58,6 +59,7 @@ class _FloatingHeartButton extends StatelessWidget {
     required this.isActive,
     required this.isDragging,
     required this.hasPendingWeeklyPulse,
+    this.showOuterShadow = true,
     required this.onTap,
   });
 
@@ -88,6 +90,7 @@ class _FloatingHeartButton extends StatelessWidget {
                 clipBehavior: Clip.none,
                 children: [
                   Container(
+                    key: const ValueKey('assistant-floating-bubble-decoration'),
                     width: size,
                     height: size,
                     alignment: Alignment.center,
@@ -116,23 +119,25 @@ class _FloatingHeartButton extends StatelessWidget {
                             : Color.fromARGB(255, 59, 9, 132),
                         width: 1.2,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(
-                            alpha: isDark ? 0.32 : 0.14,
-                          ),
-                          blurRadius: 22,
-                          offset: const Offset(0, 12),
-                        ),
-                        BoxShadow(
-                          color: const Color(
-                            0xFF40B8D6,
-                          ).withValues(alpha: isDark ? 0.2 : 0.26),
-                          blurRadius: 20,
-                          spreadRadius: -4,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
+                      boxShadow: showOuterShadow
+                          ? [
+                              BoxShadow(
+                                color: Colors.black.withValues(
+                                  alpha: isDark ? 0.32 : 0.14,
+                                ),
+                                blurRadius: 22,
+                                offset: const Offset(0, 12),
+                              ),
+                              BoxShadow(
+                                color: const Color(
+                                  0xFF40B8D6,
+                                ).withValues(alpha: isDark ? 0.2 : 0.26),
+                                blurRadius: 20,
+                                spreadRadius: -4,
+                                offset: const Offset(0, 6),
+                              ),
+                            ]
+                          : null,
                     ),
                     child: _AssistantLottieIcon(
                       emoji: emoji,
