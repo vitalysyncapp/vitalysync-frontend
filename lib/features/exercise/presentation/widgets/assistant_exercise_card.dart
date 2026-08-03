@@ -130,8 +130,9 @@ class _RecommendationTile extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 12,
-                      height: 1.3,
+                      fontSize: 13,
+                      height: 1.35,
+                      fontWeight: FontWeight.w500,
                       color: pageSecondaryTextColor(context),
                     ),
                   ),

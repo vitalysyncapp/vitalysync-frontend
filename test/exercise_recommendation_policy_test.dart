@@ -264,7 +264,7 @@ void main() {
     );
 
     expect(result.plan.targetLevel, ExerciseEffortLevel.restorative);
-    expect(result.plan.note.toLowerCase(), contains('needs-support'));
+    expect(result.plan.note.toLowerCase(), contains('extra support'));
   });
 
   test('unsafe weather keeps recommendations indoors', () {
@@ -293,7 +293,10 @@ void main() {
     final names = result.recommendations.map((item) => item.exerciseName);
 
     expect(names, isNot(contains('Jog')));
-    expect(result.recommendations.first.reason, contains('Air quality'));
+    expect(
+      result.recommendations.first.reason.toLowerCase(),
+      contains('air quality'),
+    );
   });
 
   test('high step count keeps recovery stretching visible first', () {
@@ -312,7 +315,7 @@ void main() {
 
     for (final recommendation in result.recommendations) {
       expect(RegExp(r'[.!?]').allMatches(recommendation.reason).length, 1);
-      expect(recommendation.reason.length, lessThanOrEqualTo(120));
+      expect(recommendation.reason.length, lessThanOrEqualTo(100));
       expect(
         recommendation.reason.toLowerCase(),
         isNot(matches(RegExp(r'diagnos|treat|medical|burnout'))),
@@ -321,6 +324,17 @@ void main() {
     final noneToday = result.recommendations.last;
     expect(noneToday.exerciseName, 'None today');
     expect(noneToday.reason, contains('valid way'));
+  });
+
+  test('recovery recommendation subtext is direct and concise', () {
+    final result = ExerciseRecommendationPolicy.buildRecommendations(
+      _context(burnoutPatternFocus: 'recovery', outdoorSafe: false),
+    );
+
+    expect(
+      result.recommendations.first.reason,
+      'Recent check-ins favor recovery: choose this light indoor option today.',
+    );
   });
 
   testWidgets(
@@ -386,6 +400,11 @@ void main() {
       expect(find.text('Choose what fits your energy today'), findsOneWidget);
       expect(find.byIcon(Icons.self_improvement_rounded), findsOneWidget);
       expect(find.text(noneToday.reason), findsOneWidget);
+
+      final reasonText = tester.widget<Text>(find.text(noneToday.reason));
+      expect(reasonText.maxLines, 2);
+      expect(reasonText.style?.fontSize, 13);
+      expect(reasonText.style?.fontWeight, FontWeight.w500);
     },
   );
 }

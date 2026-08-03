@@ -685,19 +685,19 @@ class ExerciseRecommendationPolicy {
 
     if (indoorOnly) {
       if (recoverySubject != null) {
-        return '${_capitalize(recoverySubject)} and current conditions make $effort indoor movement the better fit today.';
+        return '${_capitalize(recoverySubject)}: choose this $effort indoor option today.';
       }
       if (!context.airSafe) {
-        return 'Air quality makes a $effort indoor option the better fit today.';
+        return 'Choose this $effort indoor option because of today\'s air quality.';
       }
-      return 'Current weather makes a $effort indoor option the better fit today.';
+      return 'Choose this $effort indoor option because of today\'s weather.';
     }
 
     if (context.gentleOutdoor) {
       if (recoverySubject != null) {
-        return '${_capitalize(recoverySubject)} and current weather favor a controlled $effort option today.';
+        return '${_capitalize(recoverySubject)}: keep this $effort option controlled in today\'s weather.';
       }
-      return 'Current weather favors a controlled $effort option today.';
+      return 'Keep this $effort option controlled in today\'s weather.';
     }
 
     return plan.note;
@@ -714,27 +714,26 @@ class ExerciseRecommendationPolicy {
   }) {
     final recoverySubject = recoveryAssessment.reasonSubject;
     if (recoverySubject != null) {
-      final verb = recoveryAssessment.reasonSubjectIsPlural ? 'make' : 'makes';
-      return '${_capitalize(recoverySubject)} $verb ${targetLevel.label.toLowerCase()} movement the better fit today.';
+      return '${_capitalize(recoverySubject)}: choose a ${targetLevel.label.toLowerCase()} option today.';
     }
 
     if (needsRecovery) {
-      return 'Today\'s recovery needs make light movement the better fit.';
+      return 'Choose a light option today to support recovery.';
     }
 
     if (preferenceMax < bounds.maxLevel) {
-      return 'This fits your exercise-day preference and keeps today manageable.';
+      return 'Choose a manageable option that fits your weekly exercise goal.';
     }
 
     if (missedDrops > 0) {
-      return 'A lighter option can make restarting after missed days easier.';
+      return 'Choose a lighter option to ease back in after missed days.';
     }
 
     if (completedBumps > 0) {
-      return 'Your recent consistency supports a gentle step up today.';
+      return 'Your recent consistency supports a small step up today.';
     }
 
-    return 'This matches your ${bounds.label.toLowerCase()} routine today.';
+    return 'Choose a ${targetLevel.label.toLowerCase()} option that matches your usual activity.';
   }
 
   static String _capitalize(String value) {

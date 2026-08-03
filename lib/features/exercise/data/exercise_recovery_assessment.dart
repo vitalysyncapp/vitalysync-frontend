@@ -3,14 +3,12 @@ class ExerciseRecoveryAssessment {
   final bool needsRestorative;
   final int strainAreaCount;
   final String? reasonSubject;
-  final bool reasonSubjectIsPlural;
 
   const ExerciseRecoveryAssessment({
     required this.hasPoorRecovery,
     required this.needsRestorative,
     required this.strainAreaCount,
     required this.reasonSubject,
-    required this.reasonSubjectIsPlural,
   });
 
   static const none = ExerciseRecoveryAssessment(
@@ -18,7 +16,6 @@ class ExerciseRecoveryAssessment {
     needsRestorative: false,
     strainAreaCount: 0,
     reasonSubject: null,
-    reasonSubjectIsPlural: false,
   );
 
   factory ExerciseRecoveryAssessment.evaluate({
@@ -53,15 +50,15 @@ class ExerciseRecoveryAssessment {
     final burnoutStrain = highBurnout || recoveryFocus;
 
     final subjects = <String>[
-      if (sleepStrain) 'Short or low-quality sleep',
-      if (energyStrain) 'lower energy',
+      if (sleepStrain) 'Poor sleep',
+      if (energyStrain) 'low energy',
       if (workloadStrain) 'a heavy workload',
       if (burnoutStrain)
         needsSupport
-            ? 'a needs-support pattern'
+            ? 'recent check-ins suggest extra support'
             : highBurnout
-            ? 'a high recent strain pattern'
-            : 'a recovery-focused recent pattern',
+            ? 'high recent strain'
+            : 'recent check-ins favor recovery',
     ];
     final strainAreaCount = subjects.length;
     final hasPoorRecovery = needsRecovery || strainAreaCount > 0;
@@ -73,9 +70,9 @@ class ExerciseRecoveryAssessment {
 
     final selectedSubjects = subjects.take(2).toList();
     final reasonSubject = needsSupport
-        ? 'A needs-support pattern'
+        ? 'Recent check-ins suggest extra support'
         : selectedSubjects.isEmpty
-        ? "Today's recovery needs"
+        ? "Today's need for recovery"
         : selectedSubjects.length == 1
         ? selectedSubjects.first
         : '${selectedSubjects.first} and ${selectedSubjects.last}';
@@ -85,9 +82,6 @@ class ExerciseRecoveryAssessment {
       needsRestorative: needsRestorative,
       strainAreaCount: strainAreaCount,
       reasonSubject: reasonSubject,
-      reasonSubjectIsPlural:
-          !needsSupport &&
-          (selectedSubjects.length > 1 || selectedSubjects.isEmpty),
     );
   }
 
