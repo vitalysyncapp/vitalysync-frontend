@@ -14,7 +14,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('assistant uses a compact centered surface in landscape', (
+  testWidgets('assistant uses a thin scaled surface in landscape', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(1000, 450));
@@ -27,9 +27,52 @@ void main() {
       const ValueKey('assistant-experience-panel-surface'),
     );
     final surfaceSize = tester.getSize(surface);
+    final scaleViewport = find.byKey(
+      const ValueKey('assistant-landscape-content-scale'),
+    );
+    final layoutCanvas = find.byKey(
+      const ValueKey('assistant-landscape-layout-canvas'),
+    );
 
-    expect(surfaceSize.width, 664);
+    expect(surfaceSize, const Size(704, 320));
     expect(tester.getCenter(surface).dx, 500);
+    expect(
+      tester.getSize(layoutCanvas).width,
+      greaterThan(tester.getSize(scaleViewport).width * 1.35),
+    );
+    expect(
+      tester.getSize(layoutCanvas).height,
+      greaterThan(tester.getSize(scaleViewport).height * 1.35),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('landscape quick hydration stays inside the thin surface', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1000, 450));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await pumpTestApp(tester, _assistantPanel());
+    await tester.pump();
+    await tester.tap(find.text('Log water'));
+    await tester.pump();
+
+    final surface = find.byKey(
+      const ValueKey('assistant-experience-panel-surface'),
+    );
+    final hydration = find.byKey(
+      const ValueKey('assistant-hydration-quick-log'),
+    );
+    final quickLogBar = find.byKey(const ValueKey('assistant-quick-log-bar'));
+    final surfaceRect = tester.getRect(surface);
+    final hydrationRect = tester.getRect(hydration);
+    final quickLogRect = tester.getRect(quickLogBar);
+
+    expect(hydration, findsOneWidget);
+    expect(hydrationRect.top, greaterThanOrEqualTo(surfaceRect.top));
+    expect(hydrationRect.bottom, lessThanOrEqualTo(quickLogRect.top));
+    expect(quickLogRect.bottom, lessThanOrEqualTo(surfaceRect.bottom));
     expect(tester.takeException(), isNull);
   });
 
@@ -48,6 +91,10 @@ void main() {
 
     expect(tester.getSize(surface).width, 374);
     expect(tester.getCenter(surface).dx, 195);
+    expect(
+      find.byKey(const ValueKey('assistant-landscape-content-scale')),
+      findsNothing,
+    );
     expect(tester.takeException(), isNull);
   });
 }

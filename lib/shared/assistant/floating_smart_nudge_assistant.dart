@@ -39,7 +39,9 @@ part 'weekly_pulse_widgets.dart';
 part 'assistant_visual_widgets.dart';
 
 const _assistantAnimationPath = 'assets/animations/Assistant.json';
-const _assistantLandscapeMaxWidth = 680.0;
+const _assistantLandscapeMaxWidth = 720.0;
+const _assistantLandscapeMaxHeight = 320.0;
+const _assistantLandscapeContentScale = 0.72;
 const _assistantSmartNudgeSectionIndex = 0;
 const _assistantCheckInSectionIndex = 1;
 const _assistantExerciseSectionIndex = 2;

@@ -10,6 +10,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.Rect
@@ -55,7 +56,8 @@ class OverlayAssistantService : Service() {
         private const val bubbleDockOverlapDp = 8
         private const val bubbleFlingVelocityDpPerSecond = 700
         private const val bubbleSnapDurationMillis = 220L
-        private const val landscapePanelMaxWidthDp = 680
+        private const val landscapePanelMaxWidthDp = 720
+        private const val landscapePanelMaxHeightDp = 320
         private const val dockSideLeft = "left"
         private const val dockSideRight = "right"
     }
@@ -70,6 +72,7 @@ class OverlayAssistantService : Service() {
     private var overlayWindowChannel: MethodChannel? = null
     private var windowLayoutParams: WindowManager.LayoutParams? = null
     private var isBubbleMode = true
+    private var isPanelMode = false
     private val mainHandler = Handler(Looper.getMainLooper())
     private var reminderPreviewCollapseRunnable: Runnable? = null
     private var dismissTargetRemovalRunnable: Runnable? = null
@@ -131,6 +134,13 @@ class OverlayAssistantService : Service() {
         }
 
         return START_STICKY
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        if (isPanelMode && rootView?.isAttachedToWindow == true) {
+            mainHandler.post { expandPanel() }
+        }
     }
 
     override fun onDestroy() {
@@ -370,6 +380,7 @@ class OverlayAssistantService : Service() {
             null
         }
         isBubbleMode = true
+        isPanelMode = false
         flutterEngine?.lifecycleChannel?.appIsResumed()
         val metrics = resources.displayMetrics
         val bubbleSize = dpToPx(bubbleWindowSizeDp)
@@ -422,6 +433,7 @@ class OverlayAssistantService : Service() {
             OverlayAssistantTransitionController.Target.PANEL,
         )
         isBubbleMode = false
+        isPanelMode = true
         flutterEngine?.lifecycleChannel?.appIsResumed()
         val metrics = resources.displayMetrics
         val isLandscape = metrics.widthPixels > metrics.heightPixels
@@ -433,7 +445,18 @@ class OverlayAssistantService : Service() {
         } else {
             availableWidth
         }
-        val height = minOf((metrics.heightPixels * 0.76f).toInt(), metrics.heightPixels - (verticalMargin * 2))
+        val height = if (isLandscape) {
+            minOf(
+                (metrics.heightPixels * 0.70f).toInt(),
+                dpToPx(landscapePanelMaxHeightDp),
+                metrics.heightPixels - (verticalMargin * 2),
+            )
+        } else {
+            minOf(
+                (metrics.heightPixels * 0.76f).toInt(),
+                metrics.heightPixels - (verticalMargin * 2),
+            )
+        }
 
         val params = windowLayoutParams ?: WindowManager.LayoutParams(
             width,
@@ -487,6 +510,7 @@ class OverlayAssistantService : Service() {
             OverlayAssistantTransitionController.Target.PREVIEW,
         )
         isBubbleMode = false
+        isPanelMode = false
         flutterEngine?.lifecycleChannel?.appIsResumed()
 
         val metrics = resources.displayMetrics
@@ -567,6 +591,7 @@ class OverlayAssistantService : Service() {
             OverlayAssistantTransitionController.Target.PREVIEW,
         )
         isBubbleMode = false
+        isPanelMode = false
         flutterEngine?.lifecycleChannel?.appIsResumed()
 
         val metrics = resources.displayMetrics

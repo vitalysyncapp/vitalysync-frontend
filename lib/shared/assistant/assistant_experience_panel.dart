@@ -789,12 +789,151 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
   @override
   Widget build(BuildContext context) {
     final mediaSize = MediaQuery.sizeOf(context);
-    final isLandscape = mediaSize.width > mediaSize.height;
-    final maxHeight =
-        mediaSize.height * (widget.useSafeAreaPadding ? 0.9 : 1.0);
-    final sections = _sections();
-    final currentIndex = min(_pageIndex, sections.length - 1);
-    Widget panel = Padding(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : mediaSize.width;
+        final availableHeight = constraints.maxHeight.isFinite
+            ? constraints.maxHeight
+            : mediaSize.height;
+        final isLandscape = availableWidth > availableHeight;
+        final maxHeight =
+            availableHeight * (widget.useSafeAreaPadding ? 0.9 : 1.0);
+        final sections = _sections();
+        final currentIndex = min(_pageIndex, sections.length - 1);
+
+        if (isLandscape) {
+          Widget panel = Align(
+            alignment: Alignment.center,
+            child: SizedBox(
+              width: min(_assistantLandscapeMaxWidth, availableWidth),
+              height: min(_assistantLandscapeMaxHeight, availableHeight),
+              child: _buildPanelSurface(
+                context,
+                sections: sections,
+                currentIndex: currentIndex,
+                maxHeight: min(_assistantLandscapeMaxHeight, availableHeight),
+                compactLandscape: true,
+              ),
+            ),
+          );
+
+          if (widget.useSafeAreaPadding) {
+            panel = SafeArea(child: panel);
+          }
+          return panel;
+        }
+
+        final panel = _buildPanelSurface(
+          context,
+          sections: sections,
+          currentIndex: currentIndex,
+          maxHeight: maxHeight,
+          compactLandscape: false,
+        );
+
+        if (!widget.useSafeAreaPadding) {
+          return panel;
+        }
+
+        return SafeArea(child: panel);
+      },
+    );
+  }
+
+  Widget _buildPanelSurface(
+    BuildContext context, {
+    required List<_AssistantSection> sections,
+    required int currentIndex,
+    required double maxHeight,
+    required bool compactLandscape,
+  }) {
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildHeader(context),
+        const SizedBox(height: 8),
+        ValueListenableBuilder<ActivityTrackingState>(
+          valueListenable: ActivityService.instance.notifier,
+          builder: (context, activityState, _) {
+            return _AssistantContextStrip(
+              activityState: activityState,
+              environmentSnapshot: _environmentSnapshot,
+              isLoadingEnvironment: _isLoadingEnvironment,
+              onRefreshEnvironment: _loadEnvironment,
+            );
+          },
+        ),
+        const SizedBox(height: 10),
+        _AssistantSectionNavigator(
+          sections: sections,
+          currentIndex: currentIndex,
+          onSelected: _selectPage,
+        ),
+        const SizedBox(height: 8),
+        Flexible(
+          child: PageView(
+            controller: _pageController,
+            allowImplicitScrolling: true,
+            physics: const PageScrollPhysics(parent: ClampingScrollPhysics()),
+            onPageChanged: (index) {
+              setState(() {
+                _pageIndex = index;
+              });
+            },
+            children: List.generate(sections.length, (index) {
+              final section = sections[index];
+              return Scrollbar(
+                controller: _sectionScrollControllers[index],
+                radius: const Radius.circular(999),
+                child: SingleChildScrollView(
+                  controller: _sectionScrollControllers[index],
+                  key: PageStorageKey<String>(section.label),
+                  primary: false,
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
+                  ),
+                  padding: const EdgeInsets.only(right: 2, bottom: 4),
+                  child: section.child,
+                ),
+              );
+            }),
+          ),
+        ),
+        if (_showHydrationLogger) ...[
+          const SizedBox(height: 10),
+          _AssistantHydrationQuickLogSection(
+            amountLiters: _quickHydrationAmount,
+            todayHydrationLiters: _todayHydrationLiters,
+            hasTodayLog: _hasTodayHydrationLog,
+            isLoading: _isLoadingHydrationContext,
+            isSaving: _isSavingHydration,
+            helperText: _hydrationHelperText,
+            compact: compactLandscape,
+            onAmountChanged: (value) {
+              setState(() {
+                _quickHydrationAmount = value;
+                _hydrationHelperText = null;
+              });
+            },
+            onSave: _saveHydration,
+            onOpenLog: _openLogPage,
+          ),
+        ],
+        const SizedBox(height: 10),
+        _AssistantQuickLogBar(
+          isHydrationOpen: _showHydrationLogger,
+          compact: compactLandscape,
+          onLogWater: _openHydrationLogger,
+          onLogMeal: _openMealLog,
+        ),
+      ],
+    );
+
+    return Padding(
       padding: EdgeInsets.only(
         left: 8,
         right: 8,
@@ -820,109 +959,28 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
             ),
           ],
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildHeader(context),
-            const SizedBox(height: 8),
-            ValueListenableBuilder<ActivityTrackingState>(
-              valueListenable: ActivityService.instance.notifier,
-              builder: (context, activityState, _) {
-                return _AssistantContextStrip(
-                  activityState: activityState,
-                  environmentSnapshot: _environmentSnapshot,
-                  isLoadingEnvironment: _isLoadingEnvironment,
-                  onRefreshEnvironment: _loadEnvironment,
-                );
-              },
-            ),
-            const SizedBox(height: 10),
-            _AssistantSectionNavigator(
-              sections: sections,
-              currentIndex: currentIndex,
-              onSelected: _selectPage,
-            ),
-            const SizedBox(height: 8),
-            Flexible(
-              child: PageView(
-                controller: _pageController,
-                allowImplicitScrolling: true,
-                physics: const PageScrollPhysics(
-                  parent: ClampingScrollPhysics(),
-                ),
-                onPageChanged: (index) {
-                  setState(() {
-                    _pageIndex = index;
-                  });
-                },
-                children: List.generate(sections.length, (index) {
-                  final section = sections[index];
-                  return Scrollbar(
-                    controller: _sectionScrollControllers[index],
-                    radius: const Radius.circular(999),
-                    child: SingleChildScrollView(
-                      controller: _sectionScrollControllers[index],
-                      key: PageStorageKey<String>(section.label),
-                      primary: false,
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      physics: const BouncingScrollPhysics(
-                        parent: AlwaysScrollableScrollPhysics(),
-                      ),
-                      padding: const EdgeInsets.only(right: 2, bottom: 4),
-                      child: section.child,
+        child: compactLandscape
+            ? LayoutBuilder(
+                builder: (context, constraints) {
+                  return FittedBox(
+                    key: const ValueKey('assistant-landscape-content-scale'),
+                    fit: BoxFit.fill,
+                    child: SizedBox(
+                      key: const ValueKey('assistant-landscape-layout-canvas'),
+                      width:
+                          constraints.maxWidth /
+                          _assistantLandscapeContentScale,
+                      height:
+                          constraints.maxHeight /
+                          _assistantLandscapeContentScale,
+                      child: content,
                     ),
                   );
-                }),
-              ),
-            ),
-            if (_showHydrationLogger) ...[
-              const SizedBox(height: 10),
-              _AssistantHydrationQuickLogSection(
-                amountLiters: _quickHydrationAmount,
-                todayHydrationLiters: _todayHydrationLiters,
-                hasTodayLog: _hasTodayHydrationLog,
-                isLoading: _isLoadingHydrationContext,
-                isSaving: _isSavingHydration,
-                helperText: _hydrationHelperText,
-                onAmountChanged: (value) {
-                  setState(() {
-                    _quickHydrationAmount = value;
-                    _hydrationHelperText = null;
-                  });
                 },
-                onSave: _saveHydration,
-                onOpenLog: _openLogPage,
-              ),
-            ],
-            const SizedBox(height: 10),
-            _AssistantQuickLogBar(
-              isHydrationOpen: _showHydrationLogger,
-              onLogWater: _openHydrationLogger,
-              onLogMeal: _openMealLog,
-            ),
-          ],
-        ),
+              )
+            : content,
       ),
     );
-
-    if (isLandscape) {
-      panel = Align(
-        alignment: Alignment.center,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: _assistantLandscapeMaxWidth,
-          ),
-          child: panel,
-        ),
-      );
-    }
-
-    if (!widget.useSafeAreaPadding) {
-      return panel;
-    }
-
-    return SafeArea(child: panel);
   }
 
   Widget _buildHeader(BuildContext context) {
