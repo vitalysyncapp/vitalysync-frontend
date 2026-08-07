@@ -228,7 +228,7 @@ class _MainNavigationState extends State<MainNavigation>
 
   void _selectTab(MainTab tab) {
     if (tab == MainTab.log) {
-      unawaited(_selectLogTab());
+      _selectLogTab();
       return;
     }
 
@@ -255,14 +255,13 @@ class _MainNavigationState extends State<MainNavigation>
     _selectTab(MainTab.log);
   }
 
-  Future<void> _selectLogTab() async {
+  void _selectLogTab() {
     if (_currentTab == MainTab.log) return;
-    final baselineReady = await _ensureBaselineReady();
-    if (!mounted || !baselineReady) return;
 
     setState(() => _currentTab = MainTab.log);
     _tutorialOverlayEntry?.markNeedsBuild();
     _syncPendingLogs();
+    unawaited(_ensureBaselineReady());
   }
 
   Future<bool> _ensureBaselineReady() async {
@@ -277,6 +276,7 @@ class _MainNavigationState extends State<MainNavigation>
           await (widget.checkInStatusLoader?.call() ??
               LogApi.fetchCheckInStatus());
       if (!mounted || !status.requiresBaselineRefresh) return true;
+      if (_currentTab != MainTab.log) return true;
       final session = await UserSessionController.instance.load();
       final pendingRefresh = session.userId == null
           ? null

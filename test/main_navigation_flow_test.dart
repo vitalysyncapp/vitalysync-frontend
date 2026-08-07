@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -432,7 +434,43 @@ void main() {
   });
 
   testWidgets(
-    'log navigation gates a thirty-day return behind baseline refresh',
+    'log navigation is immediate while the baseline check is still pending',
+    (tester) async {
+      configureLoggedInSession();
+      final pendingStatus = Completer<CheckInStatus>();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MainNavigation(checkInStatusLoader: () => pendingStatus.future),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byKey(const ValueKey('main-nav-log')));
+      await tester.pump();
+
+      expect(controller(tester).currentTab, MainTab.log);
+      expect(
+        tester
+            .widget<IndexedStack>(find.byKey(const ValueKey('main-tab-stack')))
+            .index,
+        MainTab.log.index,
+      );
+
+      pendingStatus.complete(
+        const CheckInStatus(
+          requiredMode: CheckInMode.daily,
+          hasTodayLog: false,
+          schedule: CheckInSchedule(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await disposeNavigation(tester);
+    },
+  );
+
+  testWidgets(
+    'log navigation presents baseline refresh for a thirty-day return',
     (tester) async {
       configureLoggedInSession();
       await tester.pumpWidget(
