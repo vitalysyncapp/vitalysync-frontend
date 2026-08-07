@@ -12,8 +12,8 @@ import 'change_password_page.dart';
 import 'clear_account_data_page.dart';
 import 'deactivate_account_gate_page.dart';
 import 'help_support_page.dart';
-import 'location_settings_page.dart';
 import 'notification_settings_page.dart';
+import 'permissions_settings_page.dart';
 import 'privacy_security_page.dart';
 import 'terms_privacy_page.dart';
 import 'version_page.dart';
@@ -362,16 +362,17 @@ class _SettingsPageState extends State<SettingsPage> {
                         _buildDivider(context),
                         _buildSettingsTile(
                           context: context,
-                          icon: Icons.location_on_outlined,
+                          icon: Icons.admin_panel_settings_outlined,
                           iconBg: const Color(0xFFE2F7EC),
                           iconColor: const Color(0xFF1F9D63),
-                          title: "Location settings",
-                          subtitle: "Current: ${prefs.locationPermissionLabel}",
+                          title: "Permissions settings",
+                          subtitle:
+                              "Location: ${prefs.locationPermissionLabel}  •  Activity: ${prefs.activityPermissionLabel}",
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const LocationSettingsPage(),
+                                builder: (_) => const PermissionsSettingsPage(),
                               ),
                             );
                           },

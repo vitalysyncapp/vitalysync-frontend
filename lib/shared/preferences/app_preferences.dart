@@ -5,7 +5,7 @@ enum AppLanguage { english, tagalog }
 
 enum AppFontSize { small, medium, large }
 
-enum AppLocationPermissionChoice { undecided, allowed, denied }
+enum AppPermissionChoice { undecided, allowed, denied }
 
 @immutable
 class AppPreferencesState {
@@ -26,7 +26,8 @@ class AppPreferencesState {
   final bool pauseWellnessInsights;
   final bool hideProfileFromLeaderboard;
   final int dataRetentionDays;
-  final AppLocationPermissionChoice locationPermissionChoice;
+  final AppPermissionChoice locationPermissionChoice;
+  final AppPermissionChoice activityPermissionChoice;
   final bool assistantOverlayEnabled;
   final bool isLoaded;
 
@@ -49,6 +50,7 @@ class AppPreferencesState {
     required this.hideProfileFromLeaderboard,
     required this.dataRetentionDays,
     required this.locationPermissionChoice,
+    required this.activityPermissionChoice,
     required this.assistantOverlayEnabled,
     required this.isLoaded,
   });
@@ -71,7 +73,8 @@ class AppPreferencesState {
       pauseWellnessInsights = false,
       hideProfileFromLeaderboard = false,
       dataRetentionDays = 0,
-      locationPermissionChoice = AppLocationPermissionChoice.undecided,
+      locationPermissionChoice = AppPermissionChoice.undecided,
+      activityPermissionChoice = AppPermissionChoice.undecided,
       assistantOverlayEnabled = false,
       isLoaded = false;
 
@@ -93,7 +96,8 @@ class AppPreferencesState {
     bool? pauseWellnessInsights,
     bool? hideProfileFromLeaderboard,
     int? dataRetentionDays,
-    AppLocationPermissionChoice? locationPermissionChoice,
+    AppPermissionChoice? locationPermissionChoice,
+    AppPermissionChoice? activityPermissionChoice,
     bool? assistantOverlayEnabled,
     bool? isLoaded,
   }) {
@@ -122,6 +126,8 @@ class AppPreferencesState {
       dataRetentionDays: dataRetentionDays ?? this.dataRetentionDays,
       locationPermissionChoice:
           locationPermissionChoice ?? this.locationPermissionChoice,
+      activityPermissionChoice:
+          activityPermissionChoice ?? this.activityPermissionChoice,
       assistantOverlayEnabled:
           assistantOverlayEnabled ?? this.assistantOverlayEnabled,
       isLoaded: isLoaded ?? this.isLoaded,
@@ -169,15 +175,24 @@ class AppPreferencesState {
   }
 
   bool get isLocationAccessEnabled =>
-      locationPermissionChoice == AppLocationPermissionChoice.allowed;
+      locationPermissionChoice == AppPermissionChoice.allowed;
 
-  String get locationPermissionLabel {
-    switch (locationPermissionChoice) {
-      case AppLocationPermissionChoice.allowed:
+  bool get isActivityAccessEnabled =>
+      activityPermissionChoice == AppPermissionChoice.allowed;
+
+  String get locationPermissionLabel =>
+      _permissionLabel(locationPermissionChoice);
+
+  String get activityPermissionLabel =>
+      _permissionLabel(activityPermissionChoice);
+
+  String _permissionLabel(AppPermissionChoice choice) {
+    switch (choice) {
+      case AppPermissionChoice.allowed:
         return 'Allowed';
-      case AppLocationPermissionChoice.denied:
+      case AppPermissionChoice.denied:
         return 'Denied';
-      case AppLocationPermissionChoice.undecided:
+      case AppPermissionChoice.undecided:
         return 'Ask next time';
     }
   }
@@ -209,6 +224,8 @@ class AppPreferencesController {
   static const String _dataRetentionDaysKey = 'data_retention_days';
   static const String _locationPermissionChoiceKey =
       'location_permission_choice';
+  static const String _activityPermissionChoiceKey =
+      'activity_permission_choice';
   static const String _assistantOverlayEnabledKey = 'assistant_overlay_enabled';
 
   final ValueNotifier<AppPreferencesState> notifier =
@@ -241,6 +258,9 @@ class AppPreferencesController {
       final locationPermissionChoice = prefs.getString(
         _locationPermissionChoiceKey,
       );
+      final activityPermissionChoice = prefs.getString(
+        _activityPermissionChoiceKey,
+      );
       final assistantOverlayEnabled = prefs.getBool(
         _assistantOverlayEnabledKey,
       );
@@ -267,8 +287,11 @@ class AppPreferencesController {
         pauseWellnessInsights: pauseWellnessInsights ?? false,
         hideProfileFromLeaderboard: hideProfileFromLeaderboard ?? false,
         dataRetentionDays: dataRetentionDays ?? 0,
-        locationPermissionChoice: _locationPermissionChoiceFromString(
+        locationPermissionChoice: _permissionChoiceFromString(
           locationPermissionChoice,
+        ),
+        activityPermissionChoice: _permissionChoiceFromString(
+          activityPermissionChoice,
         ),
         assistantOverlayEnabled: assistantOverlayEnabled ?? false,
         isLoaded: true,
@@ -349,17 +372,31 @@ class AppPreferencesController {
   }
 
   Future<void> updateLocationPermissionChoice(
-    AppLocationPermissionChoice choice,
+    AppPermissionChoice choice,
   ) async {
     final prefs = await SharedPreferences.getInstance();
 
-    if (choice == AppLocationPermissionChoice.undecided) {
+    if (choice == AppPermissionChoice.undecided) {
       await prefs.remove(_locationPermissionChoiceKey);
     } else {
       await prefs.setString(_locationPermissionChoiceKey, choice.name);
     }
 
     notifier.value = notifier.value.copyWith(locationPermissionChoice: choice);
+  }
+
+  Future<void> updateActivityPermissionChoice(
+    AppPermissionChoice choice,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if (choice == AppPermissionChoice.undecided) {
+      await prefs.remove(_activityPermissionChoiceKey);
+    } else {
+      await prefs.setString(_activityPermissionChoiceKey, choice.name);
+    }
+
+    notifier.value = notifier.value.copyWith(activityPermissionChoice: choice);
   }
 
   Future<void> updateAssistantOverlayEnabled(bool value) async {
@@ -442,6 +479,7 @@ class AppPreferencesController {
     await prefs.remove(_hideProfileFromLeaderboardKey);
     await prefs.remove(_dataRetentionDaysKey);
     await prefs.remove(_locationPermissionChoiceKey);
+    await prefs.remove(_activityPermissionChoiceKey);
     await prefs.remove(_assistantOverlayEnabledKey);
     notifier.value = AppPreferencesState.defaults().copyWith(
       language: preserveLanguage ? preservedLanguage : AppLanguage.english,
@@ -473,12 +511,10 @@ class AppPreferencesController {
     );
   }
 
-  AppLocationPermissionChoice _locationPermissionChoiceFromString(
-    String? value,
-  ) {
-    return AppLocationPermissionChoice.values.firstWhere(
+  AppPermissionChoice _permissionChoiceFromString(String? value) {
+    return AppPermissionChoice.values.firstWhere(
       (choice) => choice.name == value,
-      orElse: () => AppLocationPermissionChoice.undecided,
+      orElse: () => AppPermissionChoice.undecided,
     );
   }
 }

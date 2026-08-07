@@ -314,6 +314,8 @@ const Map<String, String> tagalogFeatureCopy = {
   'Lightly active': 'Lightly active',
   'Local': 'Local',
   'Location access': 'Location access',
+  'Activity access': 'Activity access',
+  'Use activity data': 'Gamitin ang activity data',
   'Log in': 'Mag-log in',
   'Log is your daily check-in': 'Ang Log ang daily check-in mo',
   'Log meal': 'Mag-log ng meal',

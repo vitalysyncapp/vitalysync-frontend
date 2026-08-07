@@ -116,7 +116,7 @@ const Map<String, String> _tagalogCopy = {
   'Key signals': 'Key signals',
   'Learn more about burnout': 'Alamin pa ang tungkol sa burnout',
   'Local data retention': 'Local data retention',
-  'Location settings': 'Location settings',
+  'Permissions settings': 'Permission settings',
   'Log a gentle check-in': 'Mag-log ng gentle check-in',
   'Log and scoring guide': 'Log at scoring guide',
   'Log new meal': 'Mag-log ng bagong meal',

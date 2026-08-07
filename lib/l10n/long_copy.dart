@@ -3,6 +3,8 @@ const Map<String, String> tagalogLongCopy = {
   'App preferences and session controls': 'App preferences at session controls',
   'Allow device location to improve local weather and air quality details. When this is off, VitalySync uses a fallback location instead.':
       'Payagan ang device location para mas accurate ang local weather at air quality details. Kapag naka-off ito, fallback location ang gagamitin ng VitalySync.',
+  'Allow activity access so VitalySync can read step counts and support your daily movement goals.':
+      'Payagan ang activity access para mabasa ng VitalySync ang step count at masuportahan ang daily movement goals mo.',
   'After 40 days, access stays blocked. Retained account data is permanently deleted five years after deactivation.':
       'Pagkatapos ng 40 days, mananatiling blocked ang access. Permanenteng ide-delete ang retained account data five years after deactivation.',
   'Built as a calm wellness companion for tracking routines, reading personal insights, and supporting healthier daily patterns.':
@@ -75,6 +77,8 @@ const Map<String, String> tagalogLongCopy = {
       'Ang report na ito ay para sa personal use at information lamang. Hindi ito para sa medical diagnosis o treatment.',
   'This setting only affects location-based data inside the app.':
       'Location-based data lang sa app ang naaapektuhan ng setting na ito.',
+  'This setting controls step tracking from your phone sensors inside the app.':
+      'Kinokontrol ng setting na ito ang step tracking mula sa phone sensors sa loob ng app.',
   'Track calories, macros, and meals with smarter daily insights.':
       'I-track ang calories, macros, at meals gamit ang smarter daily insights.',
   'Track your wellness trends, sleep, mood, symptoms, and overall performance.':

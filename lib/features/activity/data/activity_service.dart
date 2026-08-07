@@ -8,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../shared/preferences/user_session.dart';
+import '../../../shared/preferences/app_preferences.dart';
 import '../../../shared/notifications/notification_feed_cache.dart';
 import '../../../shared/goals/user_goals.dart';
 import 'activity_api.dart';
@@ -125,6 +126,23 @@ class ActivityService {
         unawaited(refresh());
       }
 
+      if (AppPreferencesController
+              .instance
+              .notifier
+              .value
+              .activityPermissionChoice ==
+          AppPermissionChoice.denied) {
+        _emit(
+          notifier.value.copyWith(
+            isLoading: false,
+            isTracking: false,
+            permissionGranted: false,
+            clearError: true,
+          ),
+        );
+        return;
+      }
+
       if (!_canUsePhoneSensors) {
         _emit(
           notifier.value.copyWith(
@@ -162,30 +180,103 @@ class ActivityService {
   }
 
   Future<bool> requestActivityRecognitionPermission() async {
+    final preferences = AppPreferencesController.instance;
+
+    if (!_canUsePhoneSensors) {
+      await preferences.updateActivityPermissionChoice(
+        AppPermissionChoice.denied,
+      );
+      return false;
+    }
+
     if (defaultTargetPlatform != TargetPlatform.android) {
+      await preferences.updateActivityPermissionChoice(
+        AppPermissionChoice.allowed,
+      );
       return true;
     }
 
     final status = await Permission.activityRecognition.status;
     if (status.isGranted) {
+      await preferences.updateActivityPermissionChoice(
+        AppPermissionChoice.allowed,
+      );
       return true;
     }
 
     if (status.isPermanentlyDenied) {
+      await preferences.updateActivityPermissionChoice(
+        AppPermissionChoice.denied,
+      );
       return false;
     }
 
     final requestedStatus = await Permission.activityRecognition.request();
-    return requestedStatus.isGranted;
+    final granted = requestedStatus.isGranted;
+    await preferences.updateActivityPermissionChoice(
+      granted ? AppPermissionChoice.allowed : AppPermissionChoice.denied,
+    );
+    return granted;
   }
 
   Future<bool> hasActivityRecognitionPermission() async {
+    final preferences = AppPreferencesController.instance;
+    final permissionChoice =
+        preferences.notifier.value.activityPermissionChoice;
+
+    if (permissionChoice == AppPermissionChoice.denied ||
+        !_canUsePhoneSensors) {
+      return false;
+    }
+
     if (defaultTargetPlatform != TargetPlatform.android) {
+      await preferences.updateActivityPermissionChoice(
+        AppPermissionChoice.allowed,
+      );
       return true;
     }
 
     final status = await Permission.activityRecognition.status;
-    return status.isGranted;
+    if (status.isGranted) {
+      await preferences.updateActivityPermissionChoice(
+        AppPermissionChoice.allowed,
+      );
+      return true;
+    }
+
+    if (permissionChoice == AppPermissionChoice.allowed) {
+      await preferences.updateActivityPermissionChoice(
+        AppPermissionChoice.denied,
+      );
+    }
+    return false;
+  }
+
+  Future<bool> enableActivityAccess() async {
+    final granted = await requestActivityRecognitionPermission();
+    if (granted) {
+      await startTracking(refreshFromBackend: false);
+    }
+    return granted;
+  }
+
+  Future<void> disableActivityAccess() async {
+    await AppPreferencesController.instance.updateActivityPermissionChoice(
+      AppPermissionChoice.denied,
+    );
+    await disposeTracking();
+    _emit(
+      notifier.value.copyWith(
+        isLoading: false,
+        isTracking: false,
+        permissionGranted: false,
+        clearError: true,
+      ),
+    );
+  }
+
+  Future<bool> openSystemActivitySettings() {
+    return openAppSettings();
   }
 
   Future<bool> primeStepTrackingSnapshot({

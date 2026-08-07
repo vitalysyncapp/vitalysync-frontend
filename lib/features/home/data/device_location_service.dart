@@ -12,7 +12,12 @@ class DeviceCoordinates {
 class DeviceLocationService {
   static Future<DeviceCoordinates?> getCurrentCoordinates() async {
     final preferences = AppPreferencesController.instance;
-    var permissionChoice = preferences.notifier.value.locationPermissionChoice;
+    final permissionChoice =
+        preferences.notifier.value.locationPermissionChoice;
+
+    if (permissionChoice == AppPermissionChoice.denied) {
+      return null;
+    }
 
     final isServiceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!isServiceEnabled) {
@@ -26,30 +31,25 @@ class DeviceLocationService {
 
     if (hasPermission) {
       await preferences.updateLocationPermissionChoice(
-        AppLocationPermissionChoice.allowed,
+        AppPermissionChoice.allowed,
       );
     }
 
-    if (permissionChoice == AppLocationPermissionChoice.denied &&
-        !hasPermission) {
-      return null;
-    }
-
     if (permission == LocationPermission.denied &&
-        permissionChoice == AppLocationPermissionChoice.undecided) {
+        permissionChoice == AppPermissionChoice.undecided) {
       permission = await Geolocator.requestPermission();
     }
 
     if (permission == LocationPermission.denied ||
         permission == LocationPermission.deniedForever) {
       await preferences.updateLocationPermissionChoice(
-        AppLocationPermissionChoice.denied,
+        AppPermissionChoice.denied,
       );
       return null;
     }
 
     await preferences.updateLocationPermissionChoice(
-      AppLocationPermissionChoice.allowed,
+      AppPermissionChoice.allowed,
     );
 
     try {
@@ -79,6 +79,11 @@ class DeviceLocationService {
   static Future<DeviceCoordinates?> getLastKnownCoordinates() async {
     final preferences = AppPreferencesController.instance;
 
+    if (preferences.notifier.value.locationPermissionChoice ==
+        AppPermissionChoice.denied) {
+      return null;
+    }
+
     final isServiceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!isServiceEnabled) {
       return null;
@@ -90,7 +95,7 @@ class DeviceLocationService {
     }
 
     await preferences.updateLocationPermissionChoice(
-      AppLocationPermissionChoice.allowed,
+      AppPermissionChoice.allowed,
     );
 
     try {
@@ -113,7 +118,7 @@ class DeviceLocationService {
 
     if (!await Geolocator.isLocationServiceEnabled()) {
       await preferences.updateLocationPermissionChoice(
-        AppLocationPermissionChoice.denied,
+        AppPermissionChoice.denied,
       );
       return false;
     }
@@ -128,9 +133,7 @@ class DeviceLocationService {
         permission == LocationPermission.whileInUse;
 
     await preferences.updateLocationPermissionChoice(
-      granted
-          ? AppLocationPermissionChoice.allowed
-          : AppLocationPermissionChoice.denied,
+      granted ? AppPermissionChoice.allowed : AppPermissionChoice.denied,
     );
 
     return granted;
@@ -138,7 +141,7 @@ class DeviceLocationService {
 
   static Future<void> disableLocationAccess() async {
     await AppPreferencesController.instance.updateLocationPermissionChoice(
-      AppLocationPermissionChoice.denied,
+      AppPermissionChoice.denied,
     );
   }
 
