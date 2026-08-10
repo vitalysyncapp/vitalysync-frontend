@@ -22,10 +22,25 @@ void main() {
 
     expect(find.text('Version 2.3.4'), findsOneWidget);
     expect(find.textContaining('Build 56'), findsOneWidget);
+    expect(find.textContaining('August 7, 2026'), findsWidgets);
     expect(find.text('Academic testing'), findsOneWidget);
     expect(find.text('Testing build'), findsOneWidget);
     expect(
-      find.text('More dependable loading and clearer offline updates.'),
+      find.text(
+        'Location and activity access are now managed together in Permissions settings.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Device location and phone-based step tracking can be controlled separately.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Denied permissions now offer a direct shortcut to your phone\'s system settings.',
+      ),
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);
