@@ -99,6 +99,10 @@ class BiometricLockService {
     // The dialog provides text instructions instead.
   }
 
+  void clearForSignedOutSession() {
+    isLocked.value = false;
+  }
+
   @visibleForTesting
   void resetForTesting({LocalAuthentication? auth}) {
     _auth = auth ?? LocalAuthentication();

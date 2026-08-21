@@ -1,5 +1,5 @@
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vitalysync/app/app.dart';
@@ -73,7 +73,7 @@ void main() {
   });
 
   testWidgets(
-    'keeps a saved account active when a startup token read is empty',
+    'ends an unusable saved session and keeps its email ready for login',
     (WidgetTester tester) async {
       SharedPreferences.setMockInitialValues({
         'email': 'tester@example.com',
@@ -88,21 +88,62 @@ void main() {
       await pumpStartup(tester);
       await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.text('Home'), findsOneWidget);
-      expect(find.text('Nutrition'), findsOneWidget);
-      expect(find.text('Profile'), findsOneWidget);
+      expect(find.text('Welcome back'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('login-session-expired-notice')),
+        findsOneWidget,
+      );
+      final emailField = tester.widget<TextFormField>(
+        find.byType(TextFormField).first,
+      );
+      expect(emailField.controller?.text, 'tester@example.com');
 
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('email'), 'tester@example.com');
-      expect(prefs.getInt('user_id'), 1);
-      expect(prefs.getString('cached_environment_snapshot'), isNotNull);
-      expect(prefs.getBool('notifications_enabled'), isTrue);
-      expect(prefs.getBool('assistant_overlay_enabled'), isTrue);
+      expect(prefs.getString('email'), isNull);
+      expect(prefs.getInt('user_id'), isNull);
+      expect(prefs.getString('last_login_email'), 'tester@example.com');
+      expect(prefs.getString('cached_environment_snapshot'), isNull);
+      expect(prefs.getBool('notifications_enabled'), isNull);
+      expect(prefs.getBool('assistant_overlay_enabled'), isNull);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await ActivityService.instance.disposeTracking();
     },
   );
+
+  testWidgets('expired startup token routes directly to the prefilled login', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'email': 'expired@example.com',
+      'user_id': 9,
+      'username': 'Expired User',
+      'auth_access_token': testAuthToken(
+        expiresAt: DateTime.now().subtract(const Duration(minutes: 1)),
+      ),
+      'onboarding_completed': true,
+      'biometric_lock_enabled': true,
+    });
+
+    await pumpStartup(tester);
+
+    expect(find.text('Welcome back'), findsOneWidget);
+    expect(find.text('VitalySync is locked'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('login-session-expired-notice')),
+      findsOneWidget,
+    );
+    final emailField = tester.widget<TextFormField>(
+      find.byType(TextFormField).first,
+    );
+    expect(emailField.controller?.text, 'expired@example.com');
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('last_login_email'), 'expired@example.com');
+    expect(prefs.getString('auth_access_token'), isNull);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 
   testWidgets('shows biometric lock on cold start when enabled', (
     WidgetTester tester,
@@ -117,7 +158,7 @@ void main() {
       'email': 'tester@example.com',
       'user_id': 1,
       'username': 'Tester',
-      'auth_access_token': 'test-token',
+      'auth_access_token': testAuthToken(),
       'onboarding_completed': true,
       'biometric_lock_enabled': true,
     });
@@ -224,7 +265,7 @@ void main() {
       'email': 'tester@example.com',
       'user_id': 1,
       'username': 'Tester',
-      'auth_access_token': 'test-token',
+      'auth_access_token': testAuthToken(),
       'onboarding_completed': true,
       '${CoreTutorialService.storageKeyPrefix}pending_1': true,
     });

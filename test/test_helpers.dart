@@ -101,6 +101,20 @@ void clearTestAssets() {
       .setMockMessageHandler('flutter/assets', null);
 }
 
+String testAuthToken({DateTime? expiresAt}) {
+  String encodeJson(Map<String, Object> value) {
+    return base64Url.encode(utf8.encode(jsonEncode(value))).replaceAll('=', '');
+  }
+
+  final expiration =
+      (expiresAt ?? DateTime.now().add(const Duration(days: 1)))
+          .toUtc()
+          .millisecondsSinceEpoch ~/
+      Duration.millisecondsPerSecond;
+  return '${encodeJson({'alg': 'HS256', 'typ': 'VS1'})}.'
+      '${encodeJson({'sub': 1, 'exp': expiration})}.test-signature';
+}
+
 void configureLoggedInSession({
   int userId = 1,
   bool onboardingCompleted = true,
@@ -110,7 +124,7 @@ void configureLoggedInSession({
     'email': 'tester@example.com',
     'user_id': userId,
     'username': 'Tester',
-    'auth_access_token': 'test-token',
+    'auth_access_token': testAuthToken(),
     'onboarding_completed': onboardingCompleted,
     'email_verified': emailVerified,
   });

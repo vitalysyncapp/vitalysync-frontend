@@ -172,6 +172,7 @@ void main() {
       isNotNull,
     );
     expect(preferences.getString('profile_temporary_value'), isNull);
+    expect(preferences.getString('last_login_email'), 'avatar@example.com');
   });
 
   test('legacy Open Peeps selections migrate to Personas', () async {

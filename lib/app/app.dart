@@ -5,12 +5,15 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../features/auth/presentation/pages/loading_screen.dart';
+import '../features/auth/presentation/pages/login_page.dart';
 import '../features/tutorial/services/core_tutorial_service.dart';
 import '../l10n/app_localizations.dart';
 import '../shared/assistant/overlay_assistant_controller.dart';
 import '../shared/notifications/local_notification_service.dart';
 import '../shared/notifications/notification_payload_router.dart';
 import '../shared/preferences/app_preferences.dart';
+import '../shared/preferences/session_expiration_coordinator.dart';
+import '../shared/preferences/session_reset_service.dart';
 import '../shared/preferences/user_session.dart';
 import '../shared/privacy/biometric_lock_screen.dart';
 import '../shared/privacy/biometric_lock_service.dart';
@@ -41,6 +44,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    SessionExpirationCoordinator.instance.configure(
+      onExpired: _handleExpiredSession,
+    );
     unawaited(_loadPreferences());
     _preferences.notifier.addListener(_handlePreferencesChanged);
     LocalNotificationService.instance.onNotificationPayload =
@@ -59,6 +65,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     LocalNotificationService.instance.onNotificationPayload = null;
     _appLaunchChannel.setMethodCallHandler(null);
     PrivacyScreenObserver.instance.dispose();
+    SessionExpirationCoordinator.instance.detach();
     super.dispose();
   }
 
@@ -81,6 +88,38 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       isForeground: isForeground,
       prefs: prefs,
     );
+
+    if (state == AppLifecycleState.resumed) {
+      unawaited(SessionExpirationCoordinator.instance.checkNow());
+    }
+  }
+
+  Future<void> _handleExpiredSession() async {
+    await SessionResetService.instance.resetForLogout();
+    if (!mounted) {
+      return;
+    }
+
+    _openExpiredSessionLogin();
+  }
+
+  void _openExpiredSessionLogin() {
+    final navigator = appNavigatorKey.currentState;
+    if (navigator == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _openExpiredSessionLogin();
+        }
+      });
+      return;
+    }
+
+    navigator.pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => const LoginPage(showSessionExpiredNotice: true),
+      ),
+      (_) => false,
+    );
   }
 
   void _handlePreferencesChanged() {
@@ -98,7 +137,17 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       return;
     }
 
-    BiometricLockService.instance.lockOnColdStart();
+    final expirationCheck = await SessionExpirationCoordinator.instance
+        .checkNow();
+    if (!mounted) {
+      return;
+    }
+
+    if (expirationCheck == SessionExpirationCheck.active) {
+      BiometricLockService.instance.lockOnColdStart();
+    } else {
+      BiometricLockService.instance.clearForSignedOutSession();
+    }
   }
 
   Future<void> _consumeInitialAppLaunchPayload() async {

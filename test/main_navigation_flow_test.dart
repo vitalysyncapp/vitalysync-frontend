@@ -429,6 +429,15 @@ void main() {
     expect(find.byType(AuthStartPage), findsOneWidget);
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString('auth_access_token'), isNull);
+    expect(prefs.getString('last_login_email'), 'tester@example.com');
+
+    await tester.tap(find.byKey(const ValueKey('auth-welcome-login')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    final emailField = tester.widget<TextFormField>(
+      find.byType(TextFormField).first,
+    );
+    expect(emailField.controller?.text, 'tester@example.com');
 
     await disposeNavigation(tester);
   });

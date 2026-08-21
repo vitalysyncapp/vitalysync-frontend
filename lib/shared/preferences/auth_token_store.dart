@@ -1,10 +1,20 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+enum AuthTokenValidity { missing, valid, expired, malformed }
+
+class AuthTokenInspection {
+  const AuthTokenInspection(this.validity, {this.expiresAt});
+
+  final AuthTokenValidity validity;
+  final DateTime? expiresAt;
+}
 
 class AuthTokenStore {
   AuthTokenStore({
@@ -61,6 +71,56 @@ class AuthTokenStore {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(tokenKey);
+  }
+
+  Future<AuthTokenInspection> inspectStoredToken({DateTime? now}) async {
+    return inspectToken(await readToken(), now: now);
+  }
+
+  AuthTokenInspection inspectToken(String? token, {DateTime? now}) {
+    final normalizedToken = token?.trim() ?? '';
+    if (normalizedToken.isEmpty) {
+      return const AuthTokenInspection(AuthTokenValidity.missing);
+    }
+
+    try {
+      final parts = normalizedToken.split('.');
+      if (parts.length != 3) {
+        return const AuthTokenInspection(AuthTokenValidity.malformed);
+      }
+
+      final payloadJson = utf8.decode(
+        base64Url.decode(base64Url.normalize(parts[1])),
+      );
+      final payload = jsonDecode(payloadJson);
+      if (payload is! Map<String, dynamic>) {
+        return const AuthTokenInspection(AuthTokenValidity.malformed);
+      }
+
+      final rawExpiration = payload['exp'];
+      final expirationSeconds = rawExpiration is int
+          ? rawExpiration
+          : int.tryParse(rawExpiration?.toString() ?? '');
+      if (expirationSeconds == null || expirationSeconds <= 0) {
+        return const AuthTokenInspection(AuthTokenValidity.malformed);
+      }
+
+      final expiresAt = DateTime.fromMillisecondsSinceEpoch(
+        expirationSeconds * Duration.millisecondsPerSecond,
+        isUtc: true,
+      );
+      final effectiveNow = (now ?? DateTime.now()).toUtc();
+      return AuthTokenInspection(
+        !expiresAt.isAfter(effectiveNow)
+            ? AuthTokenValidity.expired
+            : AuthTokenValidity.valid,
+        expiresAt: expiresAt,
+      );
+    } on FormatException {
+      return const AuthTokenInspection(AuthTokenValidity.malformed);
+    } on RangeError {
+      return const AuthTokenInspection(AuthTokenValidity.malformed);
+    }
   }
 
   Future<String?> _readSecureToken() async {

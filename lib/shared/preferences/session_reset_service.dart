@@ -11,7 +11,9 @@ import '../../features/tutorial/services/core_tutorial_service.dart';
 import '../assistant/overlay_assistant_controller.dart';
 import '../notifications/local_notification_service.dart';
 import '../notifications/notification_feed_cache.dart';
+import '../privacy/biometric_lock_service.dart';
 import 'app_preferences.dart';
+import 'session_expiration_coordinator.dart';
 import 'user_session.dart';
 
 class SessionResetService {
@@ -21,7 +23,6 @@ class SessionResetService {
 
   static const Set<String> _exactLocalAccountKeys = {
     'email',
-    'last_login_email',
     'username',
     'user_id',
     'user_type',
@@ -72,6 +73,8 @@ class SessionResetService {
   ];
 
   Future<void> resetForLogout() async {
+    SessionExpirationCoordinator.instance.cancel();
+    BiometricLockService.instance.clearForSignedOutSession();
     await _ignoreCleanupError(
       'assistant overlay',
       OverlayAssistantController.instance.disableForLogout(),
@@ -89,7 +92,7 @@ class SessionResetService {
       LocalNotificationService.instance.clearSessionNotifications(),
     );
 
-    await UserSessionController.instance.clearSession();
+    await UserSessionController.instance.clearSession(keepLastLoginEmail: true);
     await AppPreferencesController.instance.resetToDefaults(
       preserveLanguage: true,
     );

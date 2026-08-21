@@ -9,6 +9,7 @@ import '../../../../features/onboarding/presentation/pages/onboarding_page.dart'
 import '../../../../shared/config/api_config.dart';
 import '../../../../shared/offline/fetch_policy.dart';
 import '../../../../shared/preferences/user_session.dart';
+import '../../../../shared/preferences/session_expiration_coordinator.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/terms_privacy_widget.dart';
 import '../../../../shared/widgets/validation_dialog.dart';
@@ -111,6 +112,7 @@ class _SignUpPageState extends State<SignUpPage> {
           Map<String, dynamic>.from(data['user'] as Map<String, dynamic>),
           authToken: authToken,
         );
+        await SessionExpirationCoordinator.instance.checkNow();
         await LogApi.persistServerStreakSnapshot(
           data['streak'] as Map<String, dynamic>?,
         );

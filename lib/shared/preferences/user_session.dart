@@ -135,6 +135,10 @@ class UserSessionController {
 
   Future<void> clearSession({bool keepLastLoginEmail = false}) async {
     final prefs = await SharedPreferences.getInstance();
+    final currentEmail = prefs.getString(_emailKey)?.trim() ?? '';
+    if (keepLastLoginEmail && currentEmail.isNotEmpty) {
+      await prefs.setString(_lastLoginEmailKey, currentEmail);
+    }
     await prefs.remove(_emailKey);
     if (!keepLastLoginEmail) {
       await prefs.remove(_lastLoginEmailKey);

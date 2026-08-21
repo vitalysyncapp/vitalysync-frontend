@@ -14,6 +14,7 @@ import '../../../../features/tutorial/services/core_tutorial_service.dart';
 import '../../../../shared/notifications/local_notification_service.dart';
 import '../../../../shared/notifications/notification_payload_router.dart';
 import '../../../../shared/preferences/user_session.dart';
+import '../../../../shared/preferences/session_expiration_coordinator.dart';
 import '../../../../shared/theme/animated_gradient_background.dart';
 import 'auth_start_page.dart';
 import 'package:vitalysync/l10n/localized_text.dart';
@@ -48,11 +49,18 @@ class _LoadingScreenState extends State<LoadingScreen>
   }
 
   Future<void> _checkLoginStatus() async {
+    final expirationCheck = await SessionExpirationCoordinator.instance
+        .checkNow();
+    if (expirationCheck == SessionExpirationCheck.ended) {
+      return;
+    }
+
     final session = await UserSessionController.instance.load();
     final userId = session.userId;
     final signedInUserId = userId ?? 0;
     final onboardingCompleted = session.onboardingCompleted;
-    final hasSignedInAccount = session.isLoggedIn && signedInUserId > 0;
+    final hasSignedInAccount =
+        session.isLoggedIn && session.hasAuthToken && signedInUserId > 0;
 
     if (hasSignedInAccount) {
       unawaited(_refreshStartupData(signedInUserId));

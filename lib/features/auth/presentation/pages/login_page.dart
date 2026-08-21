@@ -18,7 +18,9 @@ import 'sign_up_page.dart';
 import 'package:vitalysync/l10n/localized_text.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  const LoginPage({super.key, this.showSessionExpiredNotice = false});
+
+  final bool showSessionExpiredNotice;
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -45,6 +47,43 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     emailController.text = cachedEmail;
+    emailController.selection = TextSelection.collapsed(
+      offset: cachedEmail.length,
+    );
+  }
+
+  Widget _buildSessionExpiredNotice(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = Theme.of(context).colorScheme.primary;
+
+    return Container(
+      key: const ValueKey('login-session-expired-notice'),
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: isDark ? 0.14 : 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: accent.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.lock_clock_outlined, color: accent, size: 21),
+          const SizedBox(width: 10),
+          Expanded(
+            child: LocalizedText(
+              'Your session ended for your security. Your email is ready—enter your password to continue.',
+              style: GoogleFonts.poppins(
+                color: pageSecondaryTextColor(context),
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   String _loginFailureMessage(http.Response response) {
@@ -168,6 +207,10 @@ class _LoginPageState extends State<LoginPage> {
               logoSize: 68,
             ),
             const SizedBox(height: 24),
+            if (widget.showSessionExpiredNotice) ...[
+              _buildSessionExpiredNotice(context),
+              const SizedBox(height: 16),
+            ],
             AuthTextField(
               controller: emailController,
               label: 'Email',

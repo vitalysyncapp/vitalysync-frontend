@@ -7,6 +7,7 @@ import '../../onboarding/data/onboarding_api.dart';
 import '../../onboarding/presentation/pages/onboarding_page.dart';
 import '../../onboarding/services/onboarding_service.dart';
 import '../../../shared/preferences/user_session.dart';
+import '../../../shared/preferences/session_expiration_coordinator.dart';
 
 Future<void> completeAuthenticatedSession(
   BuildContext context,
@@ -25,6 +26,7 @@ Future<void> completeAuthenticatedSession(
   }
 
   await UserSessionController.instance.saveUser(user, authToken: authToken);
+  await SessionExpirationCoordinator.instance.checkNow();
   await LogApi.persistServerStreakSnapshot(
     data['streak'] is Map
         ? Map<String, dynamic>.from(data['streak'] as Map)
