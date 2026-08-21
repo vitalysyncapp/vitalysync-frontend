@@ -42,6 +42,11 @@ class _SignUpPageState extends State<SignUpPage> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
+  final FocusNode _emailFocusNode = FocusNode();
+  final FocusNode _usernameFocusNode = FocusNode();
+  final FocusNode _ageFocusNode = FocusNode();
+  final FocusNode _passwordFocusNode = FocusNode();
+  final FocusNode _confirmPasswordFocusNode = FocusNode();
 
   Map<String, dynamic> _decodeResponseBody(http.Response response) {
     try {
@@ -257,6 +262,11 @@ class _SignUpPageState extends State<SignUpPage> {
     _ageController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _emailFocusNode.dispose();
+    _usernameFocusNode.dispose();
+    _ageFocusNode.dispose();
+    _passwordFocusNode.dispose();
+    _confirmPasswordFocusNode.dispose();
     super.dispose();
   }
 
@@ -284,8 +294,12 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
                 const SizedBox(height: 24),
                 TextFormField(
+                  key: const ValueKey('signup-email-field'),
                   controller: _emailController,
+                  focusNode: _emailFocusNode,
                   keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  onFieldSubmitted: (_) => _usernameFocusNode.requestFocus(),
                   style: TextStyle(color: pagePrimaryTextColor(context)),
                   decoration: _inputDecoration(
                     label: 'Email',
@@ -298,7 +312,11 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
                 const SizedBox(height: 14),
                 TextFormField(
+                  key: const ValueKey('signup-username-field'),
                   controller: _usernameController,
+                  focusNode: _usernameFocusNode,
+                  textInputAction: TextInputAction.next,
+                  onFieldSubmitted: (_) => _ageFocusNode.requestFocus(),
                   style: TextStyle(color: pagePrimaryTextColor(context)),
                   decoration: _inputDecoration(
                     label: 'Username',
@@ -309,8 +327,12 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
                 const SizedBox(height: 14),
                 TextFormField(
+                  key: const ValueKey('signup-age-field'),
                   controller: _ageController,
+                  focusNode: _ageFocusNode,
                   keyboardType: TextInputType.number,
+                  textInputAction: TextInputAction.next,
+                  onFieldSubmitted: (_) => _passwordFocusNode.requestFocus(),
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   style: TextStyle(color: pagePrimaryTextColor(context)),
                   decoration: _inputDecoration(
@@ -365,8 +387,13 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
                 const SizedBox(height: 14),
                 TextFormField(
+                  key: const ValueKey('signup-password-field'),
                   controller: _passwordController,
+                  focusNode: _passwordFocusNode,
                   obscureText: _obscurePassword,
+                  textInputAction: TextInputAction.next,
+                  onFieldSubmitted: (_) =>
+                      _confirmPasswordFocusNode.requestFocus(),
                   style: TextStyle(color: pagePrimaryTextColor(context)),
                   decoration: _inputDecoration(
                     label: 'Password',
@@ -396,8 +423,12 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
                 const SizedBox(height: 14),
                 TextFormField(
+                  key: const ValueKey('signup-confirm-password-field'),
                   controller: _confirmPasswordController,
+                  focusNode: _confirmPasswordFocusNode,
                   obscureText: _obscureConfirmPassword,
+                  textInputAction: TextInputAction.done,
+                  onEditingComplete: () {},
                   style: TextStyle(color: pagePrimaryTextColor(context)),
                   decoration: _inputDecoration(
                     label: 'Confirm password',
@@ -497,6 +528,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   isLoading: _isLoading,
                   onPressed: (_agreeTerms && !_isLoading)
                       ? () {
+                          FocusScope.of(context).unfocus();
                           if (_formKey.currentState!.validate()) {
                             signUp();
                           }

@@ -29,6 +29,8 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final FocusNode _emailFocusNode = FocusNode();
+  final FocusNode _passwordFocusNode = FocusNode();
 
   bool isLoading = false;
   final String loginUrl = ApiConfig.auth('/login');
@@ -107,6 +109,8 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> login() async {
+    FocusManager.instance.primaryFocus?.unfocus();
+
     if (isLoading) {
       return;
     }
@@ -187,6 +191,8 @@ class _LoginPageState extends State<LoginPage> {
   void dispose() {
     emailController.dispose();
     passwordController.dispose();
+    _emailFocusNode.dispose();
+    _passwordFocusNode.dispose();
     super.dispose();
   }
 
@@ -212,18 +218,26 @@ class _LoginPageState extends State<LoginPage> {
               const SizedBox(height: 16),
             ],
             AuthTextField(
+              key: const ValueKey('login-email-field'),
               controller: emailController,
+              focusNode: _emailFocusNode,
               label: 'Email',
               hintText: 'you@gmail.com'.localizedCopy(context),
               icon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              onFieldSubmitted: (_) => _passwordFocusNode.requestFocus(),
             ),
             const SizedBox(height: 14),
             AuthTextField(
+              key: const ValueKey('login-password-field'),
               controller: passwordController,
+              focusNode: _passwordFocusNode,
               label: 'Password',
               icon: Icons.lock_outline,
               obscureText: true,
+              textInputAction: TextInputAction.done,
+              onFieldSubmitted: (_) => login(),
             ),
             const SizedBox(height: 6),
             Align(

@@ -886,36 +886,48 @@ InputDecoration authInputDecoration(
 
 class AuthTextField extends StatelessWidget {
   final TextEditingController controller;
+  final FocusNode? focusNode;
   final String label;
   final String? hintText;
   final IconData icon;
   final TextInputType? keyboardType;
+  final TextInputAction? textInputAction;
   final bool obscureText;
   final Widget? suffixIcon;
   final List<TextInputFormatter>? inputFormatters;
   final String? Function(String?)? validator;
+  final ValueChanged<String>? onFieldSubmitted;
+  final VoidCallback? onEditingComplete;
 
   const AuthTextField({
     super.key,
     required this.controller,
+    this.focusNode,
     required this.label,
     required this.icon,
     this.hintText,
     this.keyboardType,
+    this.textInputAction,
     this.obscureText = false,
     this.suffixIcon,
     this.inputFormatters,
     this.validator,
+    this.onFieldSubmitted,
+    this.onEditingComplete,
   });
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
+      focusNode: focusNode,
       keyboardType: keyboardType,
+      textInputAction: textInputAction,
       obscureText: obscureText,
       inputFormatters: inputFormatters,
       validator: validator,
+      onFieldSubmitted: onFieldSubmitted,
+      onEditingComplete: onEditingComplete,
       style: TextStyle(color: pagePrimaryTextColor(context)),
       decoration: authInputDecoration(
         context,
