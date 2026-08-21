@@ -14,10 +14,10 @@ class VersionPage extends StatefulWidget {
 
 class _VersionPageState extends State<VersionPage> {
   static const _fallbackVersion = AppVersionInfo(
-    version: '1.0.0',
-    buildNumber: '2',
+    version: '1.0.1',
+    buildNumber: '3',
   );
-  static const String _updatedDate = 'August 7, 2026';
+  static const String _updatedDate = 'August 21, 2026';
 
   late final Future<AppVersionInfo> _versionInfo;
 
@@ -285,15 +285,14 @@ class _ReleaseNotesCard extends StatelessWidget {
       children: const [
         _ReleaseNote(
           text:
-              'Location and activity access are now managed together in Permissions settings.',
+              'Login now moves from email to password and signs in from the keyboard.',
+        ),
+        _ReleaseNote(
+          text: 'The keyboard dismisses immediately after a login submission.',
         ),
         _ReleaseNote(
           text:
-              'Device location and phone-based step tracking can be controlled separately.',
-        ),
-        _ReleaseNote(
-          text:
-              'Denied permissions now offer a direct shortcut to your phone\'s system settings.',
+              'Signup now advances smoothly between fields, while only Create account submits after terms acceptance.',
         ),
       ],
     );

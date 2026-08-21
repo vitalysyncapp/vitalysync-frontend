@@ -57,12 +57,12 @@ const Map<String, String> tagalogFeatureCopy = {
   'Testing build': 'Testing build',
   'This build is prepared for supervised academic testing. Features and saved data may change before a public release.':
       'Inihanda ang build na ito para sa supervised academic testing. Maaaring magbago ang features at saved data bago ang public release.',
-  'Location and activity access are now managed together in Permissions settings.':
-      'Magkasama nang mina-manage ang location at activity access sa Permission settings.',
-  'Device location and phone-based step tracking can be controlled separately.':
-      'Puwede nang kontrolin nang magkahiwalay ang device location at phone-based step tracking.',
-  'Denied permissions now offer a direct shortcut to your phone\'s system settings.':
-      'May direct shortcut na sa system settings ng phone kapag denied ang permission.',
+  'Login now moves from email to password and signs in from the keyboard.':
+      'Dumidiretso na ang login mula email papuntang password at puwede nang mag-sign in gamit ang keyboard.',
+  'The keyboard dismisses immediately after a login submission.':
+      'Agad nang nagsasara ang keyboard pagkatapos mag-submit ng login.',
+  'Signup now advances smoothly between fields, while only Create account submits after terms acceptance.':
+      'Maayos nang lumilipat ang signup sa bawat field, habang ang Create account lang ang nagsa-submit pagkatapos tanggapin ang terms.',
   'Build': 'Build',
   'Updated': 'Na-update',
   'Wellness nudge': 'Wellness nudge',
