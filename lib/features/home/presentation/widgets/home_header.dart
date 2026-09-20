@@ -78,9 +78,13 @@ class _HomeHeaderState extends State<HomeHeader> {
             final userId = prefs?.getInt('user_id');
             final gender = prefs?.getString('gender');
             final userType = prefs?.getString('user_type');
-            final currentStreak = prefs?.getInt('log_streak') ?? 0;
             final lastLogDate = LogApi.normalizeDateString(
               prefs?.getString('last_log_date'),
+            );
+            final currentStreak = LogApi.activeStreakCount(
+              prefs?.getInt('log_streak') ?? 0,
+              lastLogDate,
+              now: now,
             );
             final loggedToday =
                 currentStreak > 0 && lastLogDate == _dateKey(now);

@@ -198,6 +198,27 @@ class LogApi {
     return text.length >= 10 ? text.substring(0, 10) : text;
   }
 
+  static int activeStreakCount(
+    int currentStreak,
+    String? lastLoggedDate, {
+    DateTime? now,
+  }) {
+    final lastLog = DateTime.tryParse(
+      normalizeDateString(lastLoggedDate) ?? '',
+    );
+    if (currentStreak <= 0 || lastLog == null) return 0;
+
+    final currentDate = now ?? DateTime.now();
+    // Compare calendar dates, unaffected by daylight-saving clock changes.
+    final today = DateTime.utc(
+      currentDate.year,
+      currentDate.month,
+      currentDate.day,
+    );
+    final loggedDay = DateTime.utc(lastLog.year, lastLog.month, lastLog.day);
+    return today.difference(loggedDay).inDays > 1 ? 0 : currentStreak;
+  }
+
   static Future<void> persistStreakSnapshot(
     Map<String, dynamic>? streak,
   ) async {
@@ -206,7 +227,10 @@ class LogApi {
     final longestStreak = parseInt(streak?['longest_streak']);
     final lastLoggedDate = normalizeDateString(streak?['last_logged_date']);
 
-    await prefs.setInt('log_streak', currentStreak);
+    await prefs.setInt(
+      'log_streak',
+      activeStreakCount(currentStreak, lastLoggedDate),
+    );
     await prefs.setInt('longest_log_streak', longestStreak);
 
     if (lastLoggedDate != null && lastLoggedDate.isNotEmpty) {

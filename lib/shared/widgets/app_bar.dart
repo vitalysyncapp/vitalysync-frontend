@@ -136,9 +136,12 @@ PreferredSizeWidget buildAppBar(BuildContext context) {
               final gender = prefs?.getString('gender');
               final userType = prefs?.getString('user_type');
 
-              final currentStreak = prefs?.getInt('log_streak') ?? 0;
               final lastLogDate = LogApi.normalizeDateString(
                 prefs?.getString('last_log_date'),
+              );
+              final currentStreak = LogApi.activeStreakCount(
+                prefs?.getInt('log_streak') ?? 0,
+                lastLogDate,
               );
               final loggedToday =
                   currentStreak > 0 && lastLogDate == todayKey();

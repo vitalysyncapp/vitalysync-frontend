@@ -241,9 +241,8 @@ Future<Map<String, dynamic>> _refreshOptimisticStreak(
         await _readPrefsStreakSnapshot(),
   );
 
-  final streak = allPendingLogs.isEmpty
-      ? base
-      : _applyPendingLogsToStreak(base, allPendingLogs);
+  // Expire cached streaks even when there are no offline logs to replay.
+  final streak = _applyPendingLogsToStreak(base, allPendingLogs);
 
   await LogApi.persistStreakSnapshot(streak);
   return streak;
@@ -346,13 +345,10 @@ Map<String, dynamic> _applyPendingLogsToStreak(
     }
   }
 
-  if (lastLoggedDate != null) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    if (today.difference(lastLoggedDate).inDays > 1) {
-      currentStreak = 0;
-    }
-  }
+  currentStreak = LogApi.activeStreakCount(
+    currentStreak,
+    lastLoggedDate == null ? null : _formatDateOnly(lastLoggedDate),
+  );
 
   return {
     'current_streak': currentStreak,

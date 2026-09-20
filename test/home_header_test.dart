@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vitalysync/features/home/presentation/widgets/home_header.dart';
+import 'package:vitalysync/features/log/data/log_api.dart';
 
 import 'test_helpers.dart';
 
@@ -17,6 +18,7 @@ void main() {
     SharedPreferences.setMockInitialValues({
       'username': 'Alex Rivera',
       'log_streak': 4,
+      'last_log_date': LogApi.todayKey(),
     });
 
     await tester.pumpWidget(

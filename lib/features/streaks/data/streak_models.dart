@@ -13,7 +13,10 @@ class StreakSnapshot {
 
   factory StreakSnapshot.fromJson(Map<String, dynamic>? json) {
     return StreakSnapshot(
-      currentStreak: LogApi.parseInt(json?['current_streak']),
+      currentStreak: LogApi.activeStreakCount(
+        LogApi.parseInt(json?['current_streak']),
+        LogApi.normalizeDateString(json?['last_logged_date']),
+      ),
       longestStreak: LogApi.parseInt(json?['longest_streak']),
       lastLoggedDate: LogApi.normalizeDateString(json?['last_logged_date']),
     );
