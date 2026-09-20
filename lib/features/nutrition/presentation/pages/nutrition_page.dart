@@ -19,9 +19,9 @@ import '../widgets/log_new_meal_card.dart';
 import '../widgets/macro_balance_card.dart';
 import '../widgets/nutrition_header_card.dart';
 import '../widgets/nutrition_quantity_field.dart';
+import '../widgets/nutrition_review_dialog.dart';
 import '../widgets/today_nutrition_card.dart';
 import '../widgets/todays_meals_card.dart';
-import '../widgets/white_card.dart';
 import 'package:vitalysync/l10n/localized_text.dart';
 
 part 'manual_log_dialog.dart';
@@ -91,11 +91,10 @@ class _NutritionPageState extends State<NutritionPage> {
   final ImagePicker _picker = ImagePicker();
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _logNewMealCardKey = GlobalKey();
-  final GlobalKey _firstReviewItemKey = GlobalKey();
   Uint8List? _selectedImage;
   late String _selectedMealType;
   bool _isAnalyzing = false;
-  bool _isSaving = false;
+  bool _isReviewOpen = false;
   bool _isLoadingDaily = true;
   int? _attemptId;
   int _handledNutritionLogFocusRequest = 0;
@@ -259,6 +258,7 @@ class _NutritionPageState extends State<NutritionPage> {
   }
 
   Future<void> _onAddMeal({String? initialMealType}) async {
+    if (_isAnalyzing || _isReviewOpen) return;
     final mealSuggestions = await NutritionMealSuggestionStore.loadMealNames();
     if (!mounted) return;
     setState(() {
@@ -306,20 +306,6 @@ class _NutritionPageState extends State<NutritionPage> {
     );
   }
 
-  Future<void> _scrollToFirstReviewItem() async {
-    final targetContext = _firstReviewItemKey.currentContext;
-    if (!mounted || targetContext == null) {
-      return;
-    }
-
-    await Scrollable.ensureVisible(
-      targetContext,
-      duration: const Duration(milliseconds: 460),
-      curve: Curves.easeInOutCubic,
-      alignment: 0.12,
-    );
-  }
-
   Future<void> _loadDailyNutrition({
     bool showErrors = true,
     bool resetMealUnlocks = false,
@@ -350,6 +336,7 @@ class _NutritionPageState extends State<NutritionPage> {
   }
 
   Future<void> _analyzeSelectedMeal() async {
+    if (_isAnalyzing || _isReviewOpen) return;
     if (_selectedImage == null) {
       _showSnackBar('Please choose or take a food photo first.');
       return;
@@ -379,12 +366,6 @@ class _NutritionPageState extends State<NutritionPage> {
         _attemptId = result.attemptId;
         _reviewItems = result.items;
       });
-      if (result.items.isNotEmpty) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _scrollToFirstReviewItem();
-        });
-      }
-      _showSnackBar('Review the detected food before saving.');
     } catch (e) {
       _showSnackBar(_friendlyError(e));
     } finally {
@@ -394,9 +375,13 @@ class _NutritionPageState extends State<NutritionPage> {
         });
       }
     }
+    if (mounted && _attemptId != null) {
+      await _showReviewDialog();
+    }
   }
 
   Future<void> _analyzeManualMeals(List<ManualNutritionInput> meals) async {
+    if (_isAnalyzing || _isReviewOpen) return;
     if (_isSelectedMealTypeLocked()) {
       _showLockedMealTypeMessage(_selectedMealType);
       return;
@@ -422,12 +407,6 @@ class _NutritionPageState extends State<NutritionPage> {
         _attemptId = result.attemptId;
         _reviewItems = result.items;
       });
-      if (result.items.isNotEmpty) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _scrollToFirstReviewItem();
-        });
-      }
-      _showSnackBar('Review the estimated food before saving.');
     } catch (e) {
       _showSnackBar(_friendlyError(e));
     } finally {
@@ -437,18 +416,44 @@ class _NutritionPageState extends State<NutritionPage> {
         });
       }
     }
+    if (mounted && _attemptId != null) {
+      await _showReviewDialog();
+    }
   }
 
-  Future<void> _confirmMeal() async {
+  Future<void> _showReviewDialog() async {
+    if (_isReviewOpen) return;
+    setState(() => _isReviewOpen = true);
+    final action = await showNutritionReviewDialog(
+      context: context,
+      items: _reviewItems,
+      mealLabel: _mealTypeLabel(_selectedMealType),
+      onConfirm: _confirmMeal,
+    );
+    if (!mounted) return;
+
+    // Keep the original source so retry also works for manually entered meals.
+    final manualMeals = List<ManualNutritionInput>.of(_pendingManualMeals);
+    if (action != NutritionReviewAction.saved) {
+      _cancelReview();
+    }
+    setState(() => _isReviewOpen = false);
+    if (action == NutritionReviewAction.retry) {
+      if (manualMeals.isNotEmpty) {
+        await _analyzeManualMeals(manualMeals);
+      } else {
+        await _analyzeSelectedMeal();
+      }
+    } else if (action == NutritionReviewAction.saved) {
+      _showSnackBar('Meal saved successfully.');
+    }
+  }
+
+  Future<String?> _confirmMeal() async {
     final attemptId = _attemptId;
     if (attemptId == null || _reviewItems.isEmpty) {
-      _showSnackBar('Analyze a meal before confirming.');
-      return;
+      return 'Analyze a meal before confirming.';
     }
-
-    setState(() {
-      _isSaving = true;
-    });
 
     try {
       await NutritionApi.confirmMeal(
@@ -463,7 +468,7 @@ class _NutritionPageState extends State<NutritionPage> {
               _pendingManualMeals,
             );
 
-      if (!mounted) return;
+      if (!mounted) return null;
       setState(() {
         _selectedImage = null;
         _attemptId = null;
@@ -477,34 +482,25 @@ class _NutritionPageState extends State<NutritionPage> {
       unawaited(
         NutritionReminderEngine.instance.evaluate(allowNotification: false),
       );
-      _showSnackBar('Meal saved successfully.');
+      return null;
     } catch (e) {
-      _showSnackBar(_friendlyError(e));
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
-      }
+      return _friendlyError(e);
     }
   }
 
-  Future<void> _cancelReview() async {
+  void _cancelReview() {
     final attemptId = _attemptId;
-    if (attemptId != null) {
-      try {
-        await NutritionApi.discardAttempt(attemptId);
-      } catch (_) {
-        // The attempt is only a draft; local cleanup still keeps the UI usable.
-      }
-    }
-
-    if (!mounted) return;
     setState(() {
       _attemptId = null;
       _reviewItems = [];
       _pendingManualMeals = [];
     });
+    if (attemptId != null) {
+      // A draft can be discarded in the background without delaying a retry.
+      unawaited(
+        NutritionApi.discardAttempt(attemptId).catchError((Object _) {}),
+      );
+    }
   }
 
   String _friendlyError(Object error) {
@@ -590,87 +586,6 @@ class _NutritionPageState extends State<NutritionPage> {
     );
   }
 
-  Widget _buildReviewCard() {
-    final isCompact = MediaQuery.of(context).size.width < 380;
-
-    return WhiteCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          LocalizedText(
-            'Review meal',
-            style: TextStyle(
-              fontSize: isCompact ? 15.5 : 16.5,
-              fontWeight: FontWeight.w800,
-              color: pagePrimaryTextColor(context),
-            ),
-          ),
-          SizedBox(height: isCompact ? 9 : 11),
-          ..._reviewItems.asMap().entries.map((entry) {
-            final editor = _ReviewItemEditor(
-              key: ValueKey('review-${entry.key}-${entry.value.foodName}'),
-              item: entry.value,
-              isCompact: isCompact,
-              onChanged: () => setState(() {}),
-              onRemove: () {
-                setState(() {
-                  _reviewItems.removeAt(entry.key);
-                });
-              },
-            );
-
-            if (entry.key != 0) {
-              return editor;
-            }
-
-            return KeyedSubtree(key: _firstReviewItemKey, child: editor);
-          }),
-          SizedBox(height: isCompact ? 8 : 10),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _isSaving ? null : _cancelReview,
-                  child: const LocalizedText('Cancel'),
-                ),
-              ),
-              SizedBox(width: isCompact ? 7 : 8),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _isSaving ? null : _analyzeSelectedMeal,
-                  child: const LocalizedText('Try again'),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: isCompact ? 7 : 8),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _isSaving ? null : _confirmMeal,
-              icon: _isSaving
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.check_circle_outline_rounded),
-              label: LocalizedText(_isSaving ? 'Saving...' : 'Confirm log'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF16A34A),
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: isCompact ? 10 : 12),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -715,26 +630,22 @@ class _NutritionPageState extends State<NutritionPage> {
                   delay: const Duration(milliseconds: 140),
                   child: Container(
                     key: _logNewMealCardKey,
-                    child: LogNewMealCard(
-                      selectedImage: _selectedImage,
-                      selectedMealType: _selectedMealType,
-                      isAnalyzing: _isAnalyzing,
-                      onTakePhoto: _pickFromCamera,
-                      onChooseFromGallery: _pickFromGallery,
-                      onAnalyze: _analyzeSelectedMeal,
-                      onMealTypeChanged: _selectMealType,
-                      canSelectMealType: _canSelectMealType,
-                      onLockedMealTypeTap: _handleLockedMealTypeTap,
+                    child: IgnorePointer(
+                      ignoring: _isAnalyzing || _isReviewOpen,
+                      child: LogNewMealCard(
+                        selectedImage: _selectedImage,
+                        selectedMealType: _selectedMealType,
+                        isAnalyzing: _isAnalyzing,
+                        onTakePhoto: _pickFromCamera,
+                        onChooseFromGallery: _pickFromGallery,
+                        onAnalyze: _analyzeSelectedMeal,
+                        onMealTypeChanged: _selectMealType,
+                        canSelectMealType: _canSelectMealType,
+                        onLockedMealTypeTap: _handleLockedMealTypeTap,
+                      ),
                     ),
                   ),
                 ),
-                if (_reviewItems.isNotEmpty) ...[
-                  SizedBox(height: sectionSpacing),
-                  RevealOnBuild(
-                    delay: const Duration(milliseconds: 180),
-                    child: _buildReviewCard(),
-                  ),
-                ],
                 SizedBox(height: sectionSpacing),
                 RevealOnBuild(
                   delay: const Duration(milliseconds: 210),
