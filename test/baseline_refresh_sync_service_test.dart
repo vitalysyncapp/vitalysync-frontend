@@ -30,7 +30,10 @@ void main() {
       {'question_key': 'ee_01', 'numeric_value': 3},
     ]);
     expect(pending.clientRefreshId, startsWith('refresh_7_'));
-    expect((await store.read(7))?.baselineDate, '2026-07-29');
+    expect(
+      (await store.read(7, now: DateTime.utc(2026, 7, 29, 8)))?.baselineDate,
+      '2026-07-29',
+    );
   });
 
   test('pending baseline queue expires after seven days', () async {

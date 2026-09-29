@@ -22,24 +22,22 @@ void main() {
 
     expect(find.text('Version 2.3.4'), findsOneWidget);
     expect(find.textContaining('Build 56'), findsOneWidget);
-    expect(find.textContaining('August 7, 2026'), findsWidgets);
+    expect(find.textContaining('August 21, 2026'), findsWidgets);
     expect(find.text('Academic testing'), findsOneWidget);
     expect(find.text('Testing build'), findsOneWidget);
     expect(
       find.text(
-        'Location and activity access are now managed together in Permissions settings.',
+        'Login now moves from email to password and signs in from the keyboard.',
       ),
       findsOneWidget,
     );
     expect(
-      find.text(
-        'Device location and phone-based step tracking can be controlled separately.',
-      ),
+      find.text('The keyboard dismisses immediately after a login submission.'),
       findsOneWidget,
     );
     expect(
       find.text(
-        'Denied permissions now offer a direct shortcut to your phone\'s system settings.',
+        'Signup now advances smoothly between fields, while only Create account submits after terms acceptance.',
       ),
       findsOneWidget,
     );
