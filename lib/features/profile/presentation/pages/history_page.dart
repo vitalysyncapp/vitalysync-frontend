@@ -15,7 +15,8 @@ enum _HistoryCategory { dailyLogs, burnout, nutrition, activity }
 enum _HistoryRange { all, week, month }
 
 class HistoryPage extends StatefulWidget {
-  const HistoryPage({super.key});
+  final bool showLegacy;
+  const HistoryPage({super.key, this.showLegacy = false});
 
   @override
   State<HistoryPage> createState() => _HistoryPageState();
@@ -30,6 +31,7 @@ class _HistoryPageState extends State<HistoryPage> {
   @override
   void initState() {
     super.initState();
+    if (widget.showLegacy) _selectedCategory = _HistoryCategory.burnout;
     _future = _loadSnapshot();
   }
 
@@ -547,7 +549,8 @@ class _BurnoutHistoryCard extends StatelessWidget {
       icon: Icons.monitor_heart_outlined,
       iconColor: _categoryColor(_HistoryCategory.burnout),
       title: _displayDate(score.scoreDate),
-      subtitle: '${_sentenceCase(score.riskLevel)} risk',
+      subtitle:
+          'Legacy formula - stored label: ${_sentenceCase(score.riskLevel)}',
       children: [
         _HistoryMetric(label: 'Score', value: '${score.overallScore.round()}%'),
         _HistoryMetric(
@@ -1003,7 +1006,7 @@ String _categoryLabel(_HistoryCategory category) {
     case _HistoryCategory.dailyLogs:
       return 'Daily logs';
     case _HistoryCategory.burnout:
-      return 'Burnout';
+      return 'Legacy scores';
     case _HistoryCategory.nutrition:
       return 'Nutrition';
     case _HistoryCategory.activity:

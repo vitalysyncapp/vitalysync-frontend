@@ -1,3 +1,4 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -63,6 +64,16 @@ class LocalNotificationService {
         launchPayload != null &&
         launchPayload.isNotEmpty) {
       _pendingLaunchPayload = launchPayload;
+    }
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getString('wellness_notification_policy') !=
+        'cbi-wellness-1.0.0') {
+      await _plugin.cancel(id: _adaptiveReminderId);
+      await _plugin.cancel(id: _adaptiveNowId);
+      await prefs.setString(
+        'wellness_notification_policy',
+        'cbi-wellness-1.0.0',
+      );
     }
     _initialized = true;
   }

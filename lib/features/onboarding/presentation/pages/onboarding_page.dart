@@ -11,8 +11,7 @@ import '../../../../shared/preferences/user_session.dart';
 import '../../../../shared/theme/animated_gradient_background.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../tutorial/services/core_tutorial_service.dart';
-import '../../data/burnout_baseline_questions.dart';
-import '../../data/onboarding_api.dart';
+import '../../../assessment/presentation/pages/assessment_page.dart';
 import '../../models/onboarding_question.dart';
 import '../../services/onboarding_service.dart';
 import '../../widgets/likert_question.dart';
@@ -81,8 +80,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
     LikertOption(value: 4, label: 'Very demanding'),
     LikertOption(value: 5, label: 'Extremely demanding'),
   ];
-  static const _burnoutScale = kBurnoutBaselineScale;
-  static const _burnoutSections = kBurnoutBaselineSections;
   static const double _heightMinCm = 100;
   static const double _heightMaxCm = 250;
   static const double _weightMinKg = 20;
@@ -91,7 +88,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
   final PageController _pageController = PageController();
   final TextEditingController _heightController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
-  final Map<String, int> _burnoutAnswers = {};
 
   int _currentStep = 0;
   bool _isSaving = false;
@@ -232,16 +228,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 setState(() => _extraResponsibilityLevel = value),
           ),
         ),
-      ..._burnoutSections.map(
-        (section) => _OnboardingStep(
-          sectionTitle: '\u{1F525} Burnout baseline',
-          title: section.title,
-          isComplete: () => section.questions.every(
-            (question) => _burnoutAnswers[question.questionKey] != null,
-          ),
-          builder: (context) => _buildBurnoutSectionPage(context, section),
-        ),
-      ),
     ];
   }
 
@@ -287,11 +273,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
     };
 
     try {
-      final response = await OnboardingApi.submitRequiredOnboarding(
-        userId: widget.userId,
-        profile: profile,
-        burnoutAnswers: _buildBurnoutAnswerPayload(),
+      final response = await Navigator.push<Map<String, dynamic>>(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              AssessmentPage(userId: widget.userId, onboardingProfile: profile),
+        ),
       );
+
+      if (response == null) return;
 
       final savedProfile = Map<String, dynamic>.from(
         response['profile'] as Map? ?? profile,
@@ -301,7 +291,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       await UserSessionController.instance.updateOnboardingCompleted(true);
       await UserSessionController.instance.saveSupplementalProfile(
         gender: session.gender,
-        userType: _role,
+        userType: savedProfile['role']?.toString() ?? _role,
       );
       await CoreTutorialService.instance.markPendingForUser(widget.userId);
       await _refreshGoalsAfterOnboarding();
@@ -310,7 +300,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: LocalizedText('Your VitalySync baseline is ready \u{1F499}'),
+          content: LocalizedText(
+            'Your assessment is saved and your profile is ready.',
+          ),
         ),
       );
 
@@ -346,18 +338,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
   Future<void> _refreshGoalsAfterOnboarding() async {
     await UserGoalsService.fetch(userId: widget.userId);
     UserGoalsService.refreshSignal.value++;
-  }
-
-  List<Map<String, dynamic>> _buildBurnoutAnswerPayload() {
-    final answers = <Map<String, dynamic>>[];
-
-    for (final section in _burnoutSections) {
-      for (final question in section.questions) {
-        answers.add(question.toPayload(_burnoutAnswers[question.questionKey]!));
-      }
-    }
-
-    return answers;
   }
 
   void _goToStep(int step) {
@@ -1038,46 +1018,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   _hasExtraResponsibilities = false;
                   _extraResponsibilityLevel = null;
                 }),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBurnoutSectionPage(
-    BuildContext context,
-    BurnoutSection section,
-  ) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-      children: [
-        OnboardingCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const _PromptBadge(
-                icon: Icons.local_fire_department_rounded,
-                label: 'Burnout baseline',
-              ),
-              const SizedBox(height: 14),
-              _QuestionTitle(section.title),
-              const SizedBox(height: 8),
-              const _HelperText('Use 1 for never and 5 for always.'),
-              const SizedBox(height: 22),
-              ...section.questions.map(
-                (question) => Padding(
-                  padding: const EdgeInsets.only(bottom: 22),
-                  child: LikertQuestion(
-                    question: question.questionText,
-                    value: _burnoutAnswers[question.questionKey],
-                    options: _burnoutScale,
-                    onChanged: (value) => setState(
-                      () => _burnoutAnswers[question.questionKey] = value,
-                    ),
-                  ),
-                ),
               ),
             ],
           ),

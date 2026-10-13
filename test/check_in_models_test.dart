@@ -131,7 +131,7 @@ void main() {
     },
   );
 
-  test('status parses the thirty-day baseline refresh contract', () {
+  test('stale cached baseline refresh flags cannot block daily logging', () {
     final status = CheckInStatus.fromJson({
       'required_mode': 'daily',
       'has_today_log': false,
@@ -143,8 +143,8 @@ void main() {
       'existing_check_in': <String, dynamic>{},
     });
 
-    expect(status.requiresBaselineRefresh, isTrue);
-    expect(status.baselineRefreshReason, 'thirty_day_return');
+    expect(status.requiresBaselineRefresh, isFalse);
+    expect(status.baselineRefreshReason, isNull);
     expect(status.lastLoggedDate, '2026-06-28');
     expect(status.daysSinceLastLog, 30);
     expect(status.isComplete, isFalse);

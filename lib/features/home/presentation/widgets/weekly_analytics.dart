@@ -183,18 +183,18 @@ class _HomeWeeklyAnalyticsCardState extends State<HomeWeeklyAnalyticsCard> {
         final items = metrics == null
             ? const [
                 WeeklyStatItem(label: 'Average sleep', value: 'Loading'),
-                WeeklyStatItem(label: 'Mood trend', value: 'Loading'),
+                WeeklyStatItem(label: 'Mood records', value: 'Loading'),
                 WeeklyStatItem(label: 'Exercise days', value: 'Loading'),
               ]
             : [
                 WeeklyStatItem(
                   label: 'Average sleep',
-                  value: metrics.averageSleep > 0
-                      ? '${metrics.averageSleep.toStringAsFixed(1)} hours'
+                  value: metrics.sleepRecordedDays > 0
+                      ? '${metrics.averageSleep.toStringAsFixed(1)} hours / ${metrics.sleepRecordedDays} days'
                       : 'No logs',
                 ),
                 WeeklyStatItem(
-                  label: 'Mood trend',
+                  label: 'Mood records',
                   value: metrics.moodTrendLabel,
                   valueColor: metrics.moodTrendLabel == 'Improving'
                       ? const Color(0xFF12A150)

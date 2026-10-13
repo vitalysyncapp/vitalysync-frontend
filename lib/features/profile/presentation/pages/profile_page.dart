@@ -3,9 +3,9 @@ import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../features/activity/data/activity_service.dart';
+import '../../../assessment/presentation/pages/assessment_history_page.dart';
 import '../../../../features/auth/presentation/pages/email_verification_page.dart';
 import '../../../../features/auth/presentation/pages/auth_start_page.dart';
-import '../../../../features/dashboard/data/burnout_score_api.dart';
 import '../../../../features/onboarding/data/onboarding_api.dart';
 import '../../../../features/onboarding/services/onboarding_service.dart';
 import '../../../../features/streaks/presentation/pages/personal_streak_page.dart';
@@ -23,7 +23,6 @@ import 'edit_goals_page.dart';
 import 'edit_wellness_profile_page.dart';
 import 'history_page.dart';
 import 'personal_information_page.dart';
-import 'retake_baseline_questionnaire_page.dart';
 import 'user_report_page.dart';
 import '../widgets/wellness_profile_card.dart';
 import 'package:vitalysync/l10n/localized_text.dart';
@@ -63,7 +62,6 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isSaving = false;
   bool _isSavingGoals = false;
   bool _isSavingWellness = false;
-  bool _isSavingBaseline = false;
   bool _isLoggingOut = false;
   bool _emailVerified = false;
   int? _userId, _age;
@@ -79,7 +77,6 @@ class _ProfilePageState extends State<ProfilePage> {
   int _currentStreak = 0, _longestStreak = 0;
   double? _heightCm, _weightKg;
   UserGoalsSnapshot _goals = UserGoalsSnapshot.defaults();
-  Map<String, int> _baselineAnswers = {};
 
   @override
   void initState() {
@@ -105,7 +102,6 @@ class _ProfilePageState extends State<ProfilePage> {
     var userType = _emptyToNull(session.userType);
     var emailVerified = session.emailVerified;
     var goals = UserGoalsSnapshot.defaults();
-    var baselineAnswers = <String, int>{};
 
     if (session.userId != null) {
       try {
@@ -133,7 +129,6 @@ class _ProfilePageState extends State<ProfilePage> {
             summaryEmailVerified,
           );
         }
-        baselineAnswers = _baselineAnswersFromSummary(summary);
         final profileSleepTime = _emptyToNull(
           profile['usual_sleep_time']?.toString(),
         );
@@ -232,7 +227,6 @@ class _ProfilePageState extends State<ProfilePage> {
       _currentStreak = prefs.getInt('log_streak') ?? 0;
       _longestStreak = prefs.getInt('longest_log_streak') ?? 0;
       _goals = goals;
-      _baselineAnswers = baselineAnswers;
       _isLoading = false;
     });
   }
@@ -389,49 +383,6 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Future<bool> _saveBurnoutBaselineChanges(
-    List<Map<String, dynamic>> answers,
-  ) async {
-    if (_userId == null) {
-      return false;
-    }
-
-    setState(() => _isSavingBaseline = true);
-
-    try {
-      final response = await OnboardingApi.updateBurnoutBaseline(
-        userId: _userId!,
-        burnoutAnswers: answers,
-      );
-      final profile = Map<String, dynamic>.from(
-        response['profile'] as Map? ?? {},
-      );
-      final latestScore = response['latest_score'];
-
-      await OnboardingService.saveDefaultsFromProfile(profile);
-      await BurnoutScoreApi.markInputsChanged(
-        latestScore: latestScore is Map
-            ? Map<String, dynamic>.from(latestScore)
-            : null,
-        clearLatestScore: latestScore is! Map,
-      );
-
-      if (!mounted) return false;
-      setState(() {
-        _initialBurnoutLevel =
-            _emptyToNull(profile['initial_burnout_level']?.toString()) ??
-            'Not set';
-        _initialBurnoutScore = _parseIntValue(profile['initial_burnout_score']);
-        _baselineAnswers = _baselineAnswersFromPayload(answers);
-      });
-      return true;
-    } catch (_) {
-      return false;
-    } finally {
-      if (mounted) setState(() => _isSavingBaseline = false);
-    }
-  }
-
   Future<void> _openEditProfilePage() async {
     await Navigator.push<bool>(
       context,
@@ -560,13 +511,11 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _openRetakeBaselinePage() async {
-    await Navigator.push<bool>(
+    if (_userId == null) return;
+    await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => RetakeBaselineQuestionnairePage(
-          initialAnswers: _baselineAnswers,
-          onSave: _saveBurnoutBaselineChanges,
-        ),
+        builder: (_) => AssessmentHistoryPage(userId: _userId!),
       ),
     );
   }
@@ -658,7 +607,9 @@ class _ProfilePageState extends State<ProfilePage> {
 
       setState(() => _isLoggingOut = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: LocalizedText('Unable to log out. Please try again.')),
+        const SnackBar(
+          content: LocalizedText('Unable to log out. Please try again.'),
+        ),
       );
     }
   }
@@ -721,6 +672,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     const SizedBox(height: 18),
                     WellnessProfileCard(
+                      cbiEnabled: true,
                       lifestyleType: _lifestyleType,
                       currentRole: _userType ?? 'Not set',
                       usualSleepTime: _usualSleepTime,
@@ -731,7 +683,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       heightCm: _heightCm,
                       weightKg: _weightKg,
                       isSaving: _isSavingWellness,
-                      isSavingBaseline: _isSavingBaseline,
+                      isSavingBaseline: false,
                       onEdit: _openEditWellnessProfilePage,
                       onRetakeBaseline: _openRetakeBaselinePage,
                     ),

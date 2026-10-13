@@ -269,12 +269,18 @@ void main() {
     );
     await tester.ensureVisible(settingsAction);
     await tester.pump();
-    final settingsLabel = find.descendant(
+    // The floating assistant can overlap the tile's text on a wide test surface.
+    final settingsIcon = find.descendant(
       of: settingsAction,
-      matching: find.text('Settings'),
+      matching: find.byIcon(Icons.settings_outlined),
     );
-    expect(settingsLabel.hitTestable(), findsOneWidget);
-    await tester.tap(settingsLabel.hitTestable());
+    await Scrollable.ensureVisible(
+      tester.element(settingsIcon),
+      alignment: 0.5,
+    );
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(settingsIcon.hitTestable(), findsOneWidget);
+    await tester.tap(settingsIcon);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 450));
     expect(find.byType(SettingsPage), findsOneWidget);
@@ -478,41 +484,40 @@ void main() {
     },
   );
 
-  testWidgets(
-    'log navigation presents baseline refresh for a thirty-day return',
-    (tester) async {
-      configureLoggedInSession();
-      await tester.pumpWidget(
-        MaterialApp(
-          home: MainNavigation(
-            checkInStatusLoader: () async => const CheckInStatus(
-              requiredMode: CheckInMode.daily,
-              hasTodayLog: false,
-              schedule: CheckInSchedule(),
-              requiresBaselineRefresh: true,
-              baselineRefreshReason: 'thirty_day_return',
-              lastLoggedDate: '2026-06-28',
-              daysSinceLastLog: 30,
-            ),
-            usernameLoader: () async => 'Mika',
-            baselineRefreshSaver: (_) async => true,
+  testWidgets('log navigation stays available after a thirty-day return', (
+    tester,
+  ) async {
+    configureLoggedInSession();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MainNavigation(
+          checkInStatusLoader: () async => const CheckInStatus(
+            requiredMode: CheckInMode.daily,
+            hasTodayLog: false,
+            schedule: CheckInSchedule(),
+            requiresBaselineRefresh: true,
+            baselineRefreshReason: 'thirty_day_return',
+            lastLoggedDate: '2026-06-28',
+            daysSinceLastLog: 30,
           ),
+          usernameLoader: () async => 'Mika',
+          baselineRefreshSaver: (_) async => true,
         ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 800));
-      expect(controller(tester).currentTab, MainTab.home);
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 800));
+    expect(controller(tester).currentTab, MainTab.home);
 
-      await tester.tap(find.byKey(const ValueKey('main-nav-log')));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(find.byKey(const ValueKey('main-nav-log')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.byType(WelcomeBackBaselinePage), findsOneWidget);
-      expect(find.text('Welcome back, Mika'), findsOneWidget);
+    expect(find.byType(WelcomeBackBaselinePage), findsNothing);
+    expect(controller(tester).currentTab, MainTab.log);
 
-      await disposeNavigation(tester);
-    },
-  );
+    await disposeNavigation(tester);
+  });
 }
 
 class _BottomNavHarness extends StatefulWidget {

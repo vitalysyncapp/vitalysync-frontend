@@ -60,7 +60,7 @@ class SleepPatternCard extends StatelessWidget {
             children: [
               Expanded(
                 child: LocalizedText(
-                  'Recommended: 7-9 hours',
+                  '${metrics?.sleepRecordedDays ?? 0} recorded days',
                   style: TextStyle(
                     fontSize: 12.5,
                     color: pageSecondaryTextColor(context),
@@ -68,7 +68,7 @@ class SleepPatternCard extends StatelessWidget {
                 ),
               ),
               LocalizedText(
-                average > 0
+                (metrics?.sleepRecordedDays ?? 0) > 0
                     ? 'Average: ${average.toStringAsFixed(1)}h'
                     : 'No logs yet',
                 style: const TextStyle(
@@ -183,14 +183,15 @@ class SleepPatternCard extends StatelessWidget {
         (index) => BarChartGroupData(
           x: index,
           barRods: [
-            BarChartRodData(
-              toY: chartDays[index].sleepHours * animationProgress,
-              width: 18,
-              borderRadius: BorderRadius.circular(8),
-              color: chartDays[index].sleepHours >= 7
-                  ? const Color(0xFF1FB489)
-                  : const Color(0xFF4A86F7),
-            ),
+            if (chartDays[index].log?['sleep_hours'] != null)
+              BarChartRodData(
+                toY: chartDays[index].sleepHours * animationProgress,
+                width: 18,
+                borderRadius: BorderRadius.circular(8),
+                color: chartDays[index].sleepHours >= 7
+                    ? const Color(0xFF1FB489)
+                    : const Color(0xFF4A86F7),
+              ),
           ],
         ),
       ),

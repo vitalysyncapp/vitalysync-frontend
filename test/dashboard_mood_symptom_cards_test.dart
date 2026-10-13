@@ -39,7 +39,7 @@ void main() {
     expect(find.text('Daily check-ins over the last 7 days'), findsOneWidget);
     expect(find.text('Good'), findsOneWidget);
     expect(find.text('3.8/5 average - 5/7 logged'), findsOneWidget);
-    expect(find.text('Improving'), findsOneWidget);
+    expect(find.text('5 recorded days'), findsOneWidget);
     expect(find.byKey(const ValueKey('mood-trend-chart')), findsOneWidget);
 
     final chart = tester.widget<LineChart>(find.byType(LineChart));

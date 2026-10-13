@@ -1,6 +1,4 @@
 import '../../activity/data/activity_service.dart';
-import '../../adaptive/data/adaptive_nudge_api.dart';
-import '../../dashboard/data/burnout_score_api.dart';
 import '../../home/data/device_location_service.dart';
 import '../../home/data/environment_api.dart';
 import '../../home/data/environment_model.dart';
@@ -9,14 +7,14 @@ import '../../onboarding/services/onboarding_service.dart';
 import '../../../shared/offline/offline_cache_store.dart';
 import 'exercise_goal_api.dart';
 import 'exercise_goal_model.dart';
-import 'exercise_context_policy.dart';
 import 'exercise_log_context_policy.dart';
 import 'exercise_recommendation_policy.dart';
 import 'exercise_recommendation_model.dart';
 
 class ExerciseRecommendationService {
   const ExerciseRecommendationService();
-  static const String _recommendationsCache = 'exercise_recommendations';
+  static const String _recommendationsCache =
+      'exercise_recommendations_cbi_wellness_1';
   static const double _fallbackLatitude = 9.65;
   static const double _fallbackLongitude = 123.85;
   static const Duration _freshEnvironmentWindow = Duration(minutes: 45);
@@ -60,8 +58,6 @@ class ExerciseRecommendationService {
     final defaults = await OnboardingService.loadDefaults();
     final environment = await loadEnvironmentSnapshot();
     final activity = ActivityService.instance.notifier.value.log;
-    final burnoutSummary = await _safeBurnoutPatternSummary();
-    final adaptiveNudges = await _safeAdaptiveNudges();
     final recoveryCheckIn = await _safeRecoveryCheckIn();
     final goalHistory = await _safeExerciseGoalHistory();
     final parsedSleepHours = LogApi.parseDouble(
@@ -81,36 +77,13 @@ class ExerciseRecommendationService {
     final currentWorkloadHoursBand = LogApi.normalizeWorkloadHoursBand(
       recoveryCheckIn?['workload_hours_band'],
     );
-    final recommendedFocus = _recommendedFocus(
-      burnoutSummary: burnoutSummary,
-      adaptiveNudges: adaptiveNudges,
-    );
-    final burnoutSeverity = _burnoutSeverity(
-      burnoutSummary: burnoutSummary,
-      adaptiveNudges: adaptiveNudges,
-    );
-    final hasCurrentBurnoutEvidence =
-        burnoutSummary?.latestScore != null ||
-        burnoutSummary?.patterns.isNotEmpty == true ||
-        adaptiveNudges.isNotEmpty;
-    final contextResolution = ExerciseContextPolicy.resolve(
-      hasCurrentBurnoutEvidence: hasCurrentBurnoutEvidence,
-      currentBurnoutNeedsRecovery:
-          _hasHighBurnoutRisk(burnoutSummary) ||
-          _hasHighPriorityNudge(adaptiveNudges),
-      currentWorkloadHoursBand: currentWorkloadHoursBand,
-      initialBurnoutLevel: defaults.initialBurnoutLevel,
-      initialBurnoutScore: defaults.initialBurnoutScore,
-      onboardingWorkloadLevel: defaults.workloadLevel,
-    );
     final weatherCondition = _outdoorCondition(environment);
     final airSafe = _isAirSafe(environment);
     final weatherReason = airSafe
         ? weatherCondition.reason
         : 'Air quality is elevated; indoor movement is safer today.';
     final needsRecovery =
-        contextResolution.needsRecovery ||
-        _focusSuggestsRecovery(recommendedFocus);
+        energyLevel == null || sleepHours == null || sleepQuality == null;
     final steps = activity.steps;
 
     final policyResult = ExerciseRecommendationPolicy.buildRecommendations(
@@ -122,9 +95,7 @@ class ExerciseRecommendationService {
         energyLevel: energyLevel,
         sleepHours: sleepHours,
         sleepQuality: sleepQuality,
-        workloadHoursBand: contextResolution.workloadHoursBand,
-        burnoutPatternFocus: recommendedFocus,
-        burnoutPatternSeverity: burnoutSeverity,
+        workloadHoursBand: currentWorkloadHoursBand,
         outdoorSafe: weatherCondition.isOutdoorSafe,
         gentleOutdoor: weatherCondition.needsGentleOutdoor,
         airSafe: airSafe,
@@ -172,27 +143,6 @@ class ExerciseRecommendationService {
 
   Future<String> _cacheScope() async {
     return (await LogApi.getStoredUserId())?.toString() ?? 'guest';
-  }
-
-  Future<BurnoutPatternSummary?> _safeBurnoutPatternSummary() async {
-    try {
-      return await BurnoutScoreApi.fetchPatternSummary();
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<List<AdaptiveNudgeRecommendation>> _safeAdaptiveNudges() async {
-    try {
-      final response = await AdaptiveNudgeApi.fetchRecommendations(
-        limit: 2,
-        record: false,
-        ai: false,
-      );
-      return response.recommendations;
-    } catch (_) {
-      return const [];
-    }
   }
 
   Future<Map<String, dynamic>?> _safeRecoveryCheckIn() async {
@@ -301,80 +251,6 @@ class ExerciseRecommendationService {
           ? 'Outdoor conditions are usable, but better for light movement.'
           : 'Weather looks safe for outdoor movement.',
     );
-  }
-
-  bool _hasHighBurnoutRisk(BurnoutPatternSummary? summary) {
-    final risk = summary?.latestScore?.riskLevel.toLowerCase() ?? '';
-    final priority = summary?.adaptiveState.priority.toLowerCase() ?? '';
-    return risk == 'high' || priority == 'high' || priority == 'urgent';
-  }
-
-  bool _hasHighPriorityNudge(List<AdaptiveNudgeRecommendation> nudges) {
-    return nudges.any((nudge) {
-      final priority = nudge.priority.toLowerCase();
-      return priority == 'high' || priority == 'urgent';
-    });
-  }
-
-  String _recommendedFocus({
-    required BurnoutPatternSummary? burnoutSummary,
-    required List<AdaptiveNudgeRecommendation> adaptiveNudges,
-  }) {
-    if (adaptiveNudges.isNotEmpty) {
-      return adaptiveNudges.first.recommendedFocus.toLowerCase();
-    }
-
-    return burnoutSummary?.adaptiveState.recommendedFocus.toLowerCase() ?? '';
-  }
-
-  String _burnoutSeverity({
-    required BurnoutPatternSummary? burnoutSummary,
-    required List<AdaptiveNudgeRecommendation> adaptiveNudges,
-  }) {
-    final values = <String>[
-      ...adaptiveNudges.map((nudge) => nudge.userFacingSeverity),
-      ...?burnoutSummary?.patterns.map((pattern) => pattern.severity),
-      if (burnoutSummary?.adaptiveState.state != null)
-        burnoutSummary!.adaptiveState.state,
-      if (burnoutSummary?.adaptiveState.priority != null)
-        burnoutSummary!.adaptiveState.priority,
-      if (burnoutSummary?.latestScore?.riskLevel != null)
-        burnoutSummary!.latestScore!.riskLevel,
-    ];
-
-    var strongest = 'steady';
-    var strongestRank = 0;
-    for (final value in values) {
-      final normalized = value.trim().toLowerCase().replaceAll(
-        RegExp(r'[-\s]+'),
-        '_',
-      );
-      final rank = switch (normalized) {
-        'critical' || 'urgent' || 'needs_support' => 3,
-        'high' || 'high_risk' => 2,
-        'moderate' || 'medium' || 'watch' => 1,
-        _ => 0,
-      };
-      if (rank > strongestRank) {
-        strongestRank = rank;
-        strongest = rank == 3
-            ? 'needs support'
-            : rank == 2
-            ? 'high'
-            : rank == 1
-            ? 'watch'
-            : 'steady';
-      }
-    }
-
-    return strongest;
-  }
-
-  bool _focusSuggestsRecovery(String focus) {
-    return focus.contains('recovery') ||
-        focus.contains('load_reduction') ||
-        focus.contains('stabilize') ||
-        focus.contains('support');
   }
 
   String _dateKey(DateTime date) {

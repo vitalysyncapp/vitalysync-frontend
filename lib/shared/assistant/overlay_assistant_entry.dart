@@ -91,9 +91,10 @@ class _OverlayAssistantShellState extends State<_OverlayAssistantShell> {
     'vitalysync/assistant_overlay/window',
   );
   static const Duration _generatedPreviewInterval = Duration(minutes: 20);
-  static const String _smartPreviewKey = 'overlay_preview_smart_key';
+  static const String _smartPreviewKey = 'overlay_preview_smart_cbi_wellness_1';
   static const String _nutritionPreviewKey = 'overlay_preview_nutrition_key';
-  static const String _exercisePreviewKey = 'overlay_preview_exercise_key';
+  static const String _exercisePreviewKey =
+      'overlay_preview_exercise_cbi_wellness_1';
 
   final ExerciseRecommendationService _recommendationService =
       const ExerciseRecommendationService();

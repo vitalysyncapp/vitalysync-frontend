@@ -3,9 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../l10n/l10n.dart';
 import '../../../shared/config/api_config.dart';
-import '../../../shared/preferences/app_preferences.dart';
 import '../../../shared/offline/fetch_policy.dart';
 import '../../../shared/offline/offline_cache_store.dart';
 
@@ -39,6 +37,7 @@ class AdaptiveNudgeRecommendation {
   });
 
   String get userFacingSeverity {
+    if (metadata['policy_version'] == 'cbi-wellness-1.0.0') return 'wellness';
     final value = (severity ?? priority).trim().toLowerCase().replaceAll(
       RegExp(r'[-\s]+'),
       '_',
@@ -110,6 +109,12 @@ class AdaptiveNudgeResponse {
     return AdaptiveNudgeResponse(
       recommendations: (json['recommendations'] as List<dynamic>? ?? const [])
           .whereType<Map>()
+          .where(
+            (item) =>
+                item['metadata'] is Map &&
+                (item['metadata'] as Map)['policy_version'] ==
+                    'cbi-wellness-1.0.0',
+          )
           .map(
             (item) => AdaptiveNudgeRecommendation.fromJson(
               Map<String, dynamic>.from(item),
@@ -195,9 +200,10 @@ class AdaptiveNudgeApi {
   static const Duration _aiRequestTimeout = ApiRequestTimeouts.coldStart;
   static final Duration _assistantCacheMaxAge =
       FetchPolicy.tenMinutesPlus.maxAge;
-  static const String _recommendationsCache = 'adaptive_nudge_recommendations';
+  static const String _recommendationsCache =
+      'adaptive_nudge_recommendations_cbi_wellness_1';
   static const String _assistantRecommendationsCache =
-      'assistant_nudge_recommendations';
+      'assistant_nudge_recommendations_cbi_wellness_1';
   static const String _nudgeFeedbackCache = 'assistant_nudge_feedback';
 
   static Future<AdaptiveNudgeResponse> fetchRecommendations({
@@ -215,6 +221,7 @@ class AdaptiveNudgeApi {
           .replace(
             queryParameters: {
               'user_id': userId.toString(),
+              'date': _dateKey(DateTime.now()),
               'limit': limit.toString(),
               'record': record.toString(),
               'ai': ai.toString(),
@@ -621,64 +628,17 @@ class AdaptiveNudgeApi {
         );
   }
 
-  static Future<AdaptiveNudgeResponse> _fallbackResponse() async {
-    final preferences = AppPreferencesController.instance;
-    if (!preferences.notifier.value.isLoaded) {
-      await preferences.load();
-    }
-    final strings = await loadAppLocalizations(
-      preferences.notifier.value.locale,
-    );
-    final username = await _storedUsername();
-    final displayName = username == null ? null : _displayName(username);
-    final message = displayName == null
-        ? strings.smartNudgeFallbackBody
-        : strings.smartNudgeFallbackBodyWithName(name: displayName);
-    final metadata = <String, dynamic>{
-      'local_fallback': true,
-      'ai_fallback': true,
-    };
-    if (displayName != null) {
-      metadata['user_display_name'] = displayName;
-    }
-
-    return AdaptiveNudgeResponse(
-      recommendations: [
-        AdaptiveNudgeRecommendation(
-          nudgeEventId: null,
-          nudgeType: 'steady_routine',
-          priority: 'low',
-          title: strings.smartNudgeFallbackTitle,
-          message: message,
-          actionLabel: strings.keepItSimple,
-          triggerReason: strings.localFallback,
-          recommendedFocus: 'maintenance',
-          patternType: null,
-          severity: 'steady',
-          confidenceScore: 0,
-          metadata: metadata,
-        ),
-      ],
-      adaptiveState: <String, dynamic>{},
-      patterns: <Map<String, dynamic>>[],
-    );
-  }
+  static Future<AdaptiveNudgeResponse> _fallbackResponse() async =>
+      const AdaptiveNudgeResponse(
+        recommendations: [],
+        adaptiveState: {},
+        patterns: [],
+      );
 
   static String _dateKey(DateTime date) {
     final month = date.month.toString().padLeft(2, '0');
     final day = date.day.toString().padLeft(2, '0');
     return '${date.year}-$month-$day';
-  }
-
-  static Future<String?> _storedUsername() async {
-    final prefs = await SharedPreferences.getInstance();
-    final username = prefs.getString('username')?.trim();
-    return username?.isNotEmpty == true ? username : null;
-  }
-
-  static String _displayName(String value) {
-    final normalized = value.replaceAll(RegExp(r'\s+'), ' ').trim();
-    return normalized.length <= 36 ? normalized : normalized.substring(0, 36);
   }
 }
 

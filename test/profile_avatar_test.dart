@@ -162,6 +162,8 @@ void main() {
         'avatar_id': 'personas_05',
       }),
       'profile_temporary_value': 'remove-me',
+      'cbi_assessment_v1_19_pending': '[{"sensitive":"assessment"}]',
+      'cbi_assessment_v1_19_draft': '{"answers":{"PB1":3}}',
     });
 
     await SessionResetService.instance.resetForLogout();
@@ -172,6 +174,12 @@ void main() {
       isNotNull,
     );
     expect(preferences.getString('profile_temporary_value'), isNull);
+    expect(
+      preferences.getKeys().where(
+        (key) => key.startsWith('cbi_assessment_v1_'),
+      ),
+      isEmpty,
+    );
     expect(preferences.getString('last_login_email'), 'avatar@example.com');
   });
 

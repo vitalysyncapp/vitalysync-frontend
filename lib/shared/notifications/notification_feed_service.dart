@@ -265,7 +265,10 @@ class NotificationFeedService {
 
       final items = <AppNotificationItem>[
         for (final report in reports) _itemFromReport(report, readIds, sources),
-        for (final nudge in nudges) _itemFromNudge(nudge, readIds, sources),
+        for (final nudge in nudges)
+          if (nudge.metadata['policy_version'] == 'cbi-wellness-1.0.0' ||
+              nudge.nudgeType.startsWith('nutrition_'))
+            _itemFromNudge(nudge, readIds, sources),
       ]..sort((left, right) => right.updatedAt.compareTo(left.updatedAt));
 
       final limitedItems = items.take(60).toList();
@@ -390,10 +393,10 @@ class NotificationFeedService {
     return AppNotificationItem(
       id: id,
       category: category,
-      title: report.title,
+      title: report.isLegacy ? 'Legacy report - ${report.title}' : report.title,
       message: report.summary,
-      sourceLabel: category == 'weekly' ? 'Weekly report' : 'Daily report',
-      priority: report.priority,
+      sourceLabel: report.methodologyLabel,
+      priority: 'low',
       createdAt: report.createdAt,
       updatedAt: report.updatedAt,
       metricChips: _reportMetricChips(report),
@@ -484,7 +487,15 @@ bool _isInsightFeedItem(AppNotificationItem item) {
 
 List<String> _reportMetricChips(InsightReport report) {
   final metrics = report.metrics;
-  final chips = <String>[];
+  if (!report.isLegacy) {
+    final assessment = report.metrics['assessment'];
+    return [
+      '${report.metrics['recorded_days'] ?? 0} recorded days',
+      if (assessment is Map) 'CBI ${assessment['display_score']} / 100',
+      if (assessment is Map) '${assessment['completed_at']}'.split('T').first,
+    ];
+  }
+  final chips = <String>['Legacy methodology'];
   if (report.reportType == 'weekly') {
     _addMetric(chips, 'Logs', metrics['logged_days'], suffix: '/7');
     _addMetric(
@@ -514,7 +525,6 @@ List<String> _reportMetricChips(InsightReport report) {
       );
       _addMetric(chips, 'Steps', metrics['total_steps'], compactNumber: true);
     }
-    _addRiskMetric(chips, metrics['latest_burnout_risk_level']);
   } else {
     _addMetric(
       chips,
@@ -539,7 +549,6 @@ List<String> _reportMetricChips(InsightReport report) {
       _addMetric(chips, 'Sleep', metrics['sleep_hours'], suffix: 'h');
       _addMetric(chips, 'Hydration', metrics['hydration_liters'], suffix: 'L');
     }
-    _addRiskMetric(chips, metrics['burnout_risk_level']);
   }
 
   return _limitMetricChips(chips);
@@ -585,15 +594,6 @@ void _addMetric(
       ? parsed.toInt().toString()
       : parsed.toStringAsFixed(1);
   chips.add('$label $formatted$suffix');
-}
-
-void _addRiskMetric(List<String> chips, dynamic risk) {
-  final text = risk?.toString().trim();
-  if (text == null || text.isEmpty) {
-    return;
-  }
-
-  chips.add('Risk ${_sentenceCase(text)}');
 }
 
 DateTime _parseDate(dynamic value) {

@@ -10,6 +10,8 @@ class LikertQuestion extends StatelessWidget {
   final int? value;
   final List<LikertOption> options;
   final ValueChanged<int> onChanged;
+  final bool translate;
+  final bool showLegend;
 
   const LikertQuestion({
     super.key,
@@ -17,6 +19,8 @@ class LikertQuestion extends StatelessWidget {
     required this.value,
     required this.options,
     required this.onChanged,
+    this.translate = true,
+    this.showLegend = false,
   });
 
   @override
@@ -37,6 +41,7 @@ class LikertQuestion extends StatelessWidget {
       children: [
         LocalizedText(
           question,
+          translate: translate,
           style: TextStyle(
             height: 1.35,
             fontSize: 16,
@@ -45,6 +50,22 @@ class LikertQuestion extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 14),
+        if (showLegend) ...[
+          Wrap(
+            spacing: 16,
+            runSpacing: 8,
+            children: options
+                .map(
+                  (option) => LocalizedText(
+                    '${option.value} = ${option.label}',
+                    translate: translate,
+                    style: TextStyle(color: pagePrimaryTextColor(context)),
+                  ),
+                )
+                .toList(),
+          ),
+          const SizedBox(height: 14),
+        ],
 
         // Track line behind the buttons to indicate continuous scale.
         Stack(
@@ -75,70 +96,90 @@ class LikertQuestion extends StatelessWidget {
                 return Expanded(
                   child: Padding(
                     padding: EdgeInsets.only(right: isLast ? 0 : 6),
-                    child: Tooltip(
-                      message: '${option.value} - ${option.label}'
-                          .localizedCopy(context),
-                      child: GestureDetector(
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          onChanged(option.value);
-                        },
-                        child: AnimatedScale(
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeOutBack,
-                          scale: selected ? 1.08 : 1.0,
-                          child: AnimatedContainer(
+                    child: Semantics(
+                      label: translate
+                          ? '${option.value} - ${option.label}'.localizedCopy(
+                              context,
+                            )
+                          : '${option.value} - ${option.label}',
+                      button: true,
+                      selected: selected,
+                      child: Tooltip(
+                        excludeFromSemantics: true,
+                        message: translate
+                            ? '${option.value} - ${option.label}'.localizedCopy(
+                                context,
+                              )
+                            : '${option.value} - ${option.label}',
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            onChanged(option.value);
+                          },
+                          child: AnimatedScale(
                             duration: const Duration(milliseconds: 200),
-                            curve: Curves.easeOutCubic,
-                            height: 52,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              gradient: selected
-                                  ? LinearGradient(
-                                      colors: [
-                                        primary,
-                                        primary.withValues(alpha: 0.82),
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    )
-                                  : null,
-                              color: selected
-                                  ? null
-                                  : isDark
-                                  ? Colors.white.withValues(alpha: 0.06)
-                                  : const Color(0xFFF5FBF9),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                width: selected ? 1.5 : 1,
+                            curve: Curves.easeOutBack,
+                            scale: selected ? 1.08 : 1.0,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeOutCubic,
+                              constraints: const BoxConstraints(minHeight: 52),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                gradient: selected
+                                    ? LinearGradient(
+                                        colors: [
+                                          primary,
+                                          primary.withValues(alpha: 0.82),
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      )
+                                    : null,
                                 color: selected
-                                    ? primary
-                                    : pageBorderColor(context),
-                              ),
-                              boxShadow: selected
-                                  ? [
-                                      BoxShadow(
-                                        color: primary.withValues(alpha: 0.28),
-                                        blurRadius: 14,
-                                        offset: const Offset(0, 6),
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                LocalizedText(
-                                  option.value.toString(),
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: selected
-                                        ? Colors.white
-                                        : pagePrimaryTextColor(context),
-                                    fontWeight: FontWeight.w800,
-                                  ),
+                                    ? null
+                                    : isDark
+                                    ? Colors.white.withValues(alpha: 0.06)
+                                    : const Color(0xFFF5FBF9),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  width: selected ? 1.5 : 1,
+                                  color: selected
+                                      ? primary
+                                      : pageBorderColor(context),
                                 ),
-                              ],
+                                boxShadow: selected
+                                    ? [
+                                        BoxShadow(
+                                          color: primary.withValues(
+                                            alpha: 0.28,
+                                          ),
+                                          blurRadius: 14,
+                                          offset: const Offset(0, 6),
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  ExcludeSemantics(
+                                    child: LocalizedText(
+                                      option.value.toString(),
+                                      translate: translate,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: selected
+                                            ? Colors.white
+                                            : pagePrimaryTextColor(context),
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -160,6 +201,7 @@ class LikertQuestion extends StatelessWidget {
             Flexible(
               child: LocalizedText(
                 options.first.label,
+                translate: translate,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -171,6 +213,7 @@ class LikertQuestion extends StatelessWidget {
             Flexible(
               child: LocalizedText(
                 options.last.label,
+                translate: translate,
                 textAlign: TextAlign.right,
                 style: TextStyle(
                   fontSize: 12,
@@ -214,12 +257,15 @@ class LikertQuestion extends StatelessWidget {
                             color: primary,
                           ),
                           const SizedBox(width: 6),
-                          LocalizedText(
-                            selectedLabel,
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              color: primary,
+                          Flexible(
+                            child: LocalizedText(
+                              selectedLabel,
+                              translate: translate,
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                                color: primary,
+                              ),
                             ),
                           ),
                         ],

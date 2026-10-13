@@ -7,12 +7,11 @@ import '../../../../features/activity/data/activity_service.dart';
 import '../../../../features/dashboard/data/burnout_score_api.dart';
 import '../../../../features/activity/presentation/widgets/activity_summary_card.dart';
 import '../../../../features/log/data/log_api.dart';
-import '../../../../features/onboarding/services/onboarding_service.dart';
 import '../../../../shared/notifications/notification_feed_service.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
 import '../../../../shared/widgets/reveal_on_build.dart';
-import '../widgets/burnout_card.dart';
+import '../../../assessment/presentation/widgets/assessment_overview_card.dart';
 import '../widgets/environmental_card.dart';
 import '../widgets/home_header.dart';
 import '../widgets/info_card.dart';
@@ -63,11 +62,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   String _hydrationSubtitle = 'No log yet';
   String? _hydrationLevel;
   Color _hydrationLevelColor = Colors.green;
-  int _burnoutScore = 40;
-  String _burnoutStatus = 'Baseline pending';
-  BurnoutScoreSnapshot? _latestBurnoutScore;
-  BurnoutPatternSummary? _burnoutPatternSummary;
-  bool _isLoadingBurnout = true;
   bool _isLoadingSummary = true;
   bool _isLoadingEnvironment = true;
   _HomeLiveDataIssue? _summaryIssue;
@@ -75,7 +69,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   bool _hasEnvironmentError = false;
   EnvironmentSnapshot? _environmentSnapshot;
   int _refreshVersion = 0;
-  int _burnoutLoadToken = 0;
 
   @override
   void initState() {
@@ -125,85 +118,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Future<void> _loadBurnoutBaseline() async {
-    final loadToken = ++_burnoutLoadToken;
-
-    setState(() {
-      _isLoadingBurnout = true;
-    });
-
-    final defaults = await OnboardingService.loadDefaults();
-    BurnoutScoreSnapshot? latestScore;
-    BurnoutPatternSummary? patternSummary;
-
-    try {
-      final results = await Future.wait<Object?>([
-        BurnoutScoreApi.fetchLatestScore(),
-        BurnoutScoreApi.fetchPatternSummary(),
-      ]);
-      latestScore = results[0] as BurnoutScoreSnapshot?;
-      patternSummary = results[1] as BurnoutPatternSummary?;
-      // Pattern loading refreshes recent scores, so prefer its snapshot over a
-      // concurrently returned cached score from an older scoring version.
-      latestScore = patternSummary?.latestScore ?? latestScore;
-    } catch (_) {
-      latestScore = null;
-      patternSummary = null;
-    }
-
-    if (!mounted || loadToken != _burnoutLoadToken) return;
-
-    setState(() {
-      _latestBurnoutScore = latestScore;
-      _burnoutPatternSummary = patternSummary;
-      _isLoadingBurnout = false;
-      if (latestScore != null) {
-        _burnoutScore = latestScore.overallScore.round();
-        _burnoutStatus = _burnoutStatusForRisk(
-          latestScore.riskLevel,
-          latestScore.confidenceScore,
-        );
-      } else {
-        _burnoutScore = defaults.burnoutScoreForDisplay;
-        _burnoutStatus = _burnoutStatusForLevel(defaults.initialBurnoutLevel);
-      }
-    });
-  }
-
-  String _burnoutStatusForLevel(String? level) {
-    switch (level?.trim().toLowerCase()) {
-      case 'very low':
-        return 'Very low - keep your routine steady';
-      case 'low':
-        return 'Low - Keep protecting your recovery';
-      case 'moderate':
-        return 'Moderate - Pay attention to recovery';
-      case 'high':
-        return 'High - Make room for support and rest';
-      case 'very high':
-        return 'Very high - prioritize support and recovery';
-      default:
-        return 'Complete onboarding to set your baseline';
-    }
-  }
-
-  String _burnoutStatusForRisk(String level, double confidenceScore) {
-    final confidence = confidenceScore.round();
-    if (confidence < 55) {
-      return 'Limited confidence - complete the current check-in ($confidence% confidence)';
-    }
-
-    switch (level) {
-      case 'low':
-        return 'Low - Current patterns look steady ($confidence% confidence)';
-      case 'moderate':
-        return 'Moderate - Watch recovery trends ($confidence% confidence)';
-      case 'high':
-        return 'High - Recovery support is recommended ($confidence% confidence)';
-      case 'critical':
-        return 'Critical - Prioritize support and rest ($confidence% confidence)';
-      default:
-        return 'Current score available ($confidence% confidence)';
-    }
+    if (mounted) setState(() => _refreshVersion++);
   }
 
   Future<void> _loadLatestSummary({bool showLoader = true}) async {
@@ -241,9 +156,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       }
 
       final dateLabel = LogApi.formatLogDateLabel(log['log_date']);
-      final hydrationStatus = LogApi.getHydrationStatus(
-        log['hydration_liters'],
-      );
       final sleepQuality = LogApi.parseInt(log['sleep_quality'], fallback: -1);
 
       setState(() {
@@ -253,8 +165,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         _sleepQualityColor = _sleepQualityColorFor(sleepQuality);
         _hydrationValue = LogApi.formatHydrationLiters(log['hydration_liters']);
         _hydrationSubtitle = dateLabel;
-        _hydrationLevel = hydrationStatus.shortLabel;
-        _hydrationLevelColor = Color(hydrationStatus.colorValue);
+        _hydrationLevel = 'Logged amount';
+        _hydrationLevelColor = Colors.blue;
         _isLoadingSummary = false;
         _summaryIssue = summaryIssue;
       });
@@ -349,12 +261,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   ],
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 100),
-                    child: BurnoutCard(
-                      score: _burnoutScore,
-                      status: _burnoutStatus,
-                      isLoading: _isLoadingBurnout,
-                      latestScore: _latestBurnoutScore,
-                      patternSummary: _burnoutPatternSummary,
+                    child: AssessmentOverviewCard(
+                      refreshVersion: _refreshVersion,
                     ),
                   ),
                   const SizedBox(height: 12),

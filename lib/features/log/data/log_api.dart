@@ -12,8 +12,6 @@ import '../../../shared/offline/offline_cache_store.dart';
 import '../../dashboard/data/burnout_score_api.dart';
 import '../../exercise/data/exercise_goal_model.dart';
 import '../../exercise/data/exercise_goal_service.dart';
-import '../../onboarding/data/baseline_refresh_sync_service.dart';
-import '../../onboarding/data/pending_baseline_refresh_store.dart';
 import 'check_in_models.dart';
 
 part 'log_local_cache_helpers.dart';
@@ -963,12 +961,7 @@ class LogApi {
 
     final logDate = todayKey();
     try {
-      final baselineState = await BaselineRefreshSyncService.instance
-          .syncPending(userId);
-      if (baselineState != BaselineRefreshSyncState.queued &&
-          baselineState != BaselineRefreshSyncState.needsAttention) {
-        await _syncPendingCheckIns(userId);
-      }
+      await _syncPendingCheckIns(userId);
       final response = await http
           .get(
             Uri.parse(
@@ -1341,12 +1334,7 @@ class LogApi {
 
     final pendingLogs = await _readPendingLogs(userId);
     final pendingCheckIns = await _readPendingCheckIns(userId);
-    final pendingBaseline = await PendingBaselineRefreshStore.instance.read(
-      userId,
-    );
-    return pendingLogs.length +
-        pendingCheckIns.length +
-        (pendingBaseline == null ? 0 : 1);
+    return pendingLogs.length + pendingCheckIns.length;
   }
 
   static Future<int> syncPendingLogs() async {
@@ -1355,13 +1343,6 @@ class LogApi {
       return 0;
     }
 
-    final baselineState = await BaselineRefreshSyncService.instance.syncPending(
-      userId,
-    );
-    if (baselineState == BaselineRefreshSyncState.queued ||
-        baselineState == BaselineRefreshSyncState.needsAttention) {
-      return 0;
-    }
     final unifiedSynced = await _syncPendingCheckIns(userId);
     final pendingLogs = await _readPendingLogs(userId);
     if (pendingLogs.isEmpty) {

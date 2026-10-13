@@ -106,8 +106,7 @@ class PendingBaselineRefreshStore {
       final pending = PendingBaselineRefresh.fromJson(
         Map<String, dynamic>.from(decoded),
       );
-      if (pending.userId != userId ||
-          pending.isExpired(now ?? DateTime.now())) {
+      if (pending.userId != userId) {
         await clear(userId);
         return null;
       }
