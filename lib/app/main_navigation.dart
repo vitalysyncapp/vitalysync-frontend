@@ -1,6 +1,4 @@
 import 'dart:async';
-import '../features/assessment/data/assessment_models.dart';
-import '../features/assessment/data/assessment_sync_service.dart';
 
 import 'package:flutter/material.dart';
 
@@ -12,9 +10,12 @@ import '../features/home/presentation/pages/home_page.dart';
 import '../features/log/data/log_api.dart';
 import '../features/log/data/check_in_models.dart';
 import '../features/log/presentation/pages/log_page.dart';
+import '../features/log/presentation/pages/welcome_back_baseline_page.dart';
 import '../features/nutrition/data/nutrition_reminder_engine.dart';
 import '../features/nutrition/presentation/pages/nutrition_page.dart';
 import '../features/profile/presentation/pages/profile_page.dart';
+import '../features/onboarding/data/baseline_refresh_sync_service.dart';
+import '../features/onboarding/data/pending_baseline_refresh_store.dart';
 import '../features/recovery/data/recovery_mode_service.dart';
 import '../features/recovery/presentation/pages/recovery_mode_page.dart';
 import '../features/settings/presentation/pages/assistant_settings.dart';
@@ -108,6 +109,8 @@ class _MainNavigationState extends State<MainNavigation>
   bool _tutorialLeaderboardRouteOpen = false;
   bool _tutorialSettingsRouteOpen = false;
   bool _tutorialAssistantRouteOpen = false;
+  bool _isBaselineRefreshRouteOpen = false;
+  bool _isCheckingBaselineRefresh = false;
   int _recoveryCheckToken = 0;
 
   @override
@@ -261,8 +264,73 @@ class _MainNavigationState extends State<MainNavigation>
     unawaited(_ensureBaselineReady());
   }
 
-  // Reassessment is optional; a saved or recent score is never a logging gate.
-  Future<bool> _ensureBaselineReady() async => true;
+  Future<bool> _ensureBaselineReady() async {
+    if (_isTutorialActive || _isBaselineRefreshRouteOpen) {
+      return !_isBaselineRefreshRouteOpen;
+    }
+    if (_isCheckingBaselineRefresh || !mounted) return false;
+
+    _isCheckingBaselineRefresh = true;
+    try {
+      final status =
+          await (widget.checkInStatusLoader?.call() ??
+              LogApi.fetchCheckInStatus());
+      if (!mounted || !status.requiresBaselineRefresh) return true;
+      if (_currentTab != MainTab.log) return true;
+      final session = await UserSessionController.instance.load();
+      final pendingRefresh = session.userId == null
+          ? null
+          : await PendingBaselineRefreshStore.instance.read(session.userId!);
+      if (pendingRefresh != null && !pendingRefresh.needsAttention) {
+        return true;
+      }
+
+      _isBaselineRefreshRouteOpen = true;
+      final username = widget.usernameLoader != null
+          ? await widget.usernameLoader!()
+          : (await UserSessionController.instance.load()).username ?? 'there';
+      if (!mounted) return false;
+
+      final refreshed = await Navigator.of(context, rootNavigator: true)
+          .push<bool>(
+            MaterialPageRoute(
+              fullscreenDialog: true,
+              builder: (_) => WelcomeBackBaselinePage(
+                username: username,
+                onSave: _saveBaselineRefresh,
+              ),
+            ),
+          );
+      if (refreshed != true && mounted && _currentTab == MainTab.log) {
+        setState(() => _currentTab = MainTab.home);
+      }
+      return refreshed == true;
+    } catch (_) {
+      // Offline status retains the current local flow. The server remains the
+      // authority and will keep queued check-ins pending until refresh.
+      return true;
+    } finally {
+      _isCheckingBaselineRefresh = false;
+      _isBaselineRefreshRouteOpen = false;
+    }
+  }
+
+  Future<bool> _saveBaselineRefresh(List<Map<String, dynamic>> answers) async {
+    final injectedSaver = widget.baselineRefreshSaver;
+    if (injectedSaver != null) return injectedSaver(answers);
+
+    final session = await UserSessionController.instance.load();
+    final userId = session.userId;
+    if (userId == null) return false;
+
+    final state = await BaselineRefreshSyncService.instance.saveOrQueue(
+      userId: userId,
+      answers: answers,
+      baselineDate: LogApi.todayKey(),
+    );
+    return state == BaselineRefreshSyncState.synced ||
+        state == BaselineRefreshSyncState.queued;
+  }
 
   Future<void> _syncPendingLogs() async {
     if (_isSyncingOfflineLogs) {
@@ -271,16 +339,6 @@ class _MainNavigationState extends State<MainNavigation>
 
     _isSyncingOfflineLogs = true;
     try {
-      if (cbiAssessmentEnabled) {
-        final userId = (await UserSessionController.instance.load()).userId;
-        if (userId != null) {
-          unawaited(
-            AssessmentSyncService.instance.sync(userId).catchError((_) {
-              // Assessment retries must not prevent wellness logs from syncing.
-            }),
-          );
-        }
-      }
       final syncedCount = await LogApi.syncPendingLogs();
       await ActivityService.instance.syncPendingActivityLogs();
       if (syncedCount > 0) {

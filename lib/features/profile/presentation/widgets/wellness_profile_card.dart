@@ -17,7 +17,6 @@ class WellnessProfileCard extends StatefulWidget {
   final bool isSavingBaseline;
   final VoidCallback onEdit;
   final VoidCallback onRetakeBaseline;
-  final bool cbiEnabled;
 
   const WellnessProfileCard({
     super.key,
@@ -34,7 +33,6 @@ class WellnessProfileCard extends StatefulWidget {
     required this.isSavingBaseline,
     required this.onEdit,
     required this.onRetakeBaseline,
-    this.cbiEnabled = false,
   });
 
   @override
@@ -159,10 +157,7 @@ class _WellnessProfileCardState extends State<WellnessProfileCard> {
               emoji: '\u{1F4CA}',
               icon: Icons.calculate_outlined,
               label: 'BMI',
-              value: _formatBmi(
-                heightCm: widget.heightCm,
-                weightKg: widget.weightKg,
-              ),
+              value: _formatBmi(heightCm: widget.heightCm, weightKg: widget.weightKg),
             ),
             _rowItemWithBadge(
               emoji: '\u26A1',
@@ -172,11 +167,8 @@ class _WellnessProfileCardState extends State<WellnessProfileCard> {
             _rowItem(
               emoji: '\u{1F525}',
               icon: Icons.local_fire_department_outlined,
-              label: widget.cbiEnabled
-                  ? 'Legacy initial burnout'
-                  : 'Initial burnout',
-              value:
-                  '${_sentenceCaseCategory(widget.burnoutLevel)} (${widget.burnoutScore}%)',
+              label: 'Initial burnout',
+              value: '${_sentenceCaseCategory(widget.burnoutLevel)} (${widget.burnoutScore}%)',
             ),
             const SizedBox(height: 6),
             Container(
@@ -188,9 +180,7 @@ class _WellnessProfileCardState extends State<WellnessProfileCard> {
                 border: Border.all(color: themePrimary.withValues(alpha: 0.12)),
               ),
               child: LocalizedText(
-                widget.cbiEnabled
-                    ? 'Legacy baseline values use the previous methodology. CBI assessments are stored separately in assessment history.'
-                    : 'Your baseline helps VitalySync compare your daily logs with your usual routine.',
+                'Your baseline helps VitalySync compare your daily logs with your usual routine.',
                 style: TextStyle(height: 1.4, fontSize: 13, color: secondary),
               ),
             ),
@@ -218,9 +208,7 @@ class _WellnessProfileCardState extends State<WellnessProfileCard> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: widget.isSavingBaseline
-                    ? null
-                    : widget.onRetakeBaseline,
+                onPressed: widget.isSavingBaseline ? null : widget.onRetakeBaseline,
                 icon: widget.isSavingBaseline
                     ? const SizedBox(
                         width: 18,
@@ -232,11 +220,7 @@ class _WellnessProfileCardState extends State<WellnessProfileCard> {
                       )
                     : const Icon(Icons.restart_alt_rounded),
                 label: LocalizedText(
-                  widget.cbiEnabled
-                      ? 'CBI assessment and history'
-                      : widget.isSavingBaseline
-                      ? 'Saving baseline...'
-                      : 'Retake baseline',
+                  widget.isSavingBaseline ? 'Saving baseline...' : 'Retake baseline',
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
                 style: ElevatedButton.styleFrom(
@@ -265,7 +249,9 @@ class _WellnessProfileCardState extends State<WellnessProfileCard> {
                 _isExpanded ? 'Hide' : 'More',
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
-              style: TextButton.styleFrom(foregroundColor: themePrimary),
+              style: TextButton.styleFrom(
+                foregroundColor: themePrimary,
+              ),
             ),
           ),
         ],
@@ -403,10 +389,7 @@ class _WellnessDataRow extends StatelessWidget {
                 Positioned(
                   right: 2,
                   bottom: 0,
-                  child: LocalizedText(
-                    emoji,
-                    style: const TextStyle(fontSize: 12),
-                  ),
+                  child: LocalizedText(emoji, style: const TextStyle(fontSize: 12)),
                 ),
               ],
             ),

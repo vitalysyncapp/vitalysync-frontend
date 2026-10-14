@@ -18,7 +18,7 @@ class WeeklyPerformanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final consistency = metrics?.loggedDays ?? 0;
+    final consistency = metrics?.consistencyScore ?? 0;
     final goalsMet = metrics?.exerciseDays ?? 0;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -51,7 +51,7 @@ class WeeklyPerformanceCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const LocalizedText(
-              'Weekly records',
+              'Weekly performance',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 15,
@@ -63,8 +63,8 @@ class WeeklyPerformanceCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: _MetricBlock(
-                    value: '$consistency/7',
-                    label: 'Recorded days',
+                    value: '$consistency%',
+                    label: 'Consistency',
                   ),
                 ),
                 Expanded(

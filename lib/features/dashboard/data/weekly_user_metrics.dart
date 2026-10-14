@@ -30,17 +30,10 @@ class WeeklyUserMetrics {
 
   int get loggedDays => days.where((day) => day.hasLog).length;
 
-  int get sleepRecordedDays =>
-      days.where((day) => day.log?['sleep_hours'] != null).length;
-  int get hydrationRecordedDays =>
-      days.where((day) => day.log?['hydration_liters'] != null).length;
-  int get activityRecordedDays =>
-      days.where((day) => day.activity != null).length;
-
   double get averageSleep {
     final values = days
-        .where((day) => day.log?['sleep_hours'] != null)
         .map((day) => day.sleepHours)
+        .where((value) => value > 0)
         .toList();
     if (values.isEmpty) return 0;
     return values.reduce((a, b) => a + b) / values.length;
@@ -48,8 +41,8 @@ class WeeklyUserMetrics {
 
   double get averageHydration {
     final values = days
-        .where((day) => day.log?['hydration_liters'] != null)
         .map((day) => day.hydrationLiters)
+        .where((value) => value > 0)
         .toList();
     if (values.isEmpty) return 0;
     return values.reduce((a, b) => a + b) / values.length;
@@ -77,8 +70,21 @@ class WeeklyUserMetrics {
   }
 
   String get moodTrendLabel {
-    final count = days.where((day) => day.moodIndex != null).length;
-    return count == 0 ? 'No mood records' : '$count recorded days';
+    final values = days
+        .map((day) => day.moodIndex)
+        .where((value) => value != null)
+        .cast<int>()
+        .toList();
+    if (values.length < 2) return 'Needs more logs';
+    final mid = (values.length / 2).floor();
+    final first = values.take(mid).toList();
+    final second = values.skip(mid).toList();
+    final firstAvg = first.reduce((a, b) => a + b) / first.length;
+    final secondAvg = second.reduce((a, b) => a + b) / second.length;
+    final delta = secondAvg - firstAvg;
+    if (delta >= 0.4) return 'Improving';
+    if (delta <= -0.4) return 'Lower';
+    return 'Stable';
   }
 
   String get moodStabilityLabel {
@@ -105,8 +111,8 @@ class WeeklyUserMetrics {
   }
 
   int get averageSteps {
-    if (activityRecordedDays == 0) return 0;
-    return (totalSteps / activityRecordedDays).round();
+    if (days.isEmpty) return 0;
+    return (totalSteps / days.length).round();
   }
 
   int get stepIndex {
@@ -225,8 +231,21 @@ class WeeklyUserMetrics {
     };
   }
 
-  String get weeklyNote =>
-      '$loggedDays daily logs and $activityRecordedDays activity records this week. Missing days are not zero.';
+  String get weeklyNote {
+    if (loggedDays == 0) {
+      return 'Add daily logs to unlock your weekly view.';
+    }
+    if (consistencyScore >= 75) {
+      return 'You kept a steady routine this week.';
+    }
+    if (averageSleep > 0 && averageSleep < 6) {
+      return 'Sleep was the main area to protect this week.';
+    }
+    if (exerciseDays < 3) {
+      return 'A few more movement days would improve next week.';
+    }
+    return 'You have enough data to spot useful patterns.';
+  }
 }
 
 class DailyUserMetric {

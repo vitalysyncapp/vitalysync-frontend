@@ -366,8 +366,8 @@ class CheckInStatus {
       weekly: weekly,
       isOffline: isOffline,
       pendingSyncCount: pendingSyncCount,
-      requiresBaselineRefresh: false,
-      baselineRefreshReason: null,
+      requiresBaselineRefresh: json['requires_baseline_refresh'] == true,
+      baselineRefreshReason: json['baseline_refresh_reason']?.toString(),
       lastLoggedDate: json['last_logged_date']?.toString(),
       daysSinceLastLog: _optionalInt(json['days_since_last_log']),
     );

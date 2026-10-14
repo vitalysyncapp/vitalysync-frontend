@@ -1082,7 +1082,7 @@ const _coreTutorialSteps = [
     icon: Icons.home_rounded,
     title: 'Home is your daily snapshot',
     body:
-        'Start here for dated CBI assessments, sleep and hydration summaries, quick actions, environment context, and the first signals from your daily rhythm.',
+        'Start here for burnout risk, sleep and hydration summaries, quick actions, environment context, and the first signals from your daily rhythm.',
     assistantDock: _TutorialAssistantDock.bottomRight,
   ),
   _TutorialStepData(
@@ -1109,7 +1109,7 @@ const _coreTutorialSteps = [
     icon: Icons.analytics_rounded,
     title: 'Dashboard shows the bigger pattern',
     body:
-        'Review CBI assessment history, sleep patterns, nutrition analytics, symptom frequency, mood volatility, and progress toward your goals.',
+        'Review burnout trends, sleep patterns, nutrition analytics, symptom frequency, mood volatility, and progress toward your goals.',
     assistantDock: _TutorialAssistantDock.bottomLeft,
   ),
   _TutorialStepData(
@@ -1118,7 +1118,7 @@ const _coreTutorialSteps = [
     icon: Icons.person_rounded,
     title: 'Profile keeps your wellness setup together',
     body:
-        'Review personal details, wellness profiles, goals, settings, and account actions from your profile tab.',
+        'Review personal details, wellness baselines, goals, settings, and account actions from your profile tab.',
     assistantDock: _TutorialAssistantDock.topLeft,
   ),
   _TutorialStepData(

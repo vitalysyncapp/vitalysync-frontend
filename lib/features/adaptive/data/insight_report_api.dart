@@ -40,11 +40,6 @@ class InsightReport {
     required this.updatedAt,
   });
 
-  bool get isLegacy => metrics['policy_version'] != 'cbi-wellness-1.0.0';
-  String get methodologyLabel => isLegacy
-      ? 'Legacy methodology - archived report'
-      : 'CBI and recorded wellness';
-
   factory InsightReport.fromJson(Map<String, dynamic> json) {
     return InsightReport(
       insightReportId: _parseInt(json['insight_report_id']),

@@ -300,24 +300,15 @@ class WeeklyStepAnalyticsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final log = state.log;
-    final resolvedCurrentWeek = log.steps > 0
-        ? currentWeek?.withLatestActivity(log)
-        : currentWeek;
+    final resolvedCurrentWeek = currentWeek?.withLatestActivity(log);
     final weeklyLogs = _weeklyLogs(resolvedCurrentWeek, log.goalSteps);
     final numberFormat = NumberFormat.decimalPattern();
     final totalSteps = weeklyLogs.fold<int>(0, (sum, item) => sum + item.steps);
     final previousTotalSteps = previousWeek?.totalSteps ?? 0;
-    final comparison =
-        (resolvedCurrentWeek?.activityRecordedDays ?? 0) < 3 ||
-            (previousWeek?.activityRecordedDays ?? 0) < 3
-        ? const _StepWeekComparison(
-            label: 'Needs 3 recorded days per week',
-            color: Color(0xFF64748B),
-          )
-        : _StepWeekComparison.fromTotals(
-            current: totalSteps,
-            previous: previousTotalSteps,
-          );
+    final comparison = _StepWeekComparison.fromTotals(
+      current: totalSteps,
+      previous: previousTotalSteps,
+    );
     final averageSteps = weeklyLogs.isEmpty
         ? 0
         : (totalSteps / weeklyLogs.length).round();
@@ -328,14 +319,12 @@ class WeeklyStepAnalyticsCard extends StatelessWidget {
               (item.goalSteps > 0 && item.steps >= item.goalSteps),
         )
         .length;
-    final bestDay = weeklyLogs.isEmpty
-        ? null
-        : weeklyLogs.reduce(
-            (current, next) => current.steps >= next.steps ? current : next,
-          );
-    final bestDayLabel = bestDay == null
-        ? ''
-        : DateFormat('EEE').format(DateTime.parse(bestDay.logDate));
+    final bestDay = weeklyLogs.reduce(
+      (current, next) => current.steps >= next.steps ? current : next,
+    );
+    final bestDayLabel = DateFormat(
+      'EEE',
+    ).format(DateTime.parse(bestDay.logDate));
     final statusColor = goalDays >= 5
         ? const Color(0xFF16A34A)
         : goalDays >= 3
@@ -448,18 +437,14 @@ class WeeklyStepAnalyticsCard extends StatelessWidget {
                 Expanded(
                   child: _ActivityMetric(
                     label: 'Total steps',
-                    value: weeklyLogs.isEmpty
-                        ? '--'
-                        : numberFormat.format(totalSteps),
+                    value: numberFormat.format(totalSteps),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: _ActivityMetric(
-                    label: 'Average / ${weeklyLogs.length} recorded days',
-                    value: weeklyLogs.isEmpty
-                        ? '--'
-                        : numberFormat.format(averageSteps),
+                    label: 'Daily average',
+                    value: numberFormat.format(averageSteps),
                   ),
                 ),
               ],
@@ -470,9 +455,8 @@ class WeeklyStepAnalyticsCard extends StatelessWidget {
                 _StatusPill(label: comparison.label, color: comparison.color),
                 const SizedBox(width: 8),
                 _StatusPill(
-                  label: bestDay == null
-                      ? 'No activity records'
-                      : '$bestDayLabel best: ${numberFormat.format(bestDay.steps)}',
+                  label:
+                      '$bestDayLabel best: ${numberFormat.format(bestDay.steps)}',
                   color: const Color(0xFF0EA5E9),
                 ),
               ],
@@ -505,10 +489,36 @@ class WeeklyStepAnalyticsCard extends StatelessWidget {
     WeeklyUserMetrics? metrics,
     int fallbackGoalSteps,
   ) {
-    return (metrics?.days ?? const <DailyUserMetric>[])
-        .map((day) => day.activity)
-        .whereType<ActivityLog>()
-        .toList();
+    final days = metrics?.days ?? const <DailyUserMetric>[];
+    if (days.isNotEmpty) {
+      return days
+          .map(
+            (day) =>
+                day.activity ??
+                ActivityLog.fromSteps(
+                  logDate: day.dateKey,
+                  steps: 0,
+                  goalSteps: fallbackGoalSteps,
+                ),
+          )
+          .toList();
+    }
+
+    final today = DateTime.now();
+    return List.generate(7, (index) {
+      final date = today.subtract(Duration(days: 6 - index));
+      return ActivityLog.fromSteps(
+        logDate: _dateKey(date),
+        steps: 0,
+        goalSteps: fallbackGoalSteps,
+      );
+    });
+  }
+
+  String _dateKey(DateTime date) {
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '${date.year}-$month-$day';
   }
 }
 

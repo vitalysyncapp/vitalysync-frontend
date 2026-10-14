@@ -7,8 +7,7 @@ final ValueNotifier<int> notificationFeedRefreshNotifier = ValueNotifier<int>(
   0,
 );
 
-const String notificationFeedCacheNamespace =
-    'notification_feed_cbi_wellness_1';
+const String notificationFeedCacheNamespace = 'notification_feed_v2';
 
 Future<void> refreshNotificationFeed() async {
   notificationFeedRefreshNotifier.value++;

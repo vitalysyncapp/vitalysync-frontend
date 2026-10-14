@@ -47,7 +47,7 @@ class AboutPage extends StatelessWidget {
                   children: const [
                     _InfoBlock(
                       text:
-                          'VitalySync helps you review CBI exhaustion assessments, track routines, set reminders, and understand your wellness history.',
+                          'VitalySync helps you notice burnout risk patterns, track routines, set reminders, and understand your wellness history.',
                     ),
                     _FocusChips(),
                   ],

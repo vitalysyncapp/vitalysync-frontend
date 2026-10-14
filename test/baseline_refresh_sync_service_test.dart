@@ -36,22 +36,19 @@ void main() {
     );
   });
 
-  test(
-    'legacy pending answers remain available for review after seven days',
-    () async {
-      final store = PendingBaselineRefreshStore.instance;
-      await store.queue(
-        userId: 7,
-        answers: const [
-          {'question_key': 'ee_01', 'numeric_value': 3},
-        ],
-        baselineDate: '2026-07-20',
-        now: DateTime.utc(2026, 7, 20),
-      );
+  test('pending baseline queue expires after seven days', () async {
+    final store = PendingBaselineRefreshStore.instance;
+    await store.queue(
+      userId: 7,
+      answers: const [
+        {'question_key': 'ee_01', 'numeric_value': 3},
+      ],
+      baselineDate: '2026-07-20',
+      now: DateTime.utc(2026, 7, 20),
+    );
 
-      expect(await store.read(7, now: DateTime.utc(2026, 7, 27)), isNotNull);
-    },
-  );
+    expect(await store.read(7, now: DateTime.utc(2026, 7, 27)), isNull);
+  });
 
   test('successful baseline replay clears the queue', () async {
     PendingBaselineRefresh? submitted;

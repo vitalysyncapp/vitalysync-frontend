@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../features/activity/data/activity_service.dart';
-import '../../features/assessment/data/assessment_store.dart';
 import '../../features/exercise/data/exercise_goal_service.dart';
 import '../../features/log/data/log_api.dart';
 import '../../features/onboarding/services/onboarding_service.dart';
@@ -47,7 +46,6 @@ class SessionResetService {
   };
 
   static const List<String> _localAccountKeyPrefixes = [
-    'cbi_assessment_v1_',
     'activity_baseline_date_',
     'activity_baseline_steps_',
     'activity_last_raw_date_',
@@ -95,7 +93,6 @@ class SessionResetService {
     );
 
     await UserSessionController.instance.clearSession(keepLastLoginEmail: true);
-    await AssessmentStore.instance.clearLocalData();
     await AppPreferencesController.instance.resetToDefaults(
       preserveLanguage: true,
     );

@@ -25,10 +25,10 @@ class FirstWeekLearningState {
 
   String get aiInsightNote {
     if (loggedDays == 0) {
-      return 'Log today to start your wellness record.';
+      return 'Still learning - log today to start your baseline.';
     }
     if (loggedDays == 1) {
-      return 'Your weekly view uses the days you record.';
+      return 'Still learning - one more log sharpens AI insight.';
     }
     return 'Still learning your rhythm through day 7.';
   }

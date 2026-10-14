@@ -308,7 +308,7 @@ class _SmartNudgeInsightCard extends StatelessWidget {
     final severity = recommendation?.userFacingSeverity ?? 'steady';
     final severityColor = _severityColor(severity, isDark);
     final metadata = recommendation?.metadata ?? const <String, dynamic>{};
-    final whyThisMatters = recommendation?.triggerReason ?? '';
+    final whyThisMatters = _metadataText(metadata['ai_why_this_matters']);
     final actionSteps = _metadataTextList(metadata['ai_action_steps']);
     final actionLabel = recommendation?.actionLabel.trim() ?? '';
     final subtitle =

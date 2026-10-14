@@ -18,7 +18,7 @@ import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/widgets/first_week_learning_pill.dart';
 import '../../../../shared/widgets/reveal_on_build.dart';
 import '../../../../shared/widgets/sensitive_content_guard.dart';
-import '../../../assessment/presentation/widgets/assessment_overview_card.dart';
+import '../widgets/burnout_risk_trend_card.dart';
 import '../widgets/dashboard_goal_tracking_card.dart';
 import '../widgets/dashboard_header_card.dart';
 import '../widgets/dashboard_stat_card.dart';
@@ -27,6 +27,7 @@ import '../widgets/nutrition_analytics_card.dart';
 import '../widgets/sleep_pattern_card.dart';
 import '../widgets/symptom_frequency_card.dart';
 import '../widgets/weekly_performance_card.dart';
+import '../widgets/wellness_index_card.dart';
 import 'package:vitalysync/l10n/localized_text.dart';
 
 class Dashboard extends StatefulWidget {
@@ -37,9 +38,11 @@ class Dashboard extends StatefulWidget {
 }
 
 class _DashboardState extends State<Dashboard> {
+  BurnoutPatternSummary? _burnoutPatternSummary;
   AdaptiveNudgeRecommendation? _aiInsightNudge;
   FirstWeekLearningState _firstWeekLearning =
       const FirstWeekLearningState.hidden();
+  bool _isLoadingBurnoutPatterns = true;
   bool _isLoadingAiInsight = true;
   bool _isLoadingWeeklyMetrics = true;
   bool _isRefreshingWeeklyMetrics = false;
@@ -101,10 +104,12 @@ class _DashboardState extends State<Dashboard> {
   Future<void> _loadBurnoutPatterns() async {
     final loadToken = ++_burnoutLoadToken;
     setState(() {
+      _isLoadingBurnoutPatterns = true;
       _isLoadingAiInsight = true;
     });
 
     try {
+      final summary = await BurnoutScoreApi.fetchPatternSummary();
       AdaptiveNudgeRecommendation? aiInsight;
       try {
         final nudgeResponse = await AdaptiveNudgeApi.fetchRecommendations(
@@ -126,14 +131,18 @@ class _DashboardState extends State<Dashboard> {
       if (!mounted || loadToken != _burnoutLoadToken) return;
 
       setState(() {
+        _burnoutPatternSummary = summary;
         _aiInsightNudge = aiInsight;
+        _isLoadingBurnoutPatterns = false;
         _isLoadingAiInsight = false;
       });
     } catch (_) {
       if (!mounted || loadToken != _burnoutLoadToken) return;
 
       setState(() {
+        _burnoutPatternSummary = null;
         _aiInsightNudge = null;
+        _isLoadingBurnoutPatterns = false;
         _isLoadingAiInsight = false;
       });
     }
@@ -250,6 +259,61 @@ class _DashboardState extends State<Dashboard> {
     ]);
   }
 
+  String _burnoutRiskValue() {
+    final score = _burnoutPatternSummary?.latestScore;
+    if (_isLoadingBurnoutPatterns) {
+      return '--';
+    }
+
+    return score == null ? '--' : score.overallScore.round().toString();
+  }
+
+  String _burnoutRiskSubtitle() {
+    final summary = _burnoutPatternSummary;
+    if (_isLoadingBurnoutPatterns) {
+      return 'Loading trend';
+    }
+    if (summary == null || summary.latestScore == null) {
+      return 'No score history yet';
+    }
+    if (summary.latestScore!.confidenceScore < 55) {
+      return summary.adaptiveState.label;
+    }
+
+    final sevenDay = summary.windowForDays(7);
+    final delta = sevenDay?.deltaFromStart;
+    if (delta == null) {
+      return summary.adaptiveState.label;
+    }
+
+    final prefix = delta > 0 ? '+' : '';
+    return '$prefix${delta.toStringAsFixed(1)} over 7 days';
+  }
+
+  Color _burnoutTrendColor() {
+    final trend = _burnoutPatternSummary?.windowForDays(7)?.trendDirection;
+    if (trend == 'falling') {
+      return Colors.green;
+    }
+    if (trend == 'rising') {
+      return Colors.red;
+    }
+
+    return const Color(0xFF64748B);
+  }
+
+  IconData _burnoutTrendIcon() {
+    final trend = _burnoutPatternSummary?.windowForDays(7)?.trendDirection;
+    if (trend == 'falling') {
+      return Icons.trending_down;
+    }
+    if (trend == 'rising') {
+      return Icons.trending_up;
+    }
+
+    return Icons.trending_flat;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -282,6 +346,16 @@ class _DashboardState extends State<Dashboard> {
                           delay: const Duration(milliseconds: 70),
                           child: Row(
                             children: [
+                              DashboardStatCard(
+                                title: "Burnout risk",
+                                value: _burnoutRiskValue(),
+                                subtitle: _burnoutRiskSubtitle(),
+                                subtitleColor: _burnoutTrendColor(),
+                                icon: _burnoutTrendIcon(),
+                                iconColor: _burnoutTrendColor(),
+                                isLoading: _isLoadingBurnoutPatterns,
+                              ),
+                              const SizedBox(width: 10),
                               _AvgSleepStatCard(
                                 currentWeek: _currentWeekMetrics,
                                 previousWeek: _previousWeekMetrics,
@@ -293,9 +367,10 @@ class _DashboardState extends State<Dashboard> {
                         const SizedBox(height: 12),
                         RevealOnBuild(
                           delay: const Duration(milliseconds: 140),
-                          child: AssessmentOverviewCard(
-                            refreshVersion: _refreshVersion,
-                            showObservations: true,
+                          child: BurnoutRiskTrendCard(
+                            summary: _burnoutPatternSummary,
+                            isLoading: _isLoadingBurnoutPatterns,
+                            onRefresh: _loadBurnoutPatterns,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -338,6 +413,20 @@ class _DashboardState extends State<Dashboard> {
                           child: SleepPatternCard(
                             metrics: _currentWeekMetrics,
                             isLoading: _isLoadingWeeklyMetrics,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        RevealOnBuild(
+                          delay: const Duration(milliseconds: 440),
+                          child: ValueListenableBuilder<ActivityTrackingState>(
+                            valueListenable: ActivityService.instance.notifier,
+                            builder: (context, activityState, _) {
+                              return WellnessIndexCard(
+                                metrics: _currentWeekMetrics
+                                    ?.withLatestActivity(activityState.log),
+                                isLoading: _isLoadingWeeklyMetrics,
+                              );
+                            },
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -401,14 +490,11 @@ class _AvgSleepStatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentAverage = currentWeek?.averageSleep ?? 0;
     final previousAverage = previousWeek?.averageSleep ?? 0;
-    final enough =
-        (currentWeek?.sleepRecordedDays ?? 0) >= 3 &&
-        (previousWeek?.sleepRecordedDays ?? 0) >= 3;
-    final delta = enough ? currentAverage - previousAverage : 0.0;
+    final delta = currentAverage - previousAverage;
 
     return DashboardStatCard(
       title: "Average sleep",
-      value: (currentWeek?.sleepRecordedDays ?? 0) > 0
+      value: currentAverage > 0
           ? "${currentAverage.toStringAsFixed(1)}h"
           : "--",
       subtitle: _subtitle(
@@ -445,16 +531,15 @@ class _AvgSleepStatCard extends StatelessWidget {
     if (isLoading) {
       return 'Loading trend';
     }
-    if ((currentWeek?.sleepRecordedDays ?? 0) == 0) {
+    if (currentAverage <= 0) {
       return 'No sleep logs yet';
     }
-    if ((currentWeek?.sleepRecordedDays ?? 0) < 3 ||
-        (previousWeek?.sleepRecordedDays ?? 0) < 3) {
-      return '${currentWeek?.sleepRecordedDays ?? 0} recorded days; comparison needs 3 per week';
+    if (previousAverage <= 0) {
+      return 'Based on this week\'s chart';
     }
 
     final prefix = delta > 0 ? '+' : '';
-    return '$prefix${delta.toStringAsFixed(1)}h; ${currentWeek?.sleepRecordedDays}/${previousWeek?.sleepRecordedDays} recorded days';
+    return '$prefix${delta.toStringAsFixed(1)}h from last week';
   }
 
   Color _subtitleColor({
@@ -465,6 +550,13 @@ class _AvgSleepStatCard extends StatelessWidget {
     if (isLoading || currentAverage <= 0) {
       return const Color(0xFF64748B);
     }
+    if (delta > 0.05) {
+      return Colors.green;
+    }
+    if (delta < -0.05) {
+      return Colors.red;
+    }
+
     return const Color(0xFF64748B);
   }
 
@@ -501,7 +593,7 @@ class _AiBurnoutInsightCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final why = recommendation?.triggerReason;
+    final why = recommendation?.metadata['ai_why_this_matters']?.toString();
     final steps = recommendation?.metadata['ai_action_steps'] is List
         ? (recommendation!.metadata['ai_action_steps'] as List)
               .map((item) => item.toString())
@@ -574,7 +666,7 @@ class _AiBurnoutInsightCard extends StatelessWidget {
                       LocalizedText(
                         aiEnhanced
                             ? 'Based on your daily and weekly patterns'
-                            : 'Evidence-informed wellness suggestion',
+                            : 'Guidance based on your recent check-ins',
                         style: TextStyle(
                           color: pageSecondaryTextColor(context),
                           fontSize: 11.5,
@@ -621,7 +713,7 @@ class _AiBurnoutInsightCard extends StatelessWidget {
             ],
             const SizedBox(height: 10),
             LocalizedText(
-              recommendation?.title ?? 'Wellness observations',
+              recommendation?.title ?? 'Keep building your trend baseline',
               style: TextStyle(
                 color: pagePrimaryTextColor(context),
                 fontSize: 14.5,
@@ -631,7 +723,7 @@ class _AiBurnoutInsightCard extends StatelessWidget {
             const SizedBox(height: 6),
             LocalizedText(
               recommendation?.message ??
-                  'No personalized suggestion is available. You can choose a wellness goal or record your day.',
+                  'Log a few daily check-ins and your next weekly pulse so VitalySync can tailor this insight.',
               maxLines: 5,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
