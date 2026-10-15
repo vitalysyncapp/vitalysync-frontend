@@ -29,13 +29,9 @@ void main() {
     habitNames: {'Quiet break'},
   );
 
-  test('daily validation does not require weekly reflection fields', () {
-    expect(completeDailyDraft.validationErrors(CheckInMode.daily), isEmpty);
-  });
-
-  test('weekly validation requires all five reflection fields', () {
+  test('daily validation requires all fourteen answers', () {
     expect(
-      completeDailyDraft.validationErrors(CheckInMode.weekly),
+      completeDailyDraft.validationErrors(CheckInMode.daily),
       containsAll([
         'pressure',
         'recovery breaks',
@@ -44,6 +40,14 @@ void main() {
         'accomplishment',
       ]),
     );
+  });
+
+  test('weekly-day daily validation needs only nine practical inputs', () {
+    expect(completeDailyDraft.validationErrors(CheckInMode.weekly), isEmpty);
+    final core = completeDailyDraft.dailyJson(mode: CheckInMode.weekly);
+    expect(core['questionnaire_version'], 'daily_core9_v3');
+    expect(core.containsKey('perceived_stress_level'), isFalse);
+    expect(core.containsKey('daily_focus_level'), isFalse);
 
     final weeklyDraft = completeDailyDraft.copyWith(
       perceivedPressureLevel: 4,
@@ -62,7 +66,7 @@ void main() {
     });
   });
 
-  test('existing weekly values override legacy daily dimension values', () {
+  test('weekly values never overwrite daily answers', () {
     final draft = CheckInDraft.fromJson(
       daily: {
         'sleep_hours': 6,
@@ -80,12 +84,12 @@ void main() {
       weekly: {'perceived_pressure_level': 5, 'productivity_focus_level': 4},
     );
 
-    expect(draft.perceivedPressureLevel, 5);
-    expect(draft.productivityFocusLevel, 4);
+    expect(draft.perceivedPressureLevel, 2);
+    expect(draft.productivityFocusLevel, 2);
     expect(draft.habitNames, {'Quiet break'});
   });
 
-  test('offline status promotes a passed due date to weekly mode', () {
+  test('overdue weekly status keeps daily logging independent', () {
     final status = CheckInStatus.fromJson(
       {
         'required_mode': 'daily',
@@ -127,7 +131,7 @@ void main() {
       expect(status.requiredMode, CheckInMode.weekly);
       expect(status.daily?['sleep_hours'], 7.5);
       expect(status.hasTodayLog, isTrue);
-      expect(status.isComplete, isFalse);
+      expect(status.isComplete, isTrue);
     },
   );
 
@@ -149,4 +153,25 @@ void main() {
     expect(status.daysSinceLastLog, 30);
     expect(status.isComplete, isFalse);
   });
+
+  test(
+    'completed weekly day keeps nine inputs while ordinary days restore fourteen',
+    () {
+      final status = CheckInStatus.fromJson({
+        'daily_input_mode': 'weekly',
+        'schedule': {'is_due': false, 'next_due_date': '2026-10-19'},
+      });
+      expect(status.requiredMode, CheckInMode.weekly);
+      expect(completeDailyDraft.validationErrors(status.requiredMode), isEmpty);
+      final ordinary = CheckInStatus.fromJson({
+        'daily_input_mode': 'daily',
+        'schedule': {'is_due': false, 'next_due_date': '2026-10-19'},
+      });
+      expect(ordinary.requiredMode, CheckInMode.daily);
+      expect(
+        completeDailyDraft.validationErrors(ordinary.requiredMode).length,
+        5,
+      );
+    },
+  );
 }

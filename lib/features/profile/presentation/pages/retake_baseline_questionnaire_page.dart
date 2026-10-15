@@ -271,7 +271,7 @@ class _RetakeBaselineQuestionnairePageState
               ),
               const SizedBox(height: 8),
               LocalizedText(
-                'Use 1 for never and 5 for always.',
+                'Think about the past seven days. Use 1 for never and 5 for always. This is a custom Maslach-based reflection.',
                 style: TextStyle(
                   height: 1.35,
                   fontSize: 13.5,

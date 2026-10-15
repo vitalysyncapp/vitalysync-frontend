@@ -1,3 +1,4 @@
+import 'package:vitalysync/features/log/presentation/widgets/weekly_assessment_card.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -455,6 +456,8 @@ class _DashboardState extends State<Dashboard> {
                           ),
                         ),
                         const SizedBox(height: 12),
+                        const WeeklyAssessmentCard(showHistory: true),
+                        const SizedBox(height: 12),
                         RevealOnBuild(
                           delay: const Duration(milliseconds: 680),
                           child: WeeklyPerformanceCard(
@@ -723,7 +726,7 @@ class _AiBurnoutInsightCard extends StatelessWidget {
             const SizedBox(height: 6),
             LocalizedText(
               recommendation?.message ??
-                  'Log a few daily check-ins and your next weekly pulse so VitalySync can tailor this insight.',
+                  'Log a few daily check-ins so VitalySync can tailor this insight. Your weekly reflection scores appear separately.',
               maxLines: 5,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(

@@ -24,6 +24,13 @@ class BurnoutInfoDialog extends StatelessWidget {
     required this.onLearnMore,
   });
 
+  bool get _restoredDaily =>
+      latestScore?.scoringVersion == 'burnout_engine_v5_daily14_v1' ||
+      _coreOnly;
+
+  bool get _coreOnly =>
+      latestScore?.scoringVersion == 'burnout_engine_v6_core9_v1';
+
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.sizeOf(context);
@@ -67,7 +74,11 @@ class BurnoutInfoDialog extends StatelessWidget {
                           color: const Color(0xFF2563EB),
                           title: 'What the score means',
                           child: LocalizedText(
-                            'Your score is $score/100. It combines short daily signals—such as sleep, mood, energy, workload, and habits—with the latest eligible weekly pulse and your baseline.',
+                            _coreOnly
+                                ? 'Your daily estimate is $score/100. It uses the 9 practical inputs, activity, and baseline. The 5 omitted daily reflections are excluded and available weights are normalized. Your 11-item weekly scores are separate.'
+                                : _restoredDaily
+                                ? 'Your daily estimate is $score/100. It uses your 14 daily wellness answers, activity, and baseline. Weekly questionnaire dimensions are shown separately.'
+                                : 'This legacy estimate is $score/100. It uses the daily signals, weekly pulse, and baseline available when it was calculated.',
                             style: _bodyStyle(context),
                           ),
                         ),
@@ -111,7 +122,9 @@ class BurnoutInfoDialog extends StatelessWidget {
                         _InfoSection(
                           icon: Icons.calendar_view_week_rounded,
                           color: const Color(0xFF0F766E),
-                          title: 'Weekly pulse context',
+                          title: _restoredDaily
+                              ? 'Weekly reflection'
+                              : 'Legacy weekly pulse context',
                           child: _buildWeeklyContext(context),
                         ),
                         const SizedBox(height: 10),
@@ -243,7 +256,7 @@ class BurnoutInfoDialog extends StatelessWidget {
 
     if (confidence == null || confidence <= 0) {
       return LocalizedText(
-        'Confidence appears after enough short daily logs and weekly context are available.',
+        'Confidence appears after daily wellness answers are available.',
         style: _bodyStyle(context),
       );
     }
@@ -275,7 +288,9 @@ class BurnoutInfoDialog extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         LocalizedText(
-          'Confidence reflects required-field coverage and the age of the weekly pulse used for this score. Limited inputs keep recommendations gentler.',
+          _restoredDaily
+              ? 'Confidence reflects daily answer coverage. Limited inputs keep recommendations gentler.'
+              : 'Confidence reflects required-field coverage and the age of the legacy weekly pulse used for this score. Limited inputs keep recommendations gentler.',
           style: _bodyStyle(context),
         ),
       ],
@@ -283,12 +298,18 @@ class BurnoutInfoDialog extends StatelessWidget {
   }
 
   Widget _buildWeeklyContext(BuildContext context) {
+    if (_restoredDaily) {
+      return LocalizedText(
+        'Weekly reflection scores remain separate from this daily estimate. View the weekly reflection card for the three questionnaire dimensions.',
+        style: _bodyStyle(context),
+      );
+    }
     final weeklyContext = latestScore?.weeklyContext;
     if (weeklyContext == null) {
       return LocalizedText(
         latestScore == null
             ? 'Complete a check-in to begin building weekly context.'
-            : 'This score uses short daily signals only. Weekly dimensions will be added after the first scheduled pulse.',
+            : 'This score uses short daily signals only. Weekly questionnaire dimensions are now recorded separately.',
         style: _bodyStyle(context),
       );
     }
@@ -563,6 +584,11 @@ class BurnoutInfoDialog extends StatelessWidget {
       'daily_logs.exercise_names': 'Movement',
       'daily_logs.symptom_names': 'Body signals',
       'daily_logs.habit_names': 'Recovery habits',
+      'daily_logs.perceived_stress_level': 'Daily pressure',
+      'daily_logs.break_quality_level': 'Daily recovery',
+      'daily_logs.daily_detachment_level': 'Daily detachment',
+      'daily_logs.daily_focus_level': 'Daily focus',
+      'daily_logs.daily_accomplishment_level': 'Daily accomplishment',
       'weekly_pulse_responses.perceived_pressure_level': 'Weekly pressure',
       'weekly_pulse_responses.recovery_rest_level': 'Weekly recovery',
       'weekly_pulse_responses.detachment_level': 'Weekly detachment',

@@ -60,6 +60,7 @@ class SessionResetService {
     CoreTutorialService.storageKeyPrefix,
     'first_week_learning_started_at_',
     'local_weekly_pulse',
+    'weekly_assessment_',
     'notification_feed_read_ids_v2_',
     'nutrition_manual_meal_suggestions',
     'offline_cache_v1_',

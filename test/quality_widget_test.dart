@@ -428,7 +428,7 @@ void main() {
     await tester.pump();
 
     expect(savedPayload, isNotNull);
-    expect(savedPayload, hasLength(15));
+    expect(savedPayload, hasLength(22));
     expect(
       savedPayload!.firstWhere(
         (answer) => answer['question_key'] == 'ee_01',

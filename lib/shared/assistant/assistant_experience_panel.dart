@@ -493,7 +493,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
         _hydrationHelperText = saved
             ? 'Water added to today\'s check-in.'
             : checkInRequired
-            ? 'Water added to your pending weekly pulse. Complete it in the Check-in tab.'
+            ? 'Water added to your daily essentials. Complete them in the Check-in tab.'
             : 'No daily check-in yet. I prefilled this for the log page.';
       });
       unawaited(_loadCheckInStatus());
@@ -624,8 +624,6 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
           content: LocalizedText(
             savedOffline
                 ? 'Check-in saved offline and queued to sync.'
-                : status.requiredMode == CheckInMode.weekly
-                ? 'Weekly pulse and today\'s check-in saved.'
                 : 'Today\'s check-in saved.',
           ),
         ),
@@ -735,7 +733,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
       snackBarMessage += ' $exerciseName also updated today\'s log.';
     } else if (queuedForLog) {
       snackBarMessage += checkInRequired
-          ? ' $exerciseName will prefill the pending weekly pulse.'
+          ? ' $exerciseName will prefill your daily essentials.'
           : ' $exerciseName will prefill the log page.';
     }
 
@@ -1076,9 +1074,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
       ),
       _AssistantSection(
         icon: Icons.fact_check_rounded,
-        label: _checkInStatus?.requiredMode == CheckInMode.weekly
-            ? 'Pulse'
-            : 'Check-in',
+        label: 'Check-in',
         child: _buildCheckInPage(),
       ),
       _AssistantSection(
@@ -1133,22 +1129,28 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
   }
 
   Widget _buildCheckInPage() {
-    return _AssistantCheckInCard(
-      isActive: _pageIndex == _assistantCheckInSectionIndex,
-      isLoading: _isLoadingCheckIn,
-      isSaving: _isSavingCheckIn,
-      status: _checkInStatus,
-      draft: _checkInDraft,
-      isEditing: _isEditingCheckIn,
-      currentStreak: _checkInStreak,
-      exerciseGoalLabel: _exerciseGoalLabel,
-      onChanged: (draft) {
-        setState(() {
-          _checkInDraft = draft;
-        });
-      },
-      onSave: _saveCheckIn,
-      onRedo: _redoCheckIn,
+    return Column(
+      children: [
+        _AssistantCheckInCard(
+          isActive: _pageIndex == _assistantCheckInSectionIndex,
+          isLoading: _isLoadingCheckIn,
+          isSaving: _isSavingCheckIn,
+          status: _checkInStatus,
+          draft: _checkInDraft,
+          isEditing: _isEditingCheckIn,
+          currentStreak: _checkInStreak,
+          exerciseGoalLabel: _exerciseGoalLabel,
+          onChanged: (draft) {
+            setState(() {
+              _checkInDraft = draft;
+            });
+          },
+          onSave: _saveCheckIn,
+          onRedo: _redoCheckIn,
+        ),
+        const SizedBox(height: 12),
+        const WeeklyAssessmentCard(),
+      ],
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'package:vitalysync/features/log/presentation/widgets/weekly_assessment_card.dart';
 import 'dart:math';
 
 import 'package:confetti/confetti.dart';
@@ -373,8 +374,6 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
           content: LocalizedText(
             savedOffline
                 ? 'Saved offline. $pendingCount check-in${pendingCount == 1 ? '' : 's'} waiting to sync.'
-                : requiredMode == CheckInMode.weekly
-                ? 'Weekly pulse and today\'s check-in synced successfully.'
                 : 'Daily check-in synced successfully.',
           ),
         ),
@@ -422,9 +421,9 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       });
       _publishNavigationState();
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: LocalizedText('Unable to save log: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: LocalizedText('Unable to save log: $error')),
+      );
     }
   }
 
@@ -732,6 +731,8 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                               ),
                               child: Column(
                                 children: [
+                                  const WeeklyAssessmentCard(),
+                                  const SizedBox(height: 12),
                                   RevealOnBuild(child: _buildLogHeader()),
                                   const SizedBox(height: 12),
                                   RevealOnBuild(
@@ -939,11 +940,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                 ),
               )
             : LocalizedText(
-                showWeeklyQuestions
-                    ? checkInStatus?.schedule.completedToday == true
-                          ? 'Update today\'s weekly pulse'
-                          : 'Save weekly pulse and check-in'
-                    : hasSavedLogToday
+                hasSavedLogToday
                     ? 'Update today\'s check-in'
                     : 'Save daily check-in',
                 style: const TextStyle(
@@ -956,12 +953,23 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   }
 
   Widget _buildSuccessScreen() {
-    return CheckInSuccessView(
-      isOffline: lastSaveWasOffline,
-      hasPendingSync: hasPendingSync,
-      pendingSyncCount: pendingSyncCount,
-      currentStreak: currentStreak,
-      onRedo: _redoLog,
+    return SingleChildScrollView(
+      padding: EdgeInsets.only(bottom: mainPageBottomContentPadding(context)),
+      child: Column(
+        children: [
+          CheckInSuccessView(
+            isOffline: lastSaveWasOffline,
+            hasPendingSync: hasPendingSync,
+            pendingSyncCount: pendingSyncCount,
+            currentStreak: currentStreak,
+            onRedo: _redoLog,
+          ),
+          const Padding(
+            padding: EdgeInsets.all(12),
+            child: WeeklyAssessmentCard(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -990,7 +998,9 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                     const SizedBox(width: 7),
                     Flexible(
                       child: LocalizedText(
-                        showWeeklyQuestions ? 'WEEKLY PULSE' : 'DAILY CHECK-IN',
+                        showWeeklyQuestions
+                            ? 'WEEKLY CHECK-IN DAY'
+                            : 'DAILY CHECK-IN',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -1012,7 +1022,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
           ),
           SizedBox(height: isCompact ? 9 : 11),
           LocalizedText(
-            showWeeklyQuestions ? 'Your weekly pulse' : 'Log your day',
+            showWeeklyQuestions ? 'Your daily essentials' : 'Log your day',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -1026,9 +1036,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
           SizedBox(height: isCompact ? 4 : 5),
           LocalizedText(
             showWeeklyQuestions
-                ? checkInStatus?.schedule.isOverdue == true
-                      ? 'Your pulse was missed earlier. Complete it now to continue logging.'
-                      : 'Today includes five weekly reflection questions.'
+                ? '9 practical inputs here and 11 questions in your weekly reflection. No repeated daily reflection questions.'
                 : 'A short evening check-in works best.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               fontSize: isCompact ? 12 : 13,
@@ -1299,7 +1307,7 @@ class _LogScoringInfoSheet extends StatelessWidget {
                           icon: Icons.fact_check_outlined,
                           title: 'Log order',
                           text:
-                              'Most days use nine quick inputs. Every seventh-day pulse keeps those same inputs and adds five weekly reflections for pressure, recovery, detachment, focus, and accomplishment.',
+                              'Ordinary days have 14 daily questions. Weekly check-in days have 9 practical inputs plus 11 reflection questions: 20 in total. The 5 daily reflection questions are omitted. Baseline questionnaires keep all 22 items.',
                         ),
                         SizedBox(height: 10),
                         _ScoringFormulaBlock(),
@@ -1315,28 +1323,28 @@ class _LogScoringInfoSheet extends StatelessWidget {
                           icon: Icons.local_fire_department_rounded,
                           title: 'Emotional exhaustion',
                           text:
-                              'Energy, mood, symptoms, sleep, and workload provide the daily context. Perceived pressure is asked in the weekly pulse to reduce daily effort.',
+                              'Energy, mood, symptoms, sleep, workload, and perceived pressure provide the daily context.',
                         ),
                         SizedBox(height: 10),
                         _ScoringInfoBlock(
                           icon: Icons.spa_outlined,
                           title: 'Detachment',
                           text:
-                              'Recovery habits and hydration provide daily context. Detachment and recovery breaks are collected in the weekly pulse.',
+                              'Daily detachment, recovery breaks, recovery habits, and hydration provide the daily context.',
                         ),
                         SizedBox(height: 10),
                         _ScoringInfoBlock(
                           icon: Icons.center_focus_strong_rounded,
                           title: 'Reduced accomplishment',
                           text:
-                              'Workload and exercise provide daily context. Focus and accomplishment are collected in the weekly pulse.',
+                              'Daily focus, accomplishment, workload, and exercise provide the daily context.',
                         ),
                         SizedBox(height: 10),
                         _ScoringInfoBlock(
                           icon: Icons.self_improvement_rounded,
                           title: 'Recovery and workload support',
                           text:
-                              'Recovery habits, hydration, exercise, activity minutes, and workload hours shape daily context. Weekly answers add a broader view without asking for them every day.',
+                              'Recovery habits, hydration, exercise, activity minutes, and workload shape the daily index. Weekly questionnaire scores remain separate.',
                         ),
                         SizedBox(height: 10),
                         _ScoringInfoBlock(
@@ -1380,7 +1388,7 @@ class _ScoringFormulaBlock extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           LocalizedText(
-            'The backend converts answers into 0-100 risk values, then combines them with weighted averages for each dimension.',
+            'The daily estimate uses the questions shown: 14 on ordinary days or 9 practical inputs on weekly days. Omitted reflections are excluded and available weights are normalized. Weekly scores use 5 exhaustion, 3 detachment, and 3 accomplishment items on a 1-5 scale. Higher accomplishment is positive.',
             style: TextStyle(
               color: pageSecondaryTextColor(context),
               fontSize: 12.5,

@@ -166,7 +166,7 @@ class BurnoutCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: LocalizedText(
-                    'Burnout risk score',
+                    'Daily wellness estimate',
                     style: TextStyle(
                       color: textColor.withValues(alpha: 0.7),
                       fontSize: 14,

@@ -488,7 +488,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     if (step.sectionTitle.contains('Routine')) {
       return 'Set defaults that make daily logs faster.';
     }
-    return 'Answer honestly so insights start from your real rhythm.';
+    return 'Think about the past seven days. This 22-item reflection is a custom Maslach-based adaptation.';
   }
 
   double? get _heightCm => _parseMetric(_heightController.text);

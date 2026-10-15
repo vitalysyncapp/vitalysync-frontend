@@ -129,21 +129,11 @@ class CheckInDraft {
           .map(_readableHabitName)
           .where(CheckInFormOptions.habits.contains)
           .toSet(),
-      perceivedPressureLevel: _optionalInt(
-        weekly?['perceived_pressure_level'] ?? daily?['perceived_stress_level'],
-      ),
-      recoveryRestLevel: _optionalInt(
-        weekly?['recovery_rest_level'] ?? daily?['break_quality_level'],
-      ),
-      detachmentLevel: _optionalInt(
-        weekly?['detachment_level'] ?? daily?['daily_detachment_level'],
-      ),
-      productivityFocusLevel: _optionalInt(
-        weekly?['productivity_focus_level'] ?? daily?['daily_focus_level'],
-      ),
-      accomplishmentLevel: _optionalInt(
-        weekly?['accomplishment_level'] ?? daily?['daily_accomplishment_level'],
-      ),
+      perceivedPressureLevel: _optionalInt(daily?['perceived_stress_level']),
+      recoveryRestLevel: _optionalInt(daily?['break_quality_level']),
+      detachmentLevel: _optionalInt(daily?['daily_detachment_level']),
+      productivityFocusLevel: _optionalInt(daily?['daily_focus_level']),
+      accomplishmentLevel: _optionalInt(daily?['daily_accomplishment_level']),
     );
   }
 
@@ -211,7 +201,7 @@ class CheckInDraft {
     _validateSelection(errors, symptomNames, 'symptoms');
     _validateSelection(errors, habitNames, 'recovery habits');
 
-    if (mode == CheckInMode.weekly) {
+    if (mode == CheckInMode.daily) {
       if (!_validLikert(perceivedPressureLevel)) errors.add('pressure');
       if (!_validLikert(recoveryRestLevel)) errors.add('recovery breaks');
       if (!_validLikert(detachmentLevel)) errors.add('detachment');
@@ -221,7 +211,7 @@ class CheckInDraft {
     return errors;
   }
 
-  Map<String, dynamic> dailyJson() {
+  Map<String, dynamic> dailyJson({CheckInMode mode = CheckInMode.daily}) {
     return {
       'sleep_hours': sleepHours,
       'sleep_quality': sleepQuality,
@@ -232,6 +222,16 @@ class CheckInDraft {
       'exercise_names': exerciseNames.toList()..sort(),
       'symptom_names': symptomNames.toList()..sort(),
       'habit_names': habitNames.toList()..sort(),
+      if (mode == CheckInMode.daily) ...{
+        'perceived_stress_level': perceivedPressureLevel,
+        'break_quality_level': recoveryRestLevel,
+        'daily_detachment_level': detachmentLevel,
+        'daily_focus_level': productivityFocusLevel,
+        'daily_accomplishment_level': accomplishmentLevel,
+      },
+      'questionnaire_version': mode == CheckInMode.weekly
+          ? 'daily_core9_v3'
+          : 'daily_14_v2',
     };
   }
 
@@ -315,10 +315,7 @@ class CheckInStatus {
     this.daysSinceLastLog,
   });
 
-  bool get isComplete =>
-      !requiresBaselineRefresh &&
-      hasTodayLog &&
-      (requiredMode == CheckInMode.daily || schedule.completedToday);
+  bool get isComplete => !requiresBaselineRefresh && hasTodayLog;
 
   factory CheckInStatus.fromJson(
     Map<String, dynamic> json, {
@@ -338,15 +335,6 @@ class CheckInStatus {
           ? Map<String, dynamic>.from(json['schedule'] as Map)
           : null,
     );
-    var mode = CheckInMode.fromValue(json['required_mode']);
-    final today = localDate ?? _dateKey(DateTime.now());
-    final dueDate = schedule.dueDate ?? schedule.nextDueDate;
-    if (isOffline &&
-        !schedule.completedToday &&
-        dueDate != null &&
-        dueDate.compareTo(today) <= 0) {
-      mode = CheckInMode.weekly;
-    }
     final daily = pendingDaily is Map
         ? Map<String, dynamic>.from(pendingDaily)
         : existingMap['daily'] is Map
@@ -358,8 +346,20 @@ class CheckInStatus {
         ? Map<String, dynamic>.from(existingMap['weekly'] as Map)
         : null;
 
+    final date = localDate;
+    final dueDate = schedule.nextDueDate;
+    final weeklyDay =
+        daily?['questionnaire_version'] == 'daily_core9_v3' ||
+        json['daily_input_mode'] == 'weekly' ||
+        schedule.isDue ||
+        schedule.isOverdue ||
+        (isOffline &&
+            date != null &&
+            dueDate != null &&
+            dueDate.compareTo(date) <= 0);
+
     return CheckInStatus(
-      requiredMode: mode,
+      requiredMode: weeklyDay ? CheckInMode.weekly : CheckInMode.daily,
       hasTodayLog: json['has_today_log'] == true || daily != null,
       schedule: schedule,
       daily: daily,
@@ -408,10 +408,4 @@ String _readableHabitName(String habit) {
     'Social connection' => 'Talked with someone',
     _ => habit,
   };
-}
-
-String _dateKey(DateTime value) {
-  final month = value.month.toString().padLeft(2, '0');
-  final day = value.day.toString().padLeft(2, '0');
-  return '${value.year}-$month-$day';
 }

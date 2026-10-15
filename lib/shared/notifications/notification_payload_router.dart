@@ -3,6 +3,11 @@ import '../navigation/main_tab.dart';
 MainTab tabForNotificationPayload(String? payload) {
   final normalized = payload?.toLowerCase().trim() ?? '';
 
+  if (normalized.contains('weekly_assessment') ||
+      normalized.contains('weekly_pulse')) {
+    return MainTab.log;
+  }
+
   if (normalized.contains('nutrition') || normalized.contains('meal')) {
     return MainTab.nutrition;
   }

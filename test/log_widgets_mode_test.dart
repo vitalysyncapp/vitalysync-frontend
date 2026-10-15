@@ -3,46 +3,47 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:vitalysync/features/log/presentation/widgets/log_widgets.dart';
 
 void main() {
-  testWidgets('daily mode hides weekly reflections and dimension headers', (
-    tester,
-  ) async {
+  testWidgets('daily mode displays all fourteen inputs', (tester) async {
     await _pumpLogWidgets(tester, showWeeklyQuestions: false);
 
     expect(find.text('Sleep duration'), findsOneWidget);
     expect(find.text('Recovery habits'), findsOneWidget);
-    expect(find.text("This week's pressure"), findsNothing);
-    expect(find.text('Weekly detachment'), findsNothing);
-    expect(find.text('Weekly focus'), findsNothing);
-    expect(find.text('Weekly accomplishment'), findsNothing);
+    expect(find.text("Today's pressure"), findsOneWidget);
+    expect(find.text('Daily detachment'), findsOneWidget);
+    expect(find.text('Daily focus'), findsOneWidget);
+    expect(find.text('Daily accomplishment'), findsOneWidget);
     expect(find.text('Emotional exhaustion'), findsNothing);
     expect(find.text('Reduced accomplishment'), findsNothing);
   });
 
-  testWidgets('weekly mode adds all five reflection inputs', (tester) async {
-    await _pumpLogWidgets(tester, showWeeklyQuestions: true);
+  testWidgets(
+    'weekly mode keeps nine practical inputs and omits five daily reflections',
+    (tester) async {
+      await _pumpLogWidgets(tester, showWeeklyQuestions: true);
 
-    expect(find.text("This week's pressure"), findsOneWidget);
-    expect(find.text('Weekly detachment'), findsOneWidget);
-    expect(find.text('Recovery breaks'), findsOneWidget);
-    expect(find.text('Weekly focus'), findsOneWidget);
-    expect(find.text('Weekly accomplishment'), findsOneWidget);
-    expect(find.text('Emotional exhaustion'), findsNothing);
-    expect(find.text('Reduced accomplishment'), findsNothing);
-  });
+      expect(find.text('Sleep duration'), findsOneWidget);
+      expect(find.text('Recovery habits'), findsOneWidget);
+      expect(find.text("Today's pressure"), findsNothing);
+      expect(find.text('Daily detachment'), findsNothing);
+      expect(find.text('Recovery breaks'), findsNothing);
+      expect(find.text('Daily focus'), findsNothing);
+      expect(find.text('Daily accomplishment'), findsNothing);
+      expect(find.text('Emotional exhaustion'), findsNothing);
+      expect(find.text('Reduced accomplishment'), findsNothing);
+    },
+  );
 
-  testWidgets('weekly reflections follow sleep cards before daily inputs', (
-    tester,
-  ) async {
-    await _pumpLogWidgets(tester, showWeeklyQuestions: true);
+  testWidgets('daily reflection inputs follow the sleep cards', (tester) async {
+    await _pumpLogWidgets(tester, showWeeklyQuestions: false);
 
     final orderedCardIds = [
       'sleep-duration',
       'sleep-quality',
-      'weekly-pressure',
-      'weekly-detachment',
+      'daily-pressure',
+      'daily-detachment',
       'recovery-breaks',
-      'weekly-focus',
-      'weekly-accomplishment',
+      'daily-focus',
+      'daily-accomplishment',
       'energy',
     ];
 
@@ -110,7 +111,13 @@ void main() {
       Icons.pool_rounded,
       Icons.block_rounded,
     ]) {
-      expect(find.byIcon(icon), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('log-card-exercise')),
+          matching: find.byIcon(icon),
+        ),
+        findsOneWidget,
+      );
     }
   });
 }

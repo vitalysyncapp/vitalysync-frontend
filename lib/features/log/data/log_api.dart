@@ -679,10 +679,15 @@ class LogApi {
       final updatedHydration = (draft.hydrationLiters + amount)
           .clamp(0.0, 10.0)
           .toDouble();
-      final saved = await saveCheckIn(
-        draft: draft.copyWith(hydrationLiters: updatedHydration),
-        mode: status.requiredMode,
-      );
+      final saved = draft.validationErrors(status.requiredMode).isEmpty
+          ? await saveCheckIn(
+              draft: draft.copyWith(hydrationLiters: updatedHydration),
+              mode: status.requiredMode,
+            )
+          : await _savePreparedDailyLog(userId, {
+              ...rawLog,
+              'hydration_liters': updatedHydration,
+            });
 
       return {
         ...saved,
@@ -749,10 +754,16 @@ class LogApi {
 
     if (status.isComplete && rawLog != null) {
       final draft = CheckInDraft.fromJson(daily: rawLog, weekly: status.weekly);
-      final saved = await saveCheckIn(
-        draft: draft.copyWith(exerciseNames: {exerciseName}),
-        mode: status.requiredMode,
-      );
+      final saved = draft.validationErrors(status.requiredMode).isEmpty
+          ? await saveCheckIn(
+              draft: draft.copyWith(exerciseNames: {exerciseName}),
+              mode: status.requiredMode,
+            )
+          : await _savePreparedDailyLog(userId, {
+              ...rawLog,
+              'exercise_names': [exerciseName],
+              ...goal.toDailyLogMetadata(),
+            });
       return {
         ...saved,
         'exercise_applied_to_log': true,
@@ -972,7 +983,7 @@ class LogApi {
       final response = await http
           .get(
             Uri.parse(
-              '${ApiConfig.logs('/check-in/status')}?user_id=$userId&date=$logDate',
+              '${ApiConfig.logs('/check-in/status')}?user_id=$userId&date=$logDate&schema_version=3',
             ),
             headers: await ApiConfig.jsonHeaders(),
           )
@@ -1020,14 +1031,14 @@ class LogApi {
     }
 
     final logDate = todayKey();
-    final daily = draft.dailyJson();
+    final daily = draft.dailyJson(mode: mode);
     daily.addAll(await ExerciseGoalService.instance.goalMetadataForDailyLog());
     final payload = <String, dynamic>{
       'user_id': userId,
       'log_date': logDate,
-      'check_in_type': mode.apiValue,
+      'check_in_type': 'daily',
+      'schema_version': 3,
       'daily': daily,
-      if (mode == CheckInMode.weekly) 'weekly': draft.weeklyJson(),
       'streak_restore_decision': streakRestoreDecision,
     };
 
@@ -1135,14 +1146,11 @@ class LogApi {
     await _clearHydrationPrefillForUser(userId);
     await _clearExercisePrefillForUser(userId);
     final mode = CheckInMode.fromValue(payload['check_in_type']);
+    final cachedStatus = await _readCachedCheckInStatus(userId);
     await _cacheCheckInStatus(userId, payload['log_date'].toString(), {
       'required_mode': mode.apiValue,
       'has_today_log': true,
-      'schedule': {
-        'completed_today': mode == CheckInMode.weekly,
-        'is_due': false,
-        'is_overdue': false,
-      },
+      'schedule': cachedStatus?['schedule'] ?? const <String, dynamic>{},
       'existing_check_in': {'daily': daily, 'weekly': payload['weekly']},
     });
     await invalidateNotificationFeedCache();
@@ -1169,7 +1177,22 @@ class LogApi {
     var synced = 0;
     for (final payload in sorted) {
       try {
-        final data = await _postUnifiedCheckIn(userId, payload);
+        final Map<String, dynamic> data;
+        if (payload['schema_version'] == 2 || payload['schema_version'] == 3) {
+          data = await _postUnifiedCheckIn(userId, payload);
+        } else {
+          data = await _postDailyLog(userId, {
+            ...Map<String, dynamic>.from(payload['daily'] as Map),
+            'log_date': payload['log_date'],
+            'streak_restore_decision': payload['streak_restore_decision'],
+          });
+          if (payload['weekly'] is Map) {
+            await _postWeeklyPulse(userId, {
+              ...Map<String, dynamic>.from(payload['weekly'] as Map),
+              'response_date': payload['log_date'],
+            });
+          }
+        }
         final daily = Map<String, dynamic>.from(payload['daily'] as Map);
         await _upsertCachedLog(
           userId,
@@ -1215,6 +1238,7 @@ class LogApi {
           }
         : Map<String, dynamic>.from(cached);
     if (data['_cached_for_date'] != logDate) {
+      data.remove('daily_input_mode');
       data['has_today_log'] = pending != null;
       data['existing_check_in'] = const <String, dynamic>{};
       final schedule = data['schedule'] is Map
@@ -1321,6 +1345,7 @@ class LogApi {
           key.startsWith(_syncedStreakKeyPrefix) ||
           key.startsWith(_checkInStatusCachePrefix) ||
           key.startsWith(_pendingCheckInsKeyPrefix) ||
+          key.startsWith('weekly_assessment_') ||
           key.startsWith('pending_baseline_refresh_v1_'),
     );
 

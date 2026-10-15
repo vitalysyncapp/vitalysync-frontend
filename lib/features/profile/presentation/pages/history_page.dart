@@ -1,3 +1,4 @@
+import 'package:vitalysync/features/log/presentation/widgets/weekly_assessment_card.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -205,6 +206,8 @@ class _HistoryPageState extends State<HistoryPage> {
                           : _rangeLabel(data.start, data.end),
                       totalCount: data.totalCount,
                     ),
+                    const SizedBox(height: 14),
+                    const WeeklyAssessmentCard(showHistory: true),
                     const SizedBox(height: 14),
                     _buildCategoryFilters(context, data),
                     const SizedBox(height: 10),
@@ -513,24 +516,63 @@ class _DailyLogHistoryCard extends StatelessWidget {
     final mood = LogApi.parseInt(log['mood_index'], fallback: 0);
     final energy = LogApi.parseEnergyLevel(log['energy_level']);
     final stress = LogApi.parseLikert(log['perceived_stress_level']);
+    final coreOnly = log['questionnaire_version'] == 'daily_core9_v3';
 
     return _HistoryEntryCard(
       icon: Icons.check_circle_outline_rounded,
       iconColor: _categoryColor(_HistoryCategory.dailyLogs),
       title: _displayDate(dateKey),
-      subtitle: 'Daily log history',
+      subtitle: coreOnly
+          ? 'Weekly day: 9 practical inputs'
+          : 'Daily log history',
       children: [
         _HistoryMetric(label: 'Sleep', value: sleep),
-        _HistoryMetric(label: 'Mood', value: mood > 0 ? '$mood/5' : '--'),
+        _HistoryMetric(
+          label: 'Sleep quality',
+          value: log['sleep_quality'] == null
+              ? '--'
+              : '${LogApi.parseInt(log['sleep_quality']) + 1}/5',
+        ),
+        _HistoryMetric(
+          label: 'Mood',
+          value: log['mood_index'] != null ? '${mood + 1}/5' : '--',
+        ),
         _HistoryMetric(
           label: 'Energy',
           value: energy == null ? '--' : '$energy/5',
         ),
-        _HistoryMetric(
-          label: 'Stress',
-          value: stress == null ? '--' : '$stress/5',
-        ),
+        if (!coreOnly)
+          _HistoryMetric(
+            label: 'Stress',
+            value: stress == null ? '--' : '$stress/5',
+          ),
         _HistoryMetric(label: 'Hydration', value: hydration),
+        if (!coreOnly)
+          for (final entry in const {
+            'break_quality_level': 'Recovery breaks',
+            'daily_detachment_level': 'Daily detachment',
+            'daily_focus_level': 'Daily focus',
+            'daily_accomplishment_level': 'Daily accomplishment',
+          }.entries)
+            _HistoryMetric(
+              label: entry.value,
+              value: log[entry.key] == null ? '--' : '${log[entry.key]}/5',
+            ),
+        _HistoryMetric(
+          label: 'Workload',
+          value: log['workload_hours_band']?.toString() ?? '--',
+        ),
+        for (final entry in const {
+          'exercise_names': 'Exercise',
+          'symptom_names': 'Symptoms',
+          'habit_names': 'Recovery habits',
+        }.entries)
+          _HistoryMetric(
+            label: entry.value,
+            value: log[entry.key] is List
+                ? (log[entry.key] as List).join(', ')
+                : '--',
+          ),
       ],
     );
   }

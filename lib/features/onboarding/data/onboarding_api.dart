@@ -1,3 +1,4 @@
+import 'burnout_baseline_questions.dart';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -68,6 +69,9 @@ class OnboardingApi {
             'user_id': userId,
             'profile': profile,
             'burnout_answers': burnoutAnswers,
+            'questionnaire_version': burnoutAnswers.length == 22
+                ? kBurnoutQuestionnaireVersion
+                : 'baseline_15_v1',
           }),
         )
         .timeout(ApiRequestTimeouts.standard);
@@ -164,6 +168,9 @@ class OnboardingApi {
   }) async {
     final requestBody = <String, dynamic>{
       'burnout_answers': burnoutAnswers,
+      'questionnaire_version': burnoutAnswers.length == 22
+          ? kBurnoutQuestionnaireVersion
+          : 'baseline_15_v1',
       'baseline_date':
           baselineDate ?? DateTime.now().toIso8601String().split('T').first,
     };

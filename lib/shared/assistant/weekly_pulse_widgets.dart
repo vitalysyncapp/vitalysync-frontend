@@ -143,7 +143,7 @@ class _AssistantCheckInCard extends StatelessWidget {
                         children: [
                           LocalizedText(
                             _showWeeklyQuestions
-                                ? 'How did your week feel?'
+                                ? 'Your daily essentials'
                                 : 'Daily Check-in',
                             style: TextStyle(
                               color: pagePrimaryTextColor(context),
@@ -155,7 +155,7 @@ class _AssistantCheckInCard extends StatelessWidget {
                           const SizedBox(height: 4),
                           LocalizedText(
                             _showWeeklyQuestions
-                                ? 'Reflect on this week\'s pressure, recovery, time to switch off, focus, and sense of accomplishment.'
+                                ? '9 practical inputs here and 11 questions in your weekly reflection. No repeated daily reflection questions.'
                                 : 'Take a moment to reflect on your day and see how you are doing.',
                             style: TextStyle(
                               color: pageSecondaryTextColor(context),
@@ -264,11 +264,7 @@ class _AssistantCheckInCard extends StatelessWidget {
                   )
                 : const Icon(Icons.check_circle_outline_rounded),
             label: LocalizedText(
-              isSaving
-                  ? 'Saving...'
-                  : _showWeeklyQuestions
-                  ? 'Save weekly pulse and check-in'
-                  : 'Save daily check-in',
+              isSaving ? 'Saving...' : 'Save daily check-in',
             ),
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),

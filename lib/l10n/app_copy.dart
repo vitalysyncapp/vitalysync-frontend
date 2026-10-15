@@ -33,6 +33,57 @@ extension AppCopyString on String {
 }
 
 const Map<String, String> _tagalogCopy = {
+  'Your daily essentials': 'Mga pangunahing detalye ng araw mo',
+  'WEEKLY CHECK-IN DAY': 'ARAW NG WEEKLY CHECK-IN',
+  'Weekly day: 9 practical inputs': 'Weekly day: 9 praktikal na sagot',
+  '11-item weekly reflection': '11-item na lingguhang pagninilay',
+  'Previous 22-item weekly reflection':
+      'Dating 22-item na lingguhang pagninilay',
+  '9 practical inputs here and 11 questions in your weekly reflection. No repeated daily reflection questions.':
+      '9 praktikal na sagot dito at 11 tanong sa lingguhang pagninilay. Hindi na uulitin ang mga tanong sa daily reflection.',
+  '11 reflection questions: 5 exhaustion, 3 detachment, and 3 accomplishment. Your daily check-in has only 9 practical inputs on weekly days.':
+      '11 tanong: 5 tungkol sa pagkapagod, 3 sa pagkalayo ng loob, at 3 sa mga nagawa. Sa weekly day, 9 praktikal na sagot lamang ang nasa daily check-in.',
+  "Weekly reflection": "Lingguhang pagninilay",
+  "Weekly log": "Lingguhang log",
+  "Complete weekly log": "Sagutan ang lingguhang log",
+  "Edit weekly log": "I-edit ang lingguhang log",
+  "Save weekly log": "I-save ang lingguhang log",
+  "Weekly log saved.": "Na-save ang lingguhang log.",
+  "Weekly log saved offline and queued to sync.":
+      "Na-save offline ang lingguhang log at nakaabang para mag-sync.",
+  "Daily wellness estimate": "Pang-araw-araw na wellness estimate",
+  "Today's pressure": "Pressure ngayong araw",
+  "Daily detachment": "Pagkalayo ng loob ngayong araw",
+  "Daily focus": "Focus ngayong araw",
+  "Daily accomplishment": "Mga nagawa ngayong araw",
+  "No weekly questionnaire completed yet.":
+      "Wala pang nasagutang lingguhang questionnaire.",
+  "Think about the past seven days.":
+      "Isipin ang iyong karanasan sa nakaraang pitong araw.",
+  "Weekly answers saved offline. Scores appear after syncing.":
+      "Na-save offline ang mga sagot. Lalabas ang mga score pagkatapos mag-sync.",
+  "Your first weekly log is scheduled after you start daily logging.":
+      "Iiskedyul ang unang lingguhang log pagkatapos mong magsimula ng araw-araw na logging.",
+  "11 questions about exhaustion, detachment, and accomplishment. Scored separately from your daily index.":
+      "11 tanong tungkol sa pagkapagod, pagkalayo ng loob, at mga nagawa. Hiwalay ang mga score sa iyong daily index.",
+  "Custom Maslach-based reflection. This is an adaptation, not the official MBI or a diagnosis.":
+      "Pagninilay na batay sa Maslach. Isa itong adaptation, hindi opisyal na MBI o diagnosis.",
+  "Higher exhaustion or detachment means more burden. Higher accomplishment means greater fulfillment.":
+      "Mas mataas na pagkapagod o pagkalayo ng loob ay nangangahulugang mas mabigat na pasanin. Mas mataas na accomplishment ay mas positibo.",
+  "I feel worn out after dealing with everyday demands.":
+      "Pakiramdam ko ay ubos ang lakas ko matapos harapin ang mga pang-araw-araw na gawain.",
+  "I find it tiring to keep up with what is expected of me.":
+      "Napapagod akong makasabay sa mga inaasahan sa akin.",
+  "I feel emotionally spent when another task comes up.":
+      "Pakiramdam ko ay ubos ang emosyonal kong lakas kapag may panibagong gawain.",
+  "I feel that my responsibilities use up my emotional strength.":
+      "Pakiramdam ko ay nauubos ang emosyonal kong lakas sa mga responsibilidad.",
+  "I can find a useful way forward when a task becomes difficult.":
+      "Nakakahanap ako ng paraan upang magpatuloy kapag mahirap ang isang gawain.",
+  "I feel that my efforts make a positive difference.":
+      "Pakiramdam ko ay may positibong epekto ang aking mga pagsisikap.",
+  "I handle unexpected demands effectively.":
+      "Maayos kong nahaharap ang mga hindi inaasahang gawain.",
   'About': 'Tungkol sa app',
   'About burnout': 'Tungkol sa burnout',
   'Accept': 'Tanggapin',
