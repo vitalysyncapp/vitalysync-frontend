@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'wellness_content_api.dart';
 
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -191,6 +192,8 @@ class AdaptiveNudgeEvent {
 }
 
 class AdaptiveNudgeApi {
+  static final Map<String, Future<AdaptiveNudgeResponse>> _assistantRequests =
+      {};
   static const Duration _requestTimeout = ApiRequestTimeouts.fastRead;
   static const Duration _aiRequestTimeout = ApiRequestTimeouts.coldStart;
   static final Duration _assistantCacheMaxAge =
@@ -202,9 +205,11 @@ class AdaptiveNudgeApi {
 
   static Future<AdaptiveNudgeResponse> fetchRecommendations({
     int limit = 3,
-    bool record = true,
+    bool record = false,
     bool ai = true,
   }) async {
+    final revision = WellnessContentApi.revision;
+    final sessionKey = await WellnessContentApi.sessionKey();
     final userId = await _storedUserId();
     if (userId == null) {
       return await _fallbackResponse();
@@ -224,6 +229,17 @@ class AdaptiveNudgeApi {
           .get(uri, headers: await ApiConfig.jsonHeaders())
           .timeout(ai ? _aiRequestTimeout : _requestTimeout);
       final data = _decodeResponseMap(response);
+      await OfflineCacheStore.reload();
+      if (await WellnessContentApi.sessionKey() != sessionKey) {
+        return const AdaptiveNudgeResponse(
+          recommendations: [],
+          adaptiveState: {},
+          patterns: [],
+        );
+      }
+      if (revision != WellnessContentApi.revision) {
+        throw Exception('Guidance changed during this request');
+      }
 
       if (response.statusCode != 200) {
         final fallback = await _fallbackResponse();
@@ -233,28 +249,21 @@ class AdaptiveNudgeApi {
       }
 
       final parsedResponse = AdaptiveNudgeResponse.fromJson(data);
-      if (ai && !_hasAiEnhancedRecommendation(parsedResponse)) {
-        final cachedAi = await _readCachedRecommendations(userId, ai: true);
-        if (cachedAi != null && _hasAiEnhancedRecommendation(cachedAi)) {
-          await OfflineCacheStore.saveJson(
-            namespace: _recommendationsCache,
-            scope: _cacheScope(userId, ai: false),
-            data: data,
-          );
-          return cachedAi;
-        }
-      }
-
       await OfflineCacheStore.saveJson(
         namespace: _recommendationsCache,
-        scope: _cacheScope(
-          userId,
-          ai: ai && _hasAiEnhancedRecommendation(parsedResponse),
-        ),
+        scope: _cacheScope(userId, ai: ai),
         data: data,
       );
       return parsedResponse;
     } catch (_) {
+      if (await WellnessContentApi.sessionKey() != sessionKey ||
+          revision != WellnessContentApi.revision) {
+        return const AdaptiveNudgeResponse(
+          recommendations: [],
+          adaptiveState: {},
+          patterns: [],
+        );
+      }
       final fallback = await _fallbackResponse();
       return await _readCachedRecommendations(userId, ai: ai) ??
           (ai ? await _readCachedRecommendations(userId, ai: false) : null) ??
@@ -266,6 +275,29 @@ class AdaptiveNudgeApi {
     int limit = 3,
     bool forceRefresh = false,
   }) async {
+    await OfflineCacheStore.reload();
+    final key =
+        '${await WellnessContentApi.sessionKey()}_${WellnessContentApi.revision}_${limit}_$forceRefresh';
+    final pending = _assistantRequests[key];
+    if (pending != null) return pending;
+    final request = _fetchAssistantRecommendations(
+      limit: limit,
+      forceRefresh: forceRefresh,
+    );
+    _assistantRequests[key] = request;
+    try {
+      return await request;
+    } finally {
+      _assistantRequests.remove(key);
+    }
+  }
+
+  static Future<AdaptiveNudgeResponse> _fetchAssistantRecommendations({
+    int limit = 3,
+    bool forceRefresh = false,
+  }) async {
+    final sessionKey = await WellnessContentApi.sessionKey();
+    final revision = WellnessContentApi.revision;
     final userId = await _storedUserId();
     if (userId == null) {
       return await _fallbackResponse();
@@ -285,6 +317,10 @@ class AdaptiveNudgeApi {
     }
 
     final response = await fetchRecommendations(limit: limit);
+    if (await WellnessContentApi.sessionKey() != sessionKey ||
+        revision != WellnessContentApi.revision) {
+      return response;
+    }
     if (!forceRefresh &&
         cachedSnapshot != null &&
         _isLocalFallbackResponse(response)) {
@@ -331,12 +367,26 @@ class AdaptiveNudgeApi {
       return;
     }
 
-    await _cacheNudgeFeedback(userId, recommendation, status);
-    await _updateCachedRecommendationStatus(userId, recommendation, status);
+    if (recommendation.metadata['content_id'] != null) {
+      await WellnessContentApi.respond(
+        recommendation.toJson(),
+        switch (status) {
+          'accepted' => 'like',
+          'dismissed' => 'dislike',
+          _ => status,
+        },
+      );
+      if (status == 'accepted' || status == 'dismissed') {
+        await _cacheNudgeFeedback(userId, recommendation, status);
+      }
+      return;
+    }
 
     final eventId = recommendation.nudgeEventId;
     if (eventId != null) {
       await updateNudgeStatus(eventId: eventId, status: status);
+      await _cacheNudgeFeedback(userId, recommendation, status);
+      await _updateCachedRecommendationStatus(userId, recommendation, status);
       return;
     }
 
@@ -352,6 +402,8 @@ class AdaptiveNudgeApi {
         'assistant_feedback_status': status,
       },
     );
+    await _cacheNudgeFeedback(userId, recommendation, status);
+    await _updateCachedRecommendationStatus(userId, recommendation, status);
   }
 
   static Future<void> createInsightFeedback({
@@ -458,6 +510,19 @@ class AdaptiveNudgeApi {
   static Future<String?> readNudgeFeedbackStatus(
     AdaptiveNudgeRecommendation recommendation,
   ) async {
+    if (recommendation.metadata['content_id'] != null) {
+      final event = await WellnessContentApi.savedEvent(
+        recommendation.toJson(),
+      );
+      final details = event == null
+          ? recommendation.metadata
+          : WellnessContentApi.metadata(event);
+      return switch (details['helpfulness']) {
+        'like' => 'accepted',
+        'dislike' => 'dismissed',
+        _ => null,
+      };
+    }
     final userId = await _storedUserId();
     if (userId == null) {
       return null;
@@ -492,15 +557,78 @@ class AdaptiveNudgeApi {
     int userId, {
     bool ai = true,
   }) async {
-    final data = await OfflineCacheStore.readLatestJson(
+    final snapshot = await OfflineCacheStore.readLatestJsonSnapshot(
       namespace: _recommendationsCache,
       scope: _cacheScope(userId, ai: ai),
     );
-    if (data == null) {
+    if (snapshot == null) {
       return null;
     }
+    final data = snapshot.data;
+    return AdaptiveNudgeResponse.fromJson({
+      ...data,
+      'recommendations': [
+        for (final item in (data['recommendations'] as List? ?? []))
+          if (item is Map)
+            {
+              ...item,
+              'metadata': {
+                ...Map<String, dynamic>.from(item['metadata'] as Map? ?? {}),
+                'offline_cached': true,
+                'cached_at': snapshot.cachedAt?.toIso8601String(),
+              },
+            },
+      ],
+    });
+  }
 
-    return AdaptiveNudgeResponse.fromJson(data);
+  static Future<AdaptiveNudgeRecommendation?> fetchPersonalInsight() async {
+    final revision = WellnessContentApi.revision;
+    final sessionKey = await WellnessContentApi.sessionKey();
+    final userId = await _storedUserId();
+    if (userId == null) return null;
+    try {
+      final uri = Uri.parse(
+        ApiConfig.adaptive('/personal-insight'),
+      ).replace(queryParameters: {'user_id': '$userId', 'ai': 'true'});
+      final response = await http
+          .get(uri, headers: await ApiConfig.jsonHeaders())
+          .timeout(_aiRequestTimeout);
+      if (response.statusCode != 200) throw Exception('Insight unavailable');
+      final data = _decodeResponseMap(response);
+      await OfflineCacheStore.reload();
+      if (await WellnessContentApi.sessionKey() != sessionKey) return null;
+      if (revision != WellnessContentApi.revision) return null;
+      await OfflineCacheStore.saveJson(
+        namespace: 'personal_insight',
+        scope: '$userId',
+        data: data,
+      );
+      return data['insight'] is Map
+          ? AdaptiveNudgeRecommendation.fromJson(
+              Map<String, dynamic>.from(data['insight']),
+            )
+          : null;
+    } catch (_) {
+      if (await WellnessContentApi.sessionKey() != sessionKey ||
+          revision != WellnessContentApi.revision) {
+        return null;
+      }
+      final snapshot = await OfflineCacheStore.readLatestJsonSnapshot(
+        namespace: 'personal_insight',
+        scope: '$userId',
+      );
+      final raw = snapshot?.data['insight'];
+      if (raw is! Map) return null;
+      return AdaptiveNudgeRecommendation.fromJson({
+        ...Map<String, dynamic>.from(raw),
+        'metadata': {
+          ...Map<String, dynamic>.from(raw['metadata'] as Map? ?? {}),
+          'offline_cached': true,
+          'cached_at': snapshot?.cachedAt?.toIso8601String(),
+        },
+      });
+    }
   }
 
   static String _cacheScope(int userId, {required bool ai}) {
@@ -519,13 +647,15 @@ class AdaptiveNudgeApi {
   }
 
   static String _recommendationKey(AdaptiveNudgeRecommendation recommendation) {
-    final raw = recommendation.nudgeEventId != null
-        ? 'event_${recommendation.nudgeEventId}'
-        : [
-            recommendation.nudgeType,
-            recommendation.title,
-            recommendation.message,
-          ].join('_');
+    final raw =
+        recommendation.metadata['content_id']?.toString() ??
+        (recommendation.nudgeEventId != null
+            ? 'event_${recommendation.nudgeEventId}'
+            : [
+                recommendation.nudgeType,
+                recommendation.title,
+                recommendation.message,
+              ].join('_'));
     return raw
         .toLowerCase()
         .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
@@ -604,12 +734,6 @@ class AdaptiveNudgeApi {
         data: {...data, 'recommendations': recommendations},
       );
     }
-  }
-
-  static bool _hasAiEnhancedRecommendation(AdaptiveNudgeResponse response) {
-    return response.recommendations.any(
-      (recommendation) => recommendation.metadata['ai_enhanced'] == true,
-    );
   }
 
   static bool _isLocalFallbackResponse(AdaptiveNudgeResponse response) {

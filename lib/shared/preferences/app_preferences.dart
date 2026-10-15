@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../features/adaptive/data/wellness_content_api.dart';
 
 enum AppLanguage { english, tagalog }
 
@@ -315,6 +316,7 @@ class AppPreferencesController {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_languageKey, language.name);
     notifier.value = notifier.value.copyWith(language: language);
+    await WellnessContentApi.invalidate();
   }
 
   Future<void> updateFontSize(AppFontSize fontSize) async {

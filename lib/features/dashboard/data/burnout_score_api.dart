@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../../adaptive/data/wellness_content_api.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -678,6 +679,7 @@ class BurnoutScoreApi {
       });
     }
 
+    await WellnessContentApi.invalidate();
     refreshSignal.value++;
   }
 

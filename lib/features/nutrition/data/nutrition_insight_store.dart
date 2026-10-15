@@ -48,6 +48,7 @@ class NutritionInsightStore {
     bool allowStale = true,
   }) async {
     final prefs = await SharedPreferences.getInstance();
+    await prefs.reload();
     final raw = prefs.getString(_assistantInsightKey);
     if (raw == null || raw.isEmpty) {
       return null;
@@ -60,6 +61,10 @@ class NutritionInsightStore {
       }
 
       final data = Map<String, dynamic>.from(decoded);
+      if (data['user_id'] != prefs.getInt('user_id') ||
+          data['language'] != (prefs.getString('app_language') ?? 'english')) {
+        return null;
+      }
       if (data['date']?.toString() != _dateKey(now ?? DateTime.now())) {
         return null;
       }
@@ -92,6 +97,8 @@ class NutritionInsightStore {
     await prefs.setString(
       _assistantInsightKey,
       jsonEncode({
+        'user_id': prefs.getInt('user_id'),
+        'language': prefs.getString('app_language') ?? 'english',
         'date': _dateKey(now ?? DateTime.now()),
         'cached_at': DateTime.now().toIso8601String(),
         'insight': insight.toJson(),

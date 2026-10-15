@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../../adaptive/data/wellness_content_api.dart';
 
 import 'package:http/http.dart' as http;
 
@@ -121,16 +122,22 @@ class NutritionReminderEngine {
           return null;
         }
 
-        await _store.markAssistantShownToday(now: now);
-        await _store.rememberMessage(backendInsight.message, at: now);
         await _store.saveAssistantInsightForToday(backendInsight, now: now);
         return backendInsight;
       }
+      // A successful empty response means no eligible alternative exists.
+      return null;
     } catch (_) {
       if (staleCachedInsight != null) {
         final status = await _store.readFeedbackStatus(staleCachedInsight.id);
         if (status != 'dismissed') {
-          return staleCachedInsight;
+          return staleCachedInsight.copyWith(
+            metadata: {
+              ...staleCachedInsight.metadata,
+              'offline_cached': true,
+              'cached_at': staleCachedInsight.generatedAt.toIso8601String(),
+            },
+          );
         }
       }
 
@@ -199,6 +206,7 @@ class NutritionReminderEngine {
   Future<NutritionInsight?> _fetchBackendAssistantInsight({
     required DateTime now,
   }) async {
+    final revision = WellnessContentApi.revision;
     final session = await UserSessionController.instance.load();
     final userId = session.userId;
     if (userId == null) {
@@ -221,6 +229,11 @@ class NutritionReminderEngine {
     }
 
     final decoded = jsonDecode(response.body);
+    final currentSession = await UserSessionController.instance.load();
+    if (currentSession.userId != userId ||
+        WellnessContentApi.revision != revision) {
+      return null;
+    }
     if (decoded is! Map) {
       return null;
     }

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../../features/adaptive/data/wellness_content_api.dart';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -332,6 +333,7 @@ class UserGoalsService {
       scope: userId.toString(),
       data: data,
     );
+    await WellnessContentApi.invalidate();
     refreshSignal.value++;
     return UserGoalsSnapshot.fromApi(data);
   }

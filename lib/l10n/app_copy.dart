@@ -33,6 +33,29 @@ extension AppCopyString on String {
 }
 
 const Map<String, String> _tagalogCopy = {
+  'Another idea': 'Ibang idea',
+  'Saved offline': 'Naka-save offline',
+  'A small step for today': 'Isang maliit na hakbang ngayon',
+  'What this is based on': 'Kung saan ito naka-base',
+  'Your picture is still taking shape': 'Nabubuo pa ang larawan mo',
+  'A few check-ins will help us notice your personal patterns.':
+      'Makakatulong ang ilang check-ins para mapansin ang personal patterns mo.',
+  'Unable to save your response. Please try again.':
+      'Hindi na-save ang sagot mo. Pakisubukan ulit.',
+  'No other suggestion fits right now. Check back after your next log.':
+      'Wala pang ibang angkop na suggestion ngayon. Balikan pagkatapos ng susunod na log.',
+  'Done. You made a little room for yourself.':
+      'Tapos na. Naglaan ka ng kaunting oras para sa sarili.',
+  'Let’s find a different small step.':
+      'Humanap tayo ng ibang maliit na hakbang.',
+  'Of course. We’ll give this some space.':
+      'Sige. Bigyan muna natin ito ng space.',
+  'Thanks. We’ll adjust your suggestions.':
+      'Salamat. Ia-adjust namin ang suggestions para sa iyo.',
+  'Thanks. That helps us learn what fits.':
+      'Salamat. Nakakatulong ito para malaman kung ano ang bagay sa iyo.',
+  'No other nutrition suggestion fits right now.':
+      'Wala pang ibang angkop na nutrition suggestion ngayon.',
   'Your daily essentials': 'Mga pangunahing detalye ng araw mo',
   'WEEKLY CHECK-IN DAY': 'ARAW NG WEEKLY CHECK-IN',
   'Weekly day: 9 practical inputs': 'Weekly day: 9 praktikal na sagot',

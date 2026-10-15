@@ -75,6 +75,7 @@ class _SmartNudgeDialogCardState extends State<_SmartNudgeDialogCard> {
     AdaptiveNudgeRecommendation recommendation,
     String status,
   ) async {
+    if (_isUpdatingNudgeStatus) return;
     final previousStatus = _nudgeStatus;
     setState(() {
       _nudgeStatus = status;
@@ -122,25 +123,33 @@ class _SmartNudgeDialogCardState extends State<_SmartNudgeDialogCard> {
             switchOutCurve: Curves.easeInCubic,
             child: KeyedSubtree(
               key: ValueKey(widget.isLoading && primary == null),
-              child: _SmartNudgeInsightCard(
-                emoji: widget.emoji,
-                fallbackMessage: widget.message,
-                primary: primary,
-                firstWeekLearning: widget.firstWeekLearning,
-                isLoading: widget.isLoading,
-                feedbackStatus: _nudgeStatus,
-                isUpdatingFeedback: _isUpdatingNudgeStatus,
-                onLiked: primary == null
-                    ? null
-                    : () => _updateNudgeStatus(primary, 'accepted'),
-                onDisliked: primary == null
-                    ? null
-                    : () => _updateNudgeStatus(primary, 'dismissed'),
+              child: WellnessContentExposure(
+                content: primary?.toJson(),
+                child: _SmartNudgeInsightCard(
+                  emoji: widget.emoji,
+                  fallbackMessage: widget.message,
+                  primary: primary,
+                  firstWeekLearning: widget.firstWeekLearning,
+                  isLoading: widget.isLoading,
+                  feedbackStatus: _nudgeStatus,
+                  isUpdatingFeedback: _isUpdatingNudgeStatus,
+                  onLiked: primary == null
+                      ? null
+                      : () => _updateNudgeStatus(primary, 'accepted'),
+                  onDisliked: primary == null
+                      ? null
+                      : () => _updateNudgeStatus(primary, 'dismissed'),
+                  onResponse: primary == null
+                      ? null
+                      : (value) => _updateNudgeStatus(primary, value),
+                ),
               ),
             ),
           ),
         ),
-        if (widget.nutritionInsight != null || widget.isNutritionLoading) ...[
+        if (widget.nutritionInsight != null ||
+            !widget.isLoading ||
+            widget.isNutritionLoading) ...[
           const SizedBox(height: 12),
           _NutritionNudgeDialogCard(
             insight: widget.nutritionInsight,
@@ -203,13 +212,23 @@ class _NutritionNudgeDialogCardState extends State<_NutritionNudgeDialogCard> {
     final nutritionStatus = insight == null
         ? null
         : await NutritionInsightStore.instance.readFeedbackStatus(insight.id);
+    final event = insight == null
+        ? null
+        : await WellnessContentApi.savedEvent(insight.toJson());
+    final helpfulness = event == null
+        ? insight?.metadata['helpfulness']
+        : WellnessContentApi.metadata(event)['helpfulness'];
 
     if (!mounted) {
       return;
     }
 
     setState(() {
-      _nutritionStatus = nutritionStatus;
+      _nutritionStatus = switch (helpfulness) {
+        'like' => 'accepted',
+        'dislike' => 'dismissed',
+        _ => nutritionStatus,
+      };
       _isUpdatingNutritionStatus = false;
     });
   }
@@ -218,6 +237,7 @@ class _NutritionNudgeDialogCardState extends State<_NutritionNudgeDialogCard> {
     NutritionInsight insight,
     String status,
   ) async {
+    if (_isUpdatingNutritionStatus) return;
     final previousStatus = _nutritionStatus;
     setState(() {
       _nutritionStatus = status;
@@ -255,17 +275,22 @@ class _NutritionNudgeDialogCardState extends State<_NutritionNudgeDialogCard> {
       return _NutritionInsightEmptyCard(isLoading: widget.isLoading);
     }
 
-    return _NutritionInsightDialogCard(
-      insight: insight,
-      feedbackStatus: _nutritionStatus,
-      isUpdatingFeedback: _isUpdatingNutritionStatus,
-      onLiked: () => _updateNutritionStatus(insight, 'accepted'),
-      onDisliked: () => _updateNutritionStatus(insight, 'dismissed'),
+    return WellnessContentExposure(
+      content: insight.toJson(),
+      child: _NutritionInsightDialogCard(
+        insight: insight,
+        feedbackStatus: _nutritionStatus,
+        isUpdatingFeedback: _isUpdatingNutritionStatus,
+        onLiked: () => _updateNutritionStatus(insight, 'accepted'),
+        onDisliked: () => _updateNutritionStatus(insight, 'dismissed'),
+        onResponse: (value) => _updateNutritionStatus(insight, value),
+      ),
     );
   }
 }
 
 class _SmartNudgeInsightCard extends StatelessWidget {
+  final ValueChanged<String>? onResponse;
   final String emoji;
   final String fallbackMessage;
   final AdaptiveNudgeRecommendation? primary;
@@ -277,6 +302,7 @@ class _SmartNudgeInsightCard extends StatelessWidget {
   final VoidCallback? onDisliked;
 
   const _SmartNudgeInsightCard({
+    this.onResponse,
     required this.emoji,
     required this.fallbackMessage,
     required this.primary,
@@ -303,12 +329,17 @@ class _SmartNudgeInsightCard extends StatelessWidget {
 
     final nudgeTitle = recommendation?.title.trim() ?? '';
     final body = _expandedAssistantText(
-      recommendation?.message ?? fallbackMessage,
+      recommendation?.message ??
+          (isLoading
+              ? fallbackMessage
+              : 'No other suggestion fits right now. Check back after your next log.'),
     );
     final severity = recommendation?.userFacingSeverity ?? 'steady';
     final severityColor = _severityColor(severity, isDark);
     final metadata = recommendation?.metadata ?? const <String, dynamic>{};
-    final whyThisMatters = _metadataText(metadata['ai_why_this_matters']);
+    final whyThisMatters = _metadataText(
+      metadata['evidence'] ?? metadata['ai_why_this_matters'],
+    );
     final actionSteps = _metadataTextList(metadata['ai_action_steps']);
     final actionLabel = recommendation?.actionLabel.trim() ?? '';
     final subtitle =
@@ -317,8 +348,8 @@ class _SmartNudgeInsightCard extends StatelessWidget {
         : _metadataText(metadata['pattern_title']).isNotEmpty
         ? _metadataText(metadata['pattern_title'])
         : recommendation != null && _isAiEnhancedNudge(recommendation)
-        ? 'AI-enhanced guidance'
-        : 'Deterministic guidance';
+        ? 'A small step for today'
+        : 'A small step for today';
 
     final cardColor = isDark
         ? Colors.white.withValues(alpha: 0.05)
@@ -386,27 +417,28 @@ class _SmartNudgeInsightCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: severityColor.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: severityColor.withValues(alpha: 0.38),
+              if (recommendation != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: severityColor.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: severityColor.withValues(alpha: 0.38),
+                    ),
+                  ),
+                  child: LocalizedText(
+                    _humanizeMetadataLabel(severity),
+                    style: TextStyle(
+                      color: severityColor,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
-                child: LocalizedText(
-                  _humanizeMetadataLabel(severity),
-                  style: TextStyle(
-                    color: severityColor,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
             ],
           ),
           if (firstWeekLearning.isVisible) ...[
@@ -437,13 +469,14 @@ class _SmartNudgeInsightCard extends StatelessWidget {
               foregroundColor: pageSecondaryTextColor(context),
             ),
           ],
-          if (actionSteps.isNotEmpty) ...[
+          if (metadata['content_id'] == null && actionSteps.isNotEmpty) ...[
             const SizedBox(height: 10),
             _NudgeActionSteps(
               steps: actionSteps,
               foregroundColor: pageSecondaryTextColor(context),
             ),
-          ] else if (actionLabel.isNotEmpty &&
+          ] else if (metadata['content_id'] == null &&
+              actionLabel.isNotEmpty &&
               actionLabel.toLowerCase() != 'continue') ...[
             const SizedBox(height: 10),
             _NudgeDetailLine(
@@ -457,6 +490,12 @@ class _SmartNudgeInsightCard extends StatelessWidget {
             const AppSkeletonLine(height: 4),
           ],
           const SizedBox(height: 16),
+          ContentFreshnessNote(metadata: metadata),
+          if (onResponse != null && metadata['content_id'] != null)
+            NudgeResponseActions(
+              enabled: !isUpdatingFeedback,
+              onResponse: onResponse!,
+            ),
           _InsightFeedbackButtons(
             status: feedbackStatus,
             isUpdating: isUpdatingFeedback,
@@ -484,6 +523,7 @@ class _SmartNudgeInsightCard extends StatelessWidget {
 }
 
 class _NutritionInsightDialogCard extends StatelessWidget {
+  final ValueChanged<String>? onResponse;
   final NutritionInsight insight;
   final String? feedbackStatus;
   final bool isUpdatingFeedback;
@@ -491,6 +531,7 @@ class _NutritionInsightDialogCard extends StatelessWidget {
   final VoidCallback onDisliked;
 
   const _NutritionInsightDialogCard({
+    this.onResponse,
     required this.insight,
     required this.feedbackStatus,
     required this.isUpdatingFeedback,
@@ -572,6 +613,14 @@ class _NutritionInsightDialogCard extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
+          if (_metadataText(insight.metadata['evidence']).isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _NudgeDetailLine(
+              icon: Icons.info_outline_rounded,
+              text: _metadataText(insight.metadata['evidence']),
+              foregroundColor: pageSecondaryTextColor(context),
+            ),
+          ],
           if (macroFocus.isNotEmpty || foods.isNotEmpty) ...[
             const SizedBox(height: 12),
             _NutritionMacroDetails(
@@ -581,6 +630,12 @@ class _NutritionInsightDialogCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 14),
+          ContentFreshnessNote(metadata: insight.metadata),
+          if (onResponse != null && insight.metadata['content_id'] != null)
+            NudgeResponseActions(
+              enabled: !isUpdatingFeedback,
+              onResponse: onResponse!,
+            ),
           _InsightFeedbackButtons(
             status: feedbackStatus,
             isUpdating: isUpdatingFeedback,
@@ -786,7 +841,7 @@ class _NutritionInsightEmptyCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           LocalizedText(
-            'No nutrition nudge right now. Keep meals simple and steady today.',
+            'No other nutrition suggestion fits right now.',
             style: TextStyle(
               color: pageSecondaryTextColor(context),
               fontSize: 13.5,

@@ -83,6 +83,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
   @override
   void initState() {
     super.initState();
+    WellnessContentApi.changes.addListener(_handleContentChanged);
     _pageIndex = widget.initialSectionIndex;
     _pageController = PageController(initialPage: _pageIndex);
     _sectionScrollControllers = List.generate(3, (_) => ScrollController());
@@ -128,6 +129,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
 
   @override
   void dispose() {
+    WellnessContentApi.changes.removeListener(_handleContentChanged);
     CheckInStateCoordinator.instance.changes.removeListener(
       _handleCheckInStateChanged,
     );
@@ -136,6 +138,11 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
       controller.dispose();
     }
     super.dispose();
+  }
+
+  void _handleContentChanged() {
+    unawaited(_loadAdaptiveNudges(showLoading: false, forceRefresh: true));
+    unawaited(_loadNutritionInsight(showLoading: false, forceRefresh: true));
   }
 
   void _handleCheckInStateChanged() {
@@ -286,9 +293,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
       if (!mounted) return;
 
       setState(() {
-        if (insight != null || _nutritionInsight == null) {
-          _nutritionInsight = insight;
-        }
+        _nutritionInsight = insight;
         _isLoadingNutritionInsight = false;
       });
       if (insight != null) _recordNutritionImpression(insight);
@@ -347,7 +352,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
 
     if (!mounted) return;
 
-    if (status == 'dismissed') {
+    if (['dismissed', 'done', 'another_idea', 'not_now'].contains(status)) {
       setState(() {
         _adaptiveNudges = _adaptiveNudges
             .where((item) => !_isSameAdaptiveNudge(item, recommendation))
@@ -356,7 +361,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
       unawaited(_loadAdaptiveNudges(showLoading: false, forceRefresh: true));
     }
 
-    final label = status == 'dismissed' ? 'Insight hidden.' : 'Saved to likes.';
+    final label = _contentResponseLabel(status);
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: LocalizedText(label)));
@@ -366,29 +371,39 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     NutritionInsight insight,
     String status,
   ) async {
-    await NutritionInsightStore.instance.saveFeedbackStatus(
-      insight.id,
-      status,
-      metadata: insight.metadata,
-    );
-    await AdaptiveNudgeApi.createInsightFeedback(
-      nudgeType: 'nutrition_insight',
-      title: insight.title,
-      message: insight.message,
-      status: status,
-      triggerReason: insight.source,
-      actionLabel: status == 'accepted' ? 'Liked' : 'Disliked',
-      metadata: {
-        ...insight.metadata,
-        'insight_id': insight.id,
-        'source': insight.source,
-        'confidence': insight.confidence.label,
-      },
-    );
+    if (insight.metadata['content_id'] != null) {
+      await WellnessContentApi.respond(insight.toJson(), switch (status) {
+        'accepted' => 'like',
+        'dismissed' => 'dislike',
+        _ => status,
+      });
+    } else {
+      await AdaptiveNudgeApi.createInsightFeedback(
+        nudgeType: 'nutrition_insight',
+        title: insight.title,
+        message: insight.message,
+        status: status,
+        triggerReason: insight.source,
+        actionLabel: status == 'accepted' ? 'Liked' : 'Disliked',
+        metadata: {
+          ...insight.metadata,
+          'insight_id': insight.id,
+          'source': insight.source,
+          'confidence': insight.confidence.label,
+        },
+      );
+    }
+    if (status == 'accepted' || status == 'dismissed') {
+      await NutritionInsightStore.instance.saveFeedbackStatus(
+        insight.id,
+        status,
+        metadata: insight.metadata,
+      );
+    }
 
     if (!mounted) return;
 
-    if (status == 'dismissed') {
+    if (['dismissed', 'done', 'another_idea', 'not_now'].contains(status)) {
       setState(() {
         if (_nutritionInsight?.id == insight.id) {
           _nutritionInsight = null;
@@ -397,13 +412,19 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
       unawaited(_loadNutritionInsight(showLoading: false, forceRefresh: true));
     }
 
-    final label = status == 'dismissed'
-        ? 'Nutrition insight hidden.'
-        : 'Nutrition insight liked.';
+    final label = _contentResponseLabel(status);
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: LocalizedText(label)));
   }
+
+  String _contentResponseLabel(String response) => switch (response) {
+    'done' => 'Done. You made a little room for yourself.',
+    'another_idea' => 'Let’s find a different small step.',
+    'not_now' => 'Of course. We’ll give this some space.',
+    'dismissed' => 'Thanks. We’ll adjust your suggestions.',
+    _ => 'Thanks. That helps us learn what fits.',
+  };
 
   bool _isSameAdaptiveNudge(
     AdaptiveNudgeRecommendation left,

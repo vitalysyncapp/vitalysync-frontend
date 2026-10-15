@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../app/app_theme.dart';
 import '../../features/adaptive/data/adaptive_nudge_api.dart';
+import '../../features/adaptive/data/wellness_content_api.dart';
 import '../../features/activity/data/activity_service.dart';
 import '../../features/exercise/data/exercise_goal_service.dart';
 import '../../features/exercise/data/exercise_recommendation_model.dart';
@@ -338,7 +339,7 @@ class _OverlayAssistantShellState extends State<_OverlayAssistantShell> {
     }
 
     final nudge = nudges.first;
-    if (_isFallbackNudge(nudge)) {
+    if (_isFallbackNudge(nudge) || nudge.metadata['throttled'] == true) {
       return false;
     }
 
@@ -359,6 +360,9 @@ class _OverlayAssistantShellState extends State<_OverlayAssistantShell> {
       return false;
     }
 
+    try {
+      await WellnessContentApi.respond(nudge.toJson(), 'shown');
+    } catch (_) {}
     await _rememberPreviewKey(_smartPreviewKey, key);
     return true;
   }
@@ -389,6 +393,9 @@ class _OverlayAssistantShellState extends State<_OverlayAssistantShell> {
       return false;
     }
 
+    try {
+      await WellnessContentApi.respond(insight.toJson(), 'shown');
+    } catch (_) {}
     await _rememberPreviewKey(_nutritionPreviewKey, key);
     return true;
   }
@@ -450,6 +457,8 @@ class _OverlayAssistantShellState extends State<_OverlayAssistantShell> {
   }
 
   String _smartNudgeKey(AdaptiveNudgeRecommendation nudge) {
+    final contentId = nudge.metadata['content_id']?.toString();
+    if (contentId != null) return contentId;
     return [
       nudge.nudgeEventId?.toString() ?? 'no_event',
       nudge.nudgeType,
@@ -459,6 +468,8 @@ class _OverlayAssistantShellState extends State<_OverlayAssistantShell> {
   }
 
   String _nutritionInsightKey(NutritionInsight insight) {
+    final contentId = insight.metadata['content_id']?.toString();
+    if (contentId != null) return contentId;
     return [
       insight.id,
       insight.source,

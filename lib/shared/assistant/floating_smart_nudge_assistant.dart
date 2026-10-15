@@ -7,6 +7,8 @@ import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../features/adaptive/data/adaptive_nudge_api.dart';
+import '../../features/adaptive/data/wellness_content_api.dart';
+import '../widgets/wellness_content_widgets.dart';
 import '../../features/activity/data/activity_service.dart';
 import '../../features/exercise/data/exercise_goal_service.dart';
 import '../../features/exercise/data/exercise_recommendation_model.dart';
@@ -55,11 +57,6 @@ bool _isAiEnhancedNudge(AdaptiveNudgeRecommendation recommendation) {
   return recommendation.metadata['ai_enhanced'] == true;
 }
 
-bool _isFallbackNudge(AdaptiveNudgeRecommendation recommendation) {
-  return recommendation.triggerReason == 'Local fallback' ||
-      recommendation.metadata['local_fallback'] == true;
-}
-
 List<AdaptiveNudgeRecommendation> prioritizeAssistantNudges(
   List<AdaptiveNudgeRecommendation> recommendations,
 ) {
@@ -77,25 +74,7 @@ List<AdaptiveNudgeRecommendation> prioritizeAssistantNudges(
       .toList();
   final items = visibleItems.isEmpty ? unique.values.toList() : visibleItems;
 
-  return items..sort((left, right) {
-    final rightScore = _assistantNudgeRankScore(right);
-    final leftScore = _assistantNudgeRankScore(left);
-    return rightScore.compareTo(leftScore);
-  });
-}
-
-int _assistantNudgeRankScore(AdaptiveNudgeRecommendation recommendation) {
-  var score = 0;
-  if (_isAiEnhancedNudge(recommendation)) {
-    score += 8;
-  }
-  if (!_isFallbackNudge(recommendation)) {
-    score += 4;
-  }
-  if (recommendation.metadata['assistant_feedback_status'] == 'accepted') {
-    score += 1;
-  }
-  return score;
+  return items;
 }
 
 class FloatingSmartNudgeAssistant extends StatefulWidget {
@@ -212,6 +191,7 @@ class _FloatingSmartNudgeAssistantState
   @override
   void initState() {
     super.initState();
+    WellnessContentApi.changes.addListener(_refreshWellnessContent);
     unawaited(ActivityService.instance.startTracking());
     unawaited(ExerciseGoalService.instance.start());
     ExerciseGoalService.instance.notifier.addListener(_handleGoalEvent);
@@ -227,9 +207,15 @@ class _FloatingSmartNudgeAssistantState
 
   @override
   void dispose() {
+    WellnessContentApi.changes.removeListener(_refreshWellnessContent);
     _bubbleSwitchTimer?.cancel();
     ExerciseGoalService.instance.notifier.removeListener(_handleGoalEvent);
     super.dispose();
+  }
+
+  void _refreshWellnessContent() {
+    unawaited(_loadAdaptiveNudges(forceRefresh: true));
+    unawaited(_loadNutritionInsight(forceRefresh: true));
   }
 
   Future<List<ExerciseRecommendationModel>> _loadRecommendations() async {
@@ -764,20 +750,26 @@ class _FloatingSmartNudgeAssistantState
       case _AssistantBubbleKind.nutrition:
         final insight = _nutritionInsight;
         if (insight == null) {
-          return _SmartNudgeBubble(
-            emoji: widget.emoji,
-            message: primaryNudge?.message ?? widget.message,
-            onClose: _hideBubble,
-            tailOnRight: tailOnRight,
-            tailAtBottom: tailAtBottom,
+          return WellnessContentExposure(
+            content: primaryNudge?.toJson(),
+            child: _SmartNudgeBubble(
+              emoji: widget.emoji,
+              message: primaryNudge?.message ?? widget.message,
+              onClose: _hideBubble,
+              tailOnRight: tailOnRight,
+              tailAtBottom: tailAtBottom,
+            ),
           );
         }
 
-        return _NutritionNudgeBubble(
-          insight: insight,
-          onClose: _hideBubble,
-          tailOnRight: tailOnRight,
-          tailAtBottom: tailAtBottom,
+        return WellnessContentExposure(
+          content: insight.toJson(),
+          child: _NutritionNudgeBubble(
+            insight: insight,
+            onClose: _hideBubble,
+            tailOnRight: tailOnRight,
+            tailAtBottom: tailAtBottom,
+          ),
         );
       case _AssistantBubbleKind.exercise:
         return _ExercisePreviewBubble(
@@ -790,12 +782,15 @@ class _FloatingSmartNudgeAssistantState
           tailAtBottom: tailAtBottom,
         );
       case _AssistantBubbleKind.smartNudge:
-        return _SmartNudgeBubble(
-          emoji: widget.emoji,
-          message: primaryNudge?.message ?? widget.message,
-          onClose: _hideBubble,
-          tailOnRight: tailOnRight,
-          tailAtBottom: tailAtBottom,
+        return WellnessContentExposure(
+          content: primaryNudge?.toJson(),
+          child: _SmartNudgeBubble(
+            emoji: widget.emoji,
+            message: primaryNudge?.message ?? widget.message,
+            onClose: _hideBubble,
+            tailOnRight: tailOnRight,
+            tailAtBottom: tailAtBottom,
+          ),
         );
     }
   }

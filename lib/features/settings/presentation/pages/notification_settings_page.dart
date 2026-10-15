@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../adaptive/data/wellness_content_api.dart';
 
 import '../../../../features/adaptive/data/adaptive_reminder_api.dart';
 import '../../../../features/onboarding/data/onboarding_api.dart';
@@ -266,6 +267,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   Future<void> _saveRemotePreferences() async {
     if (_usesLocalSettings || _userId == null) {
       await _syncLocalNotificationState();
+      await WellnessContentApi.invalidate();
       return;
     }
 

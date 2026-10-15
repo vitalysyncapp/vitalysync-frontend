@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../adaptive/data/wellness_content_api.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -365,6 +366,7 @@ class NutritionApi {
     }
 
     await invalidateNotificationFeedCache();
+    await WellnessContentApi.invalidate();
     await Future.wait([
       OfflineCacheStore.remove(
         namespace: _dailyNutritionCache,

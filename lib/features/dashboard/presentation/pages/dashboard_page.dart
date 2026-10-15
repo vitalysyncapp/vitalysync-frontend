@@ -4,6 +4,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../../features/adaptive/data/adaptive_nudge_api.dart';
+import '../../../../features/adaptive/data/wellness_content_api.dart';
+import '../widgets/personal_insight_card.dart';
 import '../../../../features/activity/data/activity_service.dart';
 import '../../../../features/activity/presentation/widgets/activity_summary_card.dart';
 import '../../data/weekly_user_metrics.dart';
@@ -14,9 +16,6 @@ import '../../../../shared/notifications/notification_feed_service.dart';
 import '../../../../shared/preferences/app_preferences.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
-import '../../../../shared/widgets/analytics_animation.dart';
-import '../../../../shared/widgets/app_skeleton.dart';
-import '../../../../shared/widgets/first_week_learning_pill.dart';
 import '../../../../shared/widgets/reveal_on_build.dart';
 import '../../../../shared/widgets/sensitive_content_guard.dart';
 import '../widgets/burnout_risk_trend_card.dart';
@@ -29,7 +28,6 @@ import '../widgets/sleep_pattern_card.dart';
 import '../widgets/symptom_frequency_card.dart';
 import '../widgets/weekly_performance_card.dart';
 import '../widgets/wellness_index_card.dart';
-import 'package:vitalysync/l10n/localized_text.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -58,7 +56,7 @@ class _DashboardState extends State<Dashboard> {
   @override
   void initState() {
     super.initState();
-    BurnoutScoreApi.refreshSignal.addListener(_handleBurnoutInputsChanged);
+    WellnessContentApi.changes.addListener(_handleBurnoutInputsChanged);
     UserGoalsService.refreshSignal.addListener(_handleGoalsChanged);
     WeeklyUserMetricsService.refreshSignal.addListener(
       _handleWeeklyMetricsChanged,
@@ -70,7 +68,7 @@ class _DashboardState extends State<Dashboard> {
 
   @override
   void dispose() {
-    BurnoutScoreApi.refreshSignal.removeListener(_handleBurnoutInputsChanged);
+    WellnessContentApi.changes.removeListener(_handleBurnoutInputsChanged);
     UserGoalsService.refreshSignal.removeListener(_handleGoalsChanged);
     WeeklyUserMetricsService.refreshSignal.removeListener(
       _handleWeeklyMetricsChanged,
@@ -113,19 +111,14 @@ class _DashboardState extends State<Dashboard> {
       final summary = await BurnoutScoreApi.fetchPatternSummary();
       AdaptiveNudgeRecommendation? aiInsight;
       try {
-        final nudgeResponse = await AdaptiveNudgeApi.fetchRecommendations(
-          limit: 1,
-          record: false,
-          ai: true,
-        );
         final insightsPaused = AppPreferencesController
             .instance
             .notifier
             .value
             .pauseWellnessInsights;
-        aiInsight = nudgeResponse.recommendations.isEmpty || insightsPaused
+        aiInsight = insightsPaused
             ? null
-            : nudgeResponse.recommendations.first;
+            : await AdaptiveNudgeApi.fetchPersonalInsight();
       } catch (_) {
         aiInsight = null;
       }
@@ -377,7 +370,7 @@ class _DashboardState extends State<Dashboard> {
                         const SizedBox(height: 12),
                         RevealOnBuild(
                           delay: const Duration(milliseconds: 200),
-                          child: _AiBurnoutInsightCard(
+                          child: PersonalInsightCard(
                             recommendation: _aiInsightNudge,
                             isLoading: _isLoadingAiInsight,
                             learningState: _firstWeekLearning,
@@ -579,234 +572,5 @@ class _AvgSleepStatCard extends StatelessWidget {
     }
 
     return Icons.trending_flat;
-  }
-}
-
-class _AiBurnoutInsightCard extends StatelessWidget {
-  final AdaptiveNudgeRecommendation? recommendation;
-  final bool isLoading;
-  final FirstWeekLearningState? learningState;
-
-  const _AiBurnoutInsightCard({
-    required this.recommendation,
-    required this.isLoading,
-    required this.learningState,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final why = recommendation?.metadata['ai_why_this_matters']?.toString();
-    final steps = recommendation?.metadata['ai_action_steps'] is List
-        ? (recommendation!.metadata['ai_action_steps'] as List)
-              .map((item) => item.toString())
-              .where((item) => item.trim().isNotEmpty)
-              .take(1)
-              .toList()
-        : const <String>[];
-    final aiEnhanced = recommendation?.metadata['ai_enhanced'] == true;
-    final firstWeekState = learningState;
-    final severity = recommendation?.userFacingSeverity;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: pageSurfaceColor(context),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: pageBorderColor(context)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: AnalyticsContentSwitcher(
-        isLoading: isLoading,
-        overlapOutgoing: false,
-        loading: const AppSkeletonRows(count: 2, showLeading: true),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: aiEnhanced
-                          ? const [
-                              Color.fromARGB(255, 105, 28, 183),
-                              Color(0xFF59B7EF),
-                            ]
-                          : const [Color(0xFF64748B), Color(0xFF94A3B8)],
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.auto_awesome_rounded,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      LocalizedText(
-                        'Personal insight',
-                        style: TextStyle(
-                          color: pagePrimaryTextColor(context),
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 1),
-                      LocalizedText(
-                        aiEnhanced
-                            ? 'Based on your daily and weekly patterns'
-                            : 'Guidance based on your recent check-ins',
-                        style: TextStyle(
-                          color: pageSecondaryTextColor(context),
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (severity != null) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _severityColor(
-                        severity,
-                        isDark,
-                      ).withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: LocalizedText(
-                      _severityLabel(severity),
-                      style: TextStyle(
-                        color: _severityColor(severity, isDark),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            if (firstWeekState?.isVisible == true) ...[
-              const SizedBox(height: 9),
-              FirstWeekLearningPill(
-                state: firstWeekState!,
-                message: firstWeekState.aiInsightNote,
-                icon: Icons.auto_awesome_motion_rounded,
-                maxLines: 2,
-              ),
-            ],
-            const SizedBox(height: 10),
-            LocalizedText(
-              recommendation?.title ?? 'Keep building your trend baseline',
-              style: TextStyle(
-                color: pagePrimaryTextColor(context),
-                fontSize: 14.5,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 6),
-            LocalizedText(
-              recommendation?.message ??
-                  'Log a few daily check-ins so VitalySync can tailor this insight. Your weekly reflection scores appear separately.',
-              maxLines: 5,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: pageSecondaryTextColor(context),
-                fontSize: 12.5,
-                height: 1.35,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            if (why != null && why.isNotEmpty) ...[
-              const SizedBox(height: 9),
-              LocalizedText(
-                why,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: pagePrimaryTextColor(context),
-                  fontSize: 12.5,
-                  height: 1.35,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-            if (steps.isNotEmpty) ...[
-              const SizedBox(height: 9),
-              ...steps.map(
-                (step) => Padding(
-                  padding: const EdgeInsets.only(top: 5),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(
-                        Icons.check_circle_rounded,
-                        size: 15,
-                        color: Color(0xFF1FB489),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: LocalizedText(
-                          step,
-                          style: TextStyle(
-                            color: pageSecondaryTextColor(context),
-                            fontSize: 12,
-                            height: 1.3,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Color _severityColor(String severity, bool isDark) {
-    switch (severity) {
-      case 'needs support':
-        return isDark ? const Color(0xFFFF8A80) : const Color(0xFFD83B3B);
-      case 'high':
-        return isDark ? const Color(0xFFFFB454) : const Color(0xFFF57C00);
-      case 'watch':
-        return isDark ? const Color(0xFFFFD54F) : const Color(0xFFB77900);
-      default:
-        return isDark ? const Color(0xFF81D4FA) : const Color(0xFF0277BD);
-    }
-  }
-
-  String _severityLabel(String severity) {
-    return severity
-        .split(' ')
-        .map(
-          (part) => part.isEmpty
-              ? part
-              : '${part[0].toUpperCase()}${part.substring(1)}',
-        )
-        .join(' ');
   }
 }
