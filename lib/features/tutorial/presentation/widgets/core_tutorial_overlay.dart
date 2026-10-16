@@ -233,12 +233,19 @@ class _CoreTutorialOverlayState extends State<CoreTutorialOverlay>
     final size = MediaQuery.sizeOf(context);
     final offset = renderObject.localToGlobal(Offset.zero);
     final rect = offset & renderObject.size;
-    final clamped = _clampRect(rect.inflate(8), size);
 
-    if (clamped != _targetRect) {
-      setState(() => _targetRect = clamped);
+    final Rect? targetRect;
+    if (step.isCircularTarget) {
+      final radius = (math.max(rect.width, rect.height) / 2) + 8.0;
+      targetRect = Rect.fromCircle(center: rect.center, radius: radius);
+    } else {
+      targetRect = _clampRect(rect.inflate(8), size);
     }
-    return clamped != null;
+
+    if (targetRect != _targetRect) {
+      setState(() => _targetRect = targetRect);
+    }
+    return targetRect != null;
   }
 
   Rect? _clampRect(Rect rect, Size size) {
@@ -291,6 +298,7 @@ class _CoreTutorialOverlayState extends State<CoreTutorialOverlay>
                     targetRect: _targetRect,
                     isDark: Theme.of(context).brightness == Brightness.dark,
                     revealProgress: _contentReveal.value,
+                    isCircular: step.isCircularTarget,
                   ),
                 ),
               ),
@@ -312,6 +320,7 @@ class _CoreTutorialOverlayState extends State<CoreTutorialOverlay>
                           pulseValue: pulseValue,
                           isDark:
                               Theme.of(context).brightness == Brightness.dark,
+                          isCircular: step.isCircularTarget,
                         ),
                       ),
                     ),
@@ -929,11 +938,13 @@ class _TutorialSpotlightPainter extends CustomPainter {
   final Rect? targetRect;
   final bool isDark;
   final double revealProgress;
+  final bool isCircular;
 
   const _TutorialSpotlightPainter({
     required this.targetRect,
     required this.isDark,
     required this.revealProgress,
+    this.isCircular = false,
   });
 
   @override
@@ -948,12 +959,22 @@ class _TutorialSpotlightPainter extends CustomPainter {
 
     final target = targetRect;
     if (target != null && revealProgress > 0) {
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(target, const Radius.circular(26)),
-        Paint()
-          ..color = Colors.white.withValues(alpha: revealProgress)
-          ..blendMode = BlendMode.dstOut,
-      );
+      final cutoutPaint = Paint()
+        ..color = Colors.white.withValues(alpha: revealProgress)
+        ..blendMode = BlendMode.dstOut;
+
+      if (isCircular) {
+        canvas.drawCircle(
+          target.center,
+          target.shortestSide / 2,
+          cutoutPaint,
+        );
+      } else {
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(target, const Radius.circular(26)),
+          cutoutPaint,
+        );
+      }
     }
 
     canvas.restore();
@@ -963,21 +984,78 @@ class _TutorialSpotlightPainter extends CustomPainter {
   bool shouldRepaint(covariant _TutorialSpotlightPainter oldDelegate) {
     return targetRect != oldDelegate.targetRect ||
         isDark != oldDelegate.isDark ||
-        revealProgress != oldDelegate.revealProgress;
+        revealProgress != oldDelegate.revealProgress ||
+        isCircular != oldDelegate.isCircular;
   }
 }
 
 class _TutorialFocusFramePainter extends CustomPainter {
   final double pulseValue;
   final bool isDark;
+  final bool isCircular;
 
   const _TutorialFocusFramePainter({
     required this.pulseValue,
     required this.isDark,
+    this.isCircular = false,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (isCircular) {
+      _paintCircular(canvas, size);
+    } else {
+      _paintRectangular(canvas, size);
+    }
+  }
+
+  void _paintCircular(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final center = rect.center;
+    final radius = (size.shortestSide / 2) - 2.0;
+    final pulse = math.sin(pulseValue * math.pi);
+
+    final glowPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 7 + pulse * 2.5
+      ..color = const Color(
+        0xFF5BDEC1,
+      ).withValues(alpha: isDark ? 0.24 + pulse * 0.16 : 0.3 + pulse * 0.18)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+    canvas.drawCircle(center, radius + 1 + pulse * 2.5, glowPaint);
+
+    final borderPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.4
+      ..color = Colors.white.withValues(alpha: 0.94);
+    canvas.drawCircle(center, radius, borderPaint);
+
+    final accentPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.2
+      ..strokeCap = StrokeCap.round
+      ..color = const Color(0xFF5BDEC1).withValues(alpha: 0.95);
+
+    final arcRect = Rect.fromCircle(center: center, radius: radius);
+    const sweepAngle = math.pi / 3.4;
+
+    for (final diagonal in [
+      -math.pi / 4,
+      math.pi / 4,
+      3 * math.pi / 4,
+      5 * math.pi / 4,
+    ]) {
+      canvas.drawArc(
+        arcRect,
+        diagonal - (sweepAngle / 2),
+        sweepAngle,
+        false,
+        accentPaint,
+      );
+    }
+  }
+
+  void _paintRectangular(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
     final radius = Radius.circular(math.min(26, size.shortestSide / 2));
     final rrect = RRect.fromRectAndRadius(rect.deflate(1), radius);
@@ -1040,7 +1118,9 @@ class _TutorialFocusFramePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _TutorialFocusFramePainter oldDelegate) {
-    return pulseValue != oldDelegate.pulseValue || isDark != oldDelegate.isDark;
+    return pulseValue != oldDelegate.pulseValue ||
+        isDark != oldDelegate.isDark ||
+        isCircular != oldDelegate.isCircular;
   }
 }
 
@@ -1053,6 +1133,7 @@ class _TutorialStepData {
   final String body;
   final _TutorialAssistantDock assistantDock;
   final Duration settleDelay;
+  final bool _isCircularTarget;
 
   const _TutorialStepData({
     required this.target,
@@ -1063,7 +1144,11 @@ class _TutorialStepData {
     required this.body,
     this.assistantDock = _TutorialAssistantDock.bottomRight,
     this.settleDelay = Duration.zero,
-  });
+    bool isCircularTarget = false,
+  }) : _isCircularTarget = isCircularTarget;
+
+  bool get isCircularTarget =>
+      _isCircularTarget || target == CoreTutorialTarget.assistant;
 }
 
 const _coreTutorialSteps = [
@@ -1151,6 +1236,7 @@ const _coreTutorialSteps = [
     body:
         'Open the floating assistant for smart nudges, quick hydration or meal support, exercise suggestions, and the same daily or weekly check-in used on the Log page.',
     assistantDock: _TutorialAssistantDock.topRight,
+    isCircularTarget: true,
   ),
   _TutorialStepData(
     target: CoreTutorialTarget.settingsAssistantTile,

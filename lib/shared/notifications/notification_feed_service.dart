@@ -334,15 +334,36 @@ class NotificationFeedService {
   }
 
   Future<void> markAllRead(Iterable<String> ids) async {
+    final cleanIds = ids.where((id) => id.isNotEmpty).toList();
+    if (cleanIds.isEmpty) {
+      return;
+    }
+
     final userId = await _storedUserId();
     if (userId == null) {
       return;
     }
 
     final saved = await _readIds(userId);
-    saved.addAll(ids);
+    final countBefore = saved.length;
+    saved.addAll(cleanIds);
+    if (saved.length == countBefore) {
+      return;
+    }
+
     await _writeIds(userId, saved);
     await refreshNotificationFeed();
+  }
+
+  Future<void> markAllAsRead() async {
+    final feed = await loadFeed();
+    final unreadIds = feed.items
+        .where((item) => item.isUnread)
+        .map((item) => item.id)
+        .toList();
+    if (unreadIds.isNotEmpty) {
+      await markAllRead(unreadIds);
+    }
   }
 
   Future<NotificationFeedResult?> _resultFromCacheData(

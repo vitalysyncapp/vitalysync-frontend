@@ -113,6 +113,50 @@ void main() {
     expect(restored.periodStart, '2026-07-15');
     expect(restored.reportPeriodLabel, 'For Jul 15');
   });
+
+  test('markAllRead marks multiple items as read and clears unread count', () async {
+    await OfflineCacheStore.saveJson(
+      namespace: notificationFeedCacheNamespace,
+      scope: '1',
+      data: {
+        'refreshed_at': '2026-05-21T10:00:00.000Z',
+        'sources': ['Daily reports'],
+        'items': [
+          _itemJson(id: 'report_1', title: 'Daily report 1'),
+          _itemJson(id: 'report_2', title: 'Daily report 2'),
+        ],
+      },
+    );
+
+    expect(await NotificationFeedService.instance.unreadCount(), 2);
+
+    await NotificationFeedService.instance.markAllRead(['report_1', 'report_2']);
+
+    expect(await NotificationFeedService.instance.unreadCount(), 0);
+    final feed = await NotificationFeedService.instance.loadFeed();
+    expect(feed.items.every((item) => !item.isUnread), isTrue);
+  });
+
+  test('markAllAsRead loads feed and marks all unread items as read', () async {
+    await OfflineCacheStore.saveJson(
+      namespace: notificationFeedCacheNamespace,
+      scope: '1',
+      data: {
+        'refreshed_at': '2026-05-21T10:00:00.000Z',
+        'sources': ['Daily reports'],
+        'items': [
+          _itemJson(id: 'report_a', title: 'Report A'),
+          _itemJson(id: 'report_b', title: 'Report B'),
+        ],
+      },
+    );
+
+    expect(await NotificationFeedService.instance.unreadCount(), 2);
+
+    await NotificationFeedService.instance.markAllAsRead();
+
+    expect(await NotificationFeedService.instance.unreadCount(), 0);
+  });
 }
 
 Map<String, dynamic> _itemJson({

@@ -118,10 +118,20 @@ class _NotificationPageState extends State<NotificationPage> {
     }
 
     if (cached != null) {
+      final unreadCached = cached.items
+          .where((item) => item.isUnread)
+          .map((item) => item.id)
+          .toList();
+      final readFeed = _asAllRead(cached);
+
       setState(() {
-        _feed = cached;
+        _feed = readFeed;
         _isLoading = false;
       });
+
+      if (unreadCached.isNotEmpty) {
+        await service.markAllRead(unreadCached);
+      }
     }
 
     final shouldRefresh =
@@ -172,17 +182,42 @@ class _NotificationPageState extends State<NotificationPage> {
     });
 
     final refreshed = await NotificationFeedService.instance.refreshFeed();
+    final unreadRefreshed = refreshed.items
+        .where((item) => item.isUnread)
+        .map((item) => item.id)
+        .toList();
+    if (unreadRefreshed.isNotEmpty) {
+      await NotificationFeedService.instance.markAllRead(unreadRefreshed);
+    }
+
     if (!mounted) {
       return;
     }
 
+    final readFeed = _asAllRead(refreshed);
+
     setState(() {
-      if (!_sameFeed(_feed, refreshed)) {
-        _feed = refreshed;
+      if (!_sameFeed(_feed, readFeed)) {
+        _feed = readFeed;
       }
       _isRefreshing = false;
       _isLoading = false;
     });
+  }
+
+  NotificationFeedResult _asAllRead(NotificationFeedResult feed) {
+    if (feed.unreadCount == 0) {
+      return feed;
+    }
+
+    return NotificationFeedResult(
+      items: feed.items
+          .map((item) => item.isUnread ? item.copyWith(isUnread: false) : item)
+          .toList(),
+      functionalSources: feed.functionalSources,
+      refreshedAt: feed.refreshedAt,
+      isFromCache: feed.isFromCache,
+    );
   }
 
   Widget _buildHeader(
@@ -242,7 +277,7 @@ class _NotificationPageState extends State<NotificationPage> {
                       final updated = await NotificationFeedService.instance
                           .loadFeed();
                       if (!mounted) return;
-                      setState(() => _feed = updated);
+                      setState(() => _feed = _asAllRead(updated));
                     },
               child: const LocalizedText('Mark all read'),
             ),
@@ -372,7 +407,7 @@ class _NotificationPageState extends State<NotificationPage> {
     await NotificationFeedService.instance.markRead(id);
     final updated = await NotificationFeedService.instance.loadFeed();
     if (!mounted) return;
-    setState(() => _feed = updated);
+    setState(() => _feed = _asAllRead(updated));
   }
 
   List<AppNotificationItem> _filteredItems(List<AppNotificationItem> items) {
@@ -579,7 +614,7 @@ class NotificationCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (item.showAction && !isSmartNudge) ...[
+                      if (item.isUnread && item.showAction && !isSmartNudge) ...[
                         const SizedBox(width: 10),
                         GestureDetector(
                           onTap: onActionTap,
@@ -759,7 +794,7 @@ class NotificationCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (item.showAction) ...[
+                if (item.isUnread && item.showAction) ...[
                   const SizedBox(width: 10),
                   GestureDetector(
                     onTap: onActionTap,

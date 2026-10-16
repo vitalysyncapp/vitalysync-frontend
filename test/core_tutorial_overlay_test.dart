@@ -226,4 +226,97 @@ void main() {
     expect(bubbleRect.bottom, lessThanOrEqualTo(826));
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'step 9 assistant highlight stays circular and concentric when docked at the edge',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      var currentTab = MainTab.home;
+      final targetKeys = {
+        for (final target in CoreTutorialTarget.values)
+          if (target != CoreTutorialTarget.none) target: GlobalKey(),
+      };
+      final supportingTargetKeys = targetKeys.entries
+          .where((entry) => entry.key != CoreTutorialTarget.assistant)
+          .map((entry) => entry.value)
+          .toList();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: StatefulBuilder(
+            builder: (context, setState) => MediaQuery(
+              data: const MediaQueryData(size: Size(390, 844)),
+              child: Scaffold(
+                body: Stack(
+                  children: [
+                    for (
+                      var index = 0;
+                      index < supportingTargetKeys.length;
+                      index++
+                    )
+                      Positioned(
+                        left: 24 + (index % 4) * 70,
+                        bottom: 28 + (index ~/ 4) * 82,
+                        width: 48,
+                        height: 48,
+                        child: SizedBox(key: supportingTargetKeys[index]),
+                      ),
+                    Positioned(
+                      right: 0,
+                      top: 150,
+                      width: 54,
+                      height: 54,
+                      child: SizedBox(
+                        key: targetKeys[CoreTutorialTarget.assistant],
+                      ),
+                    ),
+                    Positioned.fill(
+                      child: CoreTutorialOverlay(
+                        currentTab: currentTab,
+                        onTabSelected: (tab) {
+                          setState(() => currentTab = tab);
+                        },
+                        targetKeys: targetKeys,
+                        onRouteRequested: (_) async {},
+                        onFinished: () async {},
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 150));
+      }
+
+      for (var step = 1; step < 9; step++) {
+        await tester.tap(
+          find.byKey(const ValueKey('core-tutorial-next-button')),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 150));
+        await tester.pump(const Duration(milliseconds: 700));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+      }
+
+      final targetRect = tester.getRect(
+        find.byKey(targetKeys[CoreTutorialTarget.assistant]!),
+      );
+      final focusRect = tester.getRect(
+        find.byKey(const ValueKey('core-tutorial-focus-frame')),
+      );
+
+      // The focus frame must remain perfectly square (width == height)
+      // and concentric with the circular assistant button even when docked at the screen edge
+      expect(focusRect.width, equals(focusRect.height));
+      expect(focusRect.center.dx, closeTo(targetRect.center.dx, 0.001));
+      expect(focusRect.center.dy, closeTo(targetRect.center.dy, 0.001));
+      expect(focusRect.width, equals(targetRect.width + 16));
+    },
+  );
 }
