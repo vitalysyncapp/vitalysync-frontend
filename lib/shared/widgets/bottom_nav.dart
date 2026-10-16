@@ -92,12 +92,7 @@ Widget buildBottomNav({
               ? Colors.white.withValues(alpha: 0.08)
               : const Color(0xFFDCE7ED),
           borderWidth: 0.8,
-          shadow: Shadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.34 : 0.14),
-            blurRadius: 18,
-            offset: const Offset(0, -3),
-          ),
-          blurEffect: true,
+          blurEffect: false,
           safeAreaValues: const SafeAreaValues(bottom: true),
           onTap: (index) => onTap(_sideNavItems[index].tab),
           tabBuilder: (index, isActive) {

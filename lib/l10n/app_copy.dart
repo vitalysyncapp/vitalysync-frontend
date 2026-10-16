@@ -34,6 +34,21 @@ extension AppCopyString on String {
 
 const Map<String, String> _tagalogCopy = {
   'Another idea': 'Ibang idea',
+  'Great job': 'Ang galing',
+  'Nice one': 'Ayos',
+  'Well done': 'Magaling',
+  'Okay, got it': 'Sige, noted',
+  'No worries': 'Walang problema',
+  'That small step really counts.': 'Mahalaga ang maliit na hakbang na iyan.',
+  'Keep that gentle momentum going.': 'Ituloy mo lang ang magandang simula.',
+  'We’ll give this one some space.': 'Bibigyan muna natin ito ng espasyo.',
+  'We’ll find a better moment later.':
+      'Hahanap tayo ng mas magandang oras mamaya.',
+  'Helpful': 'Nakatulong',
+  'Not helpful': 'Hindi nakatulong',
+  'Glad this helps!': 'Mabuti kung nakatulong!',
+  'Feedback noted.': 'Salamat sa feedback.',
+  'Was this helpful?': 'Nakatulong ba ito?',
   'Saved offline': 'Naka-save offline',
   'A small step for today': 'Isang maliit na hakbang ngayon',
   'What this is based on': 'Kung saan ito naka-base',

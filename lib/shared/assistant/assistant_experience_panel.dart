@@ -352,7 +352,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
 
     if (!mounted) return;
 
-    if (['dismissed', 'done', 'another_idea', 'not_now'].contains(status)) {
+    if (['dismissed', 'another_idea'].contains(status)) {
       setState(() {
         _adaptiveNudges = _adaptiveNudges
             .where((item) => !_isSameAdaptiveNudge(item, recommendation))
@@ -360,6 +360,9 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
       });
       unawaited(_loadAdaptiveNudges(showLoading: false, forceRefresh: true));
     }
+
+    // Done / Not now are acknowledged inline on the card itself.
+    if (_isInlineAcknowledged(status)) return;
 
     final label = _contentResponseLabel(status);
     ScaffoldMessenger.of(
@@ -403,7 +406,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
 
     if (!mounted) return;
 
-    if (['dismissed', 'done', 'another_idea', 'not_now'].contains(status)) {
+    if (['dismissed', 'another_idea'].contains(status)) {
       setState(() {
         if (_nutritionInsight?.id == insight.id) {
           _nutritionInsight = null;
@@ -412,11 +415,16 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
       unawaited(_loadNutritionInsight(showLoading: false, forceRefresh: true));
     }
 
+    if (_isInlineAcknowledged(status)) return;
+
     final label = _contentResponseLabel(status);
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: LocalizedText(label)));
   }
+
+  bool _isInlineAcknowledged(String status) =>
+      status == 'done' || status == 'not_now';
 
   String _contentResponseLabel(String response) => switch (response) {
     'done' => 'Done. You made a little room for yourself.',
@@ -1169,8 +1177,6 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
           onSave: _saveCheckIn,
           onRedo: _redoCheckIn,
         ),
-        const SizedBox(height: 12),
-        const WeeklyAssessmentCard(),
       ],
     );
   }

@@ -61,5 +61,5 @@ double pageBottomContentPadding(BuildContext context, {double extra = 36}) {
 }
 
 double mainPageBottomContentPadding(BuildContext context) {
-  return pageBottomContentPadding(context, extra: 48);
+  return pageBottomContentPadding(context, extra: 96);
 }

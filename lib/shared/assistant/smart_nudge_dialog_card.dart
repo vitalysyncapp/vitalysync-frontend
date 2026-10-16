@@ -494,15 +494,17 @@ class _SmartNudgeInsightCard extends StatelessWidget {
           if (onResponse != null && metadata['content_id'] != null)
             NudgeResponseActions(
               enabled: !isUpdatingFeedback,
+              response: feedbackStatus,
               onResponse: onResponse!,
+            )
+          else
+            _InsightFeedbackButtons(
+              status: feedbackStatus,
+              isUpdating: isUpdatingFeedback,
+              onLiked: onLiked,
+              onDisliked: onDisliked,
+              foregroundColor: pageSecondaryTextColor(context),
             ),
-          _InsightFeedbackButtons(
-            status: feedbackStatus,
-            isUpdating: isUpdatingFeedback,
-            onLiked: onLiked,
-            onDisliked: onDisliked,
-            foregroundColor: pageSecondaryTextColor(context),
-          ),
         ],
       ),
     );
@@ -634,15 +636,18 @@ class _NutritionInsightDialogCard extends StatelessWidget {
           if (onResponse != null && insight.metadata['content_id'] != null)
             NudgeResponseActions(
               enabled: !isUpdatingFeedback,
+              response: feedbackStatus,
+              accentColor: accent,
               onResponse: onResponse!,
+            )
+          else
+            _InsightFeedbackButtons(
+              status: feedbackStatus,
+              isUpdating: isUpdatingFeedback,
+              onLiked: onLiked,
+              onDisliked: onDisliked,
+              foregroundColor: accent,
             ),
-          _InsightFeedbackButtons(
-            status: feedbackStatus,
-            isUpdating: isUpdatingFeedback,
-            onLiked: onLiked,
-            onDisliked: onDisliked,
-            foregroundColor: accent,
-          ),
         ],
       ),
     );

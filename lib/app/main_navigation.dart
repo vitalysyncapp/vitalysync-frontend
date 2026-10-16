@@ -752,7 +752,8 @@ class _MainNavigationState extends State<MainNavigation>
             fit: StackFit.expand,
             children: [
               Scaffold(
-                extendBody: false,
+                extendBody: true,
+                backgroundColor: Colors.transparent,
                 body: Stack(
                   fit: StackFit.expand,
                   children: [

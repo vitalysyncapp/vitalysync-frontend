@@ -714,11 +714,20 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                   cardHeights: const [104, 178, 178, 152, 118],
                 )
               : Stack(
+                  fit: StackFit.expand,
                   children: [
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 350),
                       switchInCurve: Curves.easeOut,
                       switchOutCurve: Curves.easeIn,
+                      layoutBuilder: (currentChild, previousChildren) => Stack(
+                        fit: StackFit.expand,
+                        alignment: Alignment.center,
+                        children: [
+                          ...previousChildren,
+                          ?currentChild,
+                        ],
+                      ),
                       child: isSubmitted
                           ? _buildSuccessScreen()
                           : SingleChildScrollView(
@@ -731,8 +740,6 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                               ),
                               child: Column(
                                 children: [
-                                  const WeeklyAssessmentCard(),
-                                  const SizedBox(height: 12),
                                   RevealOnBuild(child: _buildLogHeader()),
                                   const SizedBox(height: 12),
                                   RevealOnBuild(
@@ -953,23 +960,31 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   }
 
   Widget _buildSuccessScreen() {
-    return SingleChildScrollView(
-      padding: EdgeInsets.only(bottom: mainPageBottomContentPadding(context)),
-      child: Column(
-        children: [
-          CheckInSuccessView(
-            isOffline: lastSaveWasOffline,
-            hasPendingSync: hasPendingSync,
-            pendingSyncCount: pendingSyncCount,
-            currentStreak: currentStreak,
-            onRedo: _redoLog,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bottomPadding = mainPageBottomContentPadding(context);
+        final minHeight = constraints.hasBoundedHeight &&
+                constraints.maxHeight.isFinite
+            ? (constraints.maxHeight - bottomPadding).clamp(0.0, double.infinity)
+            : 0.0;
+
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.only(bottom: bottomPadding),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: minHeight),
+            child: Center(
+              child: CheckInSuccessView(
+                isOffline: lastSaveWasOffline,
+                hasPendingSync: hasPendingSync,
+                pendingSyncCount: pendingSyncCount,
+                currentStreak: currentStreak,
+                onRedo: _redoLog,
+              ),
+            ),
           ),
-          const Padding(
-            padding: EdgeInsets.all(12),
-            child: WeeklyAssessmentCard(),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -985,32 +1000,44 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
           Row(
             children: [
               Expanded(
-                child: Row(
+                child: Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 4,
                   children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF1FB489),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 7),
-                    Flexible(
-                      child: LocalizedText(
-                        showWeeklyQuestions
-                            ? 'WEEKLY CHECK-IN DAY'
-                            : 'DAILY CHECK-IN',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: pageSecondaryTextColor(context),
-                          fontSize: isCompact ? 9.5 : 10.5,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: isCompact ? 0.8 : 1.05,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 220),
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: showWeeklyQuestions
+                                ? const Color(0xFF8B5CF6)
+                                : const Color(0xFF1FB489),
+                            shape: BoxShape.circle,
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 7),
+                        LocalizedText(
+                          showWeeklyQuestions
+                              ? 'WEEKLY CHECK-IN'
+                              : 'DAILY CHECK-IN',
+                          maxLines: 1,
+                          style:
+                              Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: showWeeklyQuestions
+                                    ? const Color(0xFF8B5CF6)
+                                    : pageSecondaryTextColor(context),
+                                fontSize: isCompact ? 9.5 : 10.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: isCompact ? 0.8 : 1.05,
+                              ),
+                        ),
+                      ],
                     ),
+                    const WeeklyCheckInIndicator(compact: true),
                   ],
                 ),
               ),

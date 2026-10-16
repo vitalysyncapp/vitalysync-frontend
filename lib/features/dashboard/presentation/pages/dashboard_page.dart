@@ -1,4 +1,3 @@
-import 'package:vitalysync/features/log/presentation/widgets/weekly_assessment_card.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -448,8 +447,6 @@ class _DashboardState extends State<Dashboard> {
                             refreshVersion: _refreshVersion,
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        const WeeklyAssessmentCard(showHistory: true),
                         const SizedBox(height: 12),
                         RevealOnBuild(
                           delay: const Duration(milliseconds: 680),

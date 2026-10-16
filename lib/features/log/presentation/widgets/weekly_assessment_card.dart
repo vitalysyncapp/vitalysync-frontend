@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../l10n/localized_text.dart';
 import '../../../../shared/theme/app_page_style.dart';
@@ -6,6 +7,168 @@ import '../../../onboarding/data/burnout_baseline_questions.dart';
 import '../../../onboarding/widgets/likert_question.dart';
 import '../../data/check_in_state_coordinator.dart';
 import '../../data/weekly_assessment_api.dart';
+
+/// Opens the 11-question weekly reflection for the current due cycle.
+Future<void> openWeeklyAssessment(
+  BuildContext context,
+  Map<String, dynamic>? data,
+) async {
+  final dueDate = data?['due_date']?.toString();
+  if (dueDate == null) return;
+  final today = data?['today'];
+  final initial = today is Map && today['answers'] is Map
+      ? Map<String, int>.from(today['answers'] as Map)
+      : <String, int>{};
+  initial.addAll(await WeeklyAssessmentApi.draft(dueDate));
+  if (!context.mounted) return;
+  await Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) =>
+          WeeklyAssessmentPage(dueDate: dueDate, initialAnswers: initial),
+    ),
+  );
+}
+
+/// Small pill that shows when the next weekly check-in is, or lets the user
+/// open the weekly reflection when it is due today.
+class WeeklyCheckInIndicator extends StatefulWidget {
+  final bool compact;
+  const WeeklyCheckInIndicator({super.key, this.compact = false});
+
+  @override
+  State<WeeklyCheckInIndicator> createState() => _WeeklyCheckInIndicatorState();
+}
+
+class _WeeklyCheckInIndicatorState extends State<WeeklyCheckInIndicator> {
+  Map<String, dynamic>? _data;
+  int _loadVersion = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    CheckInStateCoordinator.instance.changes.addListener(_load);
+    _load();
+  }
+
+  @override
+  void dispose() {
+    CheckInStateCoordinator.instance.changes.removeListener(_load);
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    final version = ++_loadVersion;
+    try {
+      final data = await WeeklyAssessmentApi.load();
+      if (mounted && version == _loadVersion) setState(() => _data = data);
+    } catch (_) {
+      // The indicator is optional; hide it when weekly data is unavailable.
+    }
+  }
+
+  Future<void> _open() async {
+    await openWeeklyAssessment(context, _data);
+    await _load();
+  }
+
+  String _nextLabel(BuildContext context, String raw) {
+    final date = DateTime.tryParse(raw);
+    if (date == null) return raw;
+    final now = DateTime.now();
+    final days = DateTime(
+      date.year,
+      date.month,
+      date.day,
+    ).difference(DateTime(now.year, now.month, now.day)).inDays;
+    if (days == 1) return 'Weekly tomorrow'.localizedCopy(context);
+    final locale = Localizations.localeOf(context).languageCode;
+    final formatted = DateFormat('EEE, MMM d', locale).format(date);
+    return '${'Next weekly'.localizedCopy(context)} · $formatted';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final data = _data;
+    if (data == null) return const SizedBox.shrink();
+
+    final isDue = data['is_due'] == true;
+    final doneToday = data['completed_today'] == true;
+    final next = data['next_due_date']?.toString();
+    if (!isDue && !doneToday && next == null) return const SizedBox.shrink();
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    const weeklyColor = Color(0xFF8B5CF6);
+    final accent = isDark ? const Color(0xFFC4B5FD) : weeklyColor;
+    final IconData icon;
+    final String label;
+    if (doneToday) {
+      icon = Icons.check_circle_rounded;
+      label = 'Weekly reflection done'.localizedCopy(context);
+    } else if (isDue) {
+      icon = Icons.edit_note_rounded;
+      label = 'Start weekly reflection'.localizedCopy(context);
+    } else {
+      icon = Icons.event_repeat_rounded;
+      label = _nextLabel(context, next!);
+    }
+    final tappable = isDue || doneToday;
+    final highlight = isDue && !doneToday;
+    final fontSize = widget.compact ? 10.5 : 11.5;
+
+    final pill = Container(
+      height: widget.compact ? 24 : 28,
+      padding: EdgeInsets.symmetric(horizontal: widget.compact ? 8 : 10),
+      decoration: BoxDecoration(
+        color: highlight
+            ? accent.withValues(alpha: isDark ? 0.26 : 0.16)
+            : accent.withValues(alpha: isDark ? 0.14 : 0.08),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: accent.withValues(alpha: highlight ? 0.5 : 0.22),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: widget.compact ? 12 : 14, color: accent),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: accent,
+                fontSize: fontSize,
+                height: 1.1,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          if (tappable) ...[
+            const SizedBox(width: 2),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: widget.compact ? 13 : 15,
+              color: accent,
+            ),
+          ],
+        ],
+      ),
+    );
+
+    if (!tappable) return pill;
+    return Material(
+      key: const ValueKey('weekly-checkin-indicator'),
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: _open,
+        child: pill,
+      ),
+    );
+  }
+}
 
 class WeeklyAssessmentCard extends StatefulWidget {
   final bool showHistory;
@@ -51,20 +214,7 @@ class _WeeklyAssessmentCardState extends State<WeeklyAssessmentCard> {
   }
 
   Future<void> _open() async {
-    final dueDate = _data?['due_date']?.toString();
-    if (dueDate == null) return;
-    final today = _data?['today'];
-    final initial = today is Map && today['answers'] is Map
-        ? Map<String, int>.from(today['answers'] as Map)
-        : <String, int>{};
-    initial.addAll(await WeeklyAssessmentApi.draft(dueDate));
-    if (!mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) =>
-            WeeklyAssessmentPage(dueDate: dueDate, initialAnswers: initial),
-      ),
-    );
+    await openWeeklyAssessment(context, _data);
     await _load();
   }
 

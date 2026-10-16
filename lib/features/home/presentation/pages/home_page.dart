@@ -1,4 +1,3 @@
-import 'package:vitalysync/features/log/presentation/widgets/weekly_assessment_card.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/device_location_service.dart';
@@ -358,8 +357,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       patternSummary: _burnoutPatternSummary,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  const WeeklyAssessmentCard(),
                   const SizedBox(height: 12),
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 160),
