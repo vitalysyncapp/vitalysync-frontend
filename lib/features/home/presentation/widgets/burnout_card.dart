@@ -9,7 +9,9 @@ import 'burnout_info_dialog.dart';
 import 'package:vitalysync/l10n/localized_text.dart';
 
 class BurnoutCard extends StatelessWidget {
-  final int score;
+  final int? score;
+  final String? sourceLabel;
+  final String? riskLevel;
   final String status;
   final bool isLoading;
   final BurnoutScoreSnapshot? latestScore;
@@ -20,24 +22,33 @@ class BurnoutCard extends StatelessWidget {
     required this.score,
     required this.status,
     this.isLoading = false,
+    this.sourceLabel,
+    this.riskLevel,
     this.latestScore,
     this.patternSummary,
   });
 
-  // Base gradient colors
-  List<Color> _baseGradientColors() {
-    if (score <= 20) return [Color(0xFF096EB1), Color(0xFF5DADE2)];
-    if (score <= 40) {
-      return [Color.fromARGB(255, 9, 119, 144), Color(0xFF48C9B0)];
-    }
-    if (score <= 50) {
-      return [Color.fromARGB(255, 102, 192, 17), Color(0xFF58D68D)];
-    }
-    if (score <= 60) return [Color(0xFFCAA307), Color(0xFFF7DC6F)];
-    if (score <= 80) return [Color(0xFFD46E14), Color(0xFFF5B041)];
-    if (score <= 90) return [Color(0xFFE74C3C), Color(0xFFFF8C42)];
-    return [Color(0xFFE74C3C), Color(0xFFDB3710)];
-  }
+  String get _riskLevel =>
+      riskLevel ??
+      latestScore?.riskLevel ??
+      (score == null
+          ? 'unknown'
+          : score! < 34
+          ? 'low'
+          : score! < 60
+          ? 'moderate'
+          : score! < 80
+          ? 'high'
+          : 'critical');
+
+  List<Color> _baseGradientColors() => switch (_riskLevel) {
+    'very_low' => const [Color(0xFF096EB1), Color(0xFF5DADE2)],
+    'low' => const [Color(0xFF097790), Color(0xFF48C9B0)],
+    'moderate' => const [Color(0xFF9A7307), Color(0xFFC99F28)],
+    'high' => const [Color(0xFFD46E14), Color(0xFFF5B041)],
+    'very_high' || 'critical' => const [Color(0xFFE74C3C), Color(0xFFDB3710)],
+    _ => const [Color(0xFF475569), Color(0xFF64748B)],
+  };
 
   // Adjust gradient and glow for dark mode
   List<Color> getGradientColors(bool isDark) {
@@ -50,42 +61,25 @@ class BurnoutCard extends StatelessWidget {
     return colors;
   }
 
-  IconData getIcon() {
-    if (score <= 20) return Icons.sentiment_very_satisfied_rounded;
-    if (score <= 40) return Icons.sentiment_satisfied_alt_rounded;
-    if (score <= 50) return Icons.self_improvement_rounded;
-    if (score <= 60) return Icons.sentiment_neutral_rounded;
-    if (score <= 80) return Icons.warning_amber_rounded;
-    if (score <= 90) return Icons.local_fire_department_rounded;
-    return Icons.emergency_rounded;
-  }
+  IconData getIcon() => switch (_riskLevel) {
+    'very_low' || 'low' => Icons.sentiment_satisfied_alt_rounded,
+    'moderate' => Icons.self_improvement_rounded,
+    'high' => Icons.warning_amber_rounded,
+    'very_high' || 'critical' => Icons.local_fire_department_rounded,
+    _ => Icons.insights_rounded,
+  };
 
-  Color getIconColor() {
-    if (score <= 20) return const Color(0xFF0284C7);
-    if (score <= 40) return const Color(0xFF0D9488);
-    if (score <= 50) return const Color(0xFF65A30D);
-    if (score <= 60) return const Color(0xFFD97706);
-    if (score <= 80) return const Color(0xFFEA580C);
-    if (score <= 90) return const Color(0xFFEF4444);
-    return const Color(0xFFB91C1C);
-  }
+  Color getIconColor() => _baseGradientColors().first;
 
-  String getIconLabel() {
-    if (score <= 20) return 'Very low burnout risk';
-    if (score <= 40) return 'Low burnout risk';
-    if (score <= 50) return 'Mild burnout risk';
-    if (score <= 60) return 'Moderate burnout risk';
-    if (score <= 80) return 'High burnout risk';
-    if (score <= 90) return 'Very high burnout risk';
-    return 'Critical burnout risk';
-  }
+  String getIconLabel() => score == null
+      ? 'No estimate yet'
+      : '${_riskLevel.replaceAll('_', ' ')} burnout risk';
 
-  // Glow color for high-risk scores
-  Color getGlowColor() {
-    if (score > 80) return Colors.redAccent.withValues(alpha: 0.6);
-    if (score > 60) return Colors.orangeAccent.withValues(alpha: 0.5);
-    return Colors.transparent;
-  }
+  Color getGlowColor() => switch (_riskLevel) {
+    'very_high' || 'critical' => Colors.redAccent.withValues(alpha: 0.6),
+    'high' => Colors.orangeAccent.withValues(alpha: 0.5),
+    _ => Colors.transparent,
+  };
 
   void _openAboutBurnout(BuildContext context) {
     final route = MaterialPageRoute<void>(
@@ -103,7 +97,7 @@ class BurnoutCard extends StatelessWidget {
       barrierDismissible: true,
       builder: (dialogContext) {
         return BurnoutInfoDialog(
-          score: score,
+          score: score!,
           status: status,
           latestScore: latestScore,
           patternSummary: patternSummary,
@@ -160,96 +154,109 @@ class BurnoutCard extends StatelessWidget {
         enabled: isLoading,
         child: SensitiveContentGuard(
           child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: LocalizedText(
-                    'Daily wellness estimate',
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: LocalizedText(
+                      'Burnout Risk estimate',
+                      style: TextStyle(
+                        color: textColor.withValues(alpha: 0.7),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: DecoratedBox(
+                      decoration: const BoxDecoration(
+                        color: Colors.white24,
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        tooltip: 'About burnout score'.localizedCopy(context),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        iconSize: 11,
+                        color: textColor,
+                        onPressed: score == null
+                            ? null
+                            : () => _showInfoDialog(context),
+                        icon: const Icon(Icons.question_mark_rounded),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  LocalizedText(
+                    score == null ? '--' : '$score/100',
                     style: TextStyle(
-                      color: textColor.withValues(alpha: 0.7),
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: DecoratedBox(
-                    decoration: const BoxDecoration(
-                      color: Colors.white24,
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      tooltip: 'About burnout score'.localizedCopy(context),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      iconSize: 11,
                       color: textColor,
-                      onPressed: () => _showInfoDialog(context),
-                      icon: const Icon(Icons.question_mark_rounded),
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
+                  Semantics(
+                    label: getIconLabel(),
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.85),
+                          width: 2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.16),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: ExcludeSemantics(
+                        child: Icon(getIcon(), color: getIconColor(), size: 28),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                LocalizedText(
-                  '$score/100',
+                child: LocalizedText(
+                  status,
                   style: TextStyle(
                     color: textColor,
-                    fontSize: 30,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 12.5,
+                    height: 1.25,
                   ),
                 ),
-                Semantics(
-                  label: getIconLabel(),
-                  child: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.85),
-                        width: 2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.16),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: ExcludeSemantics(
-                      child: Icon(getIcon(), color: getIconColor(), size: 28),
-                    ),
+              ),
+              if (sourceLabel != null) ...[
+                const SizedBox(height: 8),
+                LocalizedText(
+                  sourceLabel!,
+                  style: TextStyle(
+                    color: textColor.withValues(alpha: 0.9),
+                    fontSize: 12,
+                    height: 1.3,
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.white24,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: LocalizedText(
-                status,
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 12.5,
-                  height: 1.25,
-                ),
-              ),
-            ),
-          ],
+            ],
           ),
         ),
       ),

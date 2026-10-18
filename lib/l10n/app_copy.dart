@@ -33,6 +33,25 @@ extension AppCopyString on String {
 }
 
 const Map<String, String> _tagalogCopy = {
+  'No estimate yet': 'Wala pang tantiya',
+  'Estimate available': 'May tantiya na',
+  'Loading estimate': 'Kinukuha ang tantiya',
+  'Very low risk': 'Napakababang panganib',
+  'Low risk': 'Mababang panganib',
+  'Moderate risk': 'Katamtamang panganib',
+  'High risk': 'Mataas na panganib',
+  'Very high risk': 'Napakataas na panganib',
+  'Critical risk': 'Kritikal na panganib',
+  'Complete your baseline or first check-in':
+      'Kumpletuhin ang baseline o unang check-in',
+  'Check-in saved offline · estimate updates after sync':
+      'Na-save offline ang check-in · maa-update ang tantiya pagkatapos mag-sync',
+  'Baseline · complete a daily check-in to update':
+      'Baseline · mag-daily check-in para ma-update',
+  'Complete daily check-ins to build your trend.':
+      'Mag-daily check-in para makita ang trend mo.',
+  '1 check-in · more entries build a trend':
+      '1 check-in · dagdagan ang mga entry para makita ang trend',
   'Another idea': 'Ibang idea',
   'Great job': 'Ang galing',
   'Nice one': 'Ayos',
@@ -89,7 +108,7 @@ const Map<String, String> _tagalogCopy = {
   "Weekly log saved.": "Na-save ang lingguhang log.",
   "Weekly log saved offline and queued to sync.":
       "Na-save offline ang lingguhang log at nakaabang para mag-sync.",
-  "Daily wellness estimate": "Pang-araw-araw na wellness estimate",
+  "Burnout Risk estimate": "Tantya ng burnout risk",
   "Today's pressure": "Pressure ngayong araw",
   "Daily detachment": "Pagkalayo ng loob ngayong araw",
   "Daily focus": "Focus ngayong araw",
@@ -381,6 +400,30 @@ const Map<String, String> _tagalogCopy = {
 };
 
 final List<_CopyRule> _tagalogCopyRules = [
+  _CopyRule(
+    RegExp(r'^(.+) risk · (\d+)% confidence$'),
+    (m) =>
+        '${localizeAppCopy('${m[1]} risk', const Locale('fil'))} · ${m[2]}% confidence',
+  ),
+  _CopyRule(
+    RegExp(r'^Last check-in · (.+)$'),
+    (m) => 'Huling check-in · ${localizeAppCopy(m[1]!, const Locale('fil'))}',
+  ),
+  _CopyRule(
+    RegExp(r'^(.+) · saved offline$'),
+    (m) => '${localizeAppCopy(m[1]!, const Locale('fil'))} · na-save offline',
+  ),
+  _CopyRule(
+    RegExp(r'^Limited confidence · (\d+)% confidence$'),
+    (m) => 'Limitadong confidence · ${m[1]}% confidence',
+  ),
+  _CopyRule(
+    RegExp(
+      r'^Your baseline estimate is (\d+)/100\. Complete a daily check-in to update it with your recent inputs\.$',
+    ),
+    (m) =>
+        'Ang baseline estimate mo ay ${m[1]}/100. Mag-daily check-in para ma-update ito gamit ang mga pinakabagong sagot mo.',
+  ),
   _CopyRule(RegExp(r'^Welcome back, (.+)$'), (m) => 'Welcome back, ${m[1]}'),
   _CopyRule(RegExp(r'^(\d+) unread$'), (m) => '${m[1]} unread'),
   _CopyRule(RegExp(r'^(\d+) day$'), (m) => '${m[1]} araw'),

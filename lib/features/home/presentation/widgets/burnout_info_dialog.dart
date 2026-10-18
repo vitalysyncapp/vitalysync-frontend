@@ -74,7 +74,9 @@ class BurnoutInfoDialog extends StatelessWidget {
                           color: const Color(0xFF2563EB),
                           title: 'What the score means',
                           child: LocalizedText(
-                            _coreOnly
+                            latestScore == null
+                                ? 'Your baseline estimate is $score/100. Complete a daily check-in to update it with your recent inputs.'
+                                : _coreOnly
                                 ? 'Your daily estimate is $score/100. It uses the 9 practical inputs, activity, and baseline. The 5 omitted daily reflections are excluded and available weights are normalized. Your 11-item weekly scores are separate.'
                                 : _restoredDaily
                                 ? 'Your daily estimate is $score/100. It uses your 14 daily wellness answers, activity, and baseline. Weekly questionnaire dimensions are shown separately.'

@@ -92,7 +92,8 @@ class BurnoutRiskTrendCard extends StatelessWidget {
                     height: 200,
                     child: Center(
                       child: LocalizedText(
-                        'No score history yet',
+                        'Complete daily check-ins to build your trend.',
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           color: pageSecondaryTextColor(context),
                           fontWeight: FontWeight.w700,
@@ -216,6 +217,9 @@ class BurnoutRiskTrendCard extends StatelessWidget {
   String _subtitle(BurnoutWindowSummary? window) {
     if (window == null) {
       return 'Last 7 days';
+    }
+    if (window.points.length == 1) {
+      return '1 check-in · more entries build a trend';
     }
 
     final delta = window.deltaFromStart;

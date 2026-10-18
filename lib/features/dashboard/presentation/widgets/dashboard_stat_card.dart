@@ -8,6 +8,7 @@ class DashboardStatCard extends StatelessWidget {
   final String title;
   final String value;
   final String subtitle;
+  final String? detail;
   final Color subtitleColor;
   final IconData icon;
   final Color iconColor;
@@ -18,6 +19,7 @@ class DashboardStatCard extends StatelessWidget {
     required this.title,
     required this.value,
     required this.subtitle,
+    this.detail,
     required this.subtitleColor,
     required this.icon,
     required this.iconColor,
@@ -101,6 +103,17 @@ class DashboardStatCard extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                 ),
               ),
+              if (detail != null) ...[
+                const SizedBox(height: 5),
+                LocalizedText(
+                  detail!,
+                  style: TextStyle(
+                    fontSize: 11,
+                    height: 1.3,
+                    color: pageSecondaryTextColor(context),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

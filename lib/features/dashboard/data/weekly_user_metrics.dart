@@ -341,7 +341,9 @@ class WeeklyUserMetricsService {
   }) async {
     final startKey = _dateKey(start);
     final endKey = _dateKey(end);
-    final scope = '${startKey}_$endKey';
+    final userId = await LogApi.getStoredUserId();
+    if (userId == null) return empty(start: start);
+    final scope = '${userId}_${startKey}_$endKey';
     final result = await CachedJsonFetch.load<WeeklyUserMetrics>(
       namespace: _cacheNamespace,
       scope: scope,

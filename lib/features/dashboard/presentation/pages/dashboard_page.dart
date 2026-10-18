@@ -6,9 +6,11 @@ import '../../../../features/adaptive/data/adaptive_nudge_api.dart';
 import '../../../../features/adaptive/data/wellness_content_api.dart';
 import '../widgets/personal_insight_card.dart';
 import '../../../../features/activity/data/activity_service.dart';
+import '../../../../features/nutrition/data/nutrition_api.dart';
 import '../../../../features/activity/presentation/widgets/activity_summary_card.dart';
 import '../../data/weekly_user_metrics.dart';
 import '../../data/burnout_score_api.dart';
+import '../../data/burnout_display_data.dart';
 import '../../../../shared/goals/user_goals.dart';
 import '../../../../shared/learning/first_week_learning_service.dart';
 import '../../../../shared/notifications/notification_feed_service.dart';
@@ -36,7 +38,9 @@ class Dashboard extends StatefulWidget {
 }
 
 class _DashboardState extends State<Dashboard> {
-  BurnoutPatternSummary? _burnoutPatternSummary;
+  BurnoutDisplayData? _burnoutData;
+  BurnoutPatternSummary? get _burnoutPatternSummary =>
+      _burnoutData?.patternSummary;
   AdaptiveNudgeRecommendation? _aiInsightNudge;
   FirstWeekLearningState _firstWeekLearning =
       const FirstWeekLearningState.hidden();
@@ -48,6 +52,7 @@ class _DashboardState extends State<Dashboard> {
   WeeklyUserMetrics? _previousWeekMetrics;
   int _refreshVersion = 0;
   int _burnoutLoadToken = 0;
+  int _insightLoadToken = 0;
   int _firstWeekLoadToken = 0;
   int _weeklyMetricsLoadToken = 0;
   Timer? _weeklyMetricsRefreshDebounce;
@@ -55,20 +60,25 @@ class _DashboardState extends State<Dashboard> {
   @override
   void initState() {
     super.initState();
-    WellnessContentApi.changes.addListener(_handleBurnoutInputsChanged);
-    UserGoalsService.refreshSignal.addListener(_handleGoalsChanged);
+    WellnessContentApi.changes.addListener(_loadPersonalInsight);
+    BurnoutScoreApi.refreshSignal.addListener(_handleBurnoutInputsChanged);
+    UserGoalsService.refreshSignal.addListener(_handleSummaryInputsChanged);
+    NutritionApi.refreshSignal.addListener(_handleSummaryInputsChanged);
     WeeklyUserMetricsService.refreshSignal.addListener(
       _handleWeeklyMetricsChanged,
     );
     _loadBurnoutPatterns();
+    unawaited(_loadPersonalInsight());
     unawaited(_loadWeeklyMetrics());
     unawaited(_loadFirstWeekLearning());
   }
 
   @override
   void dispose() {
-    WellnessContentApi.changes.removeListener(_handleBurnoutInputsChanged);
-    UserGoalsService.refreshSignal.removeListener(_handleGoalsChanged);
+    WellnessContentApi.changes.removeListener(_loadPersonalInsight);
+    BurnoutScoreApi.refreshSignal.removeListener(_handleBurnoutInputsChanged);
+    UserGoalsService.refreshSignal.removeListener(_handleSummaryInputsChanged);
+    NutritionApi.refreshSignal.removeListener(_handleSummaryInputsChanged);
     WeeklyUserMetricsService.refreshSignal.removeListener(
       _handleWeeklyMetricsChanged,
     );
@@ -78,10 +88,11 @@ class _DashboardState extends State<Dashboard> {
 
   void _handleBurnoutInputsChanged() {
     _loadBurnoutPatterns();
+    unawaited(_loadWeeklyMetrics());
     unawaited(_loadFirstWeekLearning());
   }
 
-  void _handleGoalsChanged() {
+  void _handleSummaryInputsChanged() {
     if (!mounted) {
       return;
     }
@@ -99,46 +110,37 @@ class _DashboardState extends State<Dashboard> {
     );
   }
 
-  Future<void> _loadBurnoutPatterns() async {
+  Future<void> _loadBurnoutPatterns({bool forceRefresh = false}) async {
     final loadToken = ++_burnoutLoadToken;
+    setState(() => _isLoadingBurnoutPatterns = _burnoutData == null);
+    final data = await BurnoutDisplayData.load(forceRefresh: forceRefresh);
+    if (!mounted || loadToken != _burnoutLoadToken) return;
     setState(() {
-      _isLoadingBurnoutPatterns = true;
-      _isLoadingAiInsight = true;
+      _burnoutData = data;
+      _isLoadingBurnoutPatterns = false;
     });
+  }
 
+  Future<void> _loadPersonalInsight() async {
+    final loadToken = ++_insightLoadToken;
+    setState(() => _isLoadingAiInsight = _aiInsightNudge == null);
+    AdaptiveNudgeRecommendation? insight;
     try {
-      final summary = await BurnoutScoreApi.fetchPatternSummary();
-      AdaptiveNudgeRecommendation? aiInsight;
-      try {
-        final insightsPaused = AppPreferencesController
-            .instance
-            .notifier
-            .value
-            .pauseWellnessInsights;
-        aiInsight = insightsPaused
-            ? null
-            : await AdaptiveNudgeApi.fetchPersonalInsight();
-      } catch (_) {
-        aiInsight = null;
+      if (!AppPreferencesController
+          .instance
+          .notifier
+          .value
+          .pauseWellnessInsights) {
+        insight = await AdaptiveNudgeApi.fetchPersonalInsight();
       }
-      if (!mounted || loadToken != _burnoutLoadToken) return;
-
-      setState(() {
-        _burnoutPatternSummary = summary;
-        _aiInsightNudge = aiInsight;
-        _isLoadingBurnoutPatterns = false;
-        _isLoadingAiInsight = false;
-      });
     } catch (_) {
-      if (!mounted || loadToken != _burnoutLoadToken) return;
-
-      setState(() {
-        _burnoutPatternSummary = null;
-        _aiInsightNudge = null;
-        _isLoadingBurnoutPatterns = false;
-        _isLoadingAiInsight = false;
-      });
+      insight = null;
     }
+    if (!mounted || loadToken != _insightLoadToken) return;
+    setState(() {
+      _aiInsightNudge = insight;
+      _isLoadingAiInsight = false;
+    });
   }
 
   Future<void> _loadFirstWeekLearning() async {
@@ -245,7 +247,8 @@ class _DashboardState extends State<Dashboard> {
 
     await Future.wait([
       _refreshWeeklyMetrics(),
-      _loadBurnoutPatterns(),
+      _loadBurnoutPatterns(forceRefresh: true),
+      _loadPersonalInsight(),
       _loadFirstWeekLearning(),
       refreshAppBarStreak(),
       refreshNotificationFeed(),
@@ -253,35 +256,24 @@ class _DashboardState extends State<Dashboard> {
   }
 
   String _burnoutRiskValue() {
-    final score = _burnoutPatternSummary?.latestScore;
-    if (_isLoadingBurnoutPatterns) {
-      return '--';
-    }
-
-    return score == null ? '--' : score.overallScore.round().toString();
+    final score = _burnoutData?.score;
+    return score == null ? '--' : '$score/100';
   }
 
   String _burnoutRiskSubtitle() {
-    final summary = _burnoutPatternSummary;
-    if (_isLoadingBurnoutPatterns) {
-      return 'Loading trend';
-    }
-    if (summary == null || summary.latestScore == null) {
-      return 'No score history yet';
-    }
-    if (summary.latestScore!.confidenceScore < 55) {
-      return summary.adaptiveState.label;
-    }
-
-    final sevenDay = summary.windowForDays(7);
-    final delta = sevenDay?.deltaFromStart;
-    if (delta == null) {
-      return summary.adaptiveState.label;
-    }
-
-    final prefix = delta > 0 ? '+' : '';
-    return '$prefix${delta.toStringAsFixed(1)} over 7 days';
+    final data = _burnoutData;
+    if (_isLoadingBurnoutPatterns) return 'Loading estimate';
+    return data?.status ?? 'No estimate yet';
   }
+
+  Color _burnoutRiskColor() => switch (_burnoutData?.riskLevel) {
+    'very_low' => const Color(0xFF096EB1),
+    'low' => const Color(0xFF097790),
+    'moderate' => const Color(0xFF9A7307),
+    'high' => const Color(0xFFD46E14),
+    'very_high' || 'critical' => const Color(0xFFE74C3C),
+    _ => const Color(0xFF64748B),
+  };
 
   Color _burnoutTrendColor() {
     final trend = _burnoutPatternSummary?.windowForDays(7)?.trendDirection;
@@ -340,10 +332,11 @@ class _DashboardState extends State<Dashboard> {
                           child: Row(
                             children: [
                               DashboardStatCard(
-                                title: "Burnout risk",
+                                title: "Burnout Risk estimate",
                                 value: _burnoutRiskValue(),
                                 subtitle: _burnoutRiskSubtitle(),
-                                subtitleColor: _burnoutTrendColor(),
+                                detail: _burnoutData?.sourceLabel,
+                                subtitleColor: _burnoutRiskColor(),
                                 icon: _burnoutTrendIcon(),
                                 iconColor: _burnoutTrendColor(),
                                 isLoading: _isLoadingBurnoutPatterns,
@@ -363,7 +356,8 @@ class _DashboardState extends State<Dashboard> {
                           child: BurnoutRiskTrendCard(
                             summary: _burnoutPatternSummary,
                             isLoading: _isLoadingBurnoutPatterns,
-                            onRefresh: _loadBurnoutPatterns,
+                            onRefresh: () =>
+                                _loadBurnoutPatterns(forceRefresh: true),
                           ),
                         ),
                         const SizedBox(height: 12),

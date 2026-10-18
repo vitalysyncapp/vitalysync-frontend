@@ -457,8 +457,11 @@ class BurnoutScoreApi {
   static const String _scoreHistoryCache = 'burnout_score_history';
   static const String _patternSummaryCache = 'burnout_pattern_summary';
   static final ValueNotifier<int> refreshSignal = ValueNotifier<int>(0);
+  static int inputsRevision = 0;
 
-  static Future<BurnoutScoreSnapshot?> fetchLatestScore() async {
+  static Future<BurnoutScoreSnapshot?> fetchLatestScore({
+    bool forceRefresh = false,
+  }) async {
     final userId = await _storedUserId();
     if (userId == null) {
       return null;
@@ -469,36 +472,45 @@ class BurnoutScoreApi {
       scope: userId.toString(),
     );
     final cachedScore = cachedSnapshot?.data['score'];
-    if (cachedScore is Map &&
+    if (!forceRefresh &&
+        cachedSnapshot?.data.containsKey('score') == true &&
         cachedSnapshot?.isFresh(FetchPolicy.fiveMinutes.maxAge) == true) {
-      return BurnoutScoreSnapshot.fromJson(
-        Map<String, dynamic>.from(cachedScore),
-      );
+      return cachedScore is Map
+          ? BurnoutScoreSnapshot.fromJson(
+              Map<String, dynamic>.from(cachedScore),
+            )
+          : null;
     }
 
     try {
-      final response = await http
-          .get(
-            Uri.parse('${ApiConfig.burnout('/scores/latest')}?user_id=$userId'),
-            headers: await ApiConfig.jsonHeaders(),
-          )
-          .timeout(_requestTimeout);
+      final result = await CachedJsonFetch.load<BurnoutScoreSnapshot?>(
+        namespace: _latestScoreCache,
+        scope: userId.toString(),
+        policy: FetchPolicy.fiveMinutes,
+        forceRefresh: true,
+        parser: (data) => data['score'] is Map
+            ? BurnoutScoreSnapshot.fromJson(
+                Map<String, dynamic>.from(data['score'] as Map),
+              )
+            : null,
+        fetcher: () async {
+          final response = await http
+              .get(
+                Uri.parse(
+                  '${ApiConfig.burnout('/scores/latest')}?user_id=$userId',
+                ),
+                headers: await ApiConfig.jsonHeaders(),
+              )
+              .timeout(_requestTimeout);
 
-      final data = _decodeResponseMap(response);
-      if (response.statusCode != 200 || data['has_score'] != true) {
-        return await _readCachedLatestScore(userId);
-      }
-
-      final score = data['score'];
-      if (score is! Map) {
-        return await _readCachedLatestScore(userId);
-      }
-
-      final scoreMap = Map<String, dynamic>.from(score);
-      await _cacheJson(_latestScoreCache, userId.toString(), {
-        'score': scoreMap,
-      });
-      return BurnoutScoreSnapshot.fromJson(scoreMap);
+          final data = _decodeResponseMap(response);
+          if (response.statusCode != 200 || data['has_score'] is! bool) {
+            throw Exception('Failed to fetch burnout score');
+          }
+          return {'score': data['has_score'] == true ? data['score'] : null};
+        },
+      );
+      return result?.data;
     } catch (_) {
       return _readCachedLatestScore(userId);
     }
@@ -603,7 +615,9 @@ class BurnoutScoreApi {
 
   static Future<BurnoutPatternSummary?> fetchPatternSummary({
     String? endDate,
+    bool forceRefresh = false,
   }) async {
+    final revision = inputsRevision;
     final userId = await _storedUserId();
     if (userId == null) {
       return null;
@@ -615,34 +629,47 @@ class BurnoutScoreApi {
       namespace: _patternSummaryCache,
       scope: cacheScope,
     );
-    if (cachedSnapshot?.isFresh(FetchPolicy.fiveMinutes.maxAge) == true) {
+    if (!forceRefresh &&
+        cachedSnapshot?.isFresh(FetchPolicy.fiveMinutes.maxAge) == true) {
       return BurnoutPatternSummary.fromJson(cachedSnapshot!.data);
     }
 
     try {
-      final uri = Uri.parse(ApiConfig.burnout('/patterns/summary')).replace(
-        queryParameters: {
-          'user_id': userId.toString(),
-          'end': effectiveEndDate,
+      final result = await CachedJsonFetch.load<BurnoutPatternSummary>(
+        namespace: _patternSummaryCache,
+        scope: cacheScope,
+        policy: FetchPolicy.fiveMinutes,
+        forceRefresh: true,
+        parser: BurnoutPatternSummary.fromJson,
+        fetcher: () async {
+          final uri = Uri.parse(ApiConfig.burnout('/patterns/summary')).replace(
+            queryParameters: {
+              'user_id': userId.toString(),
+              'end': effectiveEndDate,
+            },
+          );
+          final response = await http
+              .get(uri, headers: await ApiConfig.jsonHeaders())
+              .timeout(_requestTimeout);
+
+          final data = _decodeResponseMap(response);
+          if (response.statusCode != 200) {
+            throw Exception('Failed to fetch burnout patterns');
+          }
+          final latestScore = data['latest_score'];
+          if (latestScore is Map &&
+              effectiveEndDate == _todayKey() &&
+              revision == inputsRevision) {
+            // Preserve the last calculated estimate when an offline save
+            // invalidates the trend. It remains dated until syncing succeeds.
+            await _cacheJson(_latestScoreCache, userId.toString(), {
+              'score': Map<String, dynamic>.from(latestScore),
+            });
+          }
+          return data;
         },
       );
-      final response = await http
-          .get(uri, headers: await ApiConfig.jsonHeaders())
-          .timeout(_requestTimeout);
-
-      final data = _decodeResponseMap(response);
-      if (response.statusCode != 200) {
-        return await _readCachedPatternSummary(cacheScope);
-      }
-
-      await _cacheJson(_patternSummaryCache, cacheScope, data);
-      final latestScore = data['latest_score'];
-      if (latestScore is Map) {
-        await _cacheJson(_latestScoreCache, userId.toString(), {
-          'score': Map<String, dynamic>.from(latestScore),
-        });
-      }
-      return BurnoutPatternSummary.fromJson(data);
+      return result?.data;
     } catch (_) {
       return _readCachedPatternSummary(cacheScope);
     }
@@ -651,23 +678,31 @@ class BurnoutScoreApi {
   static Future<void> markInputsChanged({
     Map<String, dynamic>? latestScore,
     bool clearLatestScore = false,
+    bool preserveScoreCache = false,
   }) async {
+    inputsRevision++;
     final userId = await _storedUserId();
     if (userId == null) {
       return;
     }
 
     await Future.wait([
-      OfflineCacheStore.removeScopePrefix(
-        namespace: _scoreHistoryCache,
+      if (!preserveScoreCache)
+        CachedJsonFetch.invalidateScopePrefix(
+          namespace: _scoreHistoryCache,
+          scopePrefix: '${userId}_',
+        ),
+      if (!preserveScoreCache)
+        CachedJsonFetch.invalidateScopePrefix(
+          namespace: _patternSummaryCache,
+          scopePrefix: '${userId}_',
+        ),
+      CachedJsonFetch.invalidateScopePrefix(
+        namespace: 'weekly_user_metrics',
         scopePrefix: '${userId}_',
       ),
-      OfflineCacheStore.removeScopePrefix(
-        namespace: _patternSummaryCache,
-        scopePrefix: '${userId}_',
-      ),
-      if (clearLatestScore && latestScore == null)
-        OfflineCacheStore.remove(
+      if (clearLatestScore || latestScore != null)
+        CachedJsonFetch.invalidate(
           namespace: _latestScoreCache,
           scope: userId.toString(),
         ),
@@ -703,7 +738,7 @@ class BurnoutScoreApi {
       scope: userId.toString(),
     );
     var score = data?['score'];
-    if (score is! Map) {
+    if (data == null) {
       final patternData = await OfflineCacheStore.readLatestJson(
         namespace: _patternSummaryCache,
         scope: _patternScope(userId: userId, endDate: _todayKey()),

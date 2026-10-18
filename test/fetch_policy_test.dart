@@ -194,6 +194,46 @@ void main() {
     );
   });
 
+  test(
+    'invalidation prevents a late response from restoring stale data',
+    () async {
+      final oldResponse = Completer<Map<String, dynamic>>();
+      final started = Completer<void>();
+      final oldLoad = CachedJsonFetch.load<String>(
+        namespace: 'policy_race',
+        scope: '7_today',
+        policy: FetchPolicy.fiveMinutes,
+        parser: _valueParser,
+        fetcher: () {
+          started.complete();
+          return oldResponse.future;
+        },
+      );
+      await started.future;
+      await CachedJsonFetch.invalidateScopePrefix(
+        namespace: 'policy_race',
+        scopePrefix: '7_',
+      );
+      final newLoad = await CachedJsonFetch.load<String>(
+        namespace: 'policy_race',
+        scope: '7_today',
+        policy: FetchPolicy.fiveMinutes,
+        parser: _valueParser,
+        fetcher: () async => {'value': 'new check-in'},
+      );
+      expect(newLoad?.data, 'new check-in');
+      oldResponse.complete({'value': 'before check-in'});
+      await oldLoad;
+      expect(
+        await OfflineCacheStore.readLatestJson(
+          namespace: 'policy_race',
+          scope: '7_today',
+        ),
+        {'value': 'new check-in'},
+      );
+    },
+  );
+
   test('scope prefix invalidation clears only related query ranges', () async {
     await OfflineCacheStore.saveJson(
       namespace: 'burnout_history',

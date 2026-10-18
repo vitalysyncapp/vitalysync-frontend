@@ -361,6 +361,7 @@ class LogApi {
 
     try {
       await _trySyncPendingLogs();
+      final revision = BurnoutScoreApi.inputsRevision;
 
       final response = await http
           .get(
@@ -370,6 +371,7 @@ class LogApi {
           .timeout(_requestTimeout);
 
       final data = _decodeResponseMap(response);
+      if (revision != BurnoutScoreApi.inputsRevision) return fetchLatestLog();
 
       if (response.statusCode != 200) {
         throw _LogApiException(
@@ -392,6 +394,14 @@ class LogApi {
       data['is_offline'] = false;
       data['pending_sync_count'] = await pendingLogCount();
 
+      final visibleLogs = await _mergePendingUserLogs(
+        userId,
+        log == null ? [] : [log],
+      );
+      if (visibleLogs.isNotEmpty) {
+        data['has_log'] = true;
+        data['log'] = visibleLogs.last;
+      }
       return data;
     } on _LogApiException catch (error) {
       if (!error.canUseOfflineFallback) {
@@ -422,6 +432,7 @@ class LogApi {
 
     try {
       await _trySyncPendingLogs();
+      final revision = BurnoutScoreApi.inputsRevision;
 
       final uri = Uri.parse(ApiConfig.logs('/history')).replace(
         queryParameters: {
@@ -435,6 +446,13 @@ class LogApi {
           .get(uri, headers: await ApiConfig.jsonHeaders())
           .timeout(_requestTimeout);
       final data = _decodeResponseMap(response);
+      if (revision != BurnoutScoreApi.inputsRevision) {
+        return fetchHistory(
+          startDate: startDate,
+          endDate: endDate,
+          limit: limit,
+        );
+      }
 
       if (response.statusCode != 200) {
         throw _LogApiException(
@@ -454,7 +472,11 @@ class LogApi {
         await _upsertCachedLog(userId, log);
       }
 
-      return logs;
+      return _filterLogsByDate(
+        await _mergePendingUserLogs(userId, logs),
+        startDate: startDate,
+        endDate: endDate,
+      ).take(limit).toList();
     } on _LogApiException catch (error) {
       if (!error.canUseOfflineFallback) {
         rethrow;
@@ -479,9 +501,7 @@ class LogApi {
   static String formatSleepHours(dynamic value) {
     final hours = parseDouble(value);
 
-    if (hours == 0) {
-      return '--';
-    }
+    if (value == null) return '--';
 
     if (hours == hours.roundToDouble()) {
       return '${hours.toInt()}h';
@@ -493,9 +513,7 @@ class LogApi {
   static String formatHydrationLiters(dynamic value) {
     final liters = parseDouble(value);
 
-    if (liters == 0) {
-      return '--';
-    }
+    if (value == null) return '--';
 
     final formatted = liters == liters.roundToDouble()
         ? liters.toInt().toString()
@@ -633,7 +651,6 @@ class LogApi {
       await _upsertCachedLog(userId, savedLog ?? log);
       await _clearHydrationPrefillForUser(userId);
       await _clearExercisePrefillForUser(userId);
-      await _refreshBurnoutCacheAfterInputChange(data);
 
       final streak = data['streak'] as Map<String, dynamic>?;
       await _persistSyncedStreakSnapshot(userId, streak);
@@ -645,6 +662,7 @@ class LogApi {
       data['pending_sync_count'] = await pendingLogCount();
       await invalidateNotificationFeedCache();
 
+      await _refreshBurnoutCacheAfterInputChange(data);
       return data;
     } on StreakRestoreRequiredException {
       rethrow;
@@ -1045,10 +1063,14 @@ class LogApi {
     try {
       final data = await _postUnifiedCheckIn(userId, payload);
       await _removePendingCheckIn(userId, logDate);
-      await _upsertCachedLog(userId, {...daily, 'log_date': logDate});
+      await _upsertCachedLog(
+        userId,
+        data['log'] is Map
+            ? Map<String, dynamic>.from(data['log'] as Map)
+            : {...daily, 'log_date': logDate},
+      );
       await _clearHydrationPrefillForUser(userId);
       await _clearExercisePrefillForUser(userId);
-      await _refreshBurnoutCacheAfterInputChange(data);
       await _persistSyncedStreakSnapshot(
         userId,
         data['streak'] as Map<String, dynamic>?,
@@ -1065,6 +1087,7 @@ class LogApi {
       data['is_offline'] = false;
       data['pending_sync_count'] = await pendingLogCount();
       await invalidateNotificationFeedCache();
+      await _refreshBurnoutCacheAfterInputChange(data);
       return data;
     } on StreakRestoreRequiredException {
       rethrow;
@@ -1154,6 +1177,7 @@ class LogApi {
       'existing_check_in': {'daily': daily, 'weekly': payload['weekly']},
     });
     await invalidateNotificationFeedCache();
+    await _refreshBurnoutCacheAfterInputChange(const {'is_offline': true});
     return {
       'message': 'Check-in saved locally and will sync when online',
       'check_in_type': mode.apiValue,
@@ -1165,7 +1189,18 @@ class LogApi {
     };
   }
 
-  static Future<int> _syncPendingCheckIns(int userId) async {
+  static final Map<int, Future<int>> _checkInSyncs = {};
+
+  static Future<int> _syncPendingCheckIns(int userId) {
+    return _checkInSyncs.putIfAbsent(
+      userId,
+      () => _syncPendingCheckInsForUser(userId).whenComplete(() {
+        _checkInSyncs.remove(userId);
+      }),
+    );
+  }
+
+  static Future<int> _syncPendingCheckInsForUser(int userId) async {
     final pending = await _readPendingCheckIns(userId);
     if (pending.isEmpty) return 0;
     final sorted = [...pending]
@@ -1200,7 +1235,6 @@ class LogApi {
               ? Map<String, dynamic>.from(data['log'] as Map)
               : {...daily, 'log_date': payload['log_date']},
         );
-        await _refreshBurnoutCacheAfterInputChange(data);
         await _persistSyncedStreakSnapshot(
           userId,
           data['streak'] as Map<String, dynamic>?,
@@ -1209,6 +1243,7 @@ class LogApi {
           (item) => item['log_date'] == payload['log_date'],
         );
         await _writePendingCheckIns(userId, remaining);
+        await _refreshBurnoutCacheAfterInputChange(data);
         synced++;
       } on CheckInModeChangedException {
         // Preserve the short answers. Status loading will reveal the five
@@ -1380,6 +1415,17 @@ class LogApi {
       return 0;
     }
 
+    return _logSyncs.putIfAbsent(
+      userId,
+      () => _syncPendingLogsForUser(userId).whenComplete(() {
+        _logSyncs.remove(userId);
+      }),
+    );
+  }
+
+  static final Map<int, Future<int>> _logSyncs = {};
+
+  static Future<int> _syncPendingLogsForUser(int userId) async {
     final baselineState = await BaselineRefreshSyncService.instance.syncPending(
       userId,
     );
@@ -1403,7 +1449,6 @@ class LogApi {
       final savedLog = data['log'] as Map<String, dynamic>?;
 
       await _upsertCachedLog(userId, savedLog ?? log);
-      await _refreshBurnoutCacheAfterInputChange(data);
       await _persistSyncedStreakSnapshot(
         userId,
         data['streak'] as Map<String, dynamic>?,
@@ -1413,6 +1458,7 @@ class LogApi {
         (item) => normalizeDateString(item['log_date']) == log['log_date'],
       );
       await _writePendingLogs(userId, remainingLogs);
+      await _refreshBurnoutCacheAfterInputChange(data);
       syncedCount++;
     }
 

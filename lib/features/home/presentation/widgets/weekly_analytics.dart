@@ -158,7 +158,9 @@ class WeeklyAnalyticsCard extends StatelessWidget {
 }
 
 class HomeWeeklyAnalyticsCard extends StatefulWidget {
-  const HomeWeeklyAnalyticsCard({super.key});
+  final int refreshVersion;
+
+  const HomeWeeklyAnalyticsCard({super.key, this.refreshVersion = 0});
 
   @override
   State<HomeWeeklyAnalyticsCard> createState() =>
@@ -171,7 +173,26 @@ class _HomeWeeklyAnalyticsCardState extends State<HomeWeeklyAnalyticsCard> {
   @override
   void initState() {
     super.initState();
+    WeeklyUserMetricsService.refreshSignal.addListener(_reload);
     _future = WeeklyUserMetricsService.loadCurrentWeek();
+  }
+
+  @override
+  void dispose() {
+    WeeklyUserMetricsService.refreshSignal.removeListener(_reload);
+    super.dispose();
+  }
+
+  void _reload() {
+    setState(() => _future = WeeklyUserMetricsService.loadCurrentWeek());
+  }
+
+  @override
+  void didUpdateWidget(covariant HomeWeeklyAnalyticsCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.refreshVersion != widget.refreshVersion) {
+      _future = WeeklyUserMetricsService.loadCurrentWeek(forceRefresh: true);
+    }
   }
 
   @override
@@ -208,7 +229,9 @@ class _HomeWeeklyAnalyticsCardState extends State<HomeWeeklyAnalyticsCard> {
 
         return WeeklyAnalyticsCard(
           items: items,
-          isLoading: snapshot.connectionState == ConnectionState.waiting,
+          isLoading:
+              snapshot.data == null &&
+              snapshot.connectionState == ConnectionState.waiting,
         );
       },
     );

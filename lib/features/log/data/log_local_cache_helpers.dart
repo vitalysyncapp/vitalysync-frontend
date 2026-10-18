@@ -7,7 +7,7 @@ Future<Map<String, dynamic>> _buildOfflineUserLogResponse(
 }) async {
   final logs = await _readMergedUserLogs(userId);
   final streak = await _refreshOptimisticStreak(userId);
-  final pendingCount = (await _readPendingLogs(userId)).length;
+  final pendingCount = await LogApi.pendingLogCount();
 
   Map<String, dynamic>? log;
   if (forToday) {
@@ -51,6 +51,7 @@ Future<Map<String, dynamic>> _saveOfflineLog(
 
   final streak = await _refreshOptimisticStreak(userId);
   await invalidateNotificationFeedCache();
+  await _refreshBurnoutCacheAfterInputChange(const {'is_offline': true});
 
   return {
     'message': 'Daily log saved locally and will sync when online',
@@ -99,6 +100,7 @@ Future<void> _refreshBurnoutCacheAfterInputChange(
 ) async {
   final burnoutScore = data['burnout_score'];
   await BurnoutScoreApi.markInputsChanged(
+    preserveScoreCache: data['is_offline'] == true,
     latestScore: burnoutScore is Map
         ? Map<String, dynamic>.from(burnoutScore)
         : null,
@@ -160,11 +162,30 @@ Future<void> _upsertCachedLog(int userId, Map<String, dynamic> log) async {
 
 Future<List<Map<String, dynamic>>> _readMergedUserLogs(int userId) async {
   final cachedLogs = await _readCachedLogs(userId);
+  return _mergePendingUserLogs(userId, cachedLogs);
+}
+
+Future<List<Map<String, dynamic>>> _mergePendingUserLogs(
+  int userId,
+  List<Map<String, dynamic>> savedLogs,
+) async {
   final pendingLogs = await _readPendingLogs(userId);
-  final logs = [...cachedLogs];
+  final pendingCheckIns = await LogApi._readPendingCheckIns(userId);
+  final logs = [...savedLogs];
 
   for (final pendingLog in pendingLogs) {
     _upsertLogByDate(logs, pendingLog);
+  }
+  for (final pending in pendingCheckIns) {
+    if (pending['daily'] is! Map) continue;
+    _upsertLogByDate(
+      logs,
+      _normalizeLog({
+        ...Map<String, dynamic>.from(pending['daily'] as Map),
+        'log_date': pending['log_date'],
+        'pending_since': pending['pending_since'],
+      }),
+    );
   }
 
   logs.sort(_compareLogsByDate);

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../data/device_location_service.dart';
@@ -7,7 +9,7 @@ import '../../../../features/activity/data/activity_service.dart';
 import '../../../../features/dashboard/data/burnout_score_api.dart';
 import '../../../../features/activity/presentation/widgets/activity_summary_card.dart';
 import '../../../../features/log/data/log_api.dart';
-import '../../../../features/onboarding/services/onboarding_service.dart';
+import '../../../../features/dashboard/data/burnout_display_data.dart';
 import '../../../../shared/notifications/notification_feed_service.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
@@ -63,10 +65,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   String _hydrationSubtitle = 'No log yet';
   String? _hydrationLevel;
   Color _hydrationLevelColor = Colors.green;
-  int _burnoutScore = 40;
-  String _burnoutStatus = 'Baseline pending';
-  BurnoutScoreSnapshot? _latestBurnoutScore;
-  BurnoutPatternSummary? _burnoutPatternSummary;
+  BurnoutDisplayData? _burnoutData;
   bool _isLoadingBurnout = true;
   bool _isLoadingSummary = true;
   bool _isLoadingEnvironment = true;
@@ -76,6 +75,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   EnvironmentSnapshot? _environmentSnapshot;
   int _refreshVersion = 0;
   int _burnoutLoadToken = 0;
+  int _summaryLoadToken = 0;
 
   @override
   void initState() {
@@ -96,7 +96,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   void _handleBurnoutInputsChanged() {
-    _loadBurnoutBaseline();
+    setState(() => _refreshVersion++);
+    unawaited(_loadBurnoutBaseline());
+    unawaited(_loadLatestSummary(showLoader: false));
   }
 
   @override
@@ -116,7 +118,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
     await Future.wait([
       ActivityService.instance.refresh(),
-      _loadBurnoutBaseline(),
+      _loadBurnoutBaseline(forceRefresh: true),
       _loadLatestSummary(showLoader: false),
       _loadEnvironment(showLoader: false, forceRefresh: true),
       refreshAppBarStreak(),
@@ -124,90 +126,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     ]);
   }
 
-  Future<void> _loadBurnoutBaseline() async {
+  Future<void> _loadBurnoutBaseline({bool forceRefresh = false}) async {
     final loadToken = ++_burnoutLoadToken;
-
-    setState(() {
-      _isLoadingBurnout = true;
-    });
-
-    final defaults = await OnboardingService.loadDefaults();
-    BurnoutScoreSnapshot? latestScore;
-    BurnoutPatternSummary? patternSummary;
-
-    try {
-      final results = await Future.wait<Object?>([
-        BurnoutScoreApi.fetchLatestScore(),
-        BurnoutScoreApi.fetchPatternSummary(),
-      ]);
-      latestScore = results[0] as BurnoutScoreSnapshot?;
-      patternSummary = results[1] as BurnoutPatternSummary?;
-      // Pattern loading refreshes recent scores, so prefer its snapshot over a
-      // concurrently returned cached score from an older scoring version.
-      latestScore = patternSummary?.latestScore ?? latestScore;
-    } catch (_) {
-      latestScore = null;
-      patternSummary = null;
-    }
-
+    setState(() => _isLoadingBurnout = _burnoutData == null);
+    final data = await BurnoutDisplayData.load(forceRefresh: forceRefresh);
     if (!mounted || loadToken != _burnoutLoadToken) return;
-
     setState(() {
-      _latestBurnoutScore = latestScore;
-      _burnoutPatternSummary = patternSummary;
+      _burnoutData = data;
       _isLoadingBurnout = false;
-      if (latestScore != null) {
-        _burnoutScore = latestScore.overallScore.round();
-        _burnoutStatus = _burnoutStatusForRisk(
-          latestScore.riskLevel,
-          latestScore.confidenceScore,
-        );
-      } else {
-        _burnoutScore = defaults.burnoutScoreForDisplay;
-        _burnoutStatus = _burnoutStatusForLevel(defaults.initialBurnoutLevel);
-      }
     });
-  }
-
-  String _burnoutStatusForLevel(String? level) {
-    switch (level?.trim().toLowerCase()) {
-      case 'very low':
-        return 'Very low - keep your routine steady';
-      case 'low':
-        return 'Low - Keep protecting your recovery';
-      case 'moderate':
-        return 'Moderate - Pay attention to recovery';
-      case 'high':
-        return 'High - Make room for support and rest';
-      case 'very high':
-        return 'Very high - prioritize support and recovery';
-      default:
-        return 'Complete onboarding to set your baseline';
-    }
-  }
-
-  String _burnoutStatusForRisk(String level, double confidenceScore) {
-    final confidence = confidenceScore.round();
-    if (confidence < 55) {
-      return 'Limited confidence - complete the current check-in ($confidence% confidence)';
-    }
-
-    switch (level) {
-      case 'low':
-        return 'Low - Current patterns look steady ($confidence% confidence)';
-      case 'moderate':
-        return 'Moderate - Watch recovery trends ($confidence% confidence)';
-      case 'high':
-        return 'High - Recovery support is recommended ($confidence% confidence)';
-      case 'critical':
-        return 'Critical - Prioritize support and rest ($confidence% confidence)';
-      default:
-        return 'Current score available ($confidence% confidence)';
-    }
   }
 
   Future<void> _loadLatestSummary({bool showLoader = true}) async {
     if (!mounted) return;
+    final loadToken = ++_summaryLoadToken;
 
     setState(() {
       if (showLoader) {
@@ -222,7 +154,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       final log = data['log'] as Map<String, dynamic>?;
       final summaryIssue = _summaryIssueFrom(data);
 
-      if (!mounted) return;
+      if (!mounted || loadToken != _summaryLoadToken) return;
 
       if (!hasLog || log == null) {
         setState(() {
@@ -240,7 +172,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         return;
       }
 
-      final dateLabel = LogApi.formatLogDateLabel(log['log_date']);
+      final dateLabel = LogApi.parseInt(data['pending_sync_count']) > 0
+          ? '${LogApi.formatLogDateLabel(log['log_date'])} · saved offline'
+          : LogApi.formatLogDateLabel(log['log_date']);
       final hydrationStatus = LogApi.getHydrationStatus(
         log['hydration_liters'],
       );
@@ -259,7 +193,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         _summaryIssue = summaryIssue;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || loadToken != _summaryLoadToken) return;
 
       setState(() {
         _sleepSubtitle = 'Summary unavailable';
@@ -350,11 +284,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 100),
                     child: BurnoutCard(
-                      score: _burnoutScore,
-                      status: _burnoutStatus,
+                      score: _burnoutData?.score,
+                      status: _burnoutData?.status ?? 'No estimate yet',
+                      sourceLabel: _burnoutData?.sourceLabel,
+                      riskLevel: _burnoutData?.riskLevel,
                       isLoading: _isLoadingBurnout,
-                      latestScore: _latestBurnoutScore,
-                      patternSummary: _burnoutPatternSummary,
+                      latestScore: _burnoutData?.latestScore,
+                      patternSummary: _burnoutData?.patternSummary,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -428,7 +364,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   RevealOnBuild(
                     delay: const Duration(milliseconds: 400),
                     child: HomeWeeklyAnalyticsCard(
-                      key: ValueKey('home-weekly-$_refreshVersion'),
+                      refreshVersion: _refreshVersion,
                     ),
                   ),
                   ValueListenableBuilder<ActivityTrackingState>(

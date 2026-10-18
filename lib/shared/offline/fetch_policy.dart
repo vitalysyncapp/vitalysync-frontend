@@ -139,10 +139,25 @@ class CachedJsonFetch {
     required String namespace,
     required String scope,
   }) {
+    _inFlightRefreshes.remove('$namespace::$scope');
     return OfflineCacheStore.remove(namespace: namespace, scope: scope);
   }
 
+  static Future<void> invalidateScopePrefix({
+    required String namespace,
+    required String scopePrefix,
+  }) {
+    _inFlightRefreshes.removeWhere(
+      (key, _) => key.startsWith('$namespace::$scopePrefix'),
+    );
+    return OfflineCacheStore.removeScopePrefix(
+      namespace: namespace,
+      scopePrefix: scopePrefix,
+    );
+  }
+
   static Future<void> invalidateNamespace({required String namespace}) {
+    _inFlightRefreshes.removeWhere((key, _) => key.startsWith('$namespace::'));
     return OfflineCacheStore.removeNamespace(namespace: namespace);
   }
 
@@ -164,11 +179,14 @@ class CachedJsonFetch {
         () async {
           final data = await fetcher().timeout(policy.requestTimeout);
           final parsed = parser(data);
-          await OfflineCacheStore.saveJson(
-            namespace: namespace,
-            scope: scope,
-            data: data,
-          );
+          // A save may invalidate this request while it is still in flight.
+          if (identical(_inFlightRefreshes[requestKey], request)) {
+            await OfflineCacheStore.saveJson(
+              namespace: namespace,
+              scope: scope,
+              data: data,
+            );
+          }
           return parsed;
         }().whenComplete(() {
           if (identical(_inFlightRefreshes[requestKey], request)) {

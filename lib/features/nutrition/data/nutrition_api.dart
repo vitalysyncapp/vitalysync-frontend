@@ -3,6 +3,7 @@ import '../../adaptive/data/wellness_content_api.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show ValueNotifier;
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
@@ -236,6 +237,7 @@ class NutritionHistoryDay {
 }
 
 class NutritionApi {
+  static final ValueNotifier<int> refreshSignal = ValueNotifier<int>(0);
   static const Duration _requestTimeout = ApiRequestTimeouts.fastRead;
   static const Duration _analysisTimeout = ApiRequestTimeouts.aiAnalysis;
   static const String _dailyNutritionCache = 'nutrition_daily_summary';
@@ -365,15 +367,20 @@ class NutritionApi {
       throw Exception(data['message'] ?? 'Failed to save nutrition log.');
     }
 
-    await invalidateNotificationFeedCache();
-    await WellnessContentApi.invalidate();
+    _historyRequests.removeWhere((key, _) => key.startsWith('${userId}_'));
     await Future.wait([
       OfflineCacheStore.remove(
         namespace: _dailyNutritionCache,
         scope: _dailyScope(userId, logDate),
       ),
-      OfflineCacheStore.removeNamespace(namespace: _nutritionHistoryCache),
+      CachedJsonFetch.invalidateScopePrefix(
+        namespace: _nutritionHistoryCache,
+        scopePrefix: '${userId}_',
+      ),
     ]);
+    refreshSignal.value++;
+    await invalidateNotificationFeedCache();
+    await WellnessContentApi.invalidate();
   }
 
   static Future<void> discardAttempt(int attemptId) async {
