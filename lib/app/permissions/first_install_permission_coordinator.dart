@@ -31,7 +31,7 @@ class FirstInstallPermissionCoordinator {
           await DeviceLocationService.enableLocationAccess();
         },
         requestActivityPermission: () async {
-          await ActivityService.instance.requestActivityRecognitionPermission();
+          await ActivityService.instance.enableActivityAccess();
         },
         refreshNotificationSchedule: () => LocalNotificationService.instance
             .refreshReminderScheduleFromPreferences(requestPermission: false),
@@ -44,8 +44,9 @@ class FirstInstallPermissionCoordinator {
   final PermissionFlowStep _requestLocationPermission;
   final PermissionFlowStep _requestActivityPermission;
   final PermissionFlowStep _refreshNotificationSchedule;
+  Future<void>? _runningFlow;
 
-  const FirstInstallPermissionCoordinator({
+  FirstInstallPermissionCoordinator({
     required bool Function() isAndroid,
     required Future<bool> Function() isCompleted,
     required PermissionFlowStep markCompleted,
@@ -61,13 +62,16 @@ class FirstInstallPermissionCoordinator {
        _requestActivityPermission = requestActivityPermission,
        _refreshNotificationSchedule = refreshNotificationSchedule;
 
-  Future<void> run({required PermissionFlowStep notificationSoundStep}) async {
+  Future<void> run() => _runningFlow ??= _run().whenComplete(() {
+    _runningFlow = null;
+  });
+
+  Future<void> _run() async {
     if (!_isAndroid() || await _isCompleted()) {
       return;
     }
 
     await _requestNotificationPermission();
-    await notificationSoundStep();
     await _requestLocationPermission();
     await _requestActivityPermission();
     await _refreshNotificationSchedule();

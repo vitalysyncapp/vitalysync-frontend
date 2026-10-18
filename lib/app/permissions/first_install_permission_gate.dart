@@ -2,18 +2,17 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../l10n/localized_text.dart';
-import '../../shared/notifications/notification_system_settings_controller.dart';
-import '../../shared/theme/app_page_style.dart';
 import 'first_install_permission_coordinator.dart';
 
 class FirstInstallPermissionGate extends StatefulWidget {
   final Widget child;
+  final bool enabled;
   final FirstInstallPermissionCoordinator? coordinator;
 
   const FirstInstallPermissionGate({
     super.key,
     required this.child,
+    this.enabled = true,
     this.coordinator,
   });
 
@@ -24,12 +23,30 @@ class FirstInstallPermissionGate extends StatefulWidget {
 
 class _FirstInstallPermissionGateState
     extends State<FirstInstallPermissionGate> {
-  bool _isReady = false;
+  bool _hasStarted = false;
 
   @override
   void initState() {
     super.initState();
+    _schedulePermissionFlow();
+  }
+
+  @override
+  void didUpdateWidget(covariant FirstInstallPermissionGate oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _schedulePermissionFlow();
+  }
+
+  void _schedulePermissionFlow() {
+    if (!widget.enabled || _hasStarted) {
+      return;
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !widget.enabled || _hasStarted) {
+        return;
+      }
+      _hasStarted = true;
       unawaited(_runPermissionFlow());
     });
   }
@@ -37,72 +54,13 @@ class _FirstInstallPermissionGateState
   Future<void> _runPermissionFlow() async {
     try {
       await (widget.coordinator ?? FirstInstallPermissionCoordinator.instance)
-          .run(notificationSoundStep: _showNotificationSoundStep);
-    } finally {
-      if (mounted) {
-        setState(() => _isReady = true);
-      }
-    }
-  }
-
-  Future<void> _showNotificationSoundStep() async {
-    if (!mounted) {
-      return;
-    }
-
-    final shouldOpenSettings = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const LocalizedText('Turn on notification sound'),
-        content: const LocalizedText(
-          'Android gives you final control of notification sound. Open VitalySync notification settings, turn on Ring, then return here to continue.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const LocalizedText('Not now'),
-          ),
-          FilledButton(
-            key: const ValueKey('open-notification-sound-settings'),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const LocalizedText('Open sound settings'),
-          ),
-        ],
-      ),
-    );
-
-    if (shouldOpenSettings == true) {
-      await NotificationSystemSettingsController.instance.open();
+          .run();
+    } catch (error, stackTrace) {
+      debugPrint('Unable to request device permissions: $error');
+      debugPrintStack(stackTrace: stackTrace);
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    if (_isReady) {
-      return widget.child;
-    }
-
-    return Container(
-      decoration: buildPageDecoration(context),
-      child: const Scaffold(
-        backgroundColor: Colors.transparent,
-        body: SafeArea(
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 18),
-                LocalizedText(
-                  'Preparing your device permissions...',
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => widget.child;
 }

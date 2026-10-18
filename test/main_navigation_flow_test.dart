@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vitalysync/app/main_navigation.dart';
+import 'package:vitalysync/app/permissions/first_install_permission_coordinator.dart';
 import 'package:vitalysync/features/activity/data/activity_service.dart';
 import 'package:vitalysync/features/auth/presentation/pages/auth_start_page.dart';
 import 'package:vitalysync/features/dashboard/presentation/pages/dashboard_page.dart';
@@ -16,6 +17,7 @@ import 'package:vitalysync/features/profile/presentation/pages/profile_page.dart
 import 'package:vitalysync/features/settings/presentation/pages/settings_page.dart';
 import 'package:vitalysync/features/streaks/presentation/pages/personal_streak_page.dart';
 import 'package:vitalysync/features/streaks/presentation/pages/streak_leaderboard_page.dart';
+import 'package:vitalysync/features/tutorial/services/core_tutorial_replay_controller.dart';
 import 'package:vitalysync/shared/navigation/main_tab.dart';
 import 'package:vitalysync/shared/widgets/app_bar.dart';
 import 'package:vitalysync/shared/widgets/bottom_nav.dart';
@@ -34,6 +36,7 @@ void main() {
     MainTab initialTab = MainTab.home,
     bool showTutorialOnStart = false,
     int? tutorialUserId,
+    FirstInstallPermissionCoordinator? permissionCoordinator,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -42,6 +45,7 @@ void main() {
           initialTab: initialTab,
           showTutorialOnStart: showTutorialOnStart,
           tutorialUserId: tutorialUserId,
+          permissionCoordinator: permissionCoordinator,
         ),
       ),
     );
@@ -61,6 +65,66 @@ void main() {
       find.byType(MainNavigationController),
     );
   }
+
+  FirstInstallPermissionCoordinator permissionCoordinator(List<String> order) {
+    var completed = false;
+    return FirstInstallPermissionCoordinator(
+      isAndroid: () => true,
+      isCompleted: () async => completed,
+      markCompleted: () async => completed = true,
+      requestNotificationPermission: () async => order.add('notification'),
+      requestLocationPermission: () async => order.add('location'),
+      requestActivityPermission: () async => order.add('activity'),
+      refreshNotificationSchedule: () async {},
+    );
+  }
+
+  testWidgets(
+    'fresh install requests native permissions when login opens home',
+    (tester) async {
+      configureLoggedInSession();
+      final order = <String>[];
+      await pumpMainNavigation(
+        tester,
+        permissionCoordinator: permissionCoordinator(order),
+      );
+
+      expect(find.byType(HomePage), findsOneWidget);
+      expect(find.text('Preparing your device permissions...'), findsNothing);
+      expect(order, ['notification', 'location', 'activity']);
+      await disposeNavigation(tester);
+    },
+  );
+
+  testWidgets('new account requests permissions after skipping the tutorial', (
+    tester,
+  ) async {
+    configureLoggedInSession();
+    final order = <String>[];
+    await pumpMainNavigation(
+      tester,
+      showTutorialOnStart: true,
+      tutorialUserId: 1,
+      permissionCoordinator: permissionCoordinator(order),
+    );
+    expect(find.text('Welcome to your VitalySync tour'), findsOneWidget);
+    expect(order, isEmpty);
+
+    await tester.tap(find.byKey(const ValueKey('core-tutorial-skip-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byKey(const ValueKey('core-tutorial-panel')), findsNothing);
+    expect(order, ['notification', 'location', 'activity']);
+
+    CoreTutorialReplayController.instance.requestReplay();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(find.byKey(const ValueKey('core-tutorial-skip-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(order, ['notification', 'location', 'activity']);
+    await disposeNavigation(tester);
+  });
 
   testWidgets('five destinations stay mounted and switch through typed tabs', (
     tester,
@@ -284,10 +348,12 @@ void main() {
 
   testWidgets('tutorial visits My streak and its leaderboard', (tester) async {
     configureLoggedInSession();
+    final permissionOrder = <String>[];
     await pumpMainNavigation(
       tester,
       showTutorialOnStart: true,
       tutorialUserId: 1,
+      permissionCoordinator: permissionCoordinator(permissionOrder),
     );
 
     expect(find.text('Welcome to your VitalySync tour'), findsOneWidget);
@@ -375,12 +441,23 @@ void main() {
       ),
     );
 
-    await tester.tap(find.byKey(const ValueKey('core-tutorial-skip-button')));
+    for (final title in const [
+      'Settings keeps assistant access in one place',
+      'Overlay mode is optional',
+      'You are ready to begin',
+    ]) {
+      await advanceTutorial();
+      expect(find.text(title), findsOneWidget);
+      expect(permissionOrder, isEmpty);
+    }
+    await tester.tap(find.byKey(const ValueKey('core-tutorial-next-button')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.byType(PersonalStreakPage), findsNothing);
     expect(find.byType(StreakLeaderboardPage), findsNothing);
+    expect(find.byKey(const ValueKey('core-tutorial-panel')), findsNothing);
+    expect(permissionOrder, ['notification', 'location', 'activity']);
     await disposeNavigation(tester);
   });
 

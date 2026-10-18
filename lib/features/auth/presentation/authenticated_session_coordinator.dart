@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/main_navigation.dart';
-import '../../../app/permissions/first_install_permission_gate.dart';
 import '../../log/data/log_api.dart';
 import '../../onboarding/data/onboarding_api.dart';
 import '../../onboarding/presentation/pages/onboarding_page.dart';
 import '../../onboarding/services/onboarding_service.dart';
+import '../../tutorial/services/core_tutorial_service.dart';
 import '../../../shared/preferences/user_session.dart';
 import '../../../shared/preferences/session_expiration_coordinator.dart';
 
@@ -43,6 +43,10 @@ Future<void> completeAuthenticatedSession(
     }
   }
 
+  final showTutorialOnStart =
+      onboardingCompleted &&
+      await CoreTutorialService.instance.shouldShowForUser(userId);
+
   if (!context.mounted) {
     return;
   }
@@ -50,7 +54,10 @@ Future<void> completeAuthenticatedSession(
     context,
     MaterialPageRoute(
       builder: (_) => onboardingCompleted
-          ? const FirstInstallPermissionGate(child: MainNavigation())
+          ? MainNavigation(
+              tutorialUserId: userId,
+              showTutorialOnStart: showTutorialOnStart,
+            )
           : OnboardingPage(userId: userId),
     ),
     (route) => false,

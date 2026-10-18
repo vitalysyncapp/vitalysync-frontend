@@ -30,6 +30,8 @@ import '../shared/assistant/floating_smart_nudge_assistant.dart';
 import '../shared/navigation/main_tab.dart';
 import '../shared/preferences/user_session.dart';
 import '../shared/widgets/app_bar.dart';
+import 'permissions/first_install_permission_coordinator.dart';
+import 'permissions/first_install_permission_gate.dart';
 
 class MainNavigationController extends InheritedWidget {
   final MainTab currentTab;
@@ -65,6 +67,7 @@ class MainNavigation extends StatefulWidget {
   final bool openNutritionLogOnStart;
   final int? tutorialUserId;
   final bool showTutorialOnStart;
+  final FirstInstallPermissionCoordinator? permissionCoordinator;
   final Future<CheckInStatus> Function()? checkInStatusLoader;
   final Future<bool> Function(List<Map<String, dynamic>> answers)?
   baselineRefreshSaver;
@@ -76,6 +79,7 @@ class MainNavigation extends StatefulWidget {
     this.openNutritionLogOnStart = false,
     this.tutorialUserId,
     this.showTutorialOnStart = false,
+    this.permissionCoordinator,
     this.checkInStatusLoader,
     this.baselineRefreshSaver,
     this.usernameLoader,
@@ -726,6 +730,14 @@ class _MainNavigationState extends State<MainNavigation>
 
   @override
   Widget build(BuildContext context) {
+    return FirstInstallPermissionGate(
+      enabled: !_isTutorialActive,
+      coordinator: widget.permissionCoordinator,
+      child: _buildNavigation(context),
+    );
+  }
+
+  Widget _buildNavigation(BuildContext context) {
     return MainNavigationController(
       currentTab: _currentTab,
       onTabSelected: _selectTab,

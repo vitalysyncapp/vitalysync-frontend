@@ -1,5 +1,6 @@
 import 'package:geolocator/geolocator.dart';
 
+import '../../../app/permissions/permission_runtime.dart';
 import '../../../shared/preferences/app_preferences.dart';
 
 class DeviceCoordinates {
@@ -37,6 +38,11 @@ class DeviceLocationService {
 
     if (permission == LocationPermission.denied &&
         permissionChoice == AppPermissionChoice.undecided) {
+      // Android prompts belong to the post-login/post-tutorial flow, not
+      // automatic environment loads while the main pages are being built.
+      if (isAndroidPermissionRuntime) {
+        return null;
+      }
       permission = await Geolocator.requestPermission();
     }
 
