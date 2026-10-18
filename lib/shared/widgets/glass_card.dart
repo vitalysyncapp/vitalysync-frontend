@@ -1,6 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
+import '../theme/app_page_style.dart';
+
 class GlassCard extends StatelessWidget {
   final Widget child;
 
@@ -23,8 +25,8 @@ class GlassCard extends StatelessWidget {
             gradient: LinearGradient(
               colors: isDark
                   ? [
-                      Colors.white.withValues(alpha: 0.1),
-                      Colors.white.withValues(alpha: 0.03),
+                      Colors.white.withValues(alpha: 0.16),
+                      Colors.white.withValues(alpha: 0.06),
                     ]
                   : [
                       Colors.white.withValues(alpha: 0.88),
@@ -35,7 +37,7 @@ class GlassCard extends StatelessWidget {
             ),
             border: Border.all(
               color: isDark
-                  ? Colors.white.withValues(alpha: 0.08)
+                  ? pageBorderColor(context)
                   : const Color(0xFFD6F1E8).withValues(alpha: 0.9),
             ),
             boxShadow: [
@@ -52,7 +54,7 @@ class GlassCard extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(innerRadius),
               color: isDark
-                  ? const Color(0xFF122033).withValues(alpha: 0.55)
+                  ? pageSurfaceColor(context)
                   : Colors.white.withValues(alpha: 0.4),
             ),
             child: child,

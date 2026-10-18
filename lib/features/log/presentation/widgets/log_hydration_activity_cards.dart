@@ -1,7 +1,7 @@
 part of 'log_widgets.dart';
 
 extension _LogHydrationActivityCards on LogWidgets {
-  Widget _buildHydrationCard() {
+  Widget _buildHydrationCard(BuildContext context) {
     final hydrationStatus = LogApi.getHydrationStatus(hydration);
     final hydrationAccent = Color(hydrationStatus.colorValue);
 
@@ -74,10 +74,10 @@ extension _LogHydrationActivityCards on LogWidgets {
                   child: LocalizedText(
                     "${hydration.toStringAsFixed(hydration % 1 == 0 ? 0 : 1)}L",
                     key: ValueKey(hydration),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 29,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF0891B2),
+                      color: pageAccentColor(context, const Color(0xFF0891B2)),
                     ),
                   ),
                 ),
@@ -86,7 +86,9 @@ extension _LogHydrationActivityCards on LogWidgets {
                   "Goal: 2.5L",
                   style: TextStyle(
                     fontSize: 14,
-                    color: hydrationAccent.withValues(alpha: 0.82),
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? pageAccentColor(context, hydrationAccent)
+                        : hydrationAccent.withValues(alpha: 0.82),
                   ),
                 ),
               ],

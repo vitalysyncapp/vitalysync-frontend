@@ -136,7 +136,11 @@ extension _LogWidgetSharedBuilders on LogWidgets {
                   ),
                 ],
               ),
-              child: Icon(icon, color: iconColor, size: 21),
+              child: Icon(
+                icon,
+                color: pageAccentColor(context, iconColor),
+                size: 21,
+              ),
             ),
             const SizedBox(width: 11),
             Expanded(
@@ -189,6 +193,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
       accentColor: iconColor,
       child: Builder(
         builder: (context) {
+          final foreground = pageAccentColor(context, iconColor);
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -224,7 +229,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
                             borderRadius: BorderRadius.circular(13),
                             border: Border.all(
                               color: selected
-                                  ? iconColor
+                                  ? foreground
                                   : pageBorderColor(context),
                               width: selected ? 1.7 : 1.1,
                             ),
@@ -245,7 +250,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
                                 '$value',
                                 style: TextStyle(
                                   color: selected
-                                      ? iconColor
+                                      ? foreground
                                       : pagePrimaryTextColor(context),
                                   fontSize: 17,
                                   fontWeight: FontWeight.w900,
@@ -259,7 +264,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
                                   maxLines: 1,
                                   style: TextStyle(
                                     color: selected
-                                        ? iconColor
+                                        ? foreground
                                         : pagePrimaryTextColor(context),
                                     fontSize: 11,
                                     fontWeight: FontWeight.w800,
@@ -280,7 +285,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
                     ? emptyMessage
                     : '$selectedMessagePrefix ${labels[selectedLevel - 1].toLowerCase()}.',
                 style: TextStyle(
-                  color: iconColor,
+                  color: foreground,
                   fontSize: 12,
                   height: 1.35,
                   fontWeight: FontWeight.w700,
@@ -368,6 +373,9 @@ extension _LogWidgetSharedBuilders on LogWidgets {
     return Builder(
       builder: (context) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
+        final selectedColor = isDark
+            ? pageAccentColor(context, const Color(0xFF2563EB))
+            : const Color(0xFF60A5FA);
 
         return _LogPressable(
           onTap: onTap,
@@ -386,7 +394,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: selected
-                    ? const Color(0xFF2563EB)
+                    ? pageAccentColor(context, const Color(0xFF2563EB))
                     : pageBorderColor(context),
                 width: selected ? 2 : 1.3,
               ),
@@ -409,7 +417,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
                       leadingIcon,
                       size: iconSize,
                       color: selected
-                          ? const Color(0xFF60A5FA)
+                          ? selectedColor
                           : pageSecondaryTextColor(context),
                     ),
                     const SizedBox(width: 6),
@@ -425,7 +433,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
                             ? FontWeight.w700
                             : FontWeight.w600,
                         color: selected
-                            ? const Color(0xFF60A5FA)
+                            ? selectedColor
                             : pagePrimaryTextColor(context),
                       ),
                     ),
@@ -437,7 +445,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
                         : Icons.radio_button_unchecked_rounded,
                     size: checkIconSize,
                     color: selected
-                        ? const Color(0xFF60A5FA)
+                        ? selectedColor
                         : pageSecondaryTextColor(context),
                   ),
                 ],

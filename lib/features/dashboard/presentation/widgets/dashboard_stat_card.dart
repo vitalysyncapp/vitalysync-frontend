@@ -63,7 +63,7 @@ class DashboardStatCard extends StatelessWidget {
                     child: Icon(
                       icon,
                       key: ValueKey<IconData>(icon),
-                      color: iconColor,
+                      color: pageAccentColor(context, iconColor),
                       size: 18,
                     ),
                   ),
@@ -99,7 +99,7 @@ class DashboardStatCard extends StatelessWidget {
                 subtitle,
                 style: TextStyle(
                   fontSize: 12,
-                  color: subtitleColor,
+                  color: pageAccentColor(context, subtitleColor),
                   fontWeight: FontWeight.w500,
                 ),
               ),

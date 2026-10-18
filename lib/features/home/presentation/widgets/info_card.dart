@@ -43,7 +43,7 @@ class InfoCard extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 22),
+          Icon(icon, color: pageAccentColor(context, color), size: 22),
           const SizedBox(height: 4),
           LocalizedText(
             title,
@@ -104,7 +104,7 @@ class InfoCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 9.5,
                   fontWeight: FontWeight.w700,
-                  color: statusColor ?? color,
+                  color: pageAccentColor(context, statusColor ?? color),
                 ),
               ),
             ),

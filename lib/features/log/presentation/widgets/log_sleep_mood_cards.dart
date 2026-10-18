@@ -2,6 +2,7 @@ part of 'log_widgets.dart';
 
 extension _LogSleepMoodCards on LogWidgets {
   Widget _buildSleepDurationCard(BuildContext context) {
+    final accent = pageAccentColor(context, const Color(0xFF4B3FF2));
     return _buildCard(
       accentColor: const Color(0xFF4B3FF2),
       child: Column(
@@ -26,10 +27,13 @@ extension _LogSleepMoodCards on LogWidgets {
                     overlayShape: const RoundSliderOverlayShape(
                       overlayRadius: 14,
                     ),
-                    activeTrackColor: const Color(0xFF4B3FF2),
-                    inactiveTrackColor: const Color(0xFFD8DCE2),
-                    thumbColor: const Color(0xFF4B3FF2),
-                    overlayColor: const Color(0x334B3FF2),
+                    activeTrackColor: accent,
+                    inactiveTrackColor:
+                        Theme.of(context).brightness == Brightness.dark
+                        ? pageBorderColor(context)
+                        : const Color(0xFFD8DCE2),
+                    thumbColor: accent,
+                    overlayColor: accent.withValues(alpha: 0.2),
                   ),
                   child: Slider(
                     value: sleepHours,
@@ -43,10 +47,10 @@ extension _LogSleepMoodCards on LogWidgets {
               const SizedBox(width: 10),
               LocalizedText(
                 "${sleepHours.round()}h",
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF4B3FF2),
+                  color: accent,
                 ),
               ),
             ],
@@ -56,18 +60,21 @@ extension _LogSleepMoodCards on LogWidgets {
     );
   }
 
-  Widget _buildSleepQualityCard() {
+  Widget _buildSleepQualityCard(BuildContext context) {
+    final accent = pageAccentColor(context, const Color(0xFF4B3FF2));
     return _buildCard(
       accentColor: const Color(0xFF4B3FF2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const LocalizedText(
+          LocalizedText(
             "Sleep quality",
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF0F172A),
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? pagePrimaryTextColor(context)
+                  : const Color(0xFF0F172A),
             ),
           ),
           const SizedBox(height: 12),
@@ -105,9 +112,7 @@ extension _LogSleepMoodCards on LogWidgets {
                           : pageSubtleSurfaceColor(context),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: selected
-                            ? const Color(0xFF4B3FF2)
-                            : pageBorderColor(context),
+                        color: selected ? accent : pageBorderColor(context),
                         width: selected ? 2 : 1.3,
                       ),
                       boxShadow: selected
@@ -211,7 +216,7 @@ extension _LogSleepMoodCards on LogWidgets {
                                 ? FontWeight.w700
                                 : FontWeight.w500,
                             color: selected
-                                ? const Color(0xFF4B3FF2)
+                                ? accent
                                 : pagePrimaryTextColor(context),
                           ),
                           child: FittedBox(

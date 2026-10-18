@@ -762,6 +762,11 @@ class AuthButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primaryForeground = isDark
+        ? theme.colorScheme.onPrimary
+        : Colors.white;
     final child = isLoading
         ? SizedBox(
             width: 20,
@@ -769,7 +774,7 @@ class AuthButton extends StatelessWidget {
             child: CircularProgressIndicator(
               strokeWidth: 2.4,
               color: primary
-                  ? Colors.white
+                  ? primaryForeground
                   : Theme.of(context).colorScheme.primary,
             ),
           )
@@ -792,15 +797,19 @@ class AuthButton extends StatelessWidget {
     final style = primary
         ? ElevatedButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.primary,
-            foregroundColor: Colors.white,
+            foregroundColor: primaryForeground,
             disabledBackgroundColor: Theme.of(
               context,
             ).colorScheme.primary.withValues(alpha: 0.46),
-            disabledForegroundColor: Colors.white.withValues(alpha: 0.78),
+            disabledForegroundColor: primaryForeground.withValues(alpha: 0.78),
           )
         : OutlinedButton.styleFrom(
             foregroundColor: pagePrimaryTextColor(context),
-            side: BorderSide(color: pageBorderColor(context)),
+            side: BorderSide(
+              color: isDark
+                  ? theme.colorScheme.outline
+                  : pageBorderColor(context),
+            ),
             backgroundColor: Colors.white.withValues(
               alpha: Theme.of(context).brightness == Brightness.dark
                   ? 0.04
@@ -848,6 +857,9 @@ InputDecoration authInputDecoration(
 }) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   final primary = Theme.of(context).colorScheme.primary;
+  final borderColor = isDark
+      ? Theme.of(context).colorScheme.outline
+      : pageBorderColor(context);
 
   return InputDecoration(
     labelText: label,
@@ -856,18 +868,18 @@ InputDecoration authInputDecoration(
     suffixIcon: suffixIcon,
     filled: true,
     fillColor: isDark
-        ? Colors.white.withValues(alpha: 0.06)
+        ? Theme.of(context).colorScheme.surfaceContainerLow
         : Colors.white.withValues(alpha: 0.76),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     labelStyle: TextStyle(color: pageSecondaryTextColor(context)),
     hintStyle: TextStyle(color: pageSecondaryTextColor(context)),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(16),
-      borderSide: BorderSide(color: pageBorderColor(context)),
+      borderSide: BorderSide(color: borderColor),
     ),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(16),
-      borderSide: BorderSide(color: pageBorderColor(context)),
+      borderSide: BorderSide(color: borderColor),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(16),

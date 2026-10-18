@@ -2,6 +2,7 @@ import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.da
 import 'package:flutter/material.dart';
 
 import '../navigation/main_tab.dart';
+import '../theme/app_page_style.dart';
 import 'package:vitalysync/l10n/localized_text.dart';
 
 class _BottomNavItemData {
@@ -89,7 +90,7 @@ Widget buildBottomNav({
           splashSpeedInMilliseconds: reduceMotion ? 1 : 260,
           scaleFactor: reduceMotion ? 0 : 0.12,
           borderColor: isDark
-              ? Colors.white.withValues(alpha: 0.08)
+              ? pageBorderColor(context)
               : const Color(0xFFDCE7ED),
           borderWidth: 0.8,
           blurEffect: false,
@@ -122,11 +123,11 @@ Widget buildBottomNav({
                     : const Duration(milliseconds: 220),
                 style: TextStyle(
                   color: hasLoggedToday
-                      ? const Color(0xFF15966A)
+                      ? pageAccentColor(context, const Color(0xFF15966A))
                       : currentTab == MainTab.log
-                      ? const Color(0xFF1D8CA8)
+                      ? pageAccentColor(context, const Color(0xFF1D8CA8))
                       : isDark
-                      ? Colors.white.withValues(alpha: 0.7)
+                      ? pageSecondaryTextColor(context)
                       : const Color(0xFF718295),
                   fontSize: isCompact ? 9.5 : 10.4,
                   fontWeight: currentTab == MainTab.log
@@ -161,6 +162,9 @@ Widget buildLogNavigationButton({
   final accent = hasLoggedToday
       ? const Color(0xFF15966A)
       : const Color(0xFF1D8CA8);
+  final foreground = isDark
+      ? Theme.of(context).colorScheme.onSecondary
+      : Colors.white;
   final showsSaveAction = isSelected && canSave;
   final effectiveOnTap = isSaving
       ? null
@@ -218,7 +222,7 @@ Widget buildLogNavigationButton({
                     border: Border.all(
                       color: isSelected || hasLoggedToday
                           ? Colors.white.withValues(alpha: 0.78)
-                          : accent,
+                          : pageAccentColor(context, accent),
                       width: isSelected ? 2.5 : 3.5,
                     ),
                     boxShadow: [
@@ -244,8 +248,8 @@ Widget buildLogNavigationButton({
                               ? SizedBox.square(
                                   key: const ValueKey('log-nav-saving'),
                                   dimension: isCompact ? 22 : 24,
-                                  child: const CircularProgressIndicator(
-                                    color: Colors.white,
+                                  child: CircularProgressIndicator(
+                                    color: foreground,
                                     strokeWidth: 2.5,
                                   ),
                                 )
@@ -261,8 +265,8 @@ Widget buildLogNavigationButton({
                                         : 'log-$isSelected-$hasLoggedToday',
                                   ),
                                   color: isSelected || hasLoggedToday
-                                      ? Colors.white
-                                      : accent,
+                                      ? foreground
+                                      : pageAccentColor(context, accent),
                                   size: isCompact ? 24 : 26,
                                 ),
                         ),
@@ -326,9 +330,9 @@ class _NavigationItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeColor = const Color(0xFF1D8CA8);
+    final activeColor = pageAccentColor(context, const Color(0xFF1D8CA8));
     final inactiveColor = isDark
-        ? Colors.white.withValues(alpha: 0.68)
+        ? pageSecondaryTextColor(context)
         : const Color(0xFF718295);
     final duration = reduceMotion
         ? Duration.zero

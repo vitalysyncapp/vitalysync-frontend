@@ -59,16 +59,19 @@ extension _LogPressureRecoveryCards on LogWidgets {
     );
   }
 
-  Widget _buildPerceivedStressCard() {
+  Widget _buildPerceivedStressCard(BuildContext context) {
     const stressLabels = ['Calm', 'Light', 'Steady', 'Heavy', 'Intense'];
     final selectedLevel = perceivedStressLevel;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color.fromARGB(255, 157, 94, 230), Color(0xFF56B4D3)],
+        gradient: LinearGradient(
+          colors: isDark
+              ? const [Color(0xFF49367A), Color(0xFF164E63)]
+              : const [Color.fromARGB(255, 157, 94, 230), Color(0xFF56B4D3)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -219,6 +222,10 @@ extension _LogPressureRecoveryCards on LogWidgets {
       accentColor: const Color(0xFF0F766E),
       child: Builder(
         builder: (context) {
+          final selectedForeground =
+              Theme.of(context).brightness == Brightness.dark
+              ? Theme.of(context).colorScheme.onPrimary
+              : Colors.white;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -287,7 +294,7 @@ extension _LogPressureRecoveryCards on LogWidgets {
                                 '$value',
                                 style: TextStyle(
                                   color: selected
-                                      ? Colors.white
+                                      ? selectedForeground
                                       : pagePrimaryTextColor(context),
                                   fontSize: 17,
                                   fontWeight: FontWeight.w900,
@@ -301,7 +308,7 @@ extension _LogPressureRecoveryCards on LogWidgets {
                                   maxLines: 1,
                                   style: TextStyle(
                                     color: selected
-                                        ? Colors.white
+                                        ? selectedForeground
                                         : pagePrimaryTextColor(context),
                                     fontSize: 11,
                                     fontWeight: FontWeight.w800,

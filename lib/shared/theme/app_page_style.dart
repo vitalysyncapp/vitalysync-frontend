@@ -16,31 +16,31 @@ BoxDecoration buildPageDecoration(BuildContext context) {
 
 Color pagePrimaryTextColor(BuildContext context) {
   return Theme.of(context).brightness == Brightness.dark
-      ? const Color(0xFFF8FAFC)
+      ? Theme.of(context).colorScheme.onSurface
       : const Color(0xFF10334A);
 }
 
 Color pageSecondaryTextColor(BuildContext context) {
   return Theme.of(context).brightness == Brightness.dark
-      ? const Color(0xFFB8C2D6)
+      ? Theme.of(context).colorScheme.onSurfaceVariant
       : const Color(0xFF5E7286);
 }
 
 Color pageSurfaceColor(BuildContext context) {
   return Theme.of(context).brightness == Brightness.dark
-      ? const Color(0xFF162338).withValues(alpha: 0.9)
+      ? Theme.of(context).colorScheme.surfaceContainer.withValues(alpha: 0.96)
       : Colors.white.withValues(alpha: 0.84);
 }
 
 Color pageSubtleSurfaceColor(BuildContext context) {
   return Theme.of(context).brightness == Brightness.dark
-      ? Colors.white.withValues(alpha: 0.055)
+      ? Theme.of(context).colorScheme.surfaceContainerHigh
       : const Color(0xFFF8FAFC);
 }
 
 Color pageBorderColor(BuildContext context) {
   return Theme.of(context).brightness == Brightness.dark
-      ? Colors.white.withValues(alpha: 0.1)
+      ? Theme.of(context).colorScheme.outlineVariant
       : const Color(0xFFD4E9E2).withValues(alpha: 0.8);
 }
 
@@ -54,6 +54,13 @@ List<BoxShadow> pageCardShadow(BuildContext context) {
       offset: const Offset(0, 5),
     ),
   ];
+}
+
+/// Keeps semantic accent colors readable on dark cards and tinted controls.
+Color pageAccentColor(BuildContext context, Color color) {
+  return Theme.of(context).brightness == Brightness.dark
+      ? Color.lerp(color, Colors.white, 0.48)!
+      : color;
 }
 
 double pageBottomContentPadding(BuildContext context, {double extra = 36}) {

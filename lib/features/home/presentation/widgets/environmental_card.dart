@@ -218,7 +218,7 @@ class EnvironmentalCard extends StatelessWidget {
   }) {
     return Row(
       children: [
-        Icon(icon, color: iconColor, size: 20),
+        Icon(icon, color: pageAccentColor(context, iconColor), size: 20),
         const SizedBox(width: 8),
         Expanded(
           child: LocalizedText(
@@ -232,7 +232,7 @@ class EnvironmentalCard extends StatelessWidget {
         LocalizedText(
           status,
           style: TextStyle(
-            color: statusColor,
+            color: pageAccentColor(context, statusColor),
             fontSize: 12.5,
             fontWeight: FontWeight.w600,
           ),

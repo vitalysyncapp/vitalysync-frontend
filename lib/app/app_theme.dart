@@ -23,8 +23,9 @@ ThemeData buildVitalySyncLightTheme() {
     ),
   );
   final poppinsTextTheme = GoogleFonts.poppinsTextTheme(base.textTheme);
-  final poppinsPrimaryTextTheme =
-      GoogleFonts.poppinsTextTheme(base.primaryTextTheme);
+  final poppinsPrimaryTextTheme = GoogleFonts.poppinsTextTheme(
+    base.primaryTextTheme,
+  );
 
   return base.copyWith(
     textTheme: poppinsTextTheme,
@@ -64,25 +65,70 @@ ThemeData buildVitalySyncLightTheme() {
 }
 
 ThemeData buildVitalySyncDarkTheme() {
+  final colors =
+      ColorScheme.fromSeed(
+        seedColor: const Color(0xFF5BDEC1),
+        brightness: Brightness.dark,
+      ).copyWith(
+        primary: const Color(0xFF67E8C3),
+        onPrimary: const Color(0xFF062D25),
+        secondary: const Color(0xFF90CDF4),
+        onSecondary: const Color(0xFF082A42),
+        surface: const Color(0xFF101D2D),
+        onSurface: const Color(0xFFF4F7FC),
+        onSurfaceVariant: const Color(0xFFCBD5E5),
+        surfaceContainerLowest: const Color(0xFF091320),
+        surfaceContainerLow: const Color(0xFF152236),
+        surfaceContainer: const Color(0xFF1C2D44),
+        surfaceContainerHigh: const Color(0xFF253952),
+        surfaceContainerHighest: const Color(0xFF304762),
+        outline: const Color(0xFF8193AD),
+        outlineVariant: const Color(0xFF435773),
+      );
   final base = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: const Color(0xFF5BDEC1),
-      brightness: Brightness.dark,
-    ),
+    colorScheme: colors,
   );
   final poppinsTextTheme = GoogleFonts.poppinsTextTheme(base.textTheme);
-  final poppinsPrimaryTextTheme =
-      GoogleFonts.poppinsTextTheme(base.primaryTextTheme);
+  final poppinsPrimaryTextTheme = GoogleFonts.poppinsTextTheme(
+    base.primaryTextTheme,
+  );
 
   return base.copyWith(
     textTheme: poppinsTextTheme,
     primaryTextTheme: poppinsPrimaryTextTheme,
-    scaffoldBackgroundColor: const Color(0xFF091320),
+    scaffoldBackgroundColor: colors.surfaceContainerLowest,
+    iconTheme: IconThemeData(color: colors.onSurfaceVariant),
+    dividerTheme: DividerThemeData(color: colors.outlineVariant),
+    inputDecorationTheme: InputDecorationThemeData(
+      filled: true,
+      fillColor: colors.surfaceContainerLow,
+      labelStyle: TextStyle(color: colors.onSurfaceVariant),
+      hintStyle: TextStyle(color: colors.onSurfaceVariant),
+      helperStyle: TextStyle(color: colors.onSurfaceVariant),
+      prefixIconColor: colors.onSurfaceVariant,
+      suffixIconColor: colors.onSurfaceVariant,
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colors.outline),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colors.primary, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colors.error),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colors.error, width: 2),
+      ),
+    ),
     pageTransitionsTheme: vitalySyncPageTransitionsTheme,
     dialogTheme: DialogThemeData(
-      backgroundColor: const Color(0xFF162338),
+      backgroundColor: colors.surfaceContainer,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
     ),
     appBarTheme: const AppBarTheme(
@@ -99,18 +145,20 @@ ThemeData buildVitalySyncDarkTheme() {
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF26B590),
-        foregroundColor: Colors.white,
+        backgroundColor: colors.primary,
+        foregroundColor: colors.onPrimary,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
+        foregroundColor: colors.primary,
+        side: BorderSide(color: colors.outline),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
     ),
     cardTheme: CardThemeData(
-      color: const Color(0xFF162338),
+      color: colors.surfaceContainer,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
     ),
