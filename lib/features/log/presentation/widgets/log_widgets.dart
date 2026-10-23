@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:vitalysync/l10n/localized_text.dart';
 
+import '../../../onboarding/data/burnout_baseline_questions.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/exercise_icon_mapper.dart';
 import '../../data/log_api.dart';
@@ -10,10 +11,13 @@ part 'log_hydration_activity_cards.dart';
 part 'log_pressure_recovery_cards.dart';
 part 'log_widget_shared_builders.dart';
 part 'log_widget_motion.dart';
+part 'log_weekly_reflection_cards.dart';
 
 class LogWidgets extends StatelessWidget {
   final bool revealCards;
   final bool showWeeklyQuestions;
+  final Map<String, int> weeklyAnswers;
+  final void Function(String questionKey, int value)? onWeeklyAnswerChanged;
   final double sleepHours;
   final int sleepQuality;
   final int moodIndex;
@@ -60,6 +64,8 @@ class LogWidgets extends StatelessWidget {
     super.key,
     this.revealCards = true,
     this.showWeeklyQuestions = false,
+    this.weeklyAnswers = const {},
+    this.onWeeklyAnswerChanged,
     required this.sleepHours,
     required this.sleepQuality,
     required this.moodIndex,
@@ -134,6 +140,10 @@ class LogWidgets extends StatelessWidget {
     addCard('hydration', _buildHydrationCard(context));
     addCard('workload', _buildWorkloadCard());
     addCard('exercise', _buildExerciseCard());
+
+    if (showWeeklyQuestions) {
+      _addWeeklyReflectionCards(addCard);
+    }
 
     return Column(children: cards);
   }

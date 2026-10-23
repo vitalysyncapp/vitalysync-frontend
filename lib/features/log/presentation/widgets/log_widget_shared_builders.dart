@@ -103,6 +103,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
     required Color iconColor,
     required String title,
     required String subtitle,
+    int subtitleMaxLines = 2,
   }) {
     return Builder(
       builder: (context) {
@@ -161,7 +162,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
                   const SizedBox(height: 1),
                   LocalizedText(
                     subtitle,
-                    maxLines: 2,
+                    maxLines: subtitleMaxLines,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 13,
@@ -188,6 +189,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
     required ValueChanged<int> onChanged,
     required String emptyMessage,
     required String selectedMessagePrefix,
+    int subtitleMaxLines = 2,
   }) {
     return _buildCard(
       accentColor: iconColor,
@@ -203,6 +205,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
                 iconColor: iconColor,
                 title: title,
                 subtitle: subtitle,
+                subtitleMaxLines: subtitleMaxLines,
               ),
               const SizedBox(height: 12),
               Row(

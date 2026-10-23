@@ -1,4 +1,5 @@
 import 'package:vitalysync/features/log/presentation/widgets/weekly_assessment_card.dart';
+import 'dart:async';
 import 'dart:math';
 
 import 'package:confetti/confetti.dart';
@@ -9,11 +10,13 @@ import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_bar.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import '../../../../shared/widgets/reveal_on_build.dart';
+import '../../../onboarding/data/burnout_baseline_questions.dart';
 import '../../../onboarding/services/onboarding_service.dart';
 import '../../../streaks/data/streak_models.dart';
 import '../../data/check_in_models.dart';
 import '../../data/check_in_state_coordinator.dart';
 import '../../data/log_api.dart';
+import '../../data/weekly_assessment_api.dart';
 import '../widgets/check_in_success_view.dart';
 import '../widgets/log_widgets.dart';
 import 'package:vitalysync/l10n/localized_text.dart';
@@ -140,6 +143,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   bool lastSaveWasOffline = false;
   int pendingSyncCount = 0;
   CheckInStatus? checkInStatus;
+  WeeklyReflectionState _weeklyReflection = const WeeklyReflectionState();
 
   CheckInMode get requiredMode =>
       checkInStatus?.requiredMode ?? CheckInMode.daily;
@@ -216,6 +220,14 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       final hasLog = status.hasTodayLog;
       final pendingCount = status.pendingSyncCount;
 
+      WeeklyReflectionState reflection = const WeeklyReflectionState();
+      if (status.requiredMode == CheckInMode.weekly) {
+        reflection = await WeeklyAssessmentApi.loadReflection(
+          fallbackDueDate:
+              status.schedule.dueDate ?? status.schedule.nextDueDate,
+        );
+      }
+
       if (!mounted) return;
 
       setState(() {
@@ -224,6 +236,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
         exerciseGoalLabel = defaults.exerciseGoalDays ?? '3–4 days';
         workloadContext = defaults.workloadLevel;
         checkInStatus = status;
+        _weeklyReflection = reflection;
         hasSavedLogToday = hasLog;
         isSubmitted = status.isComplete;
         hasPendingSync = pendingCount > 0;
@@ -320,9 +333,27 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     );
   }
 
+  void _handleWeeklyAnswerChanged(String questionKey, int value) {
+    setState(() {
+      _weeklyReflection = _weeklyReflection.withAnswer(questionKey, value);
+    });
+    final dueDate = _weeklyReflection.dueDate;
+    if (dueDate != null) {
+      unawaited(
+        WeeklyAssessmentApi.queueDraft(dueDate, _weeklyReflection.answers),
+      );
+    }
+  }
+
   Future<void> _saveLog({String streakRestoreDecision = 'defer'}) async {
     final draft = _buildDraft();
     final missingFields = draft.validationErrors(requiredMode);
+    if (showWeeklyQuestions && !_weeklyReflection.isAnswered) {
+      final answered = _weeklyReflection.answers.length;
+      missingFields.add(
+        'weekly reflection ($answered of $kWeeklyQuestionCount)',
+      );
+    }
     if (missingFields.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -349,6 +380,19 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       final streak = data['streak'] as Map<String, dynamic>?;
       final pendingCount = LogApi.parseInt(data['pending_sync_count']);
       final savedOffline = data['is_offline'] == true;
+
+      if (showWeeklyQuestions && _weeklyReflection.isAvailable) {
+        try {
+          await WeeklyAssessmentApi.saveReflection(_weeklyReflection);
+          if (mounted) {
+            setState(() {
+              _weeklyReflection = _weeklyReflection.markSaved();
+            });
+          }
+        } catch (_) {
+          // Handled or queued offline
+        }
+      }
 
       if (!mounted) return;
 
@@ -746,6 +790,9 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                                     delay: const Duration(milliseconds: 90),
                                     child: LogWidgets(
                                       showWeeklyQuestions: showWeeklyQuestions,
+                                      weeklyAnswers: _weeklyReflection.answers,
+                                      onWeeklyAnswerChanged:
+                                          _handleWeeklyAnswerChanged,
                                       sleepHours: sleepHours,
                                       sleepQuality: sleepQuality,
                                       moodIndex: moodIndex,
@@ -1037,7 +1084,8 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                         ),
                       ],
                     ),
-                    const WeeklyCheckInIndicator(compact: true),
+                    if (!showWeeklyQuestions)
+                      const WeeklyCheckInIndicator(compact: true),
                   ],
                 ),
               ),

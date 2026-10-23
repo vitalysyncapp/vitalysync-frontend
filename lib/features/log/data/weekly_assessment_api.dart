@@ -198,6 +198,109 @@ class WeeklyAssessmentApi {
       'answers': answers,
     });
   }
+
+  static Future<void> _draftQueue = Future<void>.value();
+
+  /// Keeps only the 11 weekly items with valid 1-5 answers.
+  static Map<String, int> weeklyAnswersOnly(Object? raw) {
+    if (raw is! Map) return {};
+    return {
+      for (final section in kBurnoutWeeklySections)
+        for (final question in section.questions)
+          if (raw[question.questionKey] case final num value
+              when value >= 1 && value <= 5)
+            question.questionKey: value.toInt(),
+    };
+  }
+
+  /// Loads the weekly reflection shown below the daily check-in on weekly days.
+  ///
+  /// [fallbackDueDate] comes from the daily check-in schedule and is used when
+  /// the weekly endpoint is unavailable.
+  static Future<WeeklyReflectionState> loadReflection({
+    String? fallbackDueDate,
+  }) async {
+    Map<String, dynamic>? data;
+    try {
+      data = await load();
+    } catch (_) {
+      // Fall back to the daily schedule so the questions can still be answered.
+    }
+    final completedToday = data?['completed_today'] == true;
+    final isDue = data?['is_due'] == true;
+    String? resolvedDueDate;
+    if (completedToday || isDue) {
+      resolvedDueDate = data?['due_date']?.toString();
+    }
+    final dueDate = resolvedDueDate ?? fallbackDueDate;
+    if (dueDate == null) return const WeeklyReflectionState();
+
+    final today = data?['today'];
+    final answers = weeklyAnswersOnly(today is Map ? today['answers'] : null);
+    try {
+      answers.addAll(weeklyAnswersOnly(await draft(dueDate)));
+    } catch (_) {
+      // Drafts are optional.
+    }
+    final pending = data?['pending'];
+    final queued = pending is Map && pending.containsKey(dueDate);
+    return WeeklyReflectionState(
+      dueDate: dueDate,
+      answers: answers,
+      isSaved: completedToday || queued,
+    );
+  }
+
+  /// Persists draft answers in order so a slower write never overwrites a
+  /// newer one.
+  static Future<void> queueDraft(String dueDate, Map<String, int> answers) {
+    final snapshot = Map<String, int>.from(answers);
+    _draftQueue = _draftQueue
+        .catchError((Object _) {})
+        .then((_) => saveDraft(dueDate, snapshot));
+    return _draftQueue.catchError((Object _) {});
+  }
+
+  /// Saves the inline weekly reflection. Returns false when queued offline.
+  static Future<bool> saveReflection(WeeklyReflectionState state) async {
+    final dueDate = state.dueDate;
+    if (dueDate == null) return true;
+    await _draftQueue.catchError((Object _) {});
+    return save(dueDate, state.answers);
+  }
+}
+
+/// Weekly reflection answers rendered inline below the daily check-in.
+class WeeklyReflectionState {
+  final String? dueDate;
+  final Map<String, int> answers;
+  final bool isSaved;
+
+  const WeeklyReflectionState({
+    this.dueDate,
+    this.answers = const {},
+    this.isSaved = false,
+  });
+
+  bool get isAvailable => dueDate != null;
+  bool get isPending => isAvailable && !isSaved;
+  bool get isAnswered => answers.length >= kWeeklyQuestionCount;
+
+  WeeklyReflectionState withAnswer(String questionKey, int value) {
+    return WeeklyReflectionState(
+      dueDate: dueDate,
+      answers: {...answers, questionKey: value},
+      isSaved: isSaved,
+    );
+  }
+
+  WeeklyReflectionState markSaved() {
+    return WeeklyReflectionState(
+      dueDate: dueDate,
+      answers: answers,
+      isSaved: true,
+    );
+  }
 }
 
 class _WeeklyRequestError implements Exception {

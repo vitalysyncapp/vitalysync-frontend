@@ -6,6 +6,8 @@ class _AssistantCheckInCard extends StatelessWidget {
   final bool isSaving;
   final CheckInStatus? status;
   final CheckInDraft draft;
+  final WeeklyReflectionState weeklyReflection;
+  final void Function(String questionKey, int value)? onWeeklyAnswerChanged;
   final bool isEditing;
   final int currentStreak;
   final String exerciseGoalLabel;
@@ -19,6 +21,8 @@ class _AssistantCheckInCard extends StatelessWidget {
     required this.isSaving,
     required this.status,
     required this.draft,
+    this.weeklyReflection = const WeeklyReflectionState(),
+    this.onWeeklyAnswerChanged,
     required this.isEditing,
     required this.currentStreak,
     required this.exerciseGoalLabel,
@@ -61,6 +65,10 @@ class _AssistantCheckInCard extends StatelessWidget {
     }
 
     final missing = draft.validationErrors(currentStatus.requiredMode);
+    if (_showWeeklyQuestions && !weeklyReflection.isAnswered) {
+      final answered = weeklyReflection.answers.length;
+      missing.add('weekly reflection ($answered/$kWeeklyQuestionCount)');
+    }
     final primary = Theme.of(context).colorScheme.primary;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final form = Column(
@@ -176,6 +184,8 @@ class _AssistantCheckInCard extends StatelessWidget {
         LogWidgets(
           revealCards: isActive,
           showWeeklyQuestions: _showWeeklyQuestions,
+          weeklyAnswers: weeklyReflection.answers,
+          onWeeklyAnswerChanged: onWeeklyAnswerChanged,
           sleepHours: draft.sleepHours,
           sleepQuality: draft.sleepQuality,
           moodIndex: draft.moodIndex,

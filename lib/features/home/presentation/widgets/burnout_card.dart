@@ -43,8 +43,11 @@ class BurnoutCard extends StatelessWidget {
 
   List<Color> _baseGradientColors() => switch (_riskLevel) {
     'very_low' => const [Color(0xFF096EB1), Color(0xFF5DADE2)],
-    'low' => const [Color(0xFF097790), Color(0xFF48C9B0)],
-    'moderate' => const [Color(0xFF9A7307), Color(0xFFC99F28)],
+    'low' => const [Color(0xFF5DADE2), Color(0xFF48C9B0)],
+    'moderate' => const [
+      Color.fromARGB(255, 19, 169, 9),
+      Color.fromARGB(255, 134, 203, 49),
+    ],
     'high' => const [Color(0xFFD46E14), Color(0xFFF5B041)],
     'very_high' || 'critical' => const [Color(0xFFE74C3C), Color(0xFFDB3710)],
     _ => const [Color(0xFF475569), Color(0xFF64748B)],

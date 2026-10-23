@@ -77,6 +77,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
   bool _isEditingCheckIn = false;
   CheckInStatus? _checkInStatus;
   CheckInDraft _checkInDraft = const CheckInDraft();
+  WeeklyReflectionState _weeklyReflection = const WeeklyReflectionState();
   String _exerciseGoalLabel = '3-4 days';
   int _checkInStreak = 0;
 
@@ -588,10 +589,18 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
       }
       final hydrationPrefill = await LogApi.readHydrationPrefill();
       final exercisePrefill = await LogApi.readExercisePrefill();
+      WeeklyReflectionState reflection = const WeeklyReflectionState();
+      if (status.requiredMode == CheckInMode.weekly) {
+        reflection = await WeeklyAssessmentApi.loadReflection(
+          fallbackDueDate:
+              status.schedule.dueDate ?? status.schedule.nextDueDate,
+        );
+      }
       if (!mounted) return;
 
       setState(() {
         _checkInStatus = status;
+        _weeklyReflection = reflection;
         _checkInStreak = streak;
         _isEditingCheckIn = !status.isComplete;
         _exerciseGoalLabel = defaults.exerciseGoalDays ?? '3-4 days';
@@ -613,10 +622,27 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     }
   }
 
+  void _handleWeeklyAnswerChanged(String questionKey, int value) {
+    setState(() {
+      _weeklyReflection = _weeklyReflection.withAnswer(questionKey, value);
+    });
+    final dueDate = _weeklyReflection.dueDate;
+    if (dueDate != null) {
+      unawaited(
+        WeeklyAssessmentApi.queueDraft(dueDate, _weeklyReflection.answers),
+      );
+    }
+  }
+
   Future<void> _saveCheckIn({String streakRestoreDecision = 'defer'}) async {
     final status = _checkInStatus;
     if (status == null) return;
     final missing = _checkInDraft.validationErrors(status.requiredMode);
+    if (status.requiredMode == CheckInMode.weekly &&
+        !_weeklyReflection.isAnswered) {
+      final answered = _weeklyReflection.answers.length;
+      missing.add('weekly reflection ($answered/$kWeeklyQuestionCount)');
+    }
     if (missing.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -636,6 +662,20 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
         mode: status.requiredMode,
         streakRestoreDecision: streakRestoreDecision,
       );
+
+      if (status.requiredMode == CheckInMode.weekly &&
+          _weeklyReflection.isAvailable) {
+        try {
+          await WeeklyAssessmentApi.saveReflection(_weeklyReflection);
+          if (mounted) {
+            setState(() {
+              _weeklyReflection = _weeklyReflection.markSaved();
+            });
+          }
+        } catch (_) {
+          // Handled or queued offline
+        }
+      }
 
       if (!mounted) return;
 
@@ -1166,6 +1206,8 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
           isSaving: _isSavingCheckIn,
           status: _checkInStatus,
           draft: _checkInDraft,
+          weeklyReflection: _weeklyReflection,
+          onWeeklyAnswerChanged: _handleWeeklyAnswerChanged,
           isEditing: _isEditingCheckIn,
           currentStreak: _checkInStreak,
           exerciseGoalLabel: _exerciseGoalLabel,
