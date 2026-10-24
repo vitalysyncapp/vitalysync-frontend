@@ -9,6 +9,7 @@ import '../offline/offline_cache_store.dart';
 import '../preferences/user_session.dart';
 import '../preferences/app_preferences.dart';
 import 'notification_feed_cache.dart';
+import 'smart_nudge_delivery_service.dart';
 
 export 'notification_feed_cache.dart';
 
@@ -27,6 +28,7 @@ class AppNotificationItem {
   final String? reportType;
   final String? periodStart;
   final String? periodEnd;
+  final String? nudgePayload;
 
   const AppNotificationItem({
     required this.id,
@@ -43,6 +45,7 @@ class AppNotificationItem {
     this.reportType,
     this.periodStart,
     this.periodEnd,
+    this.nudgePayload,
   });
 
   String get time => _timeAgo(updatedAt);
@@ -133,6 +136,7 @@ class AppNotificationItem {
       reportType: reportType,
       periodStart: periodStart,
       periodEnd: periodEnd,
+      nudgePayload: nudgePayload,
     );
   }
 
@@ -155,6 +159,7 @@ class AppNotificationItem {
       reportType: json['report_type']?.toString(),
       periodStart: json['period_start']?.toString(),
       periodEnd: json['period_end']?.toString(),
+      nudgePayload: json['nudge_payload']?.toString(),
     );
   }
 
@@ -173,6 +178,7 @@ class AppNotificationItem {
       'report_type': reportType,
       'period_start': periodStart,
       'period_end': periodEnd,
+      'nudge_payload': nudgePayload,
     };
   }
 }
@@ -444,16 +450,33 @@ class NotificationFeedService {
     return AppNotificationItem(
       id: id,
       category: 'nudge',
-      title: localeMismatch ? 'Wellness nudge' : event.title,
-      message: localeMismatch
+      title: event.metadata['delivery'] != null
+          ? event.title
+          : localeMismatch
+          ? 'Wellness nudge'
+          : event.title,
+      message: event.metadata['delivery'] != null
+          ? event.message
+          : localeMismatch
           ? _historicalNudgeSummary(event.nudgeType)
           : _oneSentence(event.message),
       sourceLabel: 'Smart nudge',
+      nudgePayload:
+          event.metadata['delivery'] != null &&
+              event.metadata['content_id'] != null
+          ? SmartNudgeDeliveryService.payload(
+              event.userId,
+              event.metadata['content_id'].toString(),
+            )
+          : null,
       priority: priority,
       createdAt: event.createdAt,
       updatedAt: event.updatedAt,
       metricChips: [
-        _sentenceCase(event.status),
+        _sentenceCase(
+          (event.metadata['delivery'] as Map?)?['state']?.toString() ??
+              event.status,
+        ),
         if (event.nudgeType.trim().isNotEmpty) _humanize(event.nudgeType),
       ],
       showAction: event.actionLabel?.trim().isNotEmpty == true,

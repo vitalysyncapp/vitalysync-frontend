@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:math';
+import '../notifications/smart_nudge_delivery_service.dart';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../features/adaptive/data/adaptive_nudge_api.dart';
+import '../../features/adaptive/data/nudge_alternative_controller.dart';
 import '../../features/adaptive/data/wellness_content_api.dart';
 import '../widgets/wellness_content_widgets.dart';
 import '../../features/activity/data/activity_service.dart';
@@ -39,6 +41,7 @@ part 'assistant_bubbles.dart';
 part 'assistant_experience_panel.dart';
 part 'assistant_quick_log_bar.dart';
 part 'smart_nudge_dialog_card.dart';
+part 'smart_nudge_notification_view.dart';
 part 'weekly_pulse_widgets.dart';
 part 'assistant_visual_widgets.dart';
 

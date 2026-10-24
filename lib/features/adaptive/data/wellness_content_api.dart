@@ -1,3 +1,4 @@
+import '../../../shared/notifications/smart_nudge_delivery_service.dart';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -114,6 +115,9 @@ class WellnessContentApi {
         scope: '${userId}_$id',
         data: event,
       );
+      if (['done', 'not_now', 'another_idea'].contains(interaction)) {
+        await SmartNudgeDeliveryService.instance.cancel(content);
+      }
       if (interaction != 'shown') await invalidate(notify: false);
     }
     return event;
@@ -121,6 +125,7 @@ class WellnessContentApi {
 
   static Future<void> invalidate({bool notify = true}) async {
     revision++;
+    if (notify) await SmartNudgeDeliveryService.instance.cancelPending();
     for (final namespace in [
       'adaptive_nudge_recommendations',
       'assistant_nudge_recommendations',

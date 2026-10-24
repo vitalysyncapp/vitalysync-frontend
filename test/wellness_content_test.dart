@@ -301,7 +301,7 @@ void main() {
         ),
       );
       await tester.pump();
-      expect(find.text('Personal insight'), findsOneWidget);
+      expect(find.text('Personal insights'), findsOneWidget);
       expect(find.text('Another idea'), findsNothing);
       await tester.tap(find.text('What this is based on'));
       await tester.pumpAndSettle();

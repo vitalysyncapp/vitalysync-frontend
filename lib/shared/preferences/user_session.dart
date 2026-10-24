@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/api_config.dart';
 import '../offline/fetch_policy.dart';
+import '../notifications/smart_nudge_delivery_service.dart';
 import 'auth_token_store.dart';
 
 class UserSessionSnapshot {
@@ -87,6 +88,10 @@ class UserSessionController {
     final prefs = await SharedPreferences.getInstance();
 
     final dynamic rawUserId = user['user_id'];
+    if (prefs.getInt(_userIdKey) != null &&
+        prefs.getInt(_userIdKey) != rawUserId) {
+      await SmartNudgeDeliveryService.instance.cancelPending();
+    }
     final dynamic rawAge = user['age'];
     final email = (user['email'] ?? '').toString().trim();
 
@@ -134,6 +139,7 @@ class UserSessionController {
   }
 
   Future<void> clearSession({bool keepLastLoginEmail = false}) async {
+    await SmartNudgeDeliveryService.instance.cancelPending();
     final prefs = await SharedPreferences.getInstance();
     final currentEmail = prefs.getString(_emailKey)?.trim() ?? '';
     if (keepLastLoginEmail && currentEmail.isNotEmpty) {

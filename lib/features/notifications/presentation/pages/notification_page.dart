@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../adaptive/data/daily_report_schedule.dart';
 import '../../../../shared/notifications/notification_feed_service.dart';
+import '../../../../shared/assistant/floating_smart_nudge_assistant.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
 import 'package:vitalysync/l10n/localized_text.dart';
@@ -94,7 +95,19 @@ class _NotificationPageState extends State<NotificationPage> {
                                   padding: const EdgeInsets.only(bottom: 14),
                                   child: NotificationCard(
                                     item: item,
-                                    onTap: () => _markRead(item.id),
+                                    onTap: () {
+                                      _markRead(item.id);
+                                      if (item.nudgePayload != null) {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                SmartNudgeNotificationView(
+                                                  payload: item.nudgePayload!,
+                                                ),
+                                          ),
+                                        );
+                                      }
+                                    },
                                     onActionTap: () => _markRead(item.id),
                                   ),
                                 ),
@@ -502,7 +515,7 @@ class NotificationCard extends StatelessWidget {
 
     return InkWell(
       borderRadius: BorderRadius.circular(18),
-      onTap: isSmartNudge ? null : onTap,
+      onTap: isSmartNudge && item.nudgePayload == null ? null : onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -614,7 +627,9 @@ class NotificationCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (item.isUnread && item.showAction && !isSmartNudge) ...[
+                      if (item.isUnread &&
+                          item.showAction &&
+                          !isSmartNudge) ...[
                         const SizedBox(width: 10),
                         GestureDetector(
                           onTap: onActionTap,

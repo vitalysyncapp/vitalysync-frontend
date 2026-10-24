@@ -79,6 +79,7 @@ class _LoadingScreenState extends State<LoadingScreen>
         MaterialPageRoute(
           builder: (_) => onboardingCompleted
               ? MainNavigation(
+                  smartNudgePayload: launchPayload,
                   initialTab: tabForNotificationPayload(launchPayload),
                   openNutritionLogOnStart: shouldOpenNutritionLog(
                     launchPayload,

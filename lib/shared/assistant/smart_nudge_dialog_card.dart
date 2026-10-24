@@ -1,6 +1,8 @@
 part of 'floating_smart_nudge_assistant.dart';
 
 class _SmartNudgeDialogCard extends StatefulWidget {
+  final NudgeAlternativeController? smartAlternatives;
+  final NudgeAlternativeController? nutritionAlternatives;
   final String emoji;
   final String message;
   final List<AdaptiveNudgeRecommendation> recommendations;
@@ -17,6 +19,8 @@ class _SmartNudgeDialogCard extends StatefulWidget {
   onNutritionStatusChanged;
 
   const _SmartNudgeDialogCard({
+    this.smartAlternatives,
+    this.nutritionAlternatives,
     required this.emoji,
     required this.message,
     required this.recommendations,
@@ -48,9 +52,13 @@ class _SmartNudgeDialogCardState extends State<_SmartNudgeDialogCard> {
     final oldPrimary = _primaryRecommendation(oldWidget.recommendations);
     final newPrimary = _primaryRecommendation(widget.recommendations);
 
-    if (oldPrimary?.nudgeEventId != newPrimary?.nudgeEventId ||
+    if (oldPrimary?.metadata['content_id'] !=
+            newPrimary?.metadata['content_id'] ||
+        oldPrimary?.nudgeEventId != newPrimary?.nudgeEventId ||
         oldPrimary?.nudgeType != newPrimary?.nudgeType ||
         oldPrimary?.message != newPrimary?.message) {
+      _nudgeStatus = null;
+      _isUpdatingNudgeStatus = false;
       unawaited(_loadFeedbackStatus());
     }
   }
@@ -61,13 +69,17 @@ class _SmartNudgeDialogCardState extends State<_SmartNudgeDialogCard> {
         ? null
         : await AdaptiveNudgeApi.readNudgeFeedbackStatus(primary);
 
-    if (!mounted) {
+    if (!mounted ||
+        primary?.metadata['content_id'] !=
+            _primaryRecommendation(
+              widget.recommendations,
+            )?.metadata['content_id']) {
       return;
     }
 
+    if (_isUpdatingNudgeStatus) return;
     setState(() {
       _nudgeStatus = nudgeStatus;
-      _isUpdatingNudgeStatus = false;
     });
   }
 
@@ -85,7 +97,11 @@ class _SmartNudgeDialogCardState extends State<_SmartNudgeDialogCard> {
     try {
       await widget.onStatusChanged(recommendation, status);
     } catch (error) {
-      if (mounted) {
+      if (mounted &&
+          recommendation.metadata['content_id'] ==
+              _primaryRecommendation(
+                widget.recommendations,
+              )?.metadata['content_id']) {
         setState(() {
           _nudgeStatus = previousStatus;
         });
@@ -98,7 +114,11 @@ class _SmartNudgeDialogCardState extends State<_SmartNudgeDialogCard> {
         );
       }
     } finally {
-      if (mounted) {
+      if (mounted &&
+          recommendation.metadata['content_id'] ==
+              _primaryRecommendation(
+                widget.recommendations,
+              )?.metadata['content_id']) {
         setState(() {
           _isUpdatingNudgeStatus = false;
         });
@@ -122,10 +142,11 @@ class _SmartNudgeDialogCardState extends State<_SmartNudgeDialogCard> {
             switchInCurve: Curves.easeOutCubic,
             switchOutCurve: Curves.easeInCubic,
             child: KeyedSubtree(
-              key: ValueKey(widget.isLoading && primary == null),
+              key: ValueKey(primary?.metadata['content_id'] ?? 'loading'),
               child: WellnessContentExposure(
                 content: primary?.toJson(),
                 child: _SmartNudgeInsightCard(
+                  alternatives: widget.smartAlternatives,
                   emoji: widget.emoji,
                   fallbackMessage: widget.message,
                   primary: primary,
@@ -152,6 +173,7 @@ class _SmartNudgeDialogCardState extends State<_SmartNudgeDialogCard> {
             widget.isNutritionLoading) ...[
           const SizedBox(height: 12),
           _NutritionNudgeDialogCard(
+            alternatives: widget.nutritionAlternatives,
             insight: widget.nutritionInsight,
             isLoading: widget.isNutritionLoading,
             onNutritionStatusChanged: widget.onNutritionStatusChanged,
@@ -173,12 +195,14 @@ class _SmartNudgeDialogCardState extends State<_SmartNudgeDialogCard> {
 }
 
 class _NutritionNudgeDialogCard extends StatefulWidget {
+  final NudgeAlternativeController? alternatives;
   final NutritionInsight? insight;
   final bool isLoading;
   final Future<void> Function(NutritionInsight insight, String status)
   onNutritionStatusChanged;
 
   const _NutritionNudgeDialogCard({
+    this.alternatives,
     required this.insight,
     required this.isLoading,
     required this.onNutritionStatusChanged,
@@ -203,6 +227,8 @@ class _NutritionNudgeDialogCardState extends State<_NutritionNudgeDialogCard> {
   void didUpdateWidget(covariant _NutritionNudgeDialogCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.insight?.id != widget.insight?.id) {
+      _nutritionStatus = null;
+      _isUpdatingNutritionStatus = false;
       unawaited(_loadFeedbackStatus());
     }
   }
@@ -219,17 +245,30 @@ class _NutritionNudgeDialogCardState extends State<_NutritionNudgeDialogCard> {
         ? insight?.metadata['helpfulness']
         : WellnessContentApi.metadata(event)['helpfulness'];
 
-    if (!mounted) {
+    if (!mounted || insight?.id != widget.insight?.id) {
       return;
     }
 
+    if (_isUpdatingNutritionStatus) return;
+    final details = event == null
+        ? insight?.metadata ?? {}
+        : WellnessContentApi.metadata(event);
+    final snoozed =
+        DateTime.tryParse(
+          '${details['snoozed_until']}',
+        )?.isAfter(DateTime.now()) ==
+        true;
     setState(() {
       _nutritionStatus = switch (helpfulness) {
         'like' => 'accepted',
         'dislike' => 'dismissed',
         _ => nutritionStatus,
       };
-      _isUpdatingNutritionStatus = false;
+      if (details['completed_at'] != null) {
+        _nutritionStatus = 'done';
+      } else if (snoozed) {
+        _nutritionStatus = 'not_now';
+      }
     });
   }
 
@@ -247,7 +286,7 @@ class _NutritionNudgeDialogCardState extends State<_NutritionNudgeDialogCard> {
     try {
       await widget.onNutritionStatusChanged(insight, status);
     } catch (error) {
-      if (mounted) {
+      if (mounted && insight.id == widget.insight?.id) {
         setState(() {
           _nutritionStatus = previousStatus;
         });
@@ -260,7 +299,7 @@ class _NutritionNudgeDialogCardState extends State<_NutritionNudgeDialogCard> {
         );
       }
     } finally {
-      if (mounted) {
+      if (mounted && insight.id == widget.insight?.id) {
         setState(() {
           _isUpdatingNutritionStatus = false;
         });
@@ -278,6 +317,7 @@ class _NutritionNudgeDialogCardState extends State<_NutritionNudgeDialogCard> {
     return WellnessContentExposure(
       content: insight.toJson(),
       child: _NutritionInsightDialogCard(
+        alternatives: widget.alternatives,
         insight: insight,
         feedbackStatus: _nutritionStatus,
         isUpdatingFeedback: _isUpdatingNutritionStatus,
@@ -290,6 +330,7 @@ class _NutritionNudgeDialogCardState extends State<_NutritionNudgeDialogCard> {
 }
 
 class _SmartNudgeInsightCard extends StatelessWidget {
+  final NudgeAlternativeController? alternatives;
   final ValueChanged<String>? onResponse;
   final String emoji;
   final String fallbackMessage;
@@ -302,6 +343,7 @@ class _SmartNudgeInsightCard extends StatelessWidget {
   final VoidCallback? onDisliked;
 
   const _SmartNudgeInsightCard({
+    this.alternatives,
     this.onResponse,
     required this.emoji,
     required this.fallbackMessage,
@@ -337,9 +379,6 @@ class _SmartNudgeInsightCard extends StatelessWidget {
     final severity = recommendation?.userFacingSeverity ?? 'steady';
     final severityColor = _severityColor(severity, isDark);
     final metadata = recommendation?.metadata ?? const <String, dynamic>{};
-    final whyThisMatters = _metadataText(
-      metadata['evidence'] ?? metadata['ai_why_this_matters'],
-    );
     final actionSteps = _metadataTextList(metadata['ai_action_steps']);
     final actionLabel = recommendation?.actionLabel.trim() ?? '';
     final subtitle =
@@ -461,14 +500,6 @@ class _SmartNudgeInsightCard extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          if (whyThisMatters.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            _NudgeDetailLine(
-              icon: Icons.info_outline_rounded,
-              text: whyThisMatters,
-              foregroundColor: pageSecondaryTextColor(context),
-            ),
-          ],
           if (metadata['content_id'] == null && actionSteps.isNotEmpty) ...[
             const SizedBox(height: 10),
             _NudgeActionSteps(
@@ -493,6 +524,7 @@ class _SmartNudgeInsightCard extends StatelessWidget {
           ContentFreshnessNote(metadata: metadata),
           if (onResponse != null && metadata['content_id'] != null)
             NudgeResponseActions(
+              alternatives: alternatives,
               enabled: !isUpdatingFeedback,
               response: feedbackStatus,
               onResponse: onResponse!,
@@ -525,6 +557,7 @@ class _SmartNudgeInsightCard extends StatelessWidget {
 }
 
 class _NutritionInsightDialogCard extends StatelessWidget {
+  final NudgeAlternativeController? alternatives;
   final ValueChanged<String>? onResponse;
   final NutritionInsight insight;
   final String? feedbackStatus;
@@ -533,6 +566,7 @@ class _NutritionInsightDialogCard extends StatelessWidget {
   final VoidCallback onDisliked;
 
   const _NutritionInsightDialogCard({
+    this.alternatives,
     this.onResponse,
     required this.insight,
     required this.feedbackStatus,
@@ -635,6 +669,7 @@ class _NutritionInsightDialogCard extends StatelessWidget {
           ContentFreshnessNote(metadata: insight.metadata),
           if (onResponse != null && insight.metadata['content_id'] != null)
             NudgeResponseActions(
+              alternatives: alternatives,
               enabled: !isUpdatingFeedback,
               response: feedbackStatus,
               accentColor: accent,
@@ -968,7 +1003,7 @@ class _InsightFeedbackIconButton extends StatelessWidget {
 }
 
 String _expandedAssistantText(String value) {
-  return value.replaceAll(RegExp(r'\s+'), ' ').trim();
+  return value.replaceAll(RegExp(r'[ \t]+'), ' ').trim();
 }
 
 String _metadataText(dynamic value) {

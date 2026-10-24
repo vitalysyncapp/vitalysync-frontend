@@ -51,6 +51,8 @@ class AssistantExperiencePanel extends StatefulWidget {
 }
 
 class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
+  final _smartAlternatives = NudgeAlternativeController();
+  final _nutritionAlternatives = NudgeAlternativeController();
   late final PageController _pageController;
   late final List<ScrollController> _sectionScrollControllers;
 
@@ -62,6 +64,8 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
   bool _isLoadingRecommendations = false;
   bool _isLoadingAdaptiveNudges = false;
   bool _isLoadingNutritionInsight = false;
+  int _smartRequest = 0;
+  int _nutritionRequest = 0;
   bool _isLoadingEnvironment = false;
   bool _isLoadingCheckIn = true;
   FirstWeekLearningState _firstWeekLearning =
@@ -84,6 +88,8 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
   @override
   void initState() {
     super.initState();
+    _smartAlternatives.addListener(_alternativesChanged);
+    _nutritionAlternatives.addListener(_alternativesChanged);
     WellnessContentApi.changes.addListener(_handleContentChanged);
     _pageIndex = widget.initialSectionIndex;
     _pageController = PageController(initialPage: _pageIndex);
@@ -91,6 +97,12 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     _recommendations = widget.recommendations;
     _adaptiveNudges = prioritizeAssistantNudges(widget.adaptiveNudges);
     _nutritionInsight = widget.nutritionInsight;
+    _smartAlternatives.contextChanged(
+      _adaptiveNudges.firstOrNull?.metadata['context_hash']?.toString(),
+    );
+    _nutritionAlternatives.contextChanged(
+      _nutritionInsight?.metadata['context_hash']?.toString(),
+    );
     _recordVisibleProductEvents();
     CheckInStateCoordinator.instance.changes.addListener(
       _handleCheckInStateChanged,
@@ -117,19 +129,51 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
       _recommendations = widget.recommendations;
       _recordExerciseRecommendationImpressions(_recommendations);
     }
-    if (!identical(oldWidget.adaptiveNudges, widget.adaptiveNudges) &&
+    final incomingSmartContext =
+        widget.adaptiveNudges.firstOrNull?.metadata['context_hash'];
+    final smartContextChanged =
+        incomingSmartContext !=
+        _adaptiveNudges.firstOrNull?.metadata['context_hash'];
+    if (((!_smartAlternatives.loading && !_smartAlternatives.hasInteracted) ||
+            smartContextChanged) &&
+        !identical(oldWidget.adaptiveNudges, widget.adaptiveNudges) &&
         widget.adaptiveNudges.isNotEmpty) {
+      if (smartContextChanged) {
+        _smartRequest++;
+        _smartAlternatives.contextChanged(incomingSmartContext?.toString());
+        _isLoadingAdaptiveNudges = false;
+      }
       _adaptiveNudges = prioritizeAssistantNudges(widget.adaptiveNudges);
     }
-    if (oldWidget.nutritionInsight != widget.nutritionInsight &&
+    final incomingNutritionContext =
+        widget.nutritionInsight?.metadata['context_hash'];
+    final nutritionContextChanged =
+        incomingNutritionContext != _nutritionInsight?.metadata['context_hash'];
+    if (((!_nutritionAlternatives.loading &&
+                !_nutritionAlternatives.hasInteracted) ||
+            nutritionContextChanged) &&
+        oldWidget.nutritionInsight != widget.nutritionInsight &&
         widget.nutritionInsight != null) {
+      if (nutritionContextChanged) {
+        _nutritionRequest++;
+        _nutritionAlternatives.contextChanged(
+          incomingNutritionContext?.toString(),
+        );
+        _isLoadingNutritionInsight = false;
+      }
       _nutritionInsight = widget.nutritionInsight;
       _recordNutritionImpression(_nutritionInsight!);
     }
   }
 
+  void _alternativesChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    _smartAlternatives.dispose();
+    _nutritionAlternatives.dispose();
     WellnessContentApi.changes.removeListener(_handleContentChanged);
     CheckInStateCoordinator.instance.changes.removeListener(
       _handleCheckInStateChanged,
@@ -142,6 +186,9 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
   }
 
   void _handleContentChanged() {
+    _smartAlternatives.contextChanged(null);
+    _nutritionAlternatives.contextChanged(null);
+    _isLoadingAdaptiveNudges = _isLoadingNutritionInsight = false;
     unawaited(_loadAdaptiveNudges(showLoading: false, forceRefresh: true));
     unawaited(_loadNutritionInsight(showLoading: false, forceRefresh: true));
   }
@@ -244,9 +291,11 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     bool showLoading = true,
     bool forceRefresh = false,
   }) async {
-    if (_isLoadingAdaptiveNudges) {
+    if (_smartAlternatives.loading ||
+        (_isLoadingAdaptiveNudges && !forceRefresh)) {
       return;
     }
+    final request = ++_smartRequest;
 
     if (showLoading) {
       setState(() {
@@ -258,14 +307,17 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
       final recommendations = await widget.onRefreshAdaptiveNudges(
         forceRefresh: forceRefresh,
       );
-      if (!mounted) return;
+      if (!mounted || request != _smartRequest) return;
 
       setState(() {
+        _smartAlternatives.contextChanged(
+          recommendations.firstOrNull?.metadata['context_hash']?.toString(),
+        );
         _adaptiveNudges = prioritizeAssistantNudges(recommendations);
         _isLoadingAdaptiveNudges = false;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || request != _smartRequest) return;
 
       setState(() {
         _isLoadingAdaptiveNudges = false;
@@ -277,9 +329,11 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     bool showLoading = true,
     bool forceRefresh = false,
   }) async {
-    if (_isLoadingNutritionInsight) {
+    if (_nutritionAlternatives.loading ||
+        (_isLoadingNutritionInsight && !forceRefresh)) {
       return;
     }
+    final request = ++_nutritionRequest;
 
     if (showLoading) {
       setState(() {
@@ -291,15 +345,18 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
       final insight = await widget.onRefreshNutritionInsight(
         forceRefresh: forceRefresh,
       );
-      if (!mounted) return;
+      if (!mounted || request != _nutritionRequest) return;
 
       setState(() {
+        _nutritionAlternatives.contextChanged(
+          insight?.metadata['context_hash']?.toString(),
+        );
         _nutritionInsight = insight;
         _isLoadingNutritionInsight = false;
       });
       if (insight != null) _recordNutritionImpression(insight);
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || request != _nutritionRequest) return;
 
       setState(() {
         _isLoadingNutritionInsight = false;
@@ -346,6 +403,27 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     AdaptiveNudgeRecommendation recommendation,
     String status,
   ) async {
+    if (status == 'another_idea' || status == 'review_ideas') {
+      if (_smartAlternatives.loading) return;
+      _smartRequest++;
+      _isLoadingAdaptiveNudges = false;
+      await _smartAlternatives.request<AdaptiveNudgeRecommendation>(
+        metadata: recommendation.metadata,
+        reviewEarlier: status == 'review_ideas',
+        save: () => AdaptiveNudgeApi.saveNudgeFeedback(
+          recommendation: recommendation,
+          status: 'another_idea',
+        ),
+        fetch: (excluded, mode) => AdaptiveNudgeApi.anotherIdea(
+          excludeActionIds: excluded,
+          selectionMode: mode,
+        ),
+        replace: (item) {
+          if (mounted) setState(() => _adaptiveNudges = [item]);
+        },
+      );
+      return;
+    }
     await AdaptiveNudgeApi.saveNudgeFeedback(
       recommendation: recommendation,
       status: status,
@@ -375,6 +453,26 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     NutritionInsight insight,
     String status,
   ) async {
+    if (status == 'another_idea' || status == 'review_ideas') {
+      if (_nutritionAlternatives.loading) return;
+      _nutritionRequest++;
+      _isLoadingNutritionInsight = false;
+      await _nutritionAlternatives.request<NutritionInsight>(
+        metadata: insight.metadata,
+        reviewEarlier: status == 'review_ideas',
+        save: () async {
+          await WellnessContentApi.respond(insight.toJson(), 'another_idea');
+        },
+        fetch: (excluded, mode) => NutritionReminderEngine.instance.anotherIdea(
+          excludeActionIds: excluded,
+          selectionMode: mode,
+        ),
+        replace: (item) {
+          if (mounted) setState(() => _nutritionInsight = item);
+        },
+      );
+      return;
+    }
     if (insight.metadata['content_id'] != null) {
       await WellnessContentApi.respond(insight.toJson(), switch (status) {
         'accepted' => 'like',
@@ -1130,6 +1228,8 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
         icon: Icons.auto_awesome_rounded,
         label: 'Nudges',
         child: _SmartNudgeDialogCard(
+          smartAlternatives: _smartAlternatives,
+          nutritionAlternatives: _nutritionAlternatives,
           emoji: widget.emoji,
           message: widget.message,
           recommendations: _adaptiveNudges,

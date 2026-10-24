@@ -1,3 +1,4 @@
+import '../../adaptive/data/nudge_selection.dart';
 import 'dart:convert';
 import '../../adaptive/data/wellness_content_api.dart';
 
@@ -106,7 +107,8 @@ class NutritionReminderEngine {
         maxAge: _assistantInsightCacheMaxAge,
         allowStale: false,
       );
-      if (cached != null) {
+      if (cached != null &&
+          cached.metadata['content_version'] == 'companion_v2') {
         final status = await _store.readFeedbackStatus(cached.id);
         if (status != 'dismissed') {
           return cached;
@@ -244,6 +246,57 @@ class NutritionReminderEngine {
     }
 
     return NutritionInsight.fromJson(data);
+  }
+
+  Future<NudgeSelection<NutritionInsight>> anotherIdea({
+    required List<String> excludeActionIds,
+    String selectionMode = 'next',
+  }) async {
+    final sessionKey = await WellnessContentApi.sessionKey();
+    final revision = WellnessContentApi.revision;
+    final session = await UserSessionController.instance.load();
+    if (session.userId == null) throw Exception('Sign in to load another idea');
+    final uri = Uri.parse(ApiConfig.nutrition('/assistant-nudge')).replace(
+      queryParameters: {
+        'user_id': '${session.userId}',
+        'date': _dateKey(DateTime.now()),
+        'ai': 'true',
+        'selection_mode': selectionMode,
+        'exclude_action_ids': excludeActionIds.join(','),
+      },
+    );
+    final response = await http
+        .get(uri, headers: await ApiConfig.acceptJsonHeaders())
+        .timeout(ApiRequestTimeouts.coldStart);
+    if (response.statusCode != 200) {
+      throw Exception('Unable to load another idea');
+    }
+    if (sessionKey != await WellnessContentApi.sessionKey() ||
+        revision != WellnessContentApi.revision) {
+      throw Exception('Your wellness context changed. Please try again.');
+    }
+    final data = Map<String, dynamic>.from(
+      jsonDecode(response.body) as Map? ?? {},
+    );
+    if (![
+      'available',
+      'exhausted',
+    ].contains((data['selection'] as Map?)?['status'])) {
+      throw Exception('Unable to confirm a replacement');
+    }
+    final item = (data['message']?.toString() ?? '').isEmpty
+        ? null
+        : NutritionInsight.fromJson(data);
+    if (item != null) {
+      if (excludeActionIds.contains(item.metadata['action_id'])) {
+        throw Exception('A different idea is not available yet');
+      }
+      await _store.saveAssistantInsightForToday(item);
+    }
+    return NudgeSelection(
+      item: item,
+      canRevisit: (data['selection'] as Map?)?['can_revisit'] == true,
+    );
   }
 
   Future<NutritionInsight?> _generateAndStoreInsight(

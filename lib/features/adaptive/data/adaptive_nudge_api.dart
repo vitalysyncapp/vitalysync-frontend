@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'nudge_selection.dart';
+import '../../../shared/notifications/smart_nudge_delivery_service.dart';
 import 'dart:convert';
 import 'wellness_content_api.dart';
 
@@ -100,15 +103,18 @@ class AdaptiveNudgeResponse {
   final List<AdaptiveNudgeRecommendation> recommendations;
   final Map<String, dynamic> adaptiveState;
   final List<Map<String, dynamic>> patterns;
+  final Map<String, dynamic> selection;
 
   const AdaptiveNudgeResponse({
     required this.recommendations,
     required this.adaptiveState,
     required this.patterns,
+    this.selection = const {},
   });
 
   factory AdaptiveNudgeResponse.fromJson(Map<String, dynamic> json) {
     return AdaptiveNudgeResponse(
+      selection: Map<String, dynamic>.from(json['selection'] as Map? ?? {}),
       recommendations: (json['recommendations'] as List<dynamic>? ?? const [])
           .whereType<Map>()
           .map(
@@ -132,6 +138,7 @@ class AdaptiveNudgeResponse {
       'recommendations': recommendations
           .map((recommendation) => recommendation.toJson())
           .toList(),
+      'selection': selection,
       'adaptive_state': adaptiveState,
       'patterns': patterns,
     };
@@ -207,11 +214,16 @@ class AdaptiveNudgeApi {
     int limit = 3,
     bool record = false,
     bool ai = true,
+    bool strict = false,
+    bool delivery = false,
+    String selectionMode = 'default',
+    List<String> excludeActionIds = const [],
   }) async {
     final revision = WellnessContentApi.revision;
     final sessionKey = await WellnessContentApi.sessionKey();
     final userId = await _storedUserId();
     if (userId == null) {
+      if (strict) throw Exception('Please sign in to request another idea');
       return await _fallbackResponse();
     }
 
@@ -223,6 +235,9 @@ class AdaptiveNudgeApi {
               'limit': limit.toString(),
               'record': record.toString(),
               'ai': ai.toString(),
+              'delivery': delivery.toString(),
+              'selection_mode': selectionMode,
+              'exclude_action_ids': excludeActionIds.join(','),
             },
           );
       final response = await http
@@ -231,6 +246,7 @@ class AdaptiveNudgeApi {
       final data = _decodeResponseMap(response);
       await OfflineCacheStore.reload();
       if (await WellnessContentApi.sessionKey() != sessionKey) {
+        if (strict) throw Exception('The active account or language changed');
         return const AdaptiveNudgeResponse(
           recommendations: [],
           adaptiveState: {},
@@ -242,6 +258,7 @@ class AdaptiveNudgeApi {
       }
 
       if (response.statusCode != 200) {
+        if (strict) throw Exception('Unable to load another idea');
         final fallback = await _fallbackResponse();
         return await _readCachedRecommendations(userId, ai: ai) ??
             (ai ? await _readCachedRecommendations(userId, ai: false) : null) ??
@@ -256,6 +273,7 @@ class AdaptiveNudgeApi {
       );
       return parsedResponse;
     } catch (_) {
+      if (strict) rethrow;
       if (await WellnessContentApi.sessionKey() != sessionKey ||
           revision != WellnessContentApi.revision) {
         return const AdaptiveNudgeResponse(
@@ -312,14 +330,35 @@ class AdaptiveNudgeApi {
       );
       if (cachedSnapshot != null &&
           cachedSnapshot.isFresh(_assistantCacheMaxAge)) {
-        return AdaptiveNudgeResponse.fromJson(cachedSnapshot.data);
+        final cached = AdaptiveNudgeResponse.fromJson(cachedSnapshot.data);
+        if (cached.recommendations.isNotEmpty) {
+          unawaited(
+            SmartNudgeDeliveryService.instance.deliver(
+              cached.recommendations.first.toJson(),
+              expectedUserId: userId,
+            ),
+          );
+        }
+        return cached;
       }
     }
 
-    final response = await fetchRecommendations(limit: limit);
+    final response = await fetchRecommendations(limit: limit, delivery: true);
     if (await WellnessContentApi.sessionKey() != sessionKey ||
         revision != WellnessContentApi.revision) {
-      return response;
+      return const AdaptiveNudgeResponse(
+        recommendations: [],
+        adaptiveState: {},
+        patterns: [],
+      );
+    }
+    if (response.recommendations.isNotEmpty) {
+      unawaited(
+        SmartNudgeDeliveryService.instance.deliver(
+          response.recommendations.first.toJson(),
+          expectedUserId: userId,
+        ),
+      );
     }
     if (!forceRefresh &&
         cachedSnapshot != null &&
@@ -333,6 +372,40 @@ class AdaptiveNudgeApi {
       data: response.toJson(),
     );
     return response;
+  }
+
+  static Future<NudgeSelection<AdaptiveNudgeRecommendation>> anotherIdea({
+    required List<String> excludeActionIds,
+    String selectionMode = 'next',
+  }) async {
+    final userId = await _storedUserId();
+    final response = await fetchRecommendations(
+      limit: 1,
+      strict: true,
+      delivery: true,
+      selectionMode: selectionMode,
+      excludeActionIds: excludeActionIds,
+    );
+    final item = response.recommendations.firstOrNull;
+    if (!['available', 'exhausted'].contains(response.selection['status'])) {
+      throw Exception('Unable to confirm a replacement');
+    }
+    if (item != null) {
+      if (excludeActionIds.contains(item.metadata['action_id']) ||
+          item.metadata['local_fallback'] == true) {
+        throw Exception('A different idea is not available yet');
+      }
+      unawaited(
+        SmartNudgeDeliveryService.instance.deliver(
+          item.toJson(),
+          expectedUserId: userId,
+        ),
+      );
+    }
+    return NudgeSelection(
+      item: item,
+      canRevisit: response.selection['can_revisit'] == true,
+    );
   }
 
   static Future<void> updateNudgeStatus({
@@ -517,6 +590,9 @@ class AdaptiveNudgeApi {
       final details = event == null
           ? recommendation.metadata
           : WellnessContentApi.metadata(event);
+      if (details['completed_at'] != null) return 'done';
+      final snoozedUntil = DateTime.tryParse('${details['snoozed_until']}');
+      if (snoozedUntil?.isAfter(DateTime.now()) == true) return 'not_now';
       return switch (details['helpfulness']) {
         'like' => 'accepted',
         'dislike' => 'dismissed',
@@ -587,10 +663,12 @@ class AdaptiveNudgeApi {
     final sessionKey = await WellnessContentApi.sessionKey();
     final userId = await _storedUserId();
     if (userId == null) return null;
+    final date = _dateKey(DateTime.now());
+    final scope = '${sessionKey}_${date}_companion_v2';
     try {
-      final uri = Uri.parse(
-        ApiConfig.adaptive('/personal-insight'),
-      ).replace(queryParameters: {'user_id': '$userId', 'ai': 'true'});
+      final uri = Uri.parse(ApiConfig.adaptive('/personal-insight')).replace(
+        queryParameters: {'user_id': '$userId', 'ai': 'true', 'date': date},
+      );
       final response = await http
           .get(uri, headers: await ApiConfig.jsonHeaders())
           .timeout(_aiRequestTimeout);
@@ -601,7 +679,7 @@ class AdaptiveNudgeApi {
       if (revision != WellnessContentApi.revision) return null;
       await OfflineCacheStore.saveJson(
         namespace: 'personal_insight',
-        scope: '$userId',
+        scope: scope,
         data: data,
       );
       return data['insight'] is Map
@@ -616,7 +694,7 @@ class AdaptiveNudgeApi {
       }
       final snapshot = await OfflineCacheStore.readLatestJsonSnapshot(
         namespace: 'personal_insight',
-        scope: '$userId',
+        scope: scope,
       );
       final raw = snapshot?.data['insight'];
       if (raw is! Map) return null;
@@ -632,11 +710,11 @@ class AdaptiveNudgeApi {
   }
 
   static String _cacheScope(int userId, {required bool ai}) {
-    return '${userId}_${ai ? 'ai' : 'rules'}';
+    return '${userId}_${ai ? 'ai' : 'rules'}_companion_v2';
   }
 
   static String _assistantCacheScope(int userId) {
-    return '${userId}_${_dateKey(DateTime.now())}';
+    return '${userId}_${_dateKey(DateTime.now())}_companion_v2';
   }
 
   static String _feedbackScope(

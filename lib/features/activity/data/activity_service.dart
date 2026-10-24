@@ -77,6 +77,7 @@ class ActivityService {
   ActivityService._();
 
   static final ActivityService instance = ActivityService._();
+  static final ValueNotifier<int> insightRefreshSignal = ValueNotifier<int>(0);
   static const Duration _syncDebounce = Duration(seconds: 20);
   static const String _cachedActivityKeyPrefix = 'cached_daily_activity';
   static const String _pendingActivityKeyPrefix = 'pending_daily_activity';
@@ -438,6 +439,7 @@ class ActivityService {
       );
       if (syncedCount > 0) {
         await invalidateNotificationFeedCache();
+        insightRefreshSignal.value++;
       }
       return syncedCount;
     } catch (_) {
@@ -733,6 +735,7 @@ class ActivityService {
       ),
     );
     await invalidateNotificationFeedCache();
+    insightRefreshSignal.value++;
 
     if (_shouldAttemptBackgroundSync(session)) {
       _lastSyncAttempt = DateTime.now();

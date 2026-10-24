@@ -408,6 +408,79 @@ class LocalNotificationService {
     );
   }
 
+  Future<String> showSmartNudge({
+    required int id,
+    required String title,
+    required String body,
+    required String payload,
+    DateTime? scheduledFor,
+  }) async {
+    await initialize();
+    if (kIsWeb || !await _hasActiveSession()) return 'suppressed';
+    final android = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    if (defaultTargetPlatform == TargetPlatform.android &&
+        await android?.areNotificationsEnabled() != true) {
+      return 'suppressed';
+    }
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      final permissions = await _plugin
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >()
+          ?.checkPermissions();
+      if (permissions?.isEnabled != true) return 'suppressed';
+    }
+    final presentation = NotificationPresentation.forNotificationType(
+      'adaptive_nudge_now',
+    );
+    final details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        presentation.androidChannelId,
+        presentation.androidChannelName,
+        channelDescription: presentation.androidChannelDescription,
+        importance: Importance.high,
+        priority: Priority.high,
+        onlyAlertOnce: true,
+        styleInformation: BigTextStyleInformation(body),
+        sound: RawResourceAndroidNotificationSound(
+          presentation.androidSoundResource,
+        ),
+      ),
+      iOS: const DarwinNotificationDetails(),
+      macOS: const DarwinNotificationDetails(),
+    );
+    if (scheduledFor != null && scheduledFor.isAfter(DateTime.now())) {
+      await _plugin.zonedSchedule(
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: _zonedFromLocal(scheduledFor.toLocal()),
+        notificationDetails: details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        payload: payload,
+      );
+      return 'scheduled';
+    }
+    await _plugin.show(
+      id: id,
+      title: title,
+      body: body,
+      notificationDetails: details,
+      payload: payload,
+    );
+    return 'sent';
+  }
+
+  Future<void> cancelSmartNudge(int id) async {
+    try {
+      await initialize();
+      if (!kIsWeb) await _plugin.cancel(id: id);
+    } catch (_) {}
+  }
+
   Future<void> showNutritionReminderNow({
     required String title,
     required String body,

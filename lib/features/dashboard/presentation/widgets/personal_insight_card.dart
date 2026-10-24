@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+import 'insight_highlight_tile.dart';
 import 'package:flutter/material.dart';
 import '../../../adaptive/data/adaptive_nudge_api.dart';
 import '../../../adaptive/data/wellness_content_api.dart';
@@ -46,6 +48,9 @@ class _PersonalInsightCardState extends State<PersonalInsightCard> {
     if (oldWidget.recommendation?.metadata['content_id'] !=
         widget.recommendation?.metadata['content_id']) {
       _feedback = null;
+      _saving = false;
+      _pendingAction = null;
+      _isEvidenceExpanded = false;
       _loadFeedback();
     }
   }
@@ -61,17 +66,18 @@ class _PersonalInsightCardState extends State<PersonalInsightCard> {
 
   Future<void> _respond(String value) async {
     if (_saving || widget.recommendation == null) return;
+    final item = widget.recommendation!;
     setState(() {
       _saving = true;
       _pendingAction = value;
     });
     try {
-      await WellnessContentApi.respond(widget.recommendation!.toJson(), value);
-      if (mounted) {
+      await WellnessContentApi.respond(item.toJson(), value);
+      if (mounted && identical(item, widget.recommendation)) {
         setState(() => _feedback = value == 'like' ? 'accepted' : 'dismissed');
       }
     } catch (_) {
-      if (mounted) {
+      if (mounted && identical(item, widget.recommendation)) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: LocalizedText(
@@ -81,7 +87,7 @@ class _PersonalInsightCardState extends State<PersonalInsightCard> {
         );
       }
     } finally {
-      if (mounted) {
+      if (mounted && identical(item, widget.recommendation)) {
         setState(() {
           _saving = false;
           _pendingAction = null;
@@ -94,6 +100,13 @@ class _PersonalInsightCardState extends State<PersonalInsightCard> {
   Widget build(BuildContext context) {
     final item = widget.recommendation;
     final evidence = item?.metadata['evidence']?.toString() ?? '';
+    final highlights = (item?.metadata['highlights'] as List? ?? [])
+        .whereType<Map>()
+        .take(3)
+        .toList();
+    final period = item?.metadata['period'] as Map?;
+    final start = DateTime.tryParse('${period?['start_date']}');
+    final end = DateTime.tryParse('${period?['end_date']}');
     final isDark = Theme.of(context).brightness == Brightness.dark;
     const purple = Color(0xFF8B5CF6);
 
@@ -111,10 +124,7 @@ class _PersonalInsightCardState extends State<PersonalInsightCard> {
                     const Color(0xFF1E1B33).withValues(alpha: 0.92),
                     pageSurfaceColor(context),
                   ]
-                : [
-                    const Color(0xFFFAF7FF),
-                    pageSurfaceColor(context),
-                  ],
+                : [const Color(0xFFFAF7FF), pageSurfaceColor(context)],
           ),
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
@@ -162,7 +172,7 @@ class _PersonalInsightCardState extends State<PersonalInsightCard> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: LocalizedText(
-                          'Personal insight',
+                          'Personal insights',
                           style: TextStyle(
                             fontSize: 15.5,
                             fontWeight: FontWeight.w900,
@@ -173,7 +183,18 @@ class _PersonalInsightCardState extends State<PersonalInsightCard> {
                       ),
                     ],
                   ),
-                  if (widget.learningState?.isVisible == true) ...[
+                  if (start != null && end != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      '${DateFormat.MMMd(Localizations.localeOf(context).languageCode).format(start)} – ${DateFormat.MMMd(Localizations.localeOf(context).languageCode).format(end)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: pageSecondaryTextColor(context),
+                      ),
+                    ),
+                  ],
+                  if (highlights.isEmpty &&
+                      widget.learningState?.isVisible == true) ...[
                     const SizedBox(height: 10),
                     FirstWeekLearningPill(
                       state: widget.learningState!,
@@ -199,7 +220,7 @@ class _PersonalInsightCardState extends State<PersonalInsightCard> {
                   // Body narrative
                   LocalizedText(
                     item?.message ??
-                        'A few check-ins will help us notice your personal patterns.',
+                        'Log sleep, mood, movement or a meal to start building your wellness picture.',
                     style: TextStyle(
                       fontSize: 13.5,
                       height: 1.48,
@@ -208,7 +229,12 @@ class _PersonalInsightCardState extends State<PersonalInsightCard> {
                     ),
                   ),
 
-                  // Modern collapsible evidence section
+                  for (final highlight in highlights)
+                    InsightHighlightTile(
+                      highlight: Map<String, dynamic>.from(highlight),
+                    ),
+
+                  // Keep source detail optional beneath the observations.
                   if (evidence.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     _CollapsibleEvidenceTile(
@@ -333,11 +359,12 @@ class _CollapsibleEvidenceTile extends StatelessWidget {
                     ),
                     const SizedBox(width: 7),
                     Expanded(
-                      child: const LocalizedText(
+                      child: LocalizedText(
                         'What this is based on',
                         style: TextStyle(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w700,
+                          color: pagePrimaryTextColor(context),
                         ),
                       ),
                     ),
@@ -409,20 +436,20 @@ class _ModernFeedbackButton extends StatelessWidget {
     final foreground = selected
         ? activeColor
         : (isDark
-            ? Colors.white.withValues(alpha: 0.75)
-            : const Color(0xFF5E7286));
+              ? Colors.white.withValues(alpha: 0.75)
+              : const Color(0xFF5E7286));
 
     final background = selected
         ? activeColor.withValues(alpha: isDark ? 0.22 : 0.12)
         : (isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : const Color(0xFFF1F5F8));
+              ? Colors.white.withValues(alpha: 0.05)
+              : const Color(0xFFF1F5F8));
 
     final border = selected
         ? activeColor.withValues(alpha: isDark ? 0.50 : 0.35)
         : (isDark
-            ? Colors.white.withValues(alpha: 0.08)
-            : const Color(0xFFE2EAF0));
+              ? Colors.white.withValues(alpha: 0.08)
+              : const Color(0xFFE2EAF0));
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),

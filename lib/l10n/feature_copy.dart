@@ -8,6 +8,18 @@ const Map<String, String> tagalogFeatureCopy = {
   'Saved offline': 'Naka-save offline',
   'Updating': 'Nag-a-update',
   'Saved view': 'Huling saved view',
+  'Personal insights': 'Mga personal na insight',
+  'Finding another idea…': 'Naghahanap ng ibang idea…',
+  'Review earlier ideas': 'Balikan ang mga naunang idea',
+  'You’ve explored the ideas that fit right now.':
+      'Nakita mo na ang mga idea na bagay sa ngayon.',
+  'You’re up to date. New logs can bring more ideas.':
+      'Updated ka na. Puwedeng may bagong ideas kapag may dagdag na logs.',
+  'Couldn’t load another idea. Your current one is still here.':
+      'Hindi ma-load ang ibang idea. Nandito pa rin ang kasalukuyang suggestion.',
+  'This nudge is no longer available.': 'Hindi na available ang nudge na ito.',
+  'Log sleep, mood, movement or a meal to start building your wellness picture.':
+      'Mag-log ng tulog, mood, galaw o meal para mabuo ang wellness picture mo.',
   'Personal insight': 'Personal na insight',
   'Based on your daily and weekly patterns':
       'Batay sa daily at weekly patterns mo',

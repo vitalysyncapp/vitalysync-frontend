@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/adaptive/data/wellness_content_api.dart';
+import '../../features/adaptive/data/nudge_alternative_controller.dart';
 import '../../l10n/localized_text.dart';
 
 final Set<VoidCallback> _visibilityChecks = {};
@@ -141,6 +142,7 @@ class _WellnessContentExposureState extends State<WellnessContentExposure>
 /// friendly acknowledgment. `another_idea` keeps the regular actions because
 /// the parent swaps in a new suggestion.
 class NudgeResponseActions extends StatefulWidget {
+  final NudgeAlternativeController? alternatives;
   final bool enabled;
   final ValueChanged<String> onResponse;
   final String? response;
@@ -151,6 +153,7 @@ class NudgeResponseActions extends StatefulWidget {
     required this.onResponse,
     this.response,
     this.accentColor,
+    this.alternatives,
   });
 
   @override
@@ -190,25 +193,72 @@ class _NudgeResponseActionsState extends State<NudgeResponseActions> {
     final response = widget.response;
     final showAck = response == 'done' || response == 'not_now';
 
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 240),
-      curve: Curves.easeOutCubic,
-      alignment: Alignment.topCenter,
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 260),
-        switchInCurve: Curves.easeOutBack,
-        switchOutCurve: Curves.easeInCubic,
-        transitionBuilder: (child, animation) => FadeTransition(
-          opacity: animation,
-          child: ScaleTransition(
-            scale: Tween<double>(begin: 0.94, end: 1).animate(animation),
-            child: child,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (widget.alternatives?.message != null) ...[
+          Semantics(
+            liveRegion: true,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (widget.alternatives!.loading) ...[
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Expanded(
+                  child: LocalizedText(
+                    widget.alternatives!.message!,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (widget.alternatives!.canRevisit)
+            TextButton(
+              onPressed: widget.enabled
+                  ? () => widget.onResponse('review_ideas')
+                  : null,
+              child: const LocalizedText('Review earlier ideas'),
+            ),
+          if (widget.alternatives!.hasError)
+            TextButton(
+              onPressed: widget.enabled
+                  ? () => widget.onResponse('another_idea')
+                  : null,
+              child: const LocalizedText('Retry'),
+            ),
+          const SizedBox(height: 8),
+        ],
+        AnimatedSize(
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 260),
+            switchInCurve: Curves.easeOutBack,
+            switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (child, animation) => FadeTransition(
+              opacity: animation,
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 0.94, end: 1).animate(animation),
+                child: child,
+              ),
+            ),
+            child: showAck
+                ? _buildAcknowledgment(context, response!, accent)
+                : _buildActions(context, accent),
           ),
         ),
-        child: showAck
-            ? _buildAcknowledgment(context, response!, accent)
-            : _buildActions(context, accent),
-      ),
+      ],
     );
   }
 

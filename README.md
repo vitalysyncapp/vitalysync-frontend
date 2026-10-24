@@ -61,6 +61,10 @@ When changing UI:
 
 ## API Configuration
 
+The assistant uses `NudgeAlternativeController` for retained-card loading, retry, and explicit review passes in both app and overlay. Smart nudge evidence is hidden; Nutrition context remains visible. Personal insights accepts both legacy title/message responses and optional period/highlight metadata, with refreshes debounced after relevant changes.
+
+`SmartNudgeDeliveryService` consumes finalized server records using the existing local notification channel. A user-scoped persistent ledger and server lease prevent duplicate alerts across engines, restarts, and acknowledgment retries. Title/body and delivery timestamp are reused exactly; this path does not use the legacy 30-minute reminder delay. Pending delivery is cancelled on replacement, completion, snooze, context invalidation, logout, or account switch. Taps load the saved content ID. Verify actual permission prompts and operating-system delivery timing on an Android/iOS device in addition to automated delivery tests.
+
 The app reads the backend base URL from `lib/shared/config/api_config.dart`.
 
 By default, the app points to the deployed backend. For local development, pass a Dart define:

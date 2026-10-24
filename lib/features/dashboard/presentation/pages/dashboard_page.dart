@@ -56,11 +56,22 @@ class _DashboardState extends State<Dashboard> {
   int _firstWeekLoadToken = 0;
   int _weeklyMetricsLoadToken = 0;
   Timer? _weeklyMetricsRefreshDebounce;
+  Timer? _insightRefreshDebounce;
+  String? _insightLocale;
+  bool _insightsPaused = false;
 
   @override
   void initState() {
     super.initState();
-    WellnessContentApi.changes.addListener(_loadPersonalInsight);
+    _insightLocale =
+        AppPreferencesController.instance.notifier.value.locale.languageCode;
+    _insightsPaused =
+        AppPreferencesController.instance.notifier.value.pauseWellnessInsights;
+    AppPreferencesController.instance.notifier.addListener(
+      _handleInsightPreferences,
+    );
+    ActivityService.insightRefreshSignal.addListener(_scheduleInsightRefresh);
+    WellnessContentApi.changes.addListener(_scheduleInsightRefresh);
     BurnoutScoreApi.refreshSignal.addListener(_handleBurnoutInputsChanged);
     UserGoalsService.refreshSignal.addListener(_handleSummaryInputsChanged);
     NutritionApi.refreshSignal.addListener(_handleSummaryInputsChanged);
@@ -75,7 +86,7 @@ class _DashboardState extends State<Dashboard> {
 
   @override
   void dispose() {
-    WellnessContentApi.changes.removeListener(_loadPersonalInsight);
+    WellnessContentApi.changes.removeListener(_scheduleInsightRefresh);
     BurnoutScoreApi.refreshSignal.removeListener(_handleBurnoutInputsChanged);
     UserGoalsService.refreshSignal.removeListener(_handleSummaryInputsChanged);
     NutritionApi.refreshSignal.removeListener(_handleSummaryInputsChanged);
@@ -83,16 +94,44 @@ class _DashboardState extends State<Dashboard> {
       _handleWeeklyMetricsChanged,
     );
     _weeklyMetricsRefreshDebounce?.cancel();
+    _insightRefreshDebounce?.cancel();
+    AppPreferencesController.instance.notifier.removeListener(
+      _handleInsightPreferences,
+    );
+    ActivityService.insightRefreshSignal.removeListener(
+      _scheduleInsightRefresh,
+    );
     super.dispose();
   }
 
+  void _scheduleInsightRefresh() {
+    _insightRefreshDebounce?.cancel();
+    _insightRefreshDebounce = Timer(const Duration(milliseconds: 600), () {
+      if (mounted) unawaited(_loadPersonalInsight());
+    });
+  }
+
+  void _handleInsightPreferences() {
+    final prefs = AppPreferencesController.instance.notifier.value;
+    if (_insightLocale != prefs.locale.languageCode ||
+        _insightsPaused != prefs.pauseWellnessInsights) {
+      _insightLocale = prefs.locale.languageCode;
+      _insightsPaused = prefs.pauseWellnessInsights;
+      _insightLoadToken++;
+      if (mounted) setState(() => _aiInsightNudge = null);
+      _scheduleInsightRefresh();
+    }
+  }
+
   void _handleBurnoutInputsChanged() {
+    _scheduleInsightRefresh();
     _loadBurnoutPatterns();
     unawaited(_loadWeeklyMetrics());
     unawaited(_loadFirstWeekLearning());
   }
 
   void _handleSummaryInputsChanged() {
+    _scheduleInsightRefresh();
     if (!mounted) {
       return;
     }

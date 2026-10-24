@@ -63,6 +63,7 @@ class MainNavigationController extends InheritedWidget {
 }
 
 class MainNavigation extends StatefulWidget {
+  final String? smartNudgePayload;
   final MainTab initialTab;
   final bool openNutritionLogOnStart;
   final int? tutorialUserId;
@@ -75,6 +76,7 @@ class MainNavigation extends StatefulWidget {
 
   const MainNavigation({
     super.key,
+    this.smartNudgePayload,
     this.initialTab = MainTab.home,
     this.openNutritionLogOnStart = false,
     this.tutorialUserId,
@@ -170,6 +172,16 @@ class _MainNavigationState extends State<MainNavigation>
     _syncPendingLogs();
     _evaluateNutritionReminder();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.smartNudgePayload?.startsWith('smart_nudge:') == true &&
+          mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) =>
+                SmartNudgeNotificationView(payload: widget.smartNudgePayload!),
+          ),
+        );
+        return;
+      }
       if (_isTutorialActive) {
         _showTutorialOverlay();
       }
