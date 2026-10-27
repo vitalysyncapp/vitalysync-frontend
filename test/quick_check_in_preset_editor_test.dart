@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vitalysync/features/log/data/check_in_models.dart';
+import 'package:vitalysync/features/log/data/quick_check_in_preset.dart';
 import 'package:vitalysync/features/log/presentation/widgets/quick_check_in_preset_widgets.dart';
 
 import 'test_helpers.dart';
@@ -8,6 +9,44 @@ import 'test_helpers.dart';
 void main() {
   setUpAll(configureTestAssets);
   tearDownAll(clearTestAssets);
+
+  testWidgets(
+    'art picker scrolls to additional choices and saves the selection',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      QuickCheckInPreset? saved;
+      await _openEditor(
+        tester,
+        CheckInMode.daily,
+        onSaved: (preset) => saved = preset,
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('quick-check-in-name')),
+        'Rest day',
+      );
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pumpAndSettle();
+      final grid = find.byKey(const ValueKey('quick-check-in-avatar-grid'));
+      await tester.ensureVisible(grid);
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('quick-avatar-unwell')),
+        200,
+        scrollable: find.descendant(
+          of: grid,
+          matching: find.byType(Scrollable),
+        ),
+      );
+      await tester.tap(find.byKey(const ValueKey('quick-avatar-unwell')));
+      await tester.tap(find.text('Save quick check-in'));
+      await tester.pumpAndSettle();
+      expect(saved?.avatarId, 'unwell');
+      expect(saved?.name, 'Rest day');
+      expect(saved?.draft.sleepHours, _draft.sleepHours);
+    },
+  );
 
   testWidgets('daily preset editor reveals the complete daily questionnaire', (
     tester,
@@ -65,19 +104,24 @@ void main() {
   );
 }
 
-Future<void> _openEditor(WidgetTester tester, CheckInMode mode) async {
+Future<void> _openEditor(
+  WidgetTester tester,
+  CheckInMode mode, {
+  ValueChanged<QuickCheckInPreset?>? onSaved,
+}) async {
   await pumpTestApp(
     tester,
     Builder(
       builder: (context) => Center(
         child: FilledButton(
           onPressed: () async {
-            await showQuickCheckInPresetEditor(
+            final preset = await showQuickCheckInPresetEditor(
               context: context,
               mode: mode,
               initialDraft: _draft,
               exerciseGoalLabel: '3-4 days',
             );
+            onSaved?.call(preset);
           },
           child: const Text('Open editor'),
         ),

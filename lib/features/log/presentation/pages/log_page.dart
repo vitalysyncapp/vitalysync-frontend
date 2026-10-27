@@ -22,6 +22,7 @@ import '../../data/weekly_assessment_api.dart';
 import '../widgets/check_in_success_view.dart';
 import '../widgets/log_widgets.dart';
 import '../widgets/quick_check_in_preset_widgets.dart';
+import '../widgets/quick_check_in_confirmation_dialog.dart';
 import 'package:vitalysync/l10n/localized_text.dart';
 
 const _streakFireAnimationPath = 'assets/animations/streak_fire.json';
@@ -474,32 +475,10 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     }
   }
 
-  Future<bool> _confirmPresetReplacement(QuickCheckInPreset preset) async {
-    if (!hasSavedLogToday) return true;
-    return await showDialog<bool>(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: const LocalizedText('Replace today\'s check-in?'),
-            content: LocalizedText(
-              '${preset.name} will replace the answers already saved for today.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext, false),
-                child: const LocalizedText('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(dialogContext, true),
-                child: const LocalizedText('Replace and save'),
-              ),
-            ],
-          ),
-        ) ??
-        false;
-  }
-
   Future<void> _useQuickPreset(QuickCheckInPreset preset) async {
-    if (isSaving || _activePresetId != null) return;
+    if (isSaving || _activePresetId != null || _presetMutationInProgress) {
+      return;
+    }
     if (preset.mode != requiredMode) {
       await _loadLogState(showLoader: false);
       if (!mounted || preset.mode != requiredMode) {
@@ -516,8 +495,17 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       }
     }
     setState(() => _activePresetId = preset.presetId);
-    if (!await _confirmPresetReplacement(preset) || !mounted) {
-      if (mounted) setState(() => _activePresetId = null);
+    final action = await showQuickCheckInConfirmationDialog(
+      context: context,
+      preset: preset,
+      replacesToday: hasSavedLogToday,
+    );
+    if (!mounted) return;
+    if (action != QuickCheckInConfirmationAction.confirm) {
+      setState(() => _activePresetId = null);
+      if (action == QuickCheckInConfirmationAction.edit) {
+        await _editQuickPreset(preset);
+      }
       return;
     }
 

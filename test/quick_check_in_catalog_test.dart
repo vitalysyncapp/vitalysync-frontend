@@ -25,7 +25,7 @@ void main() {
     expect(find.byKey(const ValueKey('add-quick-check-in')), findsOneWidget);
   });
 
-  testWidgets('tap logs and long press opens preset management callback', (
+  testWidgets('tap requests preview and long press opens preset management', (
     tester,
   ) async {
     QuickCheckInPreset? tapped;

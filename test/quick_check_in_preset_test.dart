@@ -64,11 +64,18 @@ void main() {
     );
   });
 
-  test('avatar catalog exposes the twelve server-approved ids', () {
-    expect(QuickCheckInAvatarCatalog.entries, hasLength(12));
+  test('expanded avatar catalog preserves existing preset choices', () {
+    expect(QuickCheckInAvatarCatalog.entries, hasLength(36));
     expect(
       QuickCheckInAvatarCatalog.entries.map((entry) => entry.id),
-      containsAll(['tired', 'focused', 'celebrating', 'energized']),
+      containsAll([
+        'tired',
+        'focused',
+        'celebrating',
+        'energized',
+        'productive',
+        'mindful',
+      ]),
     );
   });
 }

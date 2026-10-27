@@ -76,10 +76,8 @@ class BurnoutInfoDialog extends StatelessWidget {
                           child: LocalizedText(
                             latestScore == null
                                 ? 'Your baseline estimate is $score/100. Complete a daily check-in to update it with your recent inputs.'
-                                : _coreOnly
-                                ? 'Your daily estimate is $score/100. It uses the 9 practical inputs, activity, and baseline. The 5 omitted daily reflections are excluded and available weights are normalized. Your 11-item weekly scores are separate.'
                                 : _restoredDaily
-                                ? 'Your daily estimate is $score/100. It uses your 14 daily wellness answers, activity, and baseline. Weekly questionnaire dimensions are shown separately.'
+                                ? 'Your daily burnout risk estimate is $score/100. It summarizes your recent check-in and other wellness information. Higher scores suggest more burnout risk.'
                                 : 'This legacy estimate is $score/100. It uses the daily signals, weekly pulse, and baseline available when it was calculated.',
                             style: _bodyStyle(context),
                           ),
@@ -103,6 +101,8 @@ class BurnoutInfoDialog extends StatelessWidget {
                                 _riskMeaning(_riskLevel),
                                 style: _bodyStyle(context),
                               ),
+                              const SizedBox(height: 12),
+                              _buildRiskLevelLegend(context),
                             ],
                           ),
                         ),
@@ -554,6 +554,47 @@ class BurnoutInfoDialog extends StatelessWidget {
       default:
         return 'VitalySync is still collecting enough context to classify this score clearly.';
     }
+  }
+
+  Widget _buildRiskLevelLegend(BuildContext context) {
+    final levels = latestScore == null
+        ? const ['very_low', 'low', 'moderate', 'high', 'very_high']
+        : const ['low', 'moderate', 'high', 'critical'];
+    const dailyLabels = {
+      'low': 'Low risk · 0–33',
+      'moderate': 'Moderate risk · 34–59',
+      'high': 'High risk · 60–79',
+      'critical': 'Needs support · 80–100',
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        LocalizedText(
+          latestScore == null ? 'Baseline risk levels' : 'Daily risk levels',
+          style: TextStyle(
+            color: pagePrimaryTextColor(context),
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 7),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: levels
+              .map(
+                (level) => _Pill(
+                  label: latestScore == null
+                      ? '${_humanize(level)} risk'
+                      : dailyLabels[level]!,
+                  color: _riskColor(level),
+                ),
+              )
+              .toList(),
+        ),
+      ],
+    );
   }
 
   Color _riskColor(String risk) {

@@ -10,6 +10,7 @@ import '../../data/check_in_models.dart';
 import '../../data/log_api.dart';
 import '../../data/quick_check_in_preset.dart';
 import 'log_widgets.dart';
+import 'quick_check_in_avatar_picker.dart';
 
 enum QuickCheckInPresetMenuAction { edit, delete }
 
@@ -49,16 +50,19 @@ Future<QuickCheckInPresetMenuAction?> showQuickCheckInPresetMenu(
   BuildContext context,
   QuickCheckInPreset preset,
 ) {
-  return showModalBottomSheet<QuickCheckInPresetMenuAction>(
+  return showDialog<QuickCheckInPresetMenuAction>(
     context: context,
-    backgroundColor: Colors.transparent,
-    builder: (sheetContext) => SafeArea(
+    builder: (dialogContext) => Dialog(
+      alignment: Alignment.center,
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       child: Container(
-        margin: const EdgeInsets.all(12),
+        constraints: const BoxConstraints(maxWidth: 420),
+        padding: const EdgeInsets.symmetric(vertical: 6),
         decoration: BoxDecoration(
-          color: pageSurfaceColor(sheetContext),
+          color: pageSurfaceColor(dialogContext),
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: pageBorderColor(sheetContext)),
+          border: Border.all(color: pageBorderColor(dialogContext)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -67,17 +71,17 @@ Future<QuickCheckInPresetMenuAction?> showQuickCheckInPresetMenu(
               leading: const Icon(Icons.edit_rounded),
               title: LocalizedText('Edit ${preset.name}'),
               onTap: () => Navigator.pop(
-                sheetContext,
+                dialogContext,
                 QuickCheckInPresetMenuAction.edit,
               ),
             ),
             ListTile(
               leading: const Icon(Icons.delete_outline_rounded),
               title: const LocalizedText('Delete quick check-in'),
-              textColor: Theme.of(sheetContext).colorScheme.error,
-              iconColor: Theme.of(sheetContext).colorScheme.error,
+              textColor: Theme.of(dialogContext).colorScheme.error,
+              iconColor: Theme.of(dialogContext).colorScheme.error,
               onTap: () => Navigator.pop(
-                sheetContext,
+                dialogContext,
                 QuickCheckInPresetMenuAction.delete,
               ),
             ),
@@ -250,7 +254,7 @@ class _CatalogHeader extends StatelessWidget {
           ),
           const SizedBox(height: 5),
           LocalizedText(
-            'Tap to log now. Long press to edit or delete. Swipe left for the full questionnaire.',
+            'Tap to preview and confirm. Long press to edit or delete. Swipe left for the full questionnaire.',
             style: TextStyle(
               color: pageSecondaryTextColor(context),
               height: 1.35,
@@ -285,7 +289,8 @@ class _PresetTile extends StatelessWidget {
         '${'Energy:'.localizedCopy(context)} ${preset.draft.energyLevel ?? '-'}/5';
     return Semantics(
       button: true,
-      label: '${'Log now'.localizedCopy(context)}: ${preset.name}',
+      label:
+          '${'Preview quick check-in'.localizedCopy(context)}: ${preset.name}',
       onLongPressHint: 'Edit or delete quick check-in'.localizedCopy(context),
       child: Material(
         color: Colors.transparent,
@@ -295,16 +300,13 @@ class _PresetTile extends StatelessWidget {
           onLongPress: isSaving ? null : onLongPress,
           borderRadius: BorderRadius.circular(20),
           child: Ink(
-            padding: const EdgeInsets.fromLTRB(7, 10, 7, 9),
-            decoration: BoxDecoration(
-              color: pageSurfaceColor(context),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: pageBorderColor(context)),
-              boxShadow: pageCardShadow(context),
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Expanded(
+                SizedBox(
+                  width: 88,
+                  height: 88,
                   child: Center(
                     child: isSaving
                         ? const CircularProgressIndicator(strokeWidth: 2.5)
@@ -315,11 +317,11 @@ class _PresetTile extends StatelessWidget {
                             ),
                             fit: BoxFit.contain,
                             placeholderBuilder: (_) =>
-                                const Icon(Icons.mood_rounded, size: 44),
+                                const Icon(Icons.mood_rounded, size: 40),
                           ),
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 2),
                 Text(
                   preset.name,
                   maxLines: 2,
@@ -327,12 +329,12 @@ class _PresetTile extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: pagePrimaryTextColor(context),
-                    fontSize: 13,
+                    fontSize: 14,
                     height: 1.08,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 5),
+                const SizedBox(height: 3),
                 Text(
                   summary,
                   maxLines: 3,
@@ -372,12 +374,6 @@ class _AddPresetTile extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(20),
           child: Ink(
-            decoration: BoxDecoration(
-              color: pageSurfaceColor(context),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: pageBorderColor(context)),
-              boxShadow: pageCardShadow(context),
-            ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -992,58 +988,11 @@ class _QuickCheckInPresetEditorState extends State<_QuickCheckInPresetEditor> {
                         icon: Icons.emoji_emotions_outlined,
                         accent: accent,
                         title: 'Choose an emoji',
-                        subtitle: 'Pick the feeling that matches this preset.',
-                        child: Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final avatar
-                                in QuickCheckInAvatarCatalog.entries)
-                              Semantics(
-                                button: true,
-                                selected: avatar.id == _avatarId,
-                                label: avatar.semanticLabel.localizedCopy(
-                                  context,
-                                ),
-                                child: InkWell(
-                                  onTap: () =>
-                                      setState(() => _avatarId = avatar.id),
-                                  borderRadius: BorderRadius.circular(17),
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 180),
-                                    width: 56,
-                                    height: 56,
-                                    padding: const EdgeInsets.all(7),
-                                    decoration: BoxDecoration(
-                                      color: avatar.id == _avatarId
-                                          ? accent.withValues(
-                                              alpha: isDark ? 0.22 : 0.13,
-                                            )
-                                          : pageSubtleSurfaceColor(context),
-                                      borderRadius: BorderRadius.circular(17),
-                                      border: Border.all(
-                                        color: avatar.id == _avatarId
-                                            ? pageAccentColor(context, accent)
-                                            : pageBorderColor(context),
-                                        width: avatar.id == _avatarId ? 2 : 1,
-                                      ),
-                                      boxShadow: avatar.id == _avatarId
-                                          ? [
-                                              BoxShadow(
-                                                color: accent.withValues(
-                                                  alpha: 0.16,
-                                                ),
-                                                blurRadius: 12,
-                                                offset: const Offset(0, 4),
-                                              ),
-                                            ]
-                                          : null,
-                                    ),
-                                    child: SvgPicture.asset(avatar.assetPath),
-                                  ),
-                                ),
-                              ),
-                          ],
+                        subtitle: 'Scroll to explore moods and activities.',
+                        child: QuickCheckInAvatarPicker(
+                          selectedId: _avatarId,
+                          accent: accent,
+                          onSelected: (id) => setState(() => _avatarId = id),
                         ),
                       ),
                       const SizedBox(height: 20),

@@ -1,4 +1,11 @@
 const Map<String, String> tagalogFeatureCopy = {
+  'Baseline risk levels': 'Mga antas ng panganib sa baseline',
+  'Daily risk levels': 'Mga antas ng panganib sa araw-araw',
+  'Needs support': 'Kailangan ng suporta',
+  'Low risk · 0–33': 'Mababang panganib · 0–33',
+  'Moderate risk · 34–59': 'Katamtamang panganib · 34–59',
+  'High risk · 60–79': 'Mataas na panganib · 60–79',
+  'Needs support · 80–100': 'Kailangan ng suporta · 80–100',
   'Body metrics': 'Mga sukat ng katawan',
   'Routine time': 'Oras ng routine',
   'Baseline scale': 'Baseline scale',
