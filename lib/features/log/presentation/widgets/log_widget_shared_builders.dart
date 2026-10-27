@@ -104,6 +104,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
     required String title,
     required String subtitle,
     int subtitleMaxLines = 2,
+    bool invertHierarchy = false,
   }) {
     return Builder(
       builder: (context) {
@@ -153,20 +154,31 @@ extension _LogWidgetSharedBuilders on LogWidgets {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 16.5,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.2,
-                      color: pagePrimaryTextColor(context),
+                      fontSize: invertHierarchy ? 12.5 : 16.5,
+                      fontWeight: invertHierarchy
+                          ? FontWeight.w600
+                          : FontWeight.w800,
+                      letterSpacing: invertHierarchy ? 0.1 : -0.2,
+                      color: invertHierarchy
+                          ? pageSecondaryTextColor(context)
+                          : pagePrimaryTextColor(context),
                     ),
                   ),
-                  const SizedBox(height: 1),
+                  SizedBox(height: invertHierarchy ? 3 : 1),
                   LocalizedText(
                     subtitle,
                     maxLines: subtitleMaxLines,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 13,
-                      color: pageSecondaryTextColor(context),
+                      fontSize: invertHierarchy ? 15.5 : 13,
+                      fontWeight: invertHierarchy
+                          ? FontWeight.w800
+                          : FontWeight.normal,
+                      letterSpacing: invertHierarchy ? -0.2 : null,
+                      height: invertHierarchy ? 1.25 : null,
+                      color: invertHierarchy
+                          ? pagePrimaryTextColor(context)
+                          : pageSecondaryTextColor(context),
                     ),
                   ),
                 ],
@@ -190,6 +202,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
     required String emptyMessage,
     required String selectedMessagePrefix,
     int subtitleMaxLines = 2,
+    bool invertHeaderHierarchy = false,
   }) {
     return _buildCard(
       accentColor: iconColor,
@@ -206,6 +219,7 @@ extension _LogWidgetSharedBuilders on LogWidgets {
                 title: title,
                 subtitle: subtitle,
                 subtitleMaxLines: subtitleMaxLines,
+                invertHierarchy: invertHeaderHierarchy,
               ),
               const SizedBox(height: 12),
               Row(

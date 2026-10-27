@@ -133,6 +133,7 @@ extension _LogWeeklyReflectionCards on LogWidgets {
       onChanged: (value) => onWeeklyAnswerChanged?.call(questionKey, value),
       emptyMessage: 'How often did this happen over the past seven days?',
       selectedMessagePrefix: 'Answered',
+      invertHeaderHierarchy: true,
     );
   }
 }

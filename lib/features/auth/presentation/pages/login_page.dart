@@ -198,6 +198,26 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    const logoBlue = Color(0xFF0584FF);
+    final theme = Theme.of(context);
+
+    return Theme(
+      data: theme.copyWith(
+        colorScheme: theme.colorScheme.copyWith(
+          primary: logoBlue,
+          onPrimary: Colors.white,
+        ),
+        textSelectionTheme: theme.textSelectionTheme.copyWith(
+          cursorColor: logoBlue,
+          selectionColor: logoBlue.withValues(alpha: 0.24),
+          selectionHandleColor: logoBlue,
+        ),
+      ),
+      child: Builder(builder: _buildLoginContent),
+    );
+  }
+
+  Widget _buildLoginContent(BuildContext context) {
     return AuthScaffold(
       illustrationAsset: authWorkStressAsset,
       topOverlayAsset: authMeditationAsset,

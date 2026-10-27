@@ -1,12 +1,10 @@
 import 'package:intl/intl.dart';
-import 'insight_highlight_tile.dart';
 import 'package:flutter/material.dart';
 import '../../../adaptive/data/adaptive_nudge_api.dart';
 import '../../../adaptive/data/wellness_content_api.dart';
 import '../../../../shared/learning/first_week_learning_service.dart';
 import '../../../../shared/theme/app_page_style.dart';
 import '../../../../shared/widgets/app_skeleton.dart';
-import '../../../../shared/widgets/first_week_learning_pill.dart';
 import '../../../../shared/widgets/wellness_content_widgets.dart';
 import '../../../../l10n/localized_text.dart';
 
@@ -30,14 +28,10 @@ class _PersonalInsightCardState extends State<PersonalInsightCard> {
   bool _saving = false;
   String? _pendingAction;
   String? _feedback;
-  bool _isEvidenceExpanded = false;
-
-  bool get _evidenceExpanded => _isEvidenceExpanded == true;
 
   @override
   void initState() {
     super.initState();
-    _isEvidenceExpanded = false;
     _saving = false;
     _loadFeedback();
   }
@@ -50,7 +44,6 @@ class _PersonalInsightCardState extends State<PersonalInsightCard> {
       _feedback = null;
       _saving = false;
       _pendingAction = null;
-      _isEvidenceExpanded = false;
       _loadFeedback();
     }
   }
@@ -99,11 +92,6 @@ class _PersonalInsightCardState extends State<PersonalInsightCard> {
   @override
   Widget build(BuildContext context) {
     final item = widget.recommendation;
-    final evidence = item?.metadata['evidence']?.toString() ?? '';
-    final highlights = (item?.metadata['highlights'] as List? ?? [])
-        .whereType<Map>()
-        .take(3)
-        .toList();
     final period = item?.metadata['period'] as Map?;
     final start = DateTime.tryParse('${period?['start_date']}');
     final end = DateTime.tryParse('${period?['end_date']}');
@@ -193,29 +181,7 @@ class _PersonalInsightCardState extends State<PersonalInsightCard> {
                       ),
                     ),
                   ],
-                  if (highlights.isEmpty &&
-                      widget.learningState?.isVisible == true) ...[
-                    const SizedBox(height: 10),
-                    FirstWeekLearningPill(
-                      state: widget.learningState!,
-                      message: widget.learningState!.aiInsightNote,
-                      maxLines: null,
-                    ),
-                  ],
                   const SizedBox(height: 14),
-
-                  // Headline
-                  LocalizedText(
-                    item?.title ?? 'Your picture is still taking shape',
-                    style: TextStyle(
-                      fontSize: 16.5,
-                      fontWeight: FontWeight.w800,
-                      height: 1.28,
-                      letterSpacing: -0.3,
-                      color: pagePrimaryTextColor(context),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
 
                   // Body narrative
                   LocalizedText(
@@ -228,26 +194,6 @@ class _PersonalInsightCardState extends State<PersonalInsightCard> {
                       color: pageSecondaryTextColor(context),
                     ),
                   ),
-
-                  for (final highlight in highlights)
-                    InsightHighlightTile(
-                      highlight: Map<String, dynamic>.from(highlight),
-                    ),
-
-                  // Keep source detail optional beneath the observations.
-                  if (evidence.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    _CollapsibleEvidenceTile(
-                      evidence: evidence,
-                      isExpanded: _evidenceExpanded,
-                      accentColor: purple,
-                      onToggle: () {
-                        setState(() {
-                          _isEvidenceExpanded = !_evidenceExpanded;
-                        });
-                      },
-                    ),
-                  ],
 
                   if (item != null) ...[
                     ContentFreshnessNote(metadata: item.metadata),
@@ -305,103 +251,6 @@ class _PersonalInsightCardState extends State<PersonalInsightCard> {
                   ],
                 ],
               ),
-      ),
-    );
-  }
-}
-
-class _CollapsibleEvidenceTile extends StatelessWidget {
-  final String evidence;
-  final bool isExpanded;
-  final VoidCallback onToggle;
-  final Color accentColor;
-
-  const _CollapsibleEvidenceTile({
-    required this.evidence,
-    this.isExpanded = false,
-    required this.onToggle,
-    this.accentColor = const Color(0xFF8B5CF6),
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final expanded = isExpanded == true;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark
-            ? accentColor.withValues(alpha: 0.08)
-            : const Color(0xFFF9F7FD),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isDark
-              ? accentColor.withValues(alpha: 0.20)
-              : accentColor.withValues(alpha: 0.14),
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onToggle,
-          borderRadius: BorderRadius.circular(14),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline_rounded,
-                      size: 15,
-                      color: accentColor.withValues(alpha: 0.85),
-                    ),
-                    const SizedBox(width: 7),
-                    Expanded(
-                      child: LocalizedText(
-                        'What this is based on',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: pagePrimaryTextColor(context),
-                        ),
-                      ),
-                    ),
-                    AnimatedRotation(
-                      turns: expanded ? 0.5 : 0.0,
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.easeOutCubic,
-                      child: Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        size: 18,
-                        color: pageSecondaryTextColor(context),
-                      ),
-                    ),
-                  ],
-                ),
-                AnimatedSize(
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeOutCubic,
-                  child: expanded
-                      ? Padding(
-                          padding: const EdgeInsets.only(top: 8, bottom: 2),
-                          child: LocalizedText(
-                            evidence,
-                            style: TextStyle(
-                              color: pageSecondaryTextColor(context),
-                              fontSize: 12,
-                              height: 1.45,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        )
-                      : const SizedBox.shrink(),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

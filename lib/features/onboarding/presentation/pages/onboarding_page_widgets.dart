@@ -20,190 +20,102 @@ class _OnboardingStep {
 
 class _OnboardingHeader extends StatelessWidget {
   final _OnboardingStep step;
-  final IconData icon;
   final String subtitle;
-  final String animationPath;
   final double progress;
   final int currentStep;
   final int totalSteps;
 
   const _OnboardingHeader({
     required this.step,
-    required this.icon,
     required this.subtitle,
-    required this.animationPath,
     required this.progress,
     required this.currentStep,
     required this.totalSteps,
   });
 
-  /// Section-aware accent color for the gradient border tint.
-  Color _sectionAccent() {
-    if (step.sectionTitle.contains('About')) return const Color(0xFF56CCF2);
-    if (step.sectionTitle.contains('Routine')) return const Color(0xFF9B7DFF);
-    return const Color(0xFFFF7E5F);
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
-    final accent = _sectionAccent();
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
+      key: const ValueKey('onboarding-header'),
+      borderRadius: BorderRadius.circular(22),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 360),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.all(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: pageSurfaceColor(context),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: Color.lerp(
-                    pageBorderColor(context),
-                    accent.withValues(alpha: 0.35),
-                    0.5,
-                  ) ??
-                  pageBorderColor(context),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.08),
-                blurRadius: 22,
-                offset: const Offset(0, 12),
-              ),
-              BoxShadow(
-                color: accent.withValues(alpha: isDark ? 0.06 : 0.04),
-                blurRadius: 32,
-                spreadRadius: 1,
-              ),
-            ],
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: primary.withValues(alpha: 0.18)),
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 children: [
-                  // Lottie avatar with pulse.
-                  _PulsingLottieAvatar(
-                    animationPath: animationPath,
-                    icon: icon,
-                    primary: primary,
-                    accent: accent,
-                    isDark: isDark,
-                  ),
-                  const SizedBox(width: 14),
                   Expanded(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 280),
-                      switchInCurve: Curves.easeOutCubic,
-                      transitionBuilder: (child, animation) {
-                        return FadeTransition(
-                          opacity: animation,
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0, 0.12),
-                              end: Offset.zero,
-                            ).animate(animation),
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: Column(
-                        key: ValueKey(step.sectionTitle),
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          LocalizedText(
-                            step.sectionTitle,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w900,
-                              color: pagePrimaryTextColor(context),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          LocalizedText(
-                            subtitle,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              height: 1.25,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: pageSecondaryTextColor(context),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              // Gradient progress bar.
-              Row(
-                children: [
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(999),
-                      child: TweenAnimationBuilder<double>(
-                        tween: Tween<double>(begin: 0, end: progress),
-                        duration: const Duration(milliseconds: 420),
-                        curve: Curves.easeOutCubic,
-                        builder: (context, value, _) {
-                          return Stack(
-                            children: [
-                              Container(
-                                height: 10,
-                                decoration: BoxDecoration(
-                                  color: pageBorderColor(context),
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                              ),
-                              FractionallySizedBox(
-                                widthFactor: value.clamp(0.0, 1.0),
-                                child: Container(
-                                  height: 10,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(999),
-                                    gradient: LinearGradient(
-                                      colors: [primary, accent],
-                                      begin: Alignment.centerLeft,
-                                      end: Alignment.centerRight,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: primary.withValues(alpha: 0.3),
-                                        blurRadius: 6,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
-                        },
+                    child: LocalizedText(
+                      step.sectionTitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: pagePrimaryTextColor(context),
                       ),
                     ),
                   ),
                   const SizedBox(width: 12),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 180),
-                    child: LocalizedText(
-                      '$currentStep / $totalSteps',
-                      key: ValueKey(currentStep),
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: pageSecondaryTextColor(context),
-                      ),
+                  LocalizedText(
+                    '$currentStep / $totalSteps',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: primary,
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 3),
+              LocalizedText(
+                subtitle,
+                style: TextStyle(
+                  height: 1.3,
+                  fontSize: 12,
+                  color: pageSecondaryTextColor(context),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0, end: progress),
+                duration: const Duration(milliseconds: 420),
+                curve: Curves.easeOutCubic,
+                builder: (context, value, _) => Semantics(
+                  label: 'Onboarding progress'.localizedCopy(context),
+                  value: '$currentStep / $totalSteps',
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: Container(
+                      height: 6,
+                      color: primary.withValues(alpha: isDark ? 0.18 : 0.10),
+                      alignment: AlignmentDirectional.centerStart,
+                      child: FractionallySizedBox(
+                        widthFactor: value.clamp(0.0, 1.0),
+                        child: const DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xFF69A6FF), Color(0xFF8DD3FF)],
+                            ),
+                          ),
+                          child: SizedBox.expand(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -213,97 +125,75 @@ class _OnboardingHeader extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Pulsing Lottie avatar for the header
-// ---------------------------------------------------------------------------
+// The section illustration sits behind the content instead of taking header space.
+class _OnboardingBackdrop extends StatelessWidget {
+  final String assetPath;
 
-class _PulsingLottieAvatar extends StatefulWidget {
-  final String animationPath;
-  final IconData icon;
-  final Color primary;
-  final Color accent;
-  final bool isDark;
-
-  const _PulsingLottieAvatar({
-    required this.animationPath,
-    required this.icon,
-    required this.primary,
-    required this.accent,
-    required this.isDark,
-  });
-
-  @override
-  State<_PulsingLottieAvatar> createState() => _PulsingLottieAvatarState();
-}
-
-class _PulsingLottieAvatarState extends State<_PulsingLottieAvatar>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _pulse;
-
-  @override
-  void initState() {
-    super.initState();
-    _pulse = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2400),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _pulse.dispose();
-    super.dispose();
-  }
+  const _OnboardingBackdrop({required this.assetPath});
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _pulse,
-      builder: (context, child) {
-        final scale = 1.0 + (_pulse.value * 0.04);
-        return Transform.scale(scale: scale, child: child);
-      },
-      child: Container(
-        width: 72,
-        height: 72,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(
-            colors: [
-              widget.primary.withValues(
-                alpha: widget.isDark ? 0.32 : 0.18,
-              ),
-              widget.accent.withValues(
-                alpha: widget.isDark ? 0.22 : 0.28,
-              ),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.5),
-          ),
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Lottie.asset(
-              widget.animationPath,
-              width: 68,
-              height: 68,
-              fit: BoxFit.contain,
-              repeat: true,
-              animate: true,
-              errorBuilder: (context, error, stackTrace) {
-                return Icon(widget.icon, color: widget.primary, size: 34);
-              },
-            ),
-            Positioned(
-              right: 7,
-              bottom: 7,
-              child: Icon(widget.icon, color: widget.primary, size: 16),
-            ),
-          ],
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+
+    return IgnorePointer(
+      child: ExcludeSemantics(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final size = (constraints.maxWidth * 1.15).clamp(360.0, 620.0);
+            return Stack(
+              clipBehavior: Clip.hardEdge,
+              children: [
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: isDark
+                            ? [
+                                const Color(0xFF10213A).withValues(alpha: 0.40),
+                                const Color(0xFF17365B).withValues(alpha: 0.30),
+                              ]
+                            : [
+                                const Color(0xFFF2F7FF).withValues(alpha: 0.84),
+                                const Color(0xFFE3F1FF).withValues(alpha: 0.72),
+                              ],
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: constraints.maxHeight * 0.12,
+                  right: -size * 0.18,
+                  child: Opacity(
+                    opacity: isDark ? 0.18 : 0.30,
+                    child: assetPath.endsWith('.svg')
+                        ? SvgPicture.asset(
+                            assetPath,
+                            key: ValueKey(assetPath),
+                            width: size,
+                            height: size,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) =>
+                                SizedBox.square(dimension: size),
+                          )
+                        : Lottie.asset(
+                            assetPath,
+                            key: ValueKey(assetPath),
+                            width: size,
+                            height: size,
+                            fit: BoxFit.contain,
+                            repeat: !reduceMotion,
+                            animate: !reduceMotion,
+                            errorBuilder: (context, error, stackTrace) =>
+                                SizedBox.square(dimension: size),
+                          ),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -481,8 +371,12 @@ class _OptionTile extends StatelessWidget {
             gradient: selected
                 ? LinearGradient(
                     colors: [
-                      primary.withValues(alpha: 0.16),
-                      primary.withValues(alpha: 0.08),
+                      isDark
+                          ? const Color(0xFF203C60)
+                          : const Color(0xFFE3F0FF),
+                      isDark
+                          ? const Color(0xFF1A304E)
+                          : const Color(0xFFF2F8FF),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -491,19 +385,21 @@ class _OptionTile extends StatelessWidget {
             color: selected
                 ? null
                 : isDark
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : const Color(0xFFF6FBF9),
+                ? Colors.white.withValues(alpha: 0.05)
+                : const Color(0xFFFAFCFF),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               width: selected ? 1.6 : 1,
-              color: selected ? primary : pageBorderColor(context),
+              color: selected
+                  ? primary
+                  : Theme.of(context).colorScheme.outlineVariant,
             ),
             boxShadow: selected
                 ? [
                     BoxShadow(
-                      color: primary.withValues(alpha: 0.16),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
+                      color: primary.withValues(alpha: 0.10),
+                      blurRadius: 14,
+                      offset: const Offset(0, 6),
                     ),
                     BoxShadow(
                       color: primary.withValues(alpha: 0.06),
@@ -553,11 +449,11 @@ class _OptionTile extends StatelessWidget {
                 child: Icon(
                   selected
                       ? multiSelect
-                          ? Icons.check_box_rounded
-                          : Icons.check_circle_rounded
+                            ? Icons.check_box_rounded
+                            : Icons.check_circle_rounded
                       : multiSelect
-                          ? Icons.check_box_outline_blank_rounded
-                          : Icons.radio_button_unchecked_rounded,
+                      ? Icons.check_box_outline_blank_rounded
+                      : Icons.radio_button_unchecked_rounded,
                   key: ValueKey('$selected-$multiSelect'),
                   color: selected ? primary : pageSecondaryTextColor(context),
                 ),
@@ -619,11 +515,15 @@ class _MetricInput extends StatelessWidget {
             : const Color(0xFFF6FBF9),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: pageBorderColor(context)),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: pageBorderColor(context)),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
@@ -688,10 +588,12 @@ class _AnimatedIconBadge extends StatelessWidget {
           color: selected
               ? null
               : isDark
-                  ? Colors.white.withValues(alpha: 0.07)
-                  : Colors.white.withValues(alpha: 0.72),
+              ? Colors.white.withValues(alpha: 0.07)
+              : Colors.white.withValues(alpha: 0.72),
           border: Border.all(
-            color: selected ? primary : pageBorderColor(context),
+            color: selected
+                ? primary
+                : Theme.of(context).colorScheme.outlineVariant,
           ),
           boxShadow: selected
               ? [
@@ -703,7 +605,11 @@ class _AnimatedIconBadge extends StatelessWidget {
                 ]
               : null,
         ),
-        child: Icon(icon, size: 21, color: selected ? Colors.white : primary),
+        child: Icon(
+          icon,
+          size: 21,
+          color: selected ? Theme.of(context).colorScheme.onPrimary : primary,
+        ),
       ),
     );
   }

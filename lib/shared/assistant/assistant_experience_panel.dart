@@ -110,9 +110,9 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     if (_recommendations.isEmpty) {
       unawaited(_loadRecommendations());
     }
-    if (_adaptiveNudges.isEmpty && !widget.hasLoadedAdaptiveNudges) {
-      unawaited(_loadAdaptiveNudges());
-    }
+    // Reload shared storage on each opening to pick up overlay replacements
+    // and check whether the saved nudge is due.
+    unawaited(_loadAdaptiveNudges(showLoading: _adaptiveNudges.isEmpty));
     if (_nutritionInsight == null && !widget.hasLoadedNutritionInsight) {
       unawaited(_loadNutritionInsight());
     }
@@ -189,7 +189,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     _smartAlternatives.contextChanged(null);
     _nutritionAlternatives.contextChanged(null);
     _isLoadingAdaptiveNudges = _isLoadingNutritionInsight = false;
-    unawaited(_loadAdaptiveNudges(showLoading: false, forceRefresh: true));
+    unawaited(_loadAdaptiveNudges(showLoading: false));
     unawaited(_loadNutritionInsight(showLoading: false, forceRefresh: true));
   }
 

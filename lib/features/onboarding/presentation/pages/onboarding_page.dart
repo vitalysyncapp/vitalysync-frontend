@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../../../app/main_navigation.dart';
@@ -34,8 +35,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
       'assets/animations/onboarding_profile.json';
   static const _routineAnimationPath =
       'assets/animations/onboarding_yoga_carpet.json';
-  static const _burnoutAnimationPath =
-      'assets/animations/onboarding_heart.json';
+  static const _burnoutIllustrationPath =
+      'assets/images/onboarding_burnout.svg';
 
   static const _roles = [
     'Student',
@@ -266,26 +267,42 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Future<void> _submitOnboarding() async {
-    setState(() => _isSaving = true);
+    if (!mounted || _isSaving) return;
 
-    final profile = {
-      'role': _role,
-      'lifestyle_type': _lifestyleType,
-      'wellness_goal': _wellnessGoals.join(', '),
-      'wellness_goals': _wellnessGoals,
-      'height_cm': _heightCm,
-      'weight_kg': _weightKg,
-      'usual_sleep_time': _formatTimeForApi(_usualSleepTime!),
-      'usual_wake_time': _formatTimeForApi(_usualWakeTime!),
-      'exercise_goal_days': _exerciseGoalDays,
-      'workload_level': _workloadLevel,
-      'has_extra_responsibilities': _hasExtraResponsibilities,
-      'extra_responsibility_level': _hasExtraResponsibilities == true
-          ? _extraResponsibilityLevel
-          : null,
-    };
+    final firstIncompleteStep = _steps.indexWhere((step) => !step.isComplete());
+    final sleepTime = _usualSleepTime;
+    final wakeTime = _usualWakeTime;
+    if (firstIncompleteStep != -1 || sleepTime == null || wakeTime == null) {
+      if (firstIncompleteStep != -1) _goToStep(firstIncompleteStep);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: LocalizedText('Complete this step before finishing setup.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    var navigatedToMain = false;
 
     try {
+      final profile = {
+        'role': _role,
+        'lifestyle_type': _lifestyleType,
+        'wellness_goal': _wellnessGoals.join(', '),
+        'wellness_goals': _wellnessGoals,
+        'height_cm': _heightCm,
+        'weight_kg': _weightKg,
+        'usual_sleep_time': _formatTimeForApi(sleepTime),
+        'usual_wake_time': _formatTimeForApi(wakeTime),
+        'exercise_goal_days': _exerciseGoalDays,
+        'workload_level': _workloadLevel,
+        'has_extra_responsibilities': _hasExtraResponsibilities,
+        'extra_responsibility_level': _hasExtraResponsibilities == true
+            ? _extraResponsibilityLevel
+            : null,
+      };
+
       final response = await OnboardingApi.submitRequiredOnboarding(
         userId: widget.userId,
         profile: profile,
@@ -323,6 +340,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ),
         (route) => false,
       );
+      navigatedToMain = true;
     } catch (error) {
       if (!mounted) return;
 
@@ -334,7 +352,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ),
       );
     } finally {
-      if (mounted) {
+      if (mounted && !navigatedToMain) {
         setState(() => _isSaving = false);
       }
     }
@@ -368,7 +386,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
     );
   }
 
-  void _handleNext(List<_OnboardingStep> steps) {
+  void _handleNext() {
+    final steps = _steps;
+    if (_isSaving || !steps[_currentStep].isComplete()) return;
+
     if (_currentStep == steps.length - 1) {
       _submitOnboarding();
       return;
@@ -396,24 +417,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
     return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 
-  IconData _iconForCurrentStep(_OnboardingStep step) {
-    if (step.sectionTitle.contains('About')) {
-      return Icons.person_rounded;
-    }
-    if (step.sectionTitle.contains('Routine')) {
-      return Icons.nights_stay_rounded;
-    }
-    return Icons.local_fire_department_rounded;
-  }
-
-  String _animationForCurrentStep(_OnboardingStep step) {
+  String _illustrationForCurrentStep(_OnboardingStep step) {
     if (step.sectionTitle.contains('About')) {
       return _aboutAnimationPath;
     }
     if (step.sectionTitle.contains('Routine')) {
       return _routineAnimationPath;
     }
-    return _burnoutAnimationPath;
+    return _burnoutIllustrationPath;
   }
 
   IconData _iconForQuestion(String field) {
@@ -531,6 +542,24 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final accent = isDark ? const Color(0xFF83BCFF) : const Color(0xFF0584FF);
+
+    return Theme(
+      data: theme.copyWith(
+        colorScheme: theme.colorScheme.copyWith(
+          primary: accent,
+          onPrimary: isDark ? const Color(0xFF10334A) : Colors.white,
+          secondary: accent,
+          outlineVariant: accent.withValues(alpha: 0.20),
+        ),
+      ),
+      child: Builder(builder: _buildContent),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
     final steps = _steps;
     final safeStepIndex = _currentStep.clamp(0, steps.length - 1).toInt();
     final currentStep = steps[safeStepIndex];
@@ -542,186 +571,91 @@ class _OnboardingPageState extends State<OnboardingPage> {
       child: AnimatedGradientBackground(
         child: Scaffold(
           backgroundColor: Colors.transparent,
-          body: SafeArea(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 8),
-                  child: _OnboardingHeader(
-                    step: currentStep,
-                    icon: _iconForCurrentStep(currentStep),
-                    subtitle: _sectionSubtitle(currentStep),
-                    animationPath: _animationForCurrentStep(currentStep),
-                    progress: progress,
-                    currentStep: safeStepIndex + 1,
-                    totalSteps: steps.length,
-                  ),
+          body: Stack(
+            children: [
+              Positioned.fill(
+                child: _OnboardingBackdrop(
+                  assetPath: _illustrationForCurrentStep(currentStep),
                 ),
-                Expanded(
-                  child: PageView.builder(
-                    controller: _pageController,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: steps.length,
-                    itemBuilder: (context, index) {
-                      return _StepEntrance(
-                        key: ValueKey('${steps[index].title}-$index'),
-                        child: steps[index].builder(context),
-                      );
-                    },
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    20,
-                    10,
-                    20,
-                    pageBottomContentPadding(context, extra: 18),
-                  ),
-                  child: Row(
-                    children: [
-                      // Frosted glass Back button.
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              decoration: BoxDecoration(
-                                color: (_isSaving || _currentStep == 0)
-                                    ? Colors.grey.withValues(alpha: 0.08)
-                                    : pageSurfaceColor(context),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: pageBorderColor(context),
-                                ),
-                              ),
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(16),
-                                  onTap: _isSaving || _currentStep == 0
-                                      ? null
-                                      : () {
-                                          HapticFeedback.lightImpact();
-                                          _goToStep(_currentStep - 1);
-                                        },
-                                  child: SizedBox(
-                                    height: 52,
-                                    child: Center(
-                                      child: Icon(
-                                        Icons.arrow_back_rounded,
-                                        color: (_isSaving || _currentStep == 0)
-                                            ? pageSecondaryTextColor(
-                                                context,
-                                              ).withValues(alpha: 0.4)
-                                            : pagePrimaryTextColor(context),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
+              ),
+              SafeArea(
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(18, 10, 18, 4),
+                      child: _OnboardingHeader(
+                        step: currentStep,
+                        subtitle: _sectionSubtitle(currentStep),
+                        progress: progress,
+                        currentStep: safeStepIndex + 1,
+                        totalSteps: steps.length,
                       ),
-                      const SizedBox(width: 12),
-                      // Gradient Next / Finish button.
-                      Expanded(
-                        flex: 2,
-                        child: AnimatedScale(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeOutBack,
-                          scale: canContinue ? 1.0 : 0.97,
-                          child: AnimatedOpacity(
-                            duration: const Duration(milliseconds: 200),
-                            opacity: canContinue ? 1.0 : 0.55,
+                    ),
+                    Expanded(
+                      child: PageView.builder(
+                        controller: _pageController,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: steps.length,
+                        itemBuilder: (context, index) {
+                          return _StepEntrance(
+                            key: ValueKey('${steps[index].title}-$index'),
+                            child: steps[index].builder(context),
+                          );
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        20,
+                        10,
+                        20,
+                        pageBottomContentPadding(context, extra: 18),
+                      ),
+                      child: Row(
+                        children: [
+                          // Frosted glass Back button.
+                          Expanded(
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(16),
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(16),
-                                  onTap: canContinue
-                                      ? () {
-                                          HapticFeedback.mediumImpact();
-                                          _handleNext(steps);
-                                        }
-                                      : null,
-                                  child: Ink(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          Theme.of(context).colorScheme.primary,
-                                          const Color(0xFF56CCF2),
-                                        ],
-                                        begin: Alignment.centerLeft,
-                                        end: Alignment.centerRight,
-                                      ),
-                                      borderRadius: BorderRadius.circular(16),
-                                      boxShadow: canContinue
-                                          ? [
-                                              BoxShadow(
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .primary
-                                                    .withValues(alpha: 0.3),
-                                                blurRadius: 16,
-                                                offset: const Offset(0, 6),
-                                              ),
-                                            ]
-                                          : null,
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(
+                                  sigmaX: 10,
+                                  sigmaY: 10,
+                                ),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  decoration: BoxDecoration(
+                                    color: (_isSaving || _currentStep == 0)
+                                        ? Colors.grey.withValues(alpha: 0.08)
+                                        : pageSurfaceColor(context),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: pageBorderColor(context),
                                     ),
-                                    child: SizedBox(
-                                      height: 52,
-                                      child: Center(
-                                        child: _isSaving
-                                            ? const SizedBox(
-                                                height: 20,
-                                                width: 20,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                      strokeWidth: 2.4,
-                                                      color: Colors.white,
-                                                    ),
-                                              )
-                                            : AnimatedSwitcher(
-                                                duration: const Duration(
-                                                  milliseconds: 180,
-                                                ),
-                                                child: Row(
-                                                  key: ValueKey(
-                                                    _currentStep ==
-                                                        steps.length - 1,
-                                                  ),
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.center,
-                                                  children: [
-                                                    LocalizedText(
-                                                      _currentStep ==
-                                                              steps.length - 1
-                                                          ? 'Finish setup'
-                                                          : 'Next',
-                                                      style: const TextStyle(
-                                                        color: Colors.white,
-                                                        fontWeight:
-                                                            FontWeight.w800,
-                                                        fontSize: 16,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 8),
-                                                    Icon(
-                                                      _currentStep ==
-                                                              steps.length - 1
-                                                          ? Icons.check_rounded
-                                                          : Icons
-                                                                .arrow_forward_rounded,
-                                                      size: 20,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
+                                  ),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(16),
+                                      onTap: _isSaving || _currentStep == 0
+                                          ? null
+                                          : () {
+                                              HapticFeedback.lightImpact();
+                                              _goToStep(_currentStep - 1);
+                                            },
+                                      child: SizedBox(
+                                        height: 52,
+                                        child: Center(
+                                          child: Icon(
+                                            Icons.arrow_back_rounded,
+                                            color:
+                                                (_isSaving || _currentStep == 0)
+                                                ? pageSecondaryTextColor(
+                                                    context,
+                                                  ).withValues(alpha: 0.4)
+                                                : pagePrimaryTextColor(context),
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -729,13 +663,135 @@ class _OnboardingPageState extends State<OnboardingPage> {
                               ),
                             ),
                           ),
-                        ),
+                          const SizedBox(width: 12),
+                          // Gradient Next / Finish button.
+                          Expanded(
+                            flex: 2,
+                            child: AnimatedScale(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeOutBack,
+                              scale: canContinue ? 1.0 : 0.97,
+                              child: AnimatedOpacity(
+                                duration: const Duration(milliseconds: 200),
+                                opacity: canContinue ? 1.0 : 0.55,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(16),
+                                      onTap: canContinue
+                                          ? () {
+                                              HapticFeedback.mediumImpact();
+                                              _handleNext();
+                                            }
+                                          : null,
+                                      child: Ink(
+                                        decoration: BoxDecoration(
+                                          gradient: const LinearGradient(
+                                            colors: [
+                                              Color(0xFF69A6FF),
+                                              Color(0xFF8DD3FF),
+                                            ],
+                                            begin: Alignment.centerLeft,
+                                            end: Alignment.centerRight,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                          boxShadow: canContinue
+                                              ? [
+                                                  BoxShadow(
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .primary
+                                                        .withValues(alpha: 0.3),
+                                                    blurRadius: 16,
+                                                    offset: const Offset(0, 6),
+                                                  ),
+                                                ]
+                                              : null,
+                                        ),
+                                        child: SizedBox(
+                                          height: 52,
+                                          child: Center(
+                                            child: _isSaving
+                                                ? const SizedBox(
+                                                    height: 20,
+                                                    width: 20,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                          strokeWidth: 2.4,
+                                                          color: Color(
+                                                            0xFF10334A,
+                                                          ),
+                                                        ),
+                                                  )
+                                                : AnimatedSwitcher(
+                                                    duration: const Duration(
+                                                      milliseconds: 180,
+                                                    ),
+                                                    child: Row(
+                                                      key: ValueKey(
+                                                        _currentStep ==
+                                                            steps.length - 1,
+                                                      ),
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .center,
+                                                      children: [
+                                                        LocalizedText(
+                                                          _currentStep ==
+                                                                  steps.length -
+                                                                      1
+                                                              ? 'Finish setup'
+                                                              : 'Next',
+                                                          style:
+                                                              const TextStyle(
+                                                                color: Color(
+                                                                  0xFF10334A,
+                                                                ),
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w800,
+                                                                fontSize: 16,
+                                                              ),
+                                                        ),
+                                                        const SizedBox(
+                                                          width: 8,
+                                                        ),
+                                                        Icon(
+                                                          _currentStep ==
+                                                                  steps.length -
+                                                                      1
+                                                              ? Icons
+                                                                    .check_rounded
+                                                              : Icons
+                                                                    .arrow_forward_rounded,
+                                                          size: 20,
+                                                          color: const Color(
+                                                            0xFF10334A,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

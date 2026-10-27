@@ -275,7 +275,7 @@ void main() {
   );
 
   testWidgets(
-    'personal insight has expandable evidence and no action buttons',
+    'personal insight shows one paragraph without duplicate headline or evidence tiles',
     (tester) async {
       SharedPreferences.setMockInitialValues({});
       await tester.binding.setSurfaceSize(const Size(320, 640));
@@ -303,9 +303,11 @@ void main() {
       await tester.pump();
       expect(find.text('Personal insights'), findsOneWidget);
       expect(find.text('Another idea'), findsNothing);
-      await tester.tap(find.text('What this is based on'));
       await tester.pumpAndSettle();
-      expect(find.text('Your recent check-in context.'), findsOneWidget);
+      expect(find.text(content['message']! as String), findsOneWidget);
+      expect(find.text(content['title']! as String), findsNothing);
+      expect(find.text('What this is based on'), findsNothing);
+      expect(find.text('Your recent check-in context.'), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );

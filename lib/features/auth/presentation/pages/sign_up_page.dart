@@ -82,22 +82,21 @@ class _SignUpPageState extends State<SignUpPage> {
     });
 
     final url = Uri.parse(ApiConfig.auth('/signup'));
+    var navigatedToOnboarding = false;
 
     try {
+      final requestBody = jsonEncode({
+        "username": _usernameController.text.trim(),
+        "email": _emailController.text.trim(),
+        "age": int.tryParse(_ageController.text.trim()),
+        "gender": _selectedGender,
+        "password": _passwordController.text.trim(),
+      });
       final response = await http
-          .post(
-            url,
-            headers: await ApiConfig.jsonHeaders(),
-            body: jsonEncode({
-              "username": _usernameController.text.trim(),
-              "email": _emailController.text.trim(),
-              "age": int.tryParse(_ageController.text.trim()),
-              "gender": _selectedGender,
-              "password": _passwordController.text.trim(),
-            }),
-          )
+          .post(url, headers: await ApiConfig.jsonHeaders(), body: requestBody)
           .timeout(ApiRequestTimeouts.standard);
 
+      if (!mounted) return;
       final data = _decodeResponseBody(response);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -122,30 +121,6 @@ class _SignUpPageState extends State<SignUpPage> {
           data['streak'] as Map<String, dynamic>?,
         );
 
-        setState(() {
-          _emailController.clear();
-          _usernameController.clear();
-          _ageController.clear();
-          _passwordController.clear();
-          _confirmPasswordController.clear();
-          _selectedGender = null;
-          _agreeTerms = false;
-        });
-
-        _formKey.currentState?.reset();
-
-        if (!mounted) return;
-        setState(() {
-          _isLoading = false;
-        });
-
-        await ValidationDialog.show(
-          context,
-          message:
-              data['message']?.toString() ?? 'Account created successfully',
-          type: ValidationDialogType.success,
-        );
-
         if (!mounted) return;
 
         Navigator.pushReplacement(
@@ -156,6 +131,7 @@ class _SignUpPageState extends State<SignUpPage> {
             ),
           ),
         );
+        navigatedToOnboarding = true;
       } else {
         if (!mounted) return;
         await ValidationDialog.show(
@@ -172,12 +148,12 @@ class _SignUpPageState extends State<SignUpPage> {
             'VitalySync could not connect right now. Please check your connection and try again.',
         type: ValidationDialogType.connection,
       );
-    }
-
-    if (mounted && _isLoading) {
-      setState(() {
-        _isLoading = false;
-      });
+    } finally {
+      if (mounted && _isLoading && !navigatedToOnboarding) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

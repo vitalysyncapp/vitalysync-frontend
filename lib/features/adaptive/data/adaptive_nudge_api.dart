@@ -203,8 +203,6 @@ class AdaptiveNudgeApi {
       {};
   static const Duration _requestTimeout = ApiRequestTimeouts.fastRead;
   static const Duration _aiRequestTimeout = ApiRequestTimeouts.coldStart;
-  static final Duration _assistantCacheMaxAge =
-      FetchPolicy.tenMinutesPlus.maxAge;
   static const String _recommendationsCache = 'adaptive_nudge_recommendations';
   static const String _assistantRecommendationsCache =
       'assistant_nudge_recommendations';
@@ -322,14 +320,12 @@ class AdaptiveNudgeApi {
     }
 
     final scope = _assistantCacheScope(userId);
-    OfflineCachedJson? cachedSnapshot;
+    final cachedSnapshot = await OfflineCacheStore.readLatestJsonSnapshot(
+      namespace: _assistantRecommendationsCache,
+      scope: scope,
+    );
     if (!forceRefresh) {
-      cachedSnapshot = await OfflineCacheStore.readLatestJsonSnapshot(
-        namespace: _assistantRecommendationsCache,
-        scope: scope,
-      );
-      if (cachedSnapshot != null &&
-          cachedSnapshot.isFresh(_assistantCacheMaxAge)) {
+      if (cachedSnapshot != null && _assistantNudgeIsCurrent(cachedSnapshot)) {
         final cached = AdaptiveNudgeResponse.fromJson(cachedSnapshot.data);
         if (cached.recommendations.isNotEmpty) {
           unawaited(
@@ -343,7 +339,11 @@ class AdaptiveNudgeApi {
       }
     }
 
-    final response = await fetchRecommendations(limit: limit, delivery: true);
+    final response = await fetchRecommendations(
+      limit: limit,
+      delivery: true,
+      selectionMode: forceRefresh ? 'next' : 'default',
+    );
     if (await WellnessContentApi.sessionKey() != sessionKey ||
         revision != WellnessContentApi.revision) {
       return const AdaptiveNudgeResponse(
@@ -351,6 +351,16 @@ class AdaptiveNudgeApi {
         adaptiveState: {},
         patterns: [],
       );
+    }
+    // A failed refresh must not replace the last real nudge or restart its clock.
+    if (_isLocalFallbackResponse(response) ||
+        response.recommendations.any(
+          (item) => item.metadata['offline_cached'] == true,
+        ) ||
+        response.recommendations.isEmpty) {
+      return cachedSnapshot != null
+          ? AdaptiveNudgeResponse.fromJson(cachedSnapshot.data)
+          : response;
     }
     if (response.recommendations.isNotEmpty) {
       unawaited(
@@ -360,12 +370,6 @@ class AdaptiveNudgeApi {
         ),
       );
     }
-    if (!forceRefresh &&
-        cachedSnapshot != null &&
-        _isLocalFallbackResponse(response)) {
-      return AdaptiveNudgeResponse.fromJson(cachedSnapshot.data);
-    }
-
     await OfflineCacheStore.saveJson(
       namespace: _assistantRecommendationsCache,
       scope: scope,
@@ -379,6 +383,7 @@ class AdaptiveNudgeApi {
     String selectionMode = 'next',
   }) async {
     final userId = await _storedUserId();
+    final sessionKey = await WellnessContentApi.sessionKey();
     final response = await fetchRecommendations(
       limit: 1,
       strict: true,
@@ -395,6 +400,15 @@ class AdaptiveNudgeApi {
           item.metadata['local_fallback'] == true) {
         throw Exception('A different idea is not available yet');
       }
+      if (userId == null ||
+          await WellnessContentApi.sessionKey() != sessionKey) {
+        throw Exception('The active account or language changed');
+      }
+      await OfflineCacheStore.saveJson(
+        namespace: _assistantRecommendationsCache,
+        scope: _assistantCacheScope(userId),
+        data: response.toJson(),
+      );
       unawaited(
         SmartNudgeDeliveryService.instance.deliver(
           item.toJson(),
@@ -664,7 +678,7 @@ class AdaptiveNudgeApi {
     final userId = await _storedUserId();
     if (userId == null) return null;
     final date = _dateKey(DateTime.now());
-    final scope = '${sessionKey}_${date}_companion_v2';
+    final scope = '${sessionKey}_${date}_weekly_paragraph_v1';
     try {
       final uri = Uri.parse(ApiConfig.adaptive('/personal-insight')).replace(
         queryParameters: {'user_id': '$userId', 'ai': 'true', 'date': date},
@@ -714,7 +728,23 @@ class AdaptiveNudgeApi {
   }
 
   static String _assistantCacheScope(int userId) {
-    return '${userId}_${_dateKey(DateTime.now())}_companion_v2';
+    return '${userId}_persistent_v1';
+  }
+
+  static bool _assistantNudgeIsCurrent(OfflineCachedJson snapshot) {
+    final response = AdaptiveNudgeResponse.fromJson(snapshot.data);
+    final item = response.recommendations.firstOrNull;
+    if (item == null || _isLocalFallbackResponse(response)) return false;
+    final metadata = item.metadata;
+    final due = DateTime.tryParse('${metadata['next_due_at']}');
+    if (due != null) return DateTime.now().isBefore(due);
+    final generatedAt =
+        DateTime.tryParse('${metadata['generated_at']}') ?? snapshot.cachedAt;
+    if (generatedAt == null) return false;
+    final hours = num.tryParse('${metadata['nudge_cooldown_hours']}') ?? 8;
+    return DateTime.now().isBefore(
+      generatedAt.add(Duration(minutes: (hours.clamp(1, 48) * 60).round())),
+    );
   }
 
   static String _feedbackScope(

@@ -100,6 +100,36 @@ void main() {
         expect(find.byKey(const ValueKey('log-card-weekly-ee_01')), findsOneWidget);
         expect(find.byKey(const ValueKey('log-card-weekly-dp_01')), findsOneWidget);
         expect(find.byKey(const ValueKey('log-card-weekly-pa_01')), findsOneWidget);
+
+        // Verify weekly question cards switch hierarchy:
+        // Card header is smaller and lighter; sub question is bolder and larger.
+        final headerText = tester.widget<Text>(
+          find.descendant(
+            of: find.byKey(const ValueKey('log-card-weekly-ee_01')),
+            matching: find.text('Emotional exhaustion · 1/5'),
+          ),
+        );
+        expect(headerText.style?.fontSize, 12.5);
+        expect(headerText.style?.fontWeight, FontWeight.w600);
+
+        final questionText = tester.widget<Text>(
+          find.descendant(
+            of: find.byKey(const ValueKey('log-card-weekly-ee_01')),
+            matching: find.text('I feel emotionally drained by my daily responsibilities.'),
+          ),
+        );
+        expect(questionText.style?.fontSize, 15.5);
+        expect(questionText.style?.fontWeight, FontWeight.w800);
+
+        // Standard cards (like the intro card) retain the primary header hierarchy
+        final introTitle = tester.widget<Text>(
+          find.descendant(
+            of: find.byKey(const ValueKey('log-card-weekly-intro')),
+            matching: find.text('Weekly reflection'),
+          ),
+        );
+        expect(introTitle.style?.fontSize, 16.5);
+        expect(introTitle.style?.fontWeight, FontWeight.w800);
       }, () => client);
     },
   );

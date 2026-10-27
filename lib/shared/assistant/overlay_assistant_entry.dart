@@ -333,7 +333,8 @@ class _OverlayAssistantShellState extends State<_OverlayAssistantShell> {
       return false;
     }
 
-    final nudges = await _loadAdaptiveNudges(forceRefresh: forceRefresh);
+    // Preview polling checks the shared nudge's due time, not a manual refresh.
+    final nudges = await _loadAdaptiveNudges();
     if (!mounted || _mode != _OverlayAssistantMode.bubble || nudges.isEmpty) {
       return false;
     }

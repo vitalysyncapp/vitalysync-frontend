@@ -22,14 +22,18 @@ class OnboardingCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(26),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
         child: Container(
           width: double.infinity,
           padding: padding,
           decoration: BoxDecoration(
-            color: pageSurfaceColor(context),
+            color: pageSurfaceColor(
+              context,
+            ).withValues(alpha: isDark ? 0.88 : 0.64),
             borderRadius: BorderRadius.circular(26),
-            border: Border.all(color: pageBorderColor(context)),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
             gradient: LinearGradient(
               colors: [
                 Colors.white.withValues(alpha: isDark ? 0.06 : 0.38),
@@ -45,7 +49,7 @@ class OnboardingCard extends StatelessWidget {
               BoxShadow(
                 color: isDark
                     ? Colors.black.withValues(alpha: 0.28)
-                    : const Color(0xFF65CDB2).withValues(alpha: 0.14),
+                    : primary.withValues(alpha: 0.08),
                 blurRadius: 28,
                 offset: const Offset(0, 14),
               ),

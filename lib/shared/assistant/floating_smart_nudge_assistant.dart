@@ -218,7 +218,7 @@ class _FloatingSmartNudgeAssistantState
   }
 
   void _refreshWellnessContent() {
-    unawaited(_loadAdaptiveNudges(forceRefresh: true));
+    unawaited(_loadAdaptiveNudges());
     unawaited(_loadNutritionInsight(forceRefresh: true));
   }
 

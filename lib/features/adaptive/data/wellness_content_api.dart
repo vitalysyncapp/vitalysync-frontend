@@ -126,9 +126,10 @@ class WellnessContentApi {
   static Future<void> invalidate({bool notify = true}) async {
     revision++;
     if (notify) await SmartNudgeDeliveryService.instance.cancelPending();
+    // Keep finalized assistant copy until its due time or an explicit replacement.
+    // Account/language scoping and logout cleanup still apply to that cache.
     for (final namespace in [
       'adaptive_nudge_recommendations',
-      'assistant_nudge_recommendations',
       'personal_insight',
     ]) {
       await OfflineCacheStore.removeNamespace(namespace: namespace);

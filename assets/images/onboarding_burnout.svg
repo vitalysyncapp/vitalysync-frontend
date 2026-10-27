@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640">
+  <title>Mental fatigue and low energy</title>
+  <desc>An original illustration of a tired person resting their head at a desk, with a low battery and tangled thoughts overhead.</desc>
+  <path d="M100 244C72 152 142 82 242 103C325 39 458 73 477 166C572 190 586 298 534 369C565 470 459 551 365 524C261 574 122 528 122 433C51 388 45 292 100 244Z" fill="#DDEEFF"/>
+  <ellipse cx="328" cy="549" rx="228" ry="20" fill="#C5DDF7"/>
+
+  <!-- Low energy and a loose thought cloud suggest exhaustion without alarm. -->
+  <path d="M204 118C189 91 210 65 237 73C251 40 295 42 308 70C340 57 365 85 350 111C373 134 350 161 324 155H229C202 157 187 137 204 118Z" fill="#F5FAFF" stroke="#91B9EC" stroke-width="5"/>
+  <rect x="241" y="91" width="66" height="34" rx="7" fill="none" stroke="#4475AF" stroke-width="5"/>
+  <rect x="309" y="101" width="7" height="14" rx="3" fill="#4475AF"/>
+  <rect x="249" y="99" width="13" height="18" rx="3" fill="#6CA9FA"/>
+  <circle cx="312" cy="178" r="8" fill="#AACAF0"/>
+  <circle cx="329" cy="198" r="5" fill="#AACAF0"/>
+  <path d="M402 105C369 87 362 122 391 132C422 143 438 105 414 97C385 87 379 143 413 151C443 160 457 124 437 115" fill="none" stroke="#8FA7C7" stroke-width="6" stroke-linecap="round"/>
+  <path d="M176 204L158 188M171 229L145 230M188 184L185 162" fill="none" stroke="#80ACE5" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- Chair and a relaxed, slumped seated posture. -->
+  <rect x="375" y="341" width="79" height="145" rx="24" fill="#AAC8ED"/>
+  <path d="M387 467L374 544M440 467L458 544" fill="none" stroke="#58779D" stroke-width="12" stroke-linecap="round"/>
+  <path d="M326 397C349 386 390 395 406 414L402 458L335 460L321 505L278 493L292 438Z" fill="#315D96"/>
+  <path d="M397 443L383 515L338 525L326 499L343 443Z" fill="#416FA9"/>
+  <path d="M280 491L318 503L313 524L263 527C250 528 248 516 257 510Z" fill="#213F65"/>
+  <path d="M338 514L380 507L392 529C397 538 389 543 380 541L335 536Z" fill="#213F65"/>
+  <path d="M301 286C325 271 370 279 386 307C399 333 401 376 410 411C374 427 325 424 298 403L285 344Z" fill="#6DA8F4"/>
+  <path d="M308 304C286 315 275 341 267 372L224 368L219 389C247 404 283 407 297 386L327 334" fill="#8CBDFB"/>
+  <path d="M224 369C212 362 197 364 186 373C178 380 181 389 191 390L222 390Z" fill="#E3AE91"/>
+  <path d="M363 310C388 305 405 316 408 338L413 359L397 367L375 337" fill="#8CBDFB"/>
+  <path d="M411 359C423 341 430 314 424 288L406 285C403 311 391 333 395 360C399 370 406 369 411 359Z" fill="#E3AE91"/>
+
+  <!-- Face resting against a hand, with gently closed eyes. -->
+  <path d="M330 272L327 295C339 307 355 308 364 296L359 268Z" fill="#D49B80"/>
+  <g transform="rotate(15 354 245)">
+    <path d="M316 228C315 202 335 187 361 192C392 197 399 223 388 251L379 273C367 294 338 290 326 271Z" fill="#E9B89B"/>
+    <path d="M315 237C302 211 315 186 340 181C369 168 402 188 399 216C384 225 365 211 352 211C345 232 330 235 315 237Z" fill="#344C6B"/>
+    <path d="M326 234C312 228 308 241 316 250L327 253" fill="#E9B89B"/>
+    <path d="M346 247L357 249M373 248L382 247" fill="none" stroke="#56657A" stroke-width="4" stroke-linecap="round"/>
+    <path d="M359 267Q366 263 372 267" fill="none" stroke="#AD7767" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <path d="M407 291C404 278 396 270 398 258C400 249 408 253 411 261L419 271L422 288Z" fill="#E9B89B"/>
+
+  <!-- Work context: an open laptop and a small stack of tasks. -->
+  <path d="M112 311H226L249 379H135Z" fill="#A9C9F2" stroke="#739BCB" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M135 379H264" fill="none" stroke="#739BCB" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="180" cy="345" r="9" fill="#E7F2FF"/>
+  <rect x="110" y="391" width="348" height="16" rx="8" fill="#7299C8"/>
+  <path d="M135 407L122 543M431 407L445 543" fill="none" stroke="#7299C8" stroke-width="11" stroke-linecap="round"/>
+  <rect x="454" y="367" width="60" height="12" rx="3" fill="#8BB7ED"/>
+  <rect x="463" y="351" width="51" height="12" rx="3" fill="#BED6F5"/>
+  <rect x="458" y="335" width="56" height="12" rx="3" fill="#97BDEB"/>
+  <path d="M489 303V313M484 308H494" fill="none" stroke="#9CBFE9" stroke-width="4" stroke-linecap="round"/>
+</svg>
