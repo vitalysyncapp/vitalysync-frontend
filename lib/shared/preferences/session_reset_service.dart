@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/activity/data/activity_service.dart';
 import '../../features/exercise/data/exercise_goal_service.dart';
 import '../../features/log/data/log_api.dart';
+import '../../features/log/data/quick_check_in_preset_api.dart';
 import '../../features/onboarding/services/onboarding_service.dart';
 import '../../features/tutorial/services/core_tutorial_service.dart';
 import '../assistant/overlay_assistant_controller.dart';
@@ -69,6 +70,7 @@ class SessionResetService {
     'overlay_preview_',
     'pending_daily_activity_',
     'profile_',
+    QuickCheckInPresetApi.cacheKeyPrefix,
     'recovery_mode_',
     'synced_log_streak',
   ];

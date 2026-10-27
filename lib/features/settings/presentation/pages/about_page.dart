@@ -100,6 +100,12 @@ class AboutPage extends StatelessWidget {
                       subtitle:
                           'Avataaars by Pablo Stanley, generated with DiceBear',
                     ),
+                    _CreditBlock(
+                      icon: Icons.emoji_emotions_outlined,
+                      title: 'Quick check-in emojis',
+                      subtitle:
+                          'All emojis designed by OpenMoji – the open-source emoji and icon project · Version 17.0 · CC BY-SA 4.0',
+                    ),
                   ],
                 ),
               ],

@@ -16,9 +16,12 @@ import '../../../streaks/data/streak_models.dart';
 import '../../data/check_in_models.dart';
 import '../../data/check_in_state_coordinator.dart';
 import '../../data/log_api.dart';
+import '../../data/quick_check_in_preset.dart';
+import '../../data/quick_check_in_preset_api.dart';
 import '../../data/weekly_assessment_api.dart';
 import '../widgets/check_in_success_view.dart';
 import '../widgets/log_widgets.dart';
+import '../widgets/quick_check_in_preset_widgets.dart';
 import 'package:vitalysync/l10n/localized_text.dart';
 
 const _streakFireAnimationPath = 'assets/animations/streak_fire.json';
@@ -144,6 +147,14 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   int pendingSyncCount = 0;
   CheckInStatus? checkInStatus;
   WeeklyReflectionState _weeklyReflection = const WeeklyReflectionState();
+  late final PageController _logSurfaceController;
+  int _logSurfaceIndex = 1;
+  List<QuickCheckInPreset> _quickPresets = const [];
+  bool _quickPresetsLoading = true;
+  bool _quickPresetsStale = false;
+  bool _presetMutationInProgress = false;
+  int? _activePresetId;
+  bool _lastSaveSucceeded = false;
 
   CheckInMode get requiredMode =>
       checkInStatus?.requiredMode ?? CheckInMode.daily;
@@ -160,11 +171,13 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       _handleCheckInStateChanged,
     );
     widget.controller?.bindSaveAction(_saveLog);
+    _logSurfaceController = PageController(initialPage: 1);
     _confettiController = ConfettiController(
       duration: const Duration(seconds: 2),
     );
     _publishNavigationState();
     _loadLogState();
+    _loadQuickPresets();
   }
 
   @override
@@ -174,6 +187,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       _handleCheckInStateChanged,
     );
     widget.controller?.unbindSaveAction(_saveLog);
+    _logSurfaceController.dispose();
     _confettiController.dispose();
     super.dispose();
   }
@@ -193,6 +207,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _loadLogState(showLoader: false);
+      _loadQuickPresets(showLoader: false);
     }
   }
 
@@ -272,12 +287,226 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> _loadQuickPresets({bool showLoader = true}) async {
+    if (showLoader && mounted) {
+      setState(() => _quickPresetsLoading = true);
+    }
+
+    try {
+      final cached = await QuickCheckInPresetApi.instance.readCache();
+      if (mounted && cached.isNotEmpty) {
+        setState(() {
+          _quickPresets = cached;
+          _quickPresetsLoading = false;
+        });
+      }
+    } catch (_) {
+      // A cache miss should not block the live refresh below.
+    }
+
+    try {
+      final presets = await QuickCheckInPresetApi.instance.fetch();
+      if (!mounted) return;
+      setState(() {
+        _quickPresets = presets;
+        _quickPresetsLoading = false;
+        _quickPresetsStale = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _quickPresetsLoading = false;
+        _quickPresetsStale = true;
+      });
+    }
+  }
+
+  Future<void> _createQuickPreset() async {
+    if (_presetMutationInProgress) return;
+    final mode = await showQuickCheckInModeDialog(context);
+    if (mode == null || !mounted) return;
+    final preset = await showQuickCheckInPresetEditor(
+      context: context,
+      mode: mode,
+      initialDraft: _buildDraft(),
+      initialWeeklyAnswers: mode == CheckInMode.weekly && showWeeklyQuestions
+          ? _weeklyReflection.answers
+          : const {},
+      exerciseGoalLabel: exerciseGoalLabel,
+    );
+    if (preset == null || !mounted) return;
+
+    setState(() => _presetMutationInProgress = true);
+    try {
+      final created = await QuickCheckInPresetApi.instance.create(preset);
+      if (!mounted) return;
+      setState(() => _quickPresets = [..._quickPresets, created]);
+      final offMode = created.mode != requiredMode;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: LocalizedText(
+            offMode
+                ? '${created.name} was saved and will appear on ${created.mode.apiValue} check-in days.'
+                : '${created.name} is ready for quick logging.',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: LocalizedText(error.toString())));
+      }
+    } finally {
+      if (mounted) setState(() => _presetMutationInProgress = false);
+    }
+  }
+
+  Future<void> _editQuickPreset(QuickCheckInPreset preset) async {
+    if (_presetMutationInProgress) return;
+    final edited = await showQuickCheckInPresetEditor(
+      context: context,
+      mode: preset.mode,
+      initialDraft: preset.draft,
+      initialWeeklyAnswers: preset.weeklyAnswers,
+      exerciseGoalLabel: exerciseGoalLabel,
+      existing: preset,
+    );
+    if (edited == null || !mounted) return;
+
+    setState(() => _presetMutationInProgress = true);
+    try {
+      final updated = await QuickCheckInPresetApi.instance.update(edited);
+      if (!mounted) return;
+      setState(() {
+        _quickPresets = [
+          for (final item in _quickPresets)
+            if (item.presetId == updated.presetId) updated else item,
+        ];
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: LocalizedText('Quick check-in updated.')),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: LocalizedText(error.toString())));
+      }
+    } finally {
+      if (mounted) setState(() => _presetMutationInProgress = false);
+    }
+  }
+
+  Future<void> _deleteQuickPreset(QuickCheckInPreset preset) async {
+    if (_presetMutationInProgress) return;
+    final confirmed = await confirmQuickCheckInPresetDelete(context, preset);
+    if (!confirmed || !mounted) return;
+
+    setState(() => _presetMutationInProgress = true);
+    try {
+      await QuickCheckInPresetApi.instance.delete(preset.presetId);
+      if (!mounted) return;
+      setState(() {
+        _quickPresets = _quickPresets
+            .where((item) => item.presetId != preset.presetId)
+            .toList(growable: false);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: LocalizedText('Quick check-in deleted.')),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: LocalizedText(error.toString())));
+      }
+    } finally {
+      if (mounted) setState(() => _presetMutationInProgress = false);
+    }
+  }
+
+  Future<void> _openQuickPresetMenu(QuickCheckInPreset preset) async {
+    final action = await showQuickCheckInPresetMenu(context, preset);
+    if (!mounted) return;
+    switch (action) {
+      case QuickCheckInPresetMenuAction.edit:
+        await _editQuickPreset(preset);
+      case QuickCheckInPresetMenuAction.delete:
+        await _deleteQuickPreset(preset);
+      case null:
+        break;
+    }
+  }
+
+  Future<bool> _confirmPresetReplacement(QuickCheckInPreset preset) async {
+    if (!hasSavedLogToday) return true;
+    return await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const LocalizedText('Replace today\'s check-in?'),
+            content: LocalizedText(
+              '${preset.name} will replace the answers already saved for today.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const LocalizedText('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const LocalizedText('Replace and save'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
+  Future<void> _useQuickPreset(QuickCheckInPreset preset) async {
+    if (isSaving || _activePresetId != null) return;
+    if (preset.mode != requiredMode) {
+      await _loadLogState(showLoader: false);
+      if (!mounted || preset.mode != requiredMode) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: LocalizedText(
+                'This preset does not match today\'s required check-in.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+    }
+    setState(() => _activePresetId = preset.presetId);
+    if (!await _confirmPresetReplacement(preset) || !mounted) {
+      if (mounted) setState(() => _activePresetId = null);
+      return;
+    }
+
+    await _saveLog(
+      draftOverride: preset.draft,
+      weeklyAnswersOverride: preset.weeklyAnswers,
+    );
+    if (!mounted) return;
+    setState(() => _activePresetId = null);
+    if (_lastSaveSucceeded) {
+      await _logSurfaceController.animateToPage(
+        1,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
   void _publishNavigationState() {
     widget.controller?.updateState(
       isLoading: isLoading,
       hasLoggedToday: hasSavedLogToday,
       isSaving: isSaving,
-      isFormVisible: !isLoading && !isSubmitted,
+      isFormVisible: _logSurfaceIndex == 1 && !isLoading && !isSubmitted,
     );
   }
 
@@ -291,27 +520,31 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       defaultSleepHours: defaultSleepHours,
     );
     setState(() {
-      sleepHours = draft.sleepHours;
-      sleepQuality = draft.sleepQuality;
-      moodIndex = draft.moodIndex;
-      energyLevel = draft.energyLevel;
-      hydration = draft.hydrationLiters;
-      workloadHoursBand = draft.workloadHoursBand;
-      perceivedStressLevel = draft.perceivedPressureLevel;
-      breakQualityLevel = draft.recoveryRestLevel;
-      dailyDetachmentLevel = draft.detachmentLevel;
-      dailyFocusLevel = draft.productivityFocusLevel;
-      dailyAccomplishmentLevel = draft.accomplishmentLevel;
-      selectedExercises
-        ..clear()
-        ..addAll(draft.exerciseNames);
-      selectedSymptoms
-        ..clear()
-        ..addAll(draft.symptomNames);
-      selectedHabits
-        ..clear()
-        ..addAll(draft.habitNames);
+      _applyDraftValues(draft);
     });
+  }
+
+  void _applyDraftValues(CheckInDraft draft) {
+    sleepHours = draft.sleepHours;
+    sleepQuality = draft.sleepQuality;
+    moodIndex = draft.moodIndex;
+    energyLevel = draft.energyLevel;
+    hydration = draft.hydrationLiters;
+    workloadHoursBand = draft.workloadHoursBand;
+    perceivedStressLevel = draft.perceivedPressureLevel;
+    breakQualityLevel = draft.recoveryRestLevel;
+    dailyDetachmentLevel = draft.detachmentLevel;
+    dailyFocusLevel = draft.productivityFocusLevel;
+    dailyAccomplishmentLevel = draft.accomplishmentLevel;
+    selectedExercises
+      ..clear()
+      ..addAll(draft.exerciseNames);
+    selectedSymptoms
+      ..clear()
+      ..addAll(draft.symptomNames);
+    selectedHabits
+      ..clear()
+      ..addAll(draft.habitNames);
   }
 
   CheckInDraft _buildDraft() {
@@ -345,11 +578,22 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _saveLog({String streakRestoreDecision = 'defer'}) async {
-    final draft = _buildDraft();
+  Future<void> _saveLog({
+    String streakRestoreDecision = 'defer',
+    CheckInDraft? draftOverride,
+    Map<String, int>? weeklyAnswersOverride,
+  }) async {
+    _lastSaveSucceeded = false;
+    final draft = draftOverride ?? _buildDraft();
+    final weeklyReflection = weeklyAnswersOverride == null
+        ? _weeklyReflection
+        : WeeklyReflectionState(
+            dueDate: _weeklyReflection.dueDate,
+            answers: Map<String, int>.from(weeklyAnswersOverride),
+          );
     final missingFields = draft.validationErrors(requiredMode);
-    if (showWeeklyQuestions && !_weeklyReflection.isAnswered) {
-      final answered = _weeklyReflection.answers.length;
+    if (showWeeklyQuestions && !weeklyReflection.isAnswered) {
+      final answered = weeklyReflection.answers.length;
       missingFields.add(
         'weekly reflection ($answered of $kWeeklyQuestionCount)',
       );
@@ -381,14 +625,11 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       final pendingCount = LogApi.parseInt(data['pending_sync_count']);
       final savedOffline = data['is_offline'] == true;
 
-      if (showWeeklyQuestions && _weeklyReflection.isAvailable) {
+      var weeklyWasSaved = false;
+      if (showWeeklyQuestions && weeklyReflection.isAvailable) {
         try {
-          await WeeklyAssessmentApi.saveReflection(_weeklyReflection);
-          if (mounted) {
-            setState(() {
-              _weeklyReflection = _weeklyReflection.markSaved();
-            });
-          }
+          await WeeklyAssessmentApi.saveReflection(weeklyReflection);
+          weeklyWasSaved = true;
         } catch (_) {
           // Handled or queued offline
         }
@@ -397,6 +638,12 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       if (!mounted) return;
 
       setState(() {
+        if (draftOverride != null) {
+          _applyDraftValues(draft);
+        }
+        if (showWeeklyQuestions && weeklyWasSaved) {
+          _weeklyReflection = weeklyReflection.markSaved();
+        }
         currentStreak = LogApi.parseInt(streak?['current_streak']);
         hasSavedLogToday = true;
         isSubmitted = true;
@@ -405,6 +652,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
         pendingSyncCount = pendingCount;
         isSaving = false;
       });
+      _lastSaveSucceeded = true;
       _publishNavigationState();
       CheckInStateCoordinator.instance.markChanged(this);
 
@@ -455,7 +703,11 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
         StreakRestoreDetails.fromJson(error.restore),
       );
       if (decision != null && mounted) {
-        await _saveLog(streakRestoreDecision: decision);
+        await _saveLog(
+          streakRestoreDecision: decision,
+          draftOverride: draftOverride,
+          weeklyAnswersOverride: weeklyAnswersOverride,
+        );
       }
     } catch (error) {
       if (!mounted) return;
@@ -760,149 +1012,170 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
               : Stack(
                   fit: StackFit.expand,
                   children: [
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 350),
-                      switchInCurve: Curves.easeOut,
-                      switchOutCurve: Curves.easeIn,
-                      layoutBuilder: (currentChild, previousChildren) => Stack(
-                        fit: StackFit.expand,
-                        alignment: Alignment.center,
-                        children: [
-                          ...previousChildren,
-                          ?currentChild,
-                        ],
-                      ),
-                      child: isSubmitted
-                          ? _buildSuccessScreen()
-                          : SingleChildScrollView(
-                              key: const ValueKey('log_form'),
-                              padding: EdgeInsets.fromLTRB(
-                                12,
-                                10,
-                                12,
-                                mainPageBottomContentPadding(context),
+                    PageView(
+                      key: const ValueKey('log-surface-page-view'),
+                      controller: _logSurfaceController,
+                      onPageChanged: (index) {
+                        setState(() => _logSurfaceIndex = index);
+                        _publishNavigationState();
+                      },
+                      children: [
+                        QuickCheckInCatalog(
+                          mode: requiredMode,
+                          presets: _quickPresets,
+                          isLoading: _quickPresetsLoading,
+                          isStale: _quickPresetsStale,
+                          activePresetId: _activePresetId,
+                          onPresetTap: _useQuickPreset,
+                          onPresetLongPress: _openQuickPresetMenu,
+                          onAdd: _createQuickPreset,
+                          onRetry: () => _loadQuickPresets(showLoader: false),
+                        ),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 350),
+                          switchInCurve: Curves.easeOut,
+                          switchOutCurve: Curves.easeIn,
+                          layoutBuilder: (currentChild, previousChildren) =>
+                              Stack(
+                                fit: StackFit.expand,
+                                alignment: Alignment.center,
+                                children: [...previousChildren, ?currentChild],
                               ),
-                              child: Column(
-                                children: [
-                                  RevealOnBuild(child: _buildLogHeader()),
-                                  const SizedBox(height: 12),
-                                  RevealOnBuild(
-                                    delay: const Duration(milliseconds: 90),
-                                    child: LogWidgets(
-                                      showWeeklyQuestions: showWeeklyQuestions,
-                                      weeklyAnswers: _weeklyReflection.answers,
-                                      onWeeklyAnswerChanged:
-                                          _handleWeeklyAnswerChanged,
-                                      sleepHours: sleepHours,
-                                      sleepQuality: sleepQuality,
-                                      moodIndex: moodIndex,
-                                      energyLevel: energyLevel,
-                                      hydration: hydration,
-                                      workloadHoursBand: workloadHoursBand,
-                                      perceivedStressLevel:
-                                          perceivedStressLevel,
-                                      breakQualityLevel: breakQualityLevel,
-                                      dailyDetachmentLevel:
-                                          dailyDetachmentLevel,
-                                      dailyFocusLevel: dailyFocusLevel,
-                                      dailyAccomplishmentLevel:
-                                          dailyAccomplishmentLevel,
-                                      selectedExercises: selectedExercises,
-                                      selectedSymptoms: selectedSymptoms,
-                                      selectedHabits: selectedHabits,
-                                      sleepLabels: sleepLabels,
-                                      sleepStars: sleepStars,
-                                      moods: moods,
-                                      exercises: exercises,
-                                      symptoms: symptoms,
-                                      habits: habits,
-                                      exerciseGoalLabel: exerciseGoalLabel,
-                                      workloadOptions:
-                                          LogApi.workloadHoursBandOptions,
-                                      onSleepChanged: (value) {
-                                        setState(() {
-                                          sleepHours = value;
-                                        });
-                                      },
-                                      onSleepQualityChanged: (value) {
-                                        setState(() {
-                                          sleepQuality = value;
-                                        });
-                                      },
-                                      onMoodChanged: (value) {
-                                        setState(() {
-                                          moodIndex = value;
-                                        });
-                                      },
-                                      onEnergyChanged: (value) {
-                                        setState(() {
-                                          energyLevel = value;
-                                        });
-                                      },
-                                      onHydrationAdd: (value) {
-                                        setState(() {
-                                          hydration = (hydration + value).clamp(
-                                            0,
-                                            10,
-                                          );
-                                        });
-                                      },
-                                      onHydrationSubtract: () {
-                                        setState(() {
-                                          hydration = (hydration - 0.25).clamp(
-                                            0,
-                                            10,
-                                          );
-                                        });
-                                      },
-                                      onHydrationReset: () {
-                                        setState(() {
-                                          hydration = 0;
-                                        });
-                                      },
-                                      onWorkloadChanged: (value) {
-                                        setState(() {
-                                          workloadHoursBand = value;
-                                        });
-                                      },
-                                      onPerceivedStressChanged: (value) {
-                                        setState(() {
-                                          perceivedStressLevel = value;
-                                        });
-                                      },
-                                      onBreakQualityChanged: (value) {
-                                        setState(() {
-                                          breakQualityLevel = value;
-                                        });
-                                      },
-                                      onDailyDetachmentChanged: (value) {
-                                        setState(() {
-                                          dailyDetachmentLevel = value;
-                                        });
-                                      },
-                                      onDailyFocusChanged: (value) {
-                                        setState(() {
-                                          dailyFocusLevel = value;
-                                        });
-                                      },
-                                      onDailyAccomplishmentChanged: (value) {
-                                        setState(() {
-                                          dailyAccomplishmentLevel = value;
-                                        });
-                                      },
-                                      onExerciseToggle: _toggleExercise,
-                                      onSymptomToggle: _toggleSymptom,
-                                      onHabitToggle: _toggleHabit,
-                                    ),
+                          child: isSubmitted
+                              ? _buildSuccessScreen()
+                              : SingleChildScrollView(
+                                  key: const ValueKey('log_form'),
+                                  padding: EdgeInsets.fromLTRB(
+                                    12,
+                                    10,
+                                    12,
+                                    mainPageBottomContentPadding(context),
                                   ),
-                                  const SizedBox(height: 14),
-                                  RevealOnBuild(
-                                    delay: const Duration(milliseconds: 180),
-                                    child: _buildSaveButton(),
+                                  child: Column(
+                                    children: [
+                                      RevealOnBuild(child: _buildLogHeader()),
+                                      const SizedBox(height: 12),
+                                      RevealOnBuild(
+                                        delay: const Duration(milliseconds: 90),
+                                        child: LogWidgets(
+                                          showWeeklyQuestions:
+                                              showWeeklyQuestions,
+                                          weeklyAnswers:
+                                              _weeklyReflection.answers,
+                                          onWeeklyAnswerChanged:
+                                              _handleWeeklyAnswerChanged,
+                                          sleepHours: sleepHours,
+                                          sleepQuality: sleepQuality,
+                                          moodIndex: moodIndex,
+                                          energyLevel: energyLevel,
+                                          hydration: hydration,
+                                          workloadHoursBand: workloadHoursBand,
+                                          perceivedStressLevel:
+                                              perceivedStressLevel,
+                                          breakQualityLevel: breakQualityLevel,
+                                          dailyDetachmentLevel:
+                                              dailyDetachmentLevel,
+                                          dailyFocusLevel: dailyFocusLevel,
+                                          dailyAccomplishmentLevel:
+                                              dailyAccomplishmentLevel,
+                                          selectedExercises: selectedExercises,
+                                          selectedSymptoms: selectedSymptoms,
+                                          selectedHabits: selectedHabits,
+                                          sleepLabels: sleepLabels,
+                                          sleepStars: sleepStars,
+                                          moods: moods,
+                                          exercises: exercises,
+                                          symptoms: symptoms,
+                                          habits: habits,
+                                          exerciseGoalLabel: exerciseGoalLabel,
+                                          workloadOptions:
+                                              LogApi.workloadHoursBandOptions,
+                                          onSleepChanged: (value) {
+                                            setState(() {
+                                              sleepHours = value;
+                                            });
+                                          },
+                                          onSleepQualityChanged: (value) {
+                                            setState(() {
+                                              sleepQuality = value;
+                                            });
+                                          },
+                                          onMoodChanged: (value) {
+                                            setState(() {
+                                              moodIndex = value;
+                                            });
+                                          },
+                                          onEnergyChanged: (value) {
+                                            setState(() {
+                                              energyLevel = value;
+                                            });
+                                          },
+                                          onHydrationAdd: (value) {
+                                            setState(() {
+                                              hydration = (hydration + value)
+                                                  .clamp(0, 10);
+                                            });
+                                          },
+                                          onHydrationSubtract: () {
+                                            setState(() {
+                                              hydration = (hydration - 0.25)
+                                                  .clamp(0, 10);
+                                            });
+                                          },
+                                          onHydrationReset: () {
+                                            setState(() {
+                                              hydration = 0;
+                                            });
+                                          },
+                                          onWorkloadChanged: (value) {
+                                            setState(() {
+                                              workloadHoursBand = value;
+                                            });
+                                          },
+                                          onPerceivedStressChanged: (value) {
+                                            setState(() {
+                                              perceivedStressLevel = value;
+                                            });
+                                          },
+                                          onBreakQualityChanged: (value) {
+                                            setState(() {
+                                              breakQualityLevel = value;
+                                            });
+                                          },
+                                          onDailyDetachmentChanged: (value) {
+                                            setState(() {
+                                              dailyDetachmentLevel = value;
+                                            });
+                                          },
+                                          onDailyFocusChanged: (value) {
+                                            setState(() {
+                                              dailyFocusLevel = value;
+                                            });
+                                          },
+                                          onDailyAccomplishmentChanged:
+                                              (value) {
+                                                setState(() {
+                                                  dailyAccomplishmentLevel =
+                                                      value;
+                                                });
+                                              },
+                                          onExerciseToggle: _toggleExercise,
+                                          onSymptomToggle: _toggleSymptom,
+                                          onHabitToggle: _toggleHabit,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 14),
+                                      RevealOnBuild(
+                                        delay: const Duration(
+                                          milliseconds: 180,
+                                        ),
+                                        child: _buildSaveButton(),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                            ),
+                                ),
+                        ),
+                      ],
                     ),
                     _buildConfettiOverlay(),
                   ],
@@ -1010,9 +1283,12 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     return LayoutBuilder(
       builder: (context, constraints) {
         final bottomPadding = mainPageBottomContentPadding(context);
-        final minHeight = constraints.hasBoundedHeight &&
-                constraints.maxHeight.isFinite
-            ? (constraints.maxHeight - bottomPadding).clamp(0.0, double.infinity)
+        final minHeight =
+            constraints.hasBoundedHeight && constraints.maxHeight.isFinite
+            ? (constraints.maxHeight - bottomPadding).clamp(
+                0.0,
+                double.infinity,
+              )
             : 0.0;
 
         return SingleChildScrollView(
@@ -1072,8 +1348,8 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                               ? 'WEEKLY CHECK-IN'
                               : 'DAILY CHECK-IN',
                           maxLines: 1,
-                          style:
-                              Theme.of(context).textTheme.labelSmall?.copyWith(
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
                                 color: showWeeklyQuestions
                                     ? const Color(0xFF8B5CF6)
                                     : pageSecondaryTextColor(context),

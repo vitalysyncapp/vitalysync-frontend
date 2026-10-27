@@ -33,6 +33,71 @@ extension AppCopyString on String {
 }
 
 const Map<String, String> _tagalogCopy = {
+  'Add': 'Magdagdag',
+  'Delete': 'I-delete',
+  'Daily check-in': 'Araw-araw na check-in',
+  'Weekly check-in': 'Lingguhang check-in',
+  'Quick check-ins': 'Mga quick check-in',
+  'DAILY QUICK CHECK-INS': 'MGA DAILY QUICK CHECK-IN',
+  'WEEKLY QUICK CHECK-INS': 'MGA WEEKLY QUICK CHECK-IN',
+  'Tap to log now. Long press to edit or delete. Swipe left for the full questionnaire.':
+      'I-tap para mag-log ngayon. Long press para i-edit o i-delete. Mag-swipe pakaliwa para sa buong questionnaire.',
+  'No quick check-ins for this type yet. Add one to make future logging faster.':
+      'Wala pang quick check-in para sa uri na ito. Magdagdag para mas mabilis ang susunod na pag-log.',
+  'Showing saved presets. Connect to manage or sync them.':
+      'Ipinapakita ang naka-save na presets. Kumonekta para i-manage o i-sync ang mga ito.',
+  'Add quick check-in': 'Magdagdag ng quick check-in',
+  'Choose check-in type': 'Pumili ng uri ng check-in',
+  'Save all 14 daily answers.': 'I-save ang lahat ng 14 daily na sagot.',
+  'Save 9 practical inputs and 11 reflection answers.':
+      'I-save ang 9 praktikal na sagot at 11 reflection answers.',
+  'New quick check-in': 'Bagong quick check-in',
+  'Edit quick check-in': 'I-edit ang quick check-in',
+  'Daily preset': 'Araw-araw na preset',
+  'Weekly preset': 'Lingguhang preset',
+  'Choose an emoji': 'Pumili ng emoji',
+  'Quick check-in name': 'Pangalan ng quick check-in',
+  'For example: Productive': 'Halimbawa: Produktibo',
+  'Enter a name between 1 and 40 characters.':
+      'Maglagay ng pangalan na 1 hanggang 40 character.',
+  'Edit or delete quick check-in': 'I-edit o i-delete ang quick check-in',
+  'Log now': 'I-log ngayon',
+  'Sleep:': 'Tulog:',
+  'Water:': 'Tubig:',
+  'Energy:': 'Enerhiya:',
+  'Save quick check-in': 'I-save ang quick check-in',
+  'Delete quick check-in': 'I-delete ang quick check-in',
+  'Delete quick check-in?': 'I-delete ang quick check-in?',
+  'Quick check-in updated.': 'Na-update ang quick check-in.',
+  'Quick check-in deleted.': 'Na-delete ang quick check-in.',
+  'Replace today\'s check-in?': 'Palitan ang check-in ngayong araw?',
+  'Replace and save': 'Palitan at i-save',
+  'This preset does not match today\'s required check-in.':
+      'Hindi tugma ang preset sa kailangang check-in ngayong araw.',
+  'Unable to sync quick check-ins. Showing saved presets when available.':
+      'Hindi ma-sync ang quick check-ins. Ipinapakita ang mga naka-save na preset kung mayroon.',
+  'Unable to load quick check-ins.': 'Hindi ma-load ang mga quick check-in.',
+  'Connect to the internet to create this quick check-in.':
+      'Kumonekta sa internet para gawin ang quick check-in na ito.',
+  'Connect to the internet to update this quick check-in.':
+      'Kumonekta sa internet para i-update ang quick check-in na ito.',
+  'Connect to the internet to delete this quick check-in.':
+      'Kumonekta sa internet para i-delete ang quick check-in na ito.',
+  'Tired face': 'Pagod na mukha',
+  'Sad face': 'Malungkot na mukha',
+  'Neutral face': 'Neutral na mukha',
+  'Calm face': 'Kalmadong mukha',
+  'Happy face': 'Masayang mukha',
+  'Celebrating face': 'Nagdiriwang na mukha',
+  'Focused face': 'Nakatuong mukha',
+  'Sleepy face': 'Inaantok na mukha',
+  'Loved face': 'Minamahal na mukha',
+  'Relieved face': 'Gumaan ang loob na mukha',
+  'Anxious face': 'Balisa na mukha',
+  'Energized rocket': 'Masiglang rocket',
+  'Quick check-in emojis': 'Mga emoji ng quick check-in',
+  'All emojis designed by OpenMoji – the open-source emoji and icon project · Version 17.0 · CC BY-SA 4.0':
+      'Lahat ng emoji ay dinisenyo ng OpenMoji – ang open-source emoji at icon project · Bersyon 17.0 · CC BY-SA 4.0',
   'No estimate yet': 'Wala pang tantiya',
   'Estimate available': 'May tantiya na',
   'Loading estimate': 'Kinukuha ang tantiya',
@@ -400,6 +465,27 @@ const Map<String, String> _tagalogCopy = {
 };
 
 final List<_CopyRule> _tagalogCopyRules = [
+  _CopyRule(
+    RegExp(
+      r'^(.+) was saved and will appear on (daily|weekly) check-in days\.$',
+    ),
+    (m) =>
+        'Na-save ang ${m[1]} at lalabas ito sa mga ${m[2] == 'daily' ? 'araw-araw' : 'lingguhang'} check-in.',
+  ),
+  _CopyRule(
+    RegExp(r'^(.+) is ready for quick logging\.$'),
+    (m) => 'Handa na ang ${m[1]} para sa mabilisang pag-log.',
+  ),
+  _CopyRule(
+    RegExp(r'^(.+) will replace the answers already saved for today\.$'),
+    (m) =>
+        'Papalitan ng ${m[1]} ang mga sagot na naka-save na para ngayong araw.',
+  ),
+  _CopyRule(
+    RegExp(r'^(.+) will be removed from every signed-in device\.$'),
+    (m) => 'Aalisin ang ${m[1]} sa lahat ng device na naka-sign in.',
+  ),
+  _CopyRule(RegExp(r'^Edit (.+)$'), (m) => 'I-edit ang ${m[1]}'),
   _CopyRule(
     RegExp(r'^(.+) risk · (\d+)% confidence$'),
     (m) =>
