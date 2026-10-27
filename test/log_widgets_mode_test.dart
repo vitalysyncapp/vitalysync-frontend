@@ -78,6 +78,25 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('disabled entrance motion keeps questionnaire cards visible', (
+    tester,
+  ) async {
+    await _pumpLogWidgets(
+      tester,
+      showWeeklyQuestions: false,
+      revealCards: false,
+    );
+
+    final firstCard = find.byKey(const ValueKey('log-card-sleep-duration'));
+    expect(firstCard, findsOneWidget);
+    expect(
+      find.descendant(of: firstCard, matching: find.byType(FadeTransition)),
+      findsNothing,
+    );
+    expect(find.text('Sleep duration'), findsOneWidget);
+    expect(tester.getSize(firstCard).height, greaterThan(0));
+  });
+
   testWidgets('exercise choices use activity-specific icons', (tester) async {
     await _pumpLogWidgets(
       tester,
@@ -125,6 +144,7 @@ void main() {
 Future<void> _pumpLogWidgets(
   WidgetTester tester, {
   required bool showWeeklyQuestions,
+  bool revealCards = true,
   List<String> exercises = const ['Walking', 'None'],
   List<String> workloadOptions = const ['None', '3-4 hours'],
 }) {
@@ -133,6 +153,7 @@ Future<void> _pumpLogWidgets(
       home: Scaffold(
         body: SingleChildScrollView(
           child: LogWidgets(
+            revealCards: revealCards,
             showWeeklyQuestions: showWeeklyQuestions,
             sleepHours: 7,
             sleepQuality: 2,

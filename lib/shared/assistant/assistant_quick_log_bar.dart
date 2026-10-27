@@ -4,12 +4,14 @@ class _AssistantQuickLogBar extends StatelessWidget {
   final bool isHydrationOpen;
   final bool compact;
   final VoidCallback onLogWater;
+  final VoidCallback onQuickCheckIn;
   final VoidCallback onLogMeal;
 
   const _AssistantQuickLogBar({
     required this.isHydrationOpen,
     this.compact = false,
     required this.onLogWater,
+    required this.onQuickCheckIn,
     required this.onLogMeal,
   });
 
@@ -37,6 +39,16 @@ class _AssistantQuickLogBar extends StatelessWidget {
               selected: isHydrationOpen,
               compact: compact,
               onTap: onLogWater,
+            ),
+          ),
+          SizedBox(width: compact ? 6 : 8),
+          Expanded(
+            child: _AssistantQuickLogButton(
+              icon: Icons.bolt_rounded,
+              label: 'Quick check-in',
+              selected: false,
+              compact: compact,
+              onTap: onQuickCheckIn,
             ),
           ),
           SizedBox(width: compact ? 6 : 8),
@@ -85,23 +97,25 @@ class _AssistantQuickLogButton extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: compact ? 8 : 10,
+            horizontal: compact ? 4 : 5,
             vertical: compact ? 8 : 11,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: compact ? 16 : 18, color: foreground),
-              SizedBox(width: compact ? 5 : 7),
+              Icon(icon, size: compact ? 15 : 16, color: foreground),
+              SizedBox(width: compact ? 3 : 4),
               Flexible(
-                child: LocalizedText(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: foreground,
-                    fontSize: compact ? 12 : 13,
-                    fontWeight: FontWeight.w800,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: LocalizedText(
+                    label,
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: foreground,
+                      fontSize: compact ? 11 : 11.5,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ),

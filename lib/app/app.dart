@@ -202,6 +202,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           smartNudgePayload: payload,
           initialTab: tabForNotificationPayload(payload),
           openNutritionLogOnStart: shouldOpenNutritionLog(payload),
+          openQuickCheckInsOnStart: shouldOpenQuickCheckIns(payload),
           tutorialUserId: userId,
           showTutorialOnStart: showTutorialOnStart,
         ),

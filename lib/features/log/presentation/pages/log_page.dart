@@ -54,6 +54,7 @@ class LogPageController extends ValueNotifier<LogNavigationState> {
   LogPageController() : super(const LogNavigationState());
 
   Future<void> Function()? _saveAction;
+  VoidCallback? _showQuickPresetsAction;
 
   void bindSaveAction(Future<void> Function() saveAction) {
     _saveAction = saveAction;
@@ -62,6 +63,16 @@ class LogPageController extends ValueNotifier<LogNavigationState> {
   void unbindSaveAction(Future<void> Function() saveAction) {
     if (_saveAction == saveAction) {
       _saveAction = null;
+    }
+  }
+
+  void bindQuickPresetsAction(VoidCallback action) {
+    _showQuickPresetsAction = action;
+  }
+
+  void unbindQuickPresetsAction(VoidCallback action) {
+    if (_showQuickPresetsAction == action) {
+      _showQuickPresetsAction = null;
     }
   }
 
@@ -93,13 +104,23 @@ class LogPageController extends ValueNotifier<LogNavigationState> {
     }
     await saveAction();
   }
+
+  void showQuickPresets() {
+    _showQuickPresetsAction?.call();
+  }
 }
 
 class LogPage extends StatefulWidget {
   final LogPageController? controller;
   final VoidCallback? onBaselineRefreshRequired;
+  final int initialPage;
 
-  const LogPage({super.key, this.controller, this.onBaselineRefreshRequired});
+  const LogPage({
+    super.key,
+    this.controller,
+    this.onBaselineRefreshRequired,
+    this.initialPage = 1,
+  }) : assert(initialPage == 0 || initialPage == 1);
 
   @override
   State<LogPage> createState() => _LogPageState();
@@ -148,7 +169,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   CheckInStatus? checkInStatus;
   WeeklyReflectionState _weeklyReflection = const WeeklyReflectionState();
   late final PageController _logSurfaceController;
-  int _logSurfaceIndex = 1;
+  late int _logSurfaceIndex;
   List<QuickCheckInPreset> _quickPresets = const [];
   bool _quickPresetsLoading = true;
   bool _quickPresetsStale = false;
@@ -171,7 +192,9 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       _handleCheckInStateChanged,
     );
     widget.controller?.bindSaveAction(_saveLog);
-    _logSurfaceController = PageController(initialPage: 1);
+    widget.controller?.bindQuickPresetsAction(_showQuickPresets);
+    _logSurfaceIndex = widget.initialPage;
+    _logSurfaceController = PageController(initialPage: widget.initialPage);
     _confettiController = ConfettiController(
       duration: const Duration(seconds: 2),
     );
@@ -187,6 +210,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       _handleCheckInStateChanged,
     );
     widget.controller?.unbindSaveAction(_saveLog);
+    widget.controller?.unbindQuickPresetsAction(_showQuickPresets);
     _logSurfaceController.dispose();
     _confettiController.dispose();
     super.dispose();
@@ -199,8 +223,19 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       return;
     }
     oldWidget.controller?.unbindSaveAction(_saveLog);
+    oldWidget.controller?.unbindQuickPresetsAction(_showQuickPresets);
     widget.controller?.bindSaveAction(_saveLog);
+    widget.controller?.bindQuickPresetsAction(_showQuickPresets);
     _publishNavigationState();
+  }
+
+  void _showQuickPresets() {
+    if (!_logSurfaceController.hasClients || _logSurfaceIndex == 0) return;
+    _logSurfaceController.animateToPage(
+      0,
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   @override
@@ -1177,9 +1212,61 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                         ),
                       ],
                     ),
+                    _buildQuickPresetSwipeHint(),
                     _buildConfettiOverlay(),
                   ],
                 ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickPresetSwipeHint() {
+    final accent = requiredMode == CheckInMode.weekly
+        ? const Color(0xFF8B5CF6)
+        : const Color(0xFF1FB489);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Semantics(
+      label: 'Swipe right for quick check-ins'.localizedCopy(context),
+      child: IgnorePointer(
+        child: AnimatedOpacity(
+          key: const ValueKey('quick-check-in-swipe-hint'),
+          duration: const Duration(milliseconds: 180),
+          opacity: _logSurfaceIndex == 1 ? 1 : 0,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Transform.translate(
+              offset: const Offset(-5, 0),
+              child: Container(
+                width: 25,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: pageSurfaceColor(
+                    context,
+                  ).withValues(alpha: isDark ? 0.88 : 0.94),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: pageBorderColor(context)),
+                  boxShadow: pageCardShadow(context),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.chevron_right_rounded, size: 16, color: accent),
+                    const SizedBox(height: 2),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _SwipeHintDot(color: accent.withValues(alpha: 0.45)),
+                        const SizedBox(width: 3),
+                        _SwipeHintDot(color: accent),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -1870,6 +1957,20 @@ class _FormulaPill extends StatelessWidget {
           fontWeight: FontWeight.w800,
         ),
       ),
+    );
+  }
+}
+
+class _SwipeHintDot extends StatelessWidget {
+  const _SwipeHintDot({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      child: const SizedBox.square(dimension: 3.5),
     );
   }
 }

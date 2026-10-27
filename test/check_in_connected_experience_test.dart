@@ -65,6 +65,29 @@ void main() {
     expect(checkInX, lessThan(exerciseX));
   });
 
+  testWidgets('assistant quick check-in opens presets between water and meal', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    var opened = false;
+
+    await _pumpAssistant(
+      tester,
+      status: _incompleteStatus,
+      onQuickCheckInRequested: () => opened = true,
+    );
+
+    final waterX = tester.getCenter(find.text('Log water')).dx;
+    final quickCheckInX = tester.getCenter(find.text('Quick check-in')).dx;
+    final mealX = tester.getCenter(find.text('Log meal')).dx;
+
+    expect(waterX, lessThan(quickCheckInX));
+    expect(quickCheckInX, lessThan(mealX));
+
+    await tester.tap(find.text('Quick check-in'));
+    expect(opened, isTrue);
+  });
+
   testWidgets('assistant sections support horizontal swiping', (tester) async {
     SharedPreferences.setMockInitialValues({});
 
@@ -208,6 +231,7 @@ Future<void> _pumpAssistant(
   Future<CheckInStatus> Function()? statusLoader,
   Future<Map<String, dynamic>> Function()? todayLogLoader,
   int initialSectionIndex = 0,
+  VoidCallback? onQuickCheckInRequested,
 }) async {
   await pumpTestApp(
     tester,
@@ -233,6 +257,7 @@ Future<void> _pumpAssistant(
             () async => {
               'streak': {'current_streak': 0},
             },
+        onQuickCheckInRequested: onQuickCheckInRequested,
       ),
     ),
   );

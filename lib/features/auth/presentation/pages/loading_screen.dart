@@ -84,6 +84,9 @@ class _LoadingScreenState extends State<LoadingScreen>
                   openNutritionLogOnStart: shouldOpenNutritionLog(
                     launchPayload,
                   ),
+                  openQuickCheckInsOnStart: shouldOpenQuickCheckIns(
+                    launchPayload,
+                  ),
                   tutorialUserId: signedInUserId,
                   showTutorialOnStart: showTutorialOnStart,
                 )

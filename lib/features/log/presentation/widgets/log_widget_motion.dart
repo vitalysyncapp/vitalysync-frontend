@@ -78,6 +78,13 @@ class _LogCardEntranceState extends State<_LogCardEntrance>
 
   @override
   Widget build(BuildContext context) {
+    // `reveal` controls the optional staggered entrance. Callers such as the
+    // quick preset editor still need the cards to be fully visible when that
+    // motion is disabled.
+    if (!widget.reveal) {
+      return widget.child;
+    }
+
     return FadeTransition(
       opacity: _opacity,
       child: SlideTransition(

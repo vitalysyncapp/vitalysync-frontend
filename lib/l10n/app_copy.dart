@@ -38,6 +38,9 @@ const Map<String, String> _tagalogCopy = {
   'Daily check-in': 'Araw-araw na check-in',
   'Weekly check-in': 'Lingguhang check-in',
   'Quick check-ins': 'Mga quick check-in',
+  'Quick check-in': 'Mabilisang check-in',
+  'Swipe right for quick check-ins':
+      'Mag-swipe pakanan para sa mga mabilisang check-in',
   'DAILY QUICK CHECK-INS': 'MGA DAILY QUICK CHECK-IN',
   'WEEKLY QUICK CHECK-INS': 'MGA WEEKLY QUICK CHECK-IN',
   'Tap to log now. Long press to edit or delete. Swipe left for the full questionnaire.':
@@ -48,6 +51,8 @@ const Map<String, String> _tagalogCopy = {
       'Ipinapakita ang naka-save na presets. Kumonekta para i-manage o i-sync ang mga ito.',
   'Add quick check-in': 'Magdagdag ng quick check-in',
   'Choose check-in type': 'Pumili ng uri ng check-in',
+  'Create a reusable shortcut for your answers.':
+      'Gumawa ng magagamit na shortcut para sa iyong mga sagot.',
   'Save all 14 daily answers.': 'I-save ang lahat ng 14 daily na sagot.',
   'Save 9 practical inputs and 11 reflection answers.':
       'I-save ang 9 praktikal na sagot at 11 reflection answers.',
@@ -56,6 +61,16 @@ const Map<String, String> _tagalogCopy = {
   'Daily preset': 'Araw-araw na preset',
   'Weekly preset': 'Lingguhang preset',
   'Choose an emoji': 'Pumili ng emoji',
+  'Name your preset': 'Pangalanan ang iyong preset',
+  'Make it easy to recognize later.': 'Gawing madaling makilala sa susunod.',
+  'Pick the feeling that matches this preset.':
+      'Piliin ang damdaming babagay sa preset na ito.',
+  'Your answers': 'Iyong mga sagot',
+  'Answer all 14 questions once. You can edit them anytime.':
+      'Sagutin ang lahat ng 14 tanong nang isang beses. Maaari mo itong i-edit anumang oras.',
+  'Add 9 practical inputs and all 11 weekly reflection answers.':
+      'Idagdag ang 9 praktikal na input at lahat ng 11 sagot sa lingguhang reflection.',
+  'Loading questionnaire': 'Nilo-load ang questionnaire',
   'Quick check-in name': 'Pangalan ng quick check-in',
   'For example: Productive': 'Halimbawa: Produktibo',
   'Enter a name between 1 and 40 characters.':
@@ -83,6 +98,8 @@ const Map<String, String> _tagalogCopy = {
       'Kumonekta sa internet para i-update ang quick check-in na ito.',
   'Connect to the internet to delete this quick check-in.':
       'Kumonekta sa internet para i-delete ang quick check-in na ito.',
+  'Open VitalySync to use a quick check-in.':
+      'Buksan ang VitalySync para gumamit ng mabilisang check-in.',
   'Tired face': 'Pagod na mukha',
   'Sad face': 'Malungkot na mukha',
   'Neutral face': 'Neutral na mukha',

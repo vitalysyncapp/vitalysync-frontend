@@ -34,3 +34,9 @@ bool shouldOpenNutritionLog(String? payload) {
   return normalized.contains('nutrition_log') ||
       normalized.contains('meal_log');
 }
+
+bool shouldOpenQuickCheckIns(String? payload) {
+  final normalized = payload?.toLowerCase().trim() ?? '';
+  return normalized.contains('quick_check_in') ||
+      normalized.contains('quick_check-in');
+}

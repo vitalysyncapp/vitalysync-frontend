@@ -66,6 +66,7 @@ class MainNavigation extends StatefulWidget {
   final String? smartNudgePayload;
   final MainTab initialTab;
   final bool openNutritionLogOnStart;
+  final bool openQuickCheckInsOnStart;
   final int? tutorialUserId;
   final bool showTutorialOnStart;
   final FirstInstallPermissionCoordinator? permissionCoordinator;
@@ -79,6 +80,7 @@ class MainNavigation extends StatefulWidget {
     this.smartNudgePayload,
     this.initialTab = MainTab.home,
     this.openNutritionLogOnStart = false,
+    this.openQuickCheckInsOnStart = false,
     this.tutorialUserId,
     this.showTutorialOnStart = false,
     this.permissionCoordinator,
@@ -131,6 +133,7 @@ class _MainNavigationState extends State<MainNavigation>
       const NutritionPage(),
       LogPage(
         controller: _logPageController,
+        initialPage: widget.openQuickCheckInsOnStart ? 0 : 1,
         onBaselineRefreshRequired: () {
           unawaited(_ensureBaselineReady());
         },
@@ -269,6 +272,15 @@ class _MainNavigationState extends State<MainNavigation>
 
   void _openLogPage() {
     _selectTab(MainTab.log);
+  }
+
+  void _openQuickCheckIns() {
+    _selectLogTab();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _logPageController.showQuickPresets();
+      }
+    });
   }
 
   void _selectLogTab() {
@@ -802,6 +814,7 @@ class _MainNavigationState extends State<MainNavigation>
                       buttonSize: _currentTab == MainTab.log ? 46 : 54,
                       onLogMealRequested: _openNutritionLog,
                       onLogPageRequested: _openLogPage,
+                      onQuickCheckInRequested: _openQuickCheckIns,
                       tutorialButtonKey:
                           _tutorialTargetKeys[CoreTutorialTarget.assistant],
                     ),

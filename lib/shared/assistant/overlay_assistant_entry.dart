@@ -517,6 +517,7 @@ class _OverlayAssistantShellState extends State<_OverlayAssistantShell> {
                   hasLoadedNutritionInsight: _hasLoadedNutritionInsight,
                   onLogMealRequested: () => _openAppTo('nutrition_log'),
                   onLogPageRequested: () => _openAppTo('hydration'),
+                  onQuickCheckInRequested: () => _openAppTo('quick_check_in'),
                   useSafeAreaPadding: false,
                   onClose: _collapsePanel,
                 ),

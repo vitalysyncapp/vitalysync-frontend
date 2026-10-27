@@ -19,6 +19,7 @@ class AssistantExperiencePanel extends StatefulWidget {
   final Future<Map<String, dynamic>> Function()? todayLogLoader;
   final VoidCallback? onLogMealRequested;
   final VoidCallback? onLogPageRequested;
+  final VoidCallback? onQuickCheckInRequested;
   final VoidCallback? onClose;
   final bool useSafeAreaPadding;
   final int initialSectionIndex;
@@ -40,6 +41,7 @@ class AssistantExperiencePanel extends StatefulWidget {
     this.todayLogLoader,
     this.onLogMealRequested,
     this.onLogPageRequested,
+    this.onQuickCheckInRequested,
     this.onClose,
     this.useSafeAreaPadding = true,
     this.initialSectionIndex = _assistantSmartNudgeSectionIndex,
@@ -666,6 +668,21 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     widget.onClose?.call();
   }
 
+  void _openQuickCheckIns() {
+    final callback = widget.onQuickCheckInRequested;
+    if (callback == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: LocalizedText('Open VitalySync to use a quick check-in.'),
+        ),
+      );
+      return;
+    }
+
+    callback();
+    widget.onClose?.call();
+  }
+
   Future<void> _loadCheckInStatus() async {
     setState(() {
       _isLoadingCheckIn = true;
@@ -1093,6 +1110,7 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
           isHydrationOpen: _showHydrationLogger,
           compact: compactLandscape,
           onLogWater: _openHydrationLogger,
+          onQuickCheckIn: _openQuickCheckIns,
           onLogMeal: _openMealLog,
         ),
       ],

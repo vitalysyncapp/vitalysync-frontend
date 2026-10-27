@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:vitalysync/features/log/data/check_in_models.dart';
 import 'package:vitalysync/features/log/data/quick_check_in_preset.dart';
 import 'package:vitalysync/features/log/presentation/widgets/quick_check_in_preset_widgets.dart';
+import 'package:vitalysync/shared/widgets/app_skeleton.dart';
 
 import 'test_helpers.dart';
 
@@ -42,6 +43,34 @@ void main() {
 
     await tester.longPress(tile);
     expect(held?.presetId, 1);
+  });
+
+  testWidgets('catalog uses themed skeleton tiles while presets load', (
+    tester,
+  ) async {
+    await pumpTestApp(
+      tester,
+      Scaffold(
+        body: SizedBox(
+          width: 390,
+          height: 720,
+          child: QuickCheckInCatalog(
+            mode: CheckInMode.daily,
+            presets: const [],
+            isLoading: true,
+            isStale: false,
+            activePresetId: null,
+            onPresetTap: (_) {},
+            onPresetLongPress: (_) {},
+            onAdd: () {},
+            onRetry: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(AppSkeleton), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 }
 

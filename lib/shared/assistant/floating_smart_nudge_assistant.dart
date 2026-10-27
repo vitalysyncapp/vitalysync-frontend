@@ -88,6 +88,7 @@ class FloatingSmartNudgeAssistant extends StatefulWidget {
   final Duration autoHideDuration;
   final VoidCallback? onLogMealRequested;
   final VoidCallback? onLogPageRequested;
+  final VoidCallback? onQuickCheckInRequested;
   final Key? tutorialButtonKey;
 
   const FloatingSmartNudgeAssistant({
@@ -98,6 +99,7 @@ class FloatingSmartNudgeAssistant extends StatefulWidget {
     this.autoHideDuration = const Duration(seconds: 10),
     this.onLogMealRequested,
     this.onLogPageRequested,
+    this.onQuickCheckInRequested,
     this.tutorialButtonKey,
   });
 
@@ -490,6 +492,7 @@ class _FloatingSmartNudgeAssistantState
                         onRefreshEnvironment: _loadEnvironmentSnapshot,
                         onLogMealRequested: widget.onLogMealRequested,
                         onLogPageRequested: widget.onLogPageRequested,
+                        onQuickCheckInRequested: widget.onQuickCheckInRequested,
                         useSafeAreaPadding: false,
                         onClose: () => Navigator.of(dialogContext).pop(),
                       ),
