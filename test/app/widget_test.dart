@@ -1,0 +1,332 @@
+import 'package:flutter/services.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vitalysync/app/app.dart';
+import 'package:vitalysync/features/activity/data/activity_service.dart';
+import 'package:vitalysync/features/tutorial/services/core_tutorial_replay_controller.dart';
+import 'package:vitalysync/features/tutorial/services/core_tutorial_service.dart';
+import 'package:vitalysync/shared/preferences/app_preferences.dart';
+import 'package:vitalysync/shared/privacy/biometric_lock_service.dart';
+
+import '../helpers/test_helpers.dart';
+
+const MethodChannel _localAuthChannel = MethodChannel(
+  'plugins.flutter.io/local_auth',
+);
+
+void _setLocalAuthHandler(Future<Object?> Function(MethodCall)? handler) {
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(_localAuthChannel, handler);
+}
+
+Future<void> pumpStartup(WidgetTester tester) async {
+  await tester.pumpWidget(const MyApp());
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 2500));
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 500));
+  await tester.pump();
+}
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(configureTestAssets);
+  tearDownAll(clearTestAssets);
+
+  setUp(() {
+    AppPreferencesController.instance.notifier.value =
+        const AppPreferencesState.defaults();
+    BiometricLockService.instance.resetForTesting();
+    _setLocalAuthHandler(null);
+  });
+
+  tearDown(() {
+    AppPreferencesController.instance.notifier.value =
+        const AppPreferencesState.defaults();
+    BiometricLockService.instance.resetForTesting();
+    _setLocalAuthHandler(null);
+  });
+
+  testWidgets('shows the auth start page when no saved session exists', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+
+    await pumpStartup(tester);
+
+    expect(
+      find.text('Feel your rhythm before burnout gets loud'),
+      findsOneWidget,
+    );
+    expect(find.text('Log in'), findsOneWidget);
+    expect(find.text('Sign up'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('auth-welcome-login')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Welcome back'), findsOneWidget);
+    expect(find.text('Sign in'), findsOneWidget);
+    expect(find.text('Create account'), findsOneWidget);
+  });
+
+  testWidgets(
+    'ends an unusable saved session and keeps its email ready for login',
+    (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({
+        'email': 'tester@example.com',
+        'user_id': 1,
+        'username': 'Tester',
+        'onboarding_completed': true,
+        'cached_environment_snapshot': '{"condition":"clear"}',
+        'notifications_enabled': true,
+        'assistant_overlay_enabled': true,
+      });
+
+      await pumpStartup(tester);
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.text('Welcome back'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('login-session-expired-notice')),
+        findsOneWidget,
+      );
+      final emailField = tester.widget<TextFormField>(
+        find.byType(TextFormField).first,
+      );
+      expect(emailField.controller?.text, 'tester@example.com');
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('email'), isNull);
+      expect(prefs.getInt('user_id'), isNull);
+      expect(prefs.getString('last_login_email'), 'tester@example.com');
+      expect(prefs.getString('cached_environment_snapshot'), isNull);
+      expect(prefs.getBool('notifications_enabled'), isNull);
+      expect(prefs.getBool('assistant_overlay_enabled'), isNull);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await ActivityService.instance.disposeTracking();
+    },
+  );
+
+  testWidgets('expired startup token routes directly to the prefilled login', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'email': 'expired@example.com',
+      'user_id': 9,
+      'username': 'Expired User',
+      'auth_access_token': testAuthToken(
+        expiresAt: DateTime.now().subtract(const Duration(minutes: 1)),
+      ),
+      'onboarding_completed': true,
+      'biometric_lock_enabled': true,
+    });
+
+    await pumpStartup(tester);
+
+    expect(find.text('Welcome back'), findsOneWidget);
+    expect(find.text('VitalySync is locked'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('login-session-expired-notice')),
+      findsOneWidget,
+    );
+    final emailField = tester.widget<TextFormField>(
+      find.byType(TextFormField).first,
+    );
+    expect(emailField.controller?.text, 'expired@example.com');
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('last_login_email'), 'expired@example.com');
+    expect(prefs.getString('auth_access_token'), isNull);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('shows biometric lock on cold start when enabled', (
+    WidgetTester tester,
+  ) async {
+    _setLocalAuthHandler((call) async {
+      if (call.method == 'authenticate') {
+        return false;
+      }
+      return null;
+    });
+    SharedPreferences.setMockInitialValues({
+      'email': 'tester@example.com',
+      'user_id': 1,
+      'username': 'Tester',
+      'auth_access_token': testAuthToken(),
+      'onboarding_completed': true,
+      'biometric_lock_enabled': true,
+    });
+
+    await tester.pumpWidget(const MyApp());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('VitalySync is locked'), findsOneWidget);
+    expect(find.text('Unlock'), findsOneWidget);
+    expect(find.text('Home'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('auth carousel advances to feature slides', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+
+    await pumpStartup(tester);
+
+    expect(
+      find.text('Feel your rhythm before burnout gets loud'),
+      findsOneWidget,
+    );
+
+    expect(find.byKey(const ValueKey('auth-welcome-previous')), findsNothing);
+    expect(find.byKey(const ValueKey('auth-welcome-next')), findsNothing);
+
+    final carousel = find.byKey(const ValueKey('auth-welcome-carousel'));
+    Future<void> swipeToNextSlide() async {
+      await tester.fling(carousel, const Offset(-400, 0), 1200);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 900));
+    }
+
+    await swipeToNextSlide();
+
+    expect(find.text('Track the signals that matter'), findsOneWidget);
+    expect(find.text('Hydration'), findsOneWidget);
+
+    await swipeToNextSlide();
+
+    expect(find.text('Get nudges that fit your day'), findsOneWidget);
+
+    await swipeToNextSlide();
+    expect(find.text('See progress over time'), findsOneWidget);
+
+    await swipeToNextSlide();
+    expect(
+      find.text('Feel your rhythm before burnout gets loud'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('uses cached completed session to enter the main app quickly', (
+    WidgetTester tester,
+  ) async {
+    configureLoggedInSession(onboardingCompleted: true);
+
+    await pumpStartup(tester);
+
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Log'), findsOneWidget);
+    expect(find.text('Nutrition'), findsOneWidget);
+    expect(find.text('Dashboard'), findsOneWidget);
+    expect(find.text('Profile'), findsOneWidget);
+    expect(find.text('Welcome to your VitalySync tour'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    await ActivityService.instance.disposeTracking();
+  });
+
+  testWidgets('main navigation shows tutorial when replay is requested', (
+    WidgetTester tester,
+  ) async {
+    configureLoggedInSession(onboardingCompleted: true);
+
+    await pumpStartup(tester);
+
+    expect(find.text('Welcome to your VitalySync tour'), findsNothing);
+
+    CoreTutorialReplayController.instance.requestReplay();
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Welcome to your VitalySync tour'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('core-tutorial-skip-button')));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Welcome to your VitalySync tour'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await ActivityService.instance.disposeTracking();
+  });
+
+  testWidgets('shows pending tutorial and skip completes it', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'email': 'tester@example.com',
+      'user_id': 1,
+      'username': 'Tester',
+      'auth_access_token': testAuthToken(),
+      'onboarding_completed': true,
+      '${CoreTutorialService.storageKeyPrefix}pending_1': true,
+    });
+
+    await pumpStartup(tester);
+
+    expect(find.text('Welcome to your VitalySync tour'), findsOneWidget);
+
+    await tester.tapAt(tester.getCenter(find.text('Nutrition')));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Welcome to your VitalySync tour'), findsOneWidget);
+    expect(find.text('Nutrition keeps meals in context'), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('core-tutorial-next-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 320));
+
+    expect(find.text('Home is your daily snapshot'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('core-tutorial-next-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 520));
+
+    expect(find.text('Nutrition keeps meals in context'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('core-tutorial-next-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 520));
+
+    expect(find.text('Log is your daily check-in'), findsOneWidget);
+    expect(find.text('Log your day'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('core-tutorial-skip-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Log is your daily check-in'), findsNothing);
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(
+      prefs.getBool('${CoreTutorialService.storageKeyPrefix}completed_1'),
+      isTrue,
+    );
+    expect(
+      prefs.containsKey('${CoreTutorialService.storageKeyPrefix}pending_1'),
+      isFalse,
+    );
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await ActivityService.instance.disposeTracking();
+  });
+
+  testWidgets('uses cached incomplete session to continue onboarding quickly', (
+    WidgetTester tester,
+  ) async {
+    configureLoggedInSession(onboardingCompleted: false);
+
+    await pumpStartup(tester);
+
+    expect(find.text('What best describes you?'), findsWidgets);
+    expect(find.text('Next'), findsOneWidget);
+  });
+}

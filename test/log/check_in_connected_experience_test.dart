@@ -1,0 +1,322 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vitalysync/features/activity/data/activity_service.dart';
+import 'package:vitalysync/features/log/data/check_in_models.dart';
+import 'package:vitalysync/features/log/data/check_in_state_coordinator.dart';
+import 'package:vitalysync/features/log/presentation/widgets/check_in_success_view.dart';
+import 'package:vitalysync/shared/assistant/floating_smart_nudge_assistant.dart';
+
+import '../helpers/test_helpers.dart';
+
+void main() {
+  setUpAll(configureTestAssets);
+  tearDownAll(clearTestAssets);
+
+  testWidgets('shared completion view shows validation, streak, and redo', (
+    tester,
+  ) async {
+    var redoPressed = false;
+
+    await pumpTestApp(
+      tester,
+      SizedBox(
+        height: 720,
+        child: CheckInSuccessView(
+          isOffline: false,
+          hasPendingSync: false,
+          pendingSyncCount: 0,
+          currentStreak: 15,
+          onRedo: () => redoPressed = true,
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Check-in saved!'), findsOneWidget);
+    expect(find.byKey(const ValueKey('check-in-success-card')), findsOneWidget);
+    expect(
+      find.ancestor(
+        of: find.byKey(const ValueKey('check-in-success-card')),
+        matching: find.byType(FadeTransition),
+      ),
+      findsWidgets,
+    );
+    expect(
+      find.textContaining('Your daily wellness log has been recorded.'),
+      findsOneWidget,
+    );
+    expect(find.text('15 day streak'), findsOneWidget);
+
+    await tester.tap(find.text('Redo today\'s log'));
+    expect(redoPressed, isTrue);
+  });
+
+  testWidgets('assistant orders check-in before exercise', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+
+    await _pumpAssistant(tester, status: _incompleteStatus);
+
+    final nudgesX = tester.getCenter(find.text('Nudges')).dx;
+    final checkInX = tester.getCenter(find.text('Check-in')).dx;
+    final exerciseX = tester.getCenter(find.text('Exercise')).dx;
+
+    expect(nudgesX, lessThan(checkInX));
+    expect(checkInX, lessThan(exerciseX));
+  });
+
+  testWidgets('assistant quick check-in opens presets between water and meal', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    var opened = false;
+
+    await _pumpAssistant(
+      tester,
+      status: _incompleteStatus,
+      onQuickCheckInRequested: () => opened = true,
+    );
+
+    final waterX = tester.getCenter(find.text('Log water')).dx;
+    final quickCheckInX = tester.getCenter(find.text('Quick check-in')).dx;
+    final mealX = tester.getCenter(find.text('Log meal')).dx;
+
+    expect(waterX, lessThan(quickCheckInX));
+    expect(quickCheckInX, lessThan(mealX));
+
+    await tester.tap(find.text('Quick check-in'));
+    expect(opened, isTrue);
+  });
+
+  testWidgets('assistant sections support horizontal swiping', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+
+    await _pumpAssistant(tester, status: _incompleteStatus);
+
+    final pageView = tester.widget<PageView>(find.byType(PageView));
+    expect(pageView.controller?.page, 0);
+
+    await tester.drag(find.byType(PageView), const Offset(-320, 0));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(pageView.controller?.page, greaterThan(0.8));
+  });
+
+  testWidgets('assistant check-in reveals when its section opens', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+
+    await _pumpAssistant(
+      tester,
+      status: _incompleteStatus,
+      initialSectionIndex: 1,
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+
+    final entrance = find.byKey(const ValueKey('assistant-check-in-entrance'));
+    expect(entrance, findsOneWidget);
+    expect(tester.widget<AnimatedSlide>(entrance).offset, Offset.zero);
+    expect(
+      find.byKey(const ValueKey('log-card-sleep-duration')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('floating assistant bubble keeps its full message', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    addTearDown(ActivityService.instance.disposeTracking);
+    const longMessage =
+        'A longer assistant preview should wrap to every line it needs so the final supportive suggestion remains readable without an ellipsis or hidden ending.';
+
+    await pumpTestApp(
+      tester,
+      const SizedBox(
+        width: 390,
+        height: 620,
+        child: FloatingSmartNudgeAssistant(
+          message: longMessage,
+          autoHideDuration: Duration(minutes: 5),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final bubbleBody = find.byWidgetPredicate(
+      (widget) => widget is Text && widget.style?.fontSize == 14.5,
+      description: 'floating assistant preview body',
+    );
+    expect(bubbleBody, findsOneWidget);
+    final message = tester.widget<Text>(bubbleBody);
+    expect(message.maxLines, isNull);
+    expect(message.overflow, isNull);
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await ActivityService.instance.disposeTracking();
+  });
+
+  testWidgets('assistant prompts for quick check-ins on the log surface', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    addTearDown(ActivityService.instance.disposeTracking);
+    var opened = false;
+
+    Widget assistant({required bool showHint}) => SizedBox(
+      width: 390,
+      height: 620,
+      child: FloatingSmartNudgeAssistant(
+        message: 'A short supportive nudge.',
+        showLogSwipeHint: showHint,
+        autoHideDuration: const Duration(seconds: 1),
+        onQuickCheckInRequested: () => opened = true,
+      ),
+    );
+
+    await pumpTestApp(tester, assistant(showHint: false));
+    await tester.pump();
+    await pumpTestApp(tester, assistant(showHint: true));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('swipe left for quick check in'), findsOneWidget);
+    final visibility = find.byKey(
+      const ValueKey('assistant-bubble-visibility'),
+    );
+    expect(tester.widget<AnimatedOpacity>(visibility).opacity, 1);
+    await tester.pump(const Duration(seconds: 2));
+    expect(tester.widget<AnimatedOpacity>(visibility).opacity, 0);
+    await tester.pump(const Duration(seconds: 58));
+    expect(tester.widget<AnimatedOpacity>(visibility).opacity, 1);
+
+    await tester.tap(find.text('Quick check-ins'));
+    expect(opened, isTrue);
+    await pumpTestApp(tester, assistant(showHint: false));
+    await tester.pump(const Duration(minutes: 1));
+    expect(tester.widget<AnimatedOpacity>(visibility).opacity, 0);
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await ActivityService.instance.disposeTracking();
+  });
+
+  testWidgets('tutorial target wraps only the floating assistant button', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    addTearDown(ActivityService.instance.disposeTracking);
+    final tutorialButtonKey = GlobalKey();
+
+    await pumpTestApp(
+      tester,
+      SizedBox(
+        width: 390,
+        height: 620,
+        child: FloatingSmartNudgeAssistant(
+          message: 'A short supportive nudge.',
+          autoHideDuration: const Duration(minutes: 5),
+          tutorialButtonKey: tutorialButtonKey,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final targetRect = tester.getRect(find.byKey(tutorialButtonKey));
+    final buttonRect = tester.getRect(
+      find.byKey(const ValueKey('floating-assistant-button')),
+    );
+
+    expect(targetRect, buttonRect);
+    expect(targetRect.size, const Size.square(54));
+    expect(targetRect.size, isNot(const Size(390, 620)));
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await ActivityService.instance.disposeTracking();
+  });
+
+  testWidgets('assistant refreshes to shared completion after external save', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    var status = _incompleteStatus;
+
+    await _pumpAssistant(
+      tester,
+      statusLoader: () async => status,
+      todayLogLoader: () async => {
+        'streak': {'current_streak': 9},
+      },
+    );
+
+    await tester.tap(find.text('Check-in'));
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(find.text('Check-in saved!'), findsNothing);
+
+    status = _completeStatus;
+    CheckInStateCoordinator.instance.markChanged(Object());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Check-in saved!'), findsOneWidget);
+    expect(find.text('9 day streak'), findsOneWidget);
+    expect(find.text('Redo today\'s log'), findsOneWidget);
+  });
+}
+
+Future<void> _pumpAssistant(
+  WidgetTester tester, {
+  CheckInStatus? status,
+  Future<CheckInStatus> Function()? statusLoader,
+  Future<Map<String, dynamic>> Function()? todayLogLoader,
+  int initialSectionIndex = 0,
+  VoidCallback? onQuickCheckInRequested,
+}) async {
+  await pumpTestApp(
+    tester,
+    SizedBox(
+      width: 390,
+      height: 700,
+      child: AssistantExperiencePanel(
+        message: 'Take a calm moment.',
+        emoji: 'heart',
+        recommendations: const [],
+        adaptiveNudges: const [],
+        hasLoadedAdaptiveNudges: true,
+        hasLoadedNutritionInsight: true,
+        onRefreshRecommendations: () async => const [],
+        onRefreshAdaptiveNudges: ({bool forceRefresh = false}) async =>
+            const [],
+        onRefreshNutritionInsight: ({bool forceRefresh = false}) async => null,
+        onRefreshEnvironment: () async => null,
+        initialSectionIndex: initialSectionIndex,
+        checkInStatusLoader: statusLoader ?? () async => status!,
+        todayLogLoader:
+            todayLogLoader ??
+            () async => {
+              'streak': {'current_streak': 0},
+            },
+        onQuickCheckInRequested: onQuickCheckInRequested,
+      ),
+    ),
+  );
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 100));
+}
+
+const _incompleteStatus = CheckInStatus(
+  requiredMode: CheckInMode.daily,
+  hasTodayLog: false,
+  schedule: CheckInSchedule(),
+);
+
+const _completeStatus = CheckInStatus(
+  requiredMode: CheckInMode.daily,
+  hasTodayLog: true,
+  schedule: CheckInSchedule(),
+);
