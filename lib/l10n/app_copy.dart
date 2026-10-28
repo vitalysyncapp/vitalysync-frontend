@@ -39,12 +39,17 @@ const Map<String, String> _tagalogCopy = {
   'Weekly check-in': 'Lingguhang check-in',
   'Quick check-ins': 'Mga quick check-in',
   'Quick check-in': 'Mabilisang check-in',
-  'Swipe right for quick check-ins':
-      'Mag-swipe pakanan para sa mga mabilisang check-in',
+  'Save as quick check-in': 'I-save bilang mabilisang check-in',
+  'Your saved answers will be reused for this quick check-in.':
+      'Gagamitin muli ang mga na-save mong sagot para sa mabilisang check-in na ito.',
+  'Swipe left for quick check-ins':
+      'Mag-swipe pakaliwa para sa mga mabilisang check-in',
+  'swipe left for quick check in':
+      'Mag-swipe pakaliwa para sa mabilisang check-in',
   'DAILY QUICK CHECK-INS': 'MGA DAILY QUICK CHECK-IN',
   'WEEKLY QUICK CHECK-INS': 'MGA WEEKLY QUICK CHECK-IN',
-  'Tap to preview and confirm. Long press to edit or delete. Swipe left for the full questionnaire.':
-      'I-tap para tingnan at kumpirmahin. Long press para i-edit o i-delete. Mag-swipe pakaliwa para sa buong questionnaire.',
+  'Tap to preview and confirm. Long press to edit or delete. Swipe right for the full questionnaire.':
+      'I-tap para tingnan at kumpirmahin. Long press para i-edit o i-delete. Mag-swipe pakanan para sa buong questionnaire.',
   'Preview quick check-in': 'Tingnan ang quick check-in',
   'Confirm quick check-in': 'Kumpirmahin ang quick check-in',
   'Scroll to explore moods and activities.':

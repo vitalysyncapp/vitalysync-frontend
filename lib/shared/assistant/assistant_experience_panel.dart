@@ -84,6 +84,11 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
   CheckInStatus? _checkInStatus;
   CheckInDraft _checkInDraft = const CheckInDraft();
   WeeklyReflectionState _weeklyReflection = const WeeklyReflectionState();
+  CheckInDraft? _lastManualSavedDraft;
+  CheckInMode? _lastManualSavedMode;
+  Map<String, int> _lastManualWeeklyAnswers = const {};
+  bool _manualSavedAsPreset = false;
+  bool _isSavingManualPreset = false;
   String _exerciseGoalLabel = '3-4 days';
   int _checkInStreak = 0;
 
@@ -200,6 +205,12 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
     if (change == null || identical(change.source, this) || _isSavingCheckIn) {
       return;
     }
+    setState(() {
+      _lastManualSavedDraft = null;
+      _lastManualSavedMode = null;
+      _lastManualWeeklyAnswers = const {};
+      _manualSavedAsPreset = false;
+    });
     _loadCheckInStatus();
   }
 
@@ -715,6 +726,12 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
 
       setState(() {
         _checkInStatus = status;
+        if (!status.hasTodayLog) {
+          _lastManualSavedDraft = null;
+          _lastManualSavedMode = null;
+          _lastManualWeeklyAnswers = const {};
+          _manualSavedAsPreset = false;
+        }
         _weeklyReflection = reflection;
         _checkInStreak = streak;
         _isEditingCheckIn = !status.isComplete;
@@ -752,10 +769,12 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
   Future<void> _saveCheckIn({String streakRestoreDecision = 'defer'}) async {
     final status = _checkInStatus;
     if (status == null) return;
-    final missing = _checkInDraft.validationErrors(status.requiredMode);
+    final savedDraft = _checkInDraft;
+    final savedReflection = _weeklyReflection;
+    final missing = savedDraft.validationErrors(status.requiredMode);
     if (status.requiredMode == CheckInMode.weekly &&
-        !_weeklyReflection.isAnswered) {
-      final answered = _weeklyReflection.answers.length;
+        !savedReflection.isAnswered) {
+      final answered = savedReflection.answers.length;
       missing.add('weekly reflection ($answered/$kWeeklyQuestionCount)');
     }
     if (missing.isNotEmpty) {
@@ -773,15 +792,15 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
 
     try {
       final data = await LogApi.saveCheckIn(
-        draft: _checkInDraft,
+        draft: savedDraft,
         mode: status.requiredMode,
         streakRestoreDecision: streakRestoreDecision,
       );
 
       if (status.requiredMode == CheckInMode.weekly &&
-          _weeklyReflection.isAvailable) {
+          savedReflection.isAvailable) {
         try {
-          await WeeklyAssessmentApi.saveReflection(_weeklyReflection);
+          await WeeklyAssessmentApi.saveReflection(savedReflection);
           if (mounted) {
             setState(() {
               _weeklyReflection = _weeklyReflection.markSaved();
@@ -797,6 +816,12 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
       setState(() {
         _isEditingCheckIn = false;
         _isSavingCheckIn = false;
+        _lastManualSavedDraft = savedDraft;
+        _lastManualSavedMode = status.requiredMode;
+        _lastManualWeeklyAnswers = status.requiredMode == CheckInMode.weekly
+            ? Map<String, int>.from(savedReflection.answers)
+            : const {};
+        _manualSavedAsPreset = false;
         final streak = data['streak'] as Map<String, dynamic>?;
         _checkInStreak = LogApi.parseInt(streak?['current_streak']);
       });
@@ -846,6 +871,45 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
           ),
         ),
       );
+    }
+  }
+
+  Future<void> _saveManualCheckInAsQuickPreset() async {
+    final draft = _lastManualSavedDraft;
+    final mode = _lastManualSavedMode;
+    if (draft == null ||
+        mode == null ||
+        _manualSavedAsPreset ||
+        _isSavingManualPreset) {
+      return;
+    }
+
+    final preset = await showSavedCheckInPresetDialog(
+      context: context,
+      mode: mode,
+      draft: draft,
+      weeklyAnswers: _lastManualWeeklyAnswers,
+    );
+    if (preset == null || !mounted) return;
+
+    setState(() => _isSavingManualPreset = true);
+    try {
+      final created = await QuickCheckInPresetApi.instance.create(preset);
+      if (!mounted) return;
+      setState(() => _manualSavedAsPreset = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: LocalizedText('${created.name} is ready for quick logging.'),
+        ),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: LocalizedText(error.toString())));
+      }
+    } finally {
+      if (mounted) setState(() => _isSavingManualPreset = false);
     }
   }
 
@@ -1336,6 +1400,11 @@ class _AssistantExperiencePanelState extends State<AssistantExperiencePanel> {
           },
           onSave: _saveCheckIn,
           onRedo: _redoCheckIn,
+          onSaveAsQuickCheckIn:
+              _lastManualSavedDraft != null && !_manualSavedAsPreset
+              ? _saveManualCheckInAsQuickPreset
+              : null,
+          isSavingQuickPreset: _isSavingManualPreset,
         ),
       ],
     );

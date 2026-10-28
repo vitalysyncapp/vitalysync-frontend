@@ -22,9 +22,11 @@ import '../../l10n/l10n.dart';
 import '../../features/log/data/check_in_models.dart';
 import '../../features/log/data/check_in_state_coordinator.dart';
 import '../../features/log/data/log_api.dart';
+import '../../features/log/data/quick_check_in_preset_api.dart';
 import '../../features/log/data/weekly_assessment_api.dart';
 import '../../features/log/presentation/widgets/check_in_success_view.dart';
 import '../../features/log/presentation/widgets/log_widgets.dart';
+import '../../features/log/presentation/widgets/saved_check_in_preset_dialog.dart';
 import '../../features/onboarding/data/burnout_baseline_questions.dart';
 import '../../features/nutrition/data/nutrition_analyzer.dart';
 import '../../features/nutrition/data/nutrition_coach.dart';
@@ -89,6 +91,7 @@ class FloatingSmartNudgeAssistant extends StatefulWidget {
   final VoidCallback? onLogMealRequested;
   final VoidCallback? onLogPageRequested;
   final VoidCallback? onQuickCheckInRequested;
+  final bool showLogSwipeHint;
   final Key? tutorialButtonKey;
 
   const FloatingSmartNudgeAssistant({
@@ -100,6 +103,7 @@ class FloatingSmartNudgeAssistant extends StatefulWidget {
     this.onLogMealRequested,
     this.onLogPageRequested,
     this.onQuickCheckInRequested,
+    this.showLogSwipeHint = false,
     this.tutorialButtonKey,
   });
 
@@ -170,8 +174,10 @@ class _AssistantFloatingBubbleVisualState
 }
 
 class _FloatingSmartNudgeAssistantState
-    extends State<FloatingSmartNudgeAssistant> {
+    extends State<FloatingSmartNudgeAssistant>
+    with WidgetsBindingObserver {
   static const _moveAnimationDuration = Duration(milliseconds: 220);
+  static const _logSwipeReminderInterval = Duration(minutes: 1);
 
   bool _isBubbleVisible = false;
   _AssistantBubbleKind _activeBubbleKind = _AssistantBubbleKind.smartNudge;
@@ -181,6 +187,7 @@ class _FloatingSmartNudgeAssistantState
   _AssistantDockEdge _dockEdge = _AssistantDockEdge.right;
   Offset _buttonOffset = Offset.zero;
   Timer? _bubbleSwitchTimer;
+  Timer? _logSwipeReminderTimer;
   List<ExerciseRecommendationModel> _recommendations = const [];
   List<AdaptiveNudgeRecommendation> _adaptiveNudges = const [];
   NutritionInsight? _nutritionInsight;
@@ -197,6 +204,7 @@ class _FloatingSmartNudgeAssistantState
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WellnessContentApi.changes.addListener(_refreshWellnessContent);
     unawaited(ActivityService.instance.startTracking());
     unawaited(ExerciseGoalService.instance.start());
@@ -207,14 +215,53 @@ class _FloatingSmartNudgeAssistantState
     unawaited(_loadWeeklyPulseIndicator());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _showBubble();
+      if (widget.showLogSwipeHint) {
+        _startLogSwipeReminders();
+      } else {
+        _showBubble();
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant FloatingSmartNudgeAssistant oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.showLogSwipeHint && !oldWidget.showLogSwipeHint) {
+      _startLogSwipeReminders();
+    } else if (!widget.showLogSwipeHint && oldWidget.showLogSwipeHint) {
+      _logSwipeReminderTimer?.cancel();
+      _logSwipeReminderTimer = null;
+      _hideBubble();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && widget.showLogSwipeHint) {
+      _startLogSwipeReminders();
+    } else if (state != AppLifecycleState.resumed && widget.showLogSwipeHint) {
+      _logSwipeReminderTimer?.cancel();
+      _logSwipeReminderTimer = null;
+      _hideBubble();
+    }
+  }
+
+  void _startLogSwipeReminders() {
+    if (_logSwipeReminderTimer != null) return;
+    if (!_isDialogOpen) _showBubble();
+    _logSwipeReminderTimer = Timer.periodic(_logSwipeReminderInterval, (_) {
+      if (mounted && widget.showLogSwipeHint && !_isDialogOpen) {
+        _showBubble();
+      }
     });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     WellnessContentApi.changes.removeListener(_refreshWellnessContent);
     _bubbleSwitchTimer?.cancel();
+    _logSwipeReminderTimer?.cancel();
     ExerciseGoalService.instance.notifier.removeListener(_handleGoalEvent);
     super.dispose();
   }
@@ -422,6 +469,11 @@ class _FloatingSmartNudgeAssistantState
 
   void _advanceBubblePreview() {
     if (!mounted || !_isBubbleVisible) return;
+
+    if (widget.showLogSwipeHint) {
+      _hideBubble();
+      return;
+    }
 
     final bubbleKinds = _availableBubbleKinds();
     final currentIndex = bubbleKinds.indexOf(_activeBubbleKind);
@@ -751,6 +803,17 @@ class _FloatingSmartNudgeAssistantState
     required bool tailOnRight,
     required bool tailAtBottom,
   }) {
+    if (widget.showLogSwipeHint) {
+      return _SmartNudgeBubble(
+        emoji: widget.emoji,
+        message: 'swipe left for quick check in',
+        onClose: _hideBubble,
+        onAction: widget.onQuickCheckInRequested,
+        tailOnRight: tailOnRight,
+        tailAtBottom: tailAtBottom,
+      );
+    }
+
     final primaryNudge = _adaptiveNudges.isEmpty ? null : _adaptiveNudges.first;
 
     switch (_activeBubbleKind) {
@@ -874,6 +937,7 @@ class _FloatingSmartNudgeAssistantState
                     curve: Curves.easeOutCubic,
                     offset: _isBubbleVisible ? Offset.zero : bubbleSlideOffset,
                     child: AnimatedOpacity(
+                      key: const ValueKey('assistant-bubble-visibility'),
                       duration: const Duration(milliseconds: 220),
                       curve: Curves.easeOut,
                       opacity: _isBubbleVisible ? 1 : 0,

@@ -133,7 +133,7 @@ class _MainNavigationState extends State<MainNavigation>
       const NutritionPage(),
       LogPage(
         controller: _logPageController,
-        initialPage: widget.openQuickCheckInsOnStart ? 0 : 1,
+        initialPage: widget.openQuickCheckInsOnStart ? 1 : 0,
         onBaselineRefreshRequired: () {
           unawaited(_ensureBaselineReady());
         },
@@ -811,6 +811,9 @@ class _MainNavigationState extends State<MainNavigation>
                     FloatingSmartNudgeAssistant(
                       message:
                           "You're doing well today. Log sleep and hydration to keep your streak going.",
+                      showLogSwipeHint:
+                          isLogSelected &&
+                          logNavigationState.isLogSurfaceVisible,
                       buttonSize: _currentTab == MainTab.log ? 46 : 54,
                       onLogMealRequested: _openNutritionLog,
                       onLogPageRequested: _openLogPage,

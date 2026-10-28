@@ -14,6 +14,8 @@ class CheckInSuccessView extends StatelessWidget {
   final int pendingSyncCount;
   final int currentStreak;
   final VoidCallback onRedo;
+  final VoidCallback? onSaveAsQuickCheckIn;
+  final bool isSavingQuickPreset;
 
   const CheckInSuccessView({
     super.key,
@@ -22,6 +24,8 @@ class CheckInSuccessView extends StatelessWidget {
     required this.pendingSyncCount,
     required this.currentStreak,
     required this.onRedo,
+    this.onSaveAsQuickCheckIn,
+    this.isSavingQuickPreset = false,
   });
 
   @override
@@ -131,6 +135,36 @@ class CheckInSuccessView extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (onSaveAsQuickCheckIn != null) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: FilledButton.icon(
+                        key: const ValueKey('save-manual-as-quick-check-in'),
+                        onPressed: isSavingQuickPreset
+                            ? null
+                            : onSaveAsQuickCheckIn,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF1FB489),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(17),
+                          ),
+                        ),
+                        icon: isSavingQuickPreset
+                            ? const SizedBox.square(
+                                dimension: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.bookmark_add_rounded),
+                        label: const LocalizedText('Save as quick check-in'),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

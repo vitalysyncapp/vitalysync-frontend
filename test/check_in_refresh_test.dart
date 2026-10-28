@@ -173,6 +173,10 @@ void main() {
           await flushWidgets(tester);
           expect(server.saves, 1);
           expect(
+            find.byKey(const ValueKey('save-manual-as-quick-check-in')),
+            findsOneWidget,
+          );
+          expect(
             tester
                 .widget<BurnoutCard>(
                   find.byType(BurnoutCard, skipOffstage: false),

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -25,6 +26,8 @@ class QuickCheckInPresetApi {
   static const cacheKeyPrefix = 'quick_check_in_presets_v1_';
 
   final http.Client _client;
+  final ValueNotifier<QuickCheckInPreset?> createdPresets = ValueNotifier(null);
+  final Map<int, int> _mutationVersions = {};
 
   Future<int> _userId() async {
     final session = await UserSessionController.instance.load();
@@ -51,6 +54,7 @@ class QuickCheckInPresetApi {
 
   Future<List<QuickCheckInPreset>> fetch() async {
     final userId = await _userId();
+    final version = _mutationVersions[userId] ?? 0;
     late http.Response response;
     try {
       response = await _client
@@ -71,8 +75,12 @@ class QuickCheckInPresetApi {
       );
     }
     final presets = _decodePresetList(data['presets']);
-    await _writeCache(userId, presets);
-    return presets;
+    final wroteCache = await _writeCache(
+      userId,
+      presets,
+      expectedVersion: version,
+    );
+    return wroteCache ? presets : readCache();
   }
 
   Future<QuickCheckInPreset> create(QuickCheckInPreset preset) async {
@@ -101,8 +109,13 @@ class QuickCheckInPresetApi {
     final created = QuickCheckInPreset.fromJson(
       Map<String, dynamic>.from(data['preset'] as Map),
     );
+    _mutationVersions[userId] = (_mutationVersions[userId] ?? 0) + 1;
     final cached = await readCache();
-    await _writeCache(userId, [...cached, created]);
+    await _writeCache(userId, [
+      ...cached.where((item) => item.presetId != created.presetId),
+      created,
+    ]);
+    createdPresets.value = created;
     return created;
   }
 
@@ -132,6 +145,7 @@ class QuickCheckInPresetApi {
     final updated = QuickCheckInPreset.fromJson(
       Map<String, dynamic>.from(data['preset'] as Map),
     );
+    _mutationVersions[userId] = (_mutationVersions[userId] ?? 0) + 1;
     final cached = await readCache();
     final containsUpdated = cached.any(
       (item) => item.presetId == updated.presetId,
@@ -166,6 +180,7 @@ class QuickCheckInPresetApi {
             'Connect to the internet to delete this quick check-in.',
       );
     }
+    _mutationVersions[userId] = (_mutationVersions[userId] ?? 0) + 1;
     final cached = await readCache();
     await _writeCache(
       userId,
@@ -173,12 +188,21 @@ class QuickCheckInPresetApi {
     );
   }
 
-  Future<void> _writeCache(int userId, List<QuickCheckInPreset> presets) async {
+  Future<bool> _writeCache(
+    int userId,
+    List<QuickCheckInPreset> presets, {
+    int? expectedVersion,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
+    if (expectedVersion != null &&
+        expectedVersion != (_mutationVersions[userId] ?? 0)) {
+      return false;
+    }
     await prefs.setString(
       _cacheKey(userId),
       jsonEncode(presets.map((item) => item.toJson()).toList()),
     );
+    return true;
   }
 
   List<QuickCheckInPreset> _decodePresetList(Object? raw) {

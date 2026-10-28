@@ -4,6 +4,7 @@ class _SmartNudgeBubble extends StatelessWidget {
   final String emoji;
   final String message;
   final VoidCallback onClose;
+  final VoidCallback? onAction;
   final bool tailOnRight;
   final bool tailAtBottom;
 
@@ -11,6 +12,7 @@ class _SmartNudgeBubble extends StatelessWidget {
     required this.emoji,
     required this.message,
     required this.onClose,
+    this.onAction,
     this.tailOnRight = true,
     this.tailAtBottom = false,
   });
@@ -23,15 +25,27 @@ class _SmartNudgeBubble extends StatelessWidget {
       tailOnRight: tailOnRight,
       tailAtBottom: tailAtBottom,
       icon: _AssistantLottieIcon(emoji: emoji, size: 30, fallbackFontSize: 18),
-      child: LocalizedText(
-        _expandedAssistantText(message),
-        style: TextStyle(
-          color: pageSecondaryTextColor(context),
-          fontSize: 14.5,
-          height: 1.4,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0,
-        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LocalizedText(
+            _expandedAssistantText(message),
+            style: TextStyle(
+              color: pageSecondaryTextColor(context),
+              fontSize: 14.5,
+              height: 1.4,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0,
+            ),
+          ),
+          if (onAction != null)
+            TextButton.icon(
+              onPressed: onAction,
+              icon: const Icon(Icons.bolt_rounded, size: 18),
+              label: const LocalizedText('Quick check-ins'),
+            ),
+        ],
       ),
     );
   }

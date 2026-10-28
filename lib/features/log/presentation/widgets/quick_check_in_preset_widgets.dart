@@ -214,6 +214,45 @@ class QuickCheckInCatalog extends StatelessWidget {
   }
 }
 
+class QuickCheckInCatalogLoadingView extends StatelessWidget {
+  const QuickCheckInCatalogLoadingView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: CustomScrollView(
+        key: const ValueKey('quick-check-in-catalog-skeleton'),
+        slivers: [
+          const SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppSkeletonLine(width: 158, height: 11),
+                SizedBox(height: 12),
+                AppSkeletonLine(width: 220, height: 28),
+                SizedBox(height: 10),
+                AppSkeletonLine(widthFactor: 0.88, height: 13),
+                SizedBox(height: 6),
+                AppSkeletonLine(widthFactor: 0.62, height: 13),
+              ],
+            ),
+          ),
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.only(top: 22),
+              child: _QuickPresetCatalogSkeleton(),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: SizedBox(height: mainPageBottomContentPadding(context)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _CatalogHeader extends StatelessWidget {
   const _CatalogHeader({required this.mode});
 
@@ -254,7 +293,7 @@ class _CatalogHeader extends StatelessWidget {
           ),
           const SizedBox(height: 5),
           LocalizedText(
-            'Tap to preview and confirm. Long press to edit or delete. Swipe left for the full questionnaire.',
+            'Tap to preview and confirm. Long press to edit or delete. Swipe right for the full questionnaire.',
             style: TextStyle(
               color: pageSecondaryTextColor(context),
               height: 1.35,

@@ -160,6 +160,50 @@ void main() {
     await ActivityService.instance.disposeTracking();
   });
 
+  testWidgets('assistant prompts for quick check-ins on the log surface', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    addTearDown(ActivityService.instance.disposeTracking);
+    var opened = false;
+
+    Widget assistant({required bool showHint}) => SizedBox(
+      width: 390,
+      height: 620,
+      child: FloatingSmartNudgeAssistant(
+        message: 'A short supportive nudge.',
+        showLogSwipeHint: showHint,
+        autoHideDuration: const Duration(seconds: 1),
+        onQuickCheckInRequested: () => opened = true,
+      ),
+    );
+
+    await pumpTestApp(tester, assistant(showHint: false));
+    await tester.pump();
+    await pumpTestApp(tester, assistant(showHint: true));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('swipe left for quick check in'), findsOneWidget);
+    final visibility = find.byKey(
+      const ValueKey('assistant-bubble-visibility'),
+    );
+    expect(tester.widget<AnimatedOpacity>(visibility).opacity, 1);
+    await tester.pump(const Duration(seconds: 2));
+    expect(tester.widget<AnimatedOpacity>(visibility).opacity, 0);
+    await tester.pump(const Duration(seconds: 58));
+    expect(tester.widget<AnimatedOpacity>(visibility).opacity, 1);
+
+    await tester.tap(find.text('Quick check-ins'));
+    expect(opened, isTrue);
+    await pumpTestApp(tester, assistant(showHint: false));
+    await tester.pump(const Duration(minutes: 1));
+    expect(tester.widget<AnimatedOpacity>(visibility).opacity, 0);
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await ActivityService.instance.disposeTracking();
+  });
+
   testWidgets('tutorial target wraps only the floating assistant button', (
     tester,
   ) async {

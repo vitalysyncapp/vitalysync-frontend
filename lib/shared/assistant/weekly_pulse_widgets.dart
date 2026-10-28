@@ -14,6 +14,8 @@ class _AssistantCheckInCard extends StatelessWidget {
   final ValueChanged<CheckInDraft> onChanged;
   final Future<void> Function() onSave;
   final VoidCallback onRedo;
+  final VoidCallback? onSaveAsQuickCheckIn;
+  final bool isSavingQuickPreset;
 
   const _AssistantCheckInCard({
     required this.isActive,
@@ -29,6 +31,8 @@ class _AssistantCheckInCard extends StatelessWidget {
     required this.onChanged,
     required this.onSave,
     required this.onRedo,
+    this.onSaveAsQuickCheckIn,
+    this.isSavingQuickPreset = false,
   });
 
   bool get _showWeeklyQuestions => status?.requiredMode == CheckInMode.weekly;
@@ -60,6 +64,8 @@ class _AssistantCheckInCard extends StatelessWidget {
           pendingSyncCount: currentStatus.pendingSyncCount,
           currentStreak: currentStreak,
           onRedo: onRedo,
+          onSaveAsQuickCheckIn: onSaveAsQuickCheckIn,
+          isSavingQuickPreset: isSavingQuickPreset,
         ),
       );
     }

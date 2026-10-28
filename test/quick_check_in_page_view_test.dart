@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -9,8 +10,12 @@ import 'package:vitalysync/features/log/data/log_api.dart';
 import 'package:vitalysync/features/log/presentation/pages/log_page.dart';
 import 'package:vitalysync/shared/notifications/notification_payload_router.dart';
 
+import 'test_helpers.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(configureTestAssets);
+  tearDownAll(clearTestAssets);
 
   setUp(() {
     SharedPreferences.setMockInitialValues({
@@ -19,7 +24,7 @@ void main() {
     });
   });
 
-  testWidgets('full form opens first and a right swipe reveals quick presets', (
+  testWidgets('full form opens first and a left swipe reveals quick presets', (
     tester,
   ) async {
     final today = LogApi.todayKey();
@@ -73,7 +78,7 @@ void main() {
 
       await tester.drag(
         find.byKey(const ValueKey('log-surface-page-view')),
-        const Offset(320, 0),
+        const Offset(-320, 0),
       );
       await tester.pumpAndSettle();
 
@@ -91,7 +96,7 @@ void main() {
 
       await tester.drag(
         find.byKey(const ValueKey('log-surface-page-view')),
-        const Offset(-320, 0),
+        const Offset(320, 0),
       );
       await tester.pump(const Duration(milliseconds: 500));
       expect(find.byKey(const ValueKey('log_form')), findsOneWidget);
@@ -109,6 +114,58 @@ void main() {
   test('overlay quick check-in payload targets the preset catalog', () {
     expect(shouldOpenQuickCheckIns('quick_check_in'), isTrue);
     expect(shouldOpenQuickCheckIns('nutrition_log'), isFalse);
+  });
+
+  testWidgets('direct quick check-in entry shows its own loading skeleton', (
+    tester,
+  ) async {
+    final status = Completer<http.Response>();
+    final client = MockClient((request) async {
+      if (request.url.path.endsWith('/check-in/status')) {
+        return status.future;
+      }
+      if (request.url.path.endsWith('/logs/today')) {
+        return http.Response(
+          jsonEncode({
+            'streak': {'current_streak': 0},
+          }),
+          200,
+        );
+      }
+      if (request.url.path.endsWith('/check-in-presets')) {
+        return http.Response(jsonEncode({'presets': []}), 200);
+      }
+      return http.Response('{}', 200);
+    });
+
+    await http.runWithClient(() async {
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: LogPage(initialPage: 1))),
+      );
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey('quick-check-in-catalog-skeleton')),
+        findsOneWidget,
+      );
+
+      status.complete(
+        http.Response(
+          jsonEncode({
+            'required_mode': 'daily',
+            'has_today_log': false,
+            'schedule': {'is_due': false, 'next_due_date': LogApi.todayKey()},
+            'existing_check_in': null,
+          }),
+          200,
+        ),
+      );
+      await _flushWidgets(tester);
+      expect(
+        find.byKey(const ValueKey('quick-check-in-catalog-skeleton')),
+        findsNothing,
+      );
+      expect(find.text('Quick check-ins'), findsOneWidget);
+    }, () => client);
   });
 }
 

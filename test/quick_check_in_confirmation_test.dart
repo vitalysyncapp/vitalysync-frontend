@@ -208,6 +208,10 @@ void main() {
         await tester.tap(find.byKey(const ValueKey('quick-check-in-confirm')));
         await _flush(tester);
         expect(posted, hasLength(1));
+        expect(
+          find.byKey(const ValueKey('save-manual-as-quick-check-in')),
+          findsNothing,
+        );
         expect(posted.single['daily'], containsPair('sleep_hours', 7.5));
         expect(posted.single['daily'], containsPair('hydration_liters', 2.0));
         expect(

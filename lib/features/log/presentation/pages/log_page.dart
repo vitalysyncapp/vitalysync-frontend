@@ -23,6 +23,7 @@ import '../widgets/check_in_success_view.dart';
 import '../widgets/log_widgets.dart';
 import '../widgets/quick_check_in_preset_widgets.dart';
 import '../widgets/quick_check_in_confirmation_dialog.dart';
+import '../widgets/saved_check_in_preset_dialog.dart';
 import 'package:vitalysync/l10n/localized_text.dart';
 
 const _streakFireAnimationPath = 'assets/animations/streak_fire.json';
@@ -40,12 +41,14 @@ class LogNavigationState {
   final bool hasLoggedToday;
   final bool isSaving;
   final bool isFormVisible;
+  final bool isLogSurfaceVisible;
 
   const LogNavigationState({
     this.isLoading = true,
     this.hasLoggedToday = false,
     this.isSaving = false,
     this.isFormVisible = false,
+    this.isLogSurfaceVisible = false,
   });
 
   bool get canSave => !isLoading && !isSaving && isFormVisible;
@@ -82,12 +85,14 @@ class LogPageController extends ValueNotifier<LogNavigationState> {
     required bool hasLoggedToday,
     required bool isSaving,
     required bool isFormVisible,
+    bool isLogSurfaceVisible = false,
   }) {
     final current = value;
     if (current.isLoading == isLoading &&
         current.hasLoggedToday == hasLoggedToday &&
         current.isSaving == isSaving &&
-        current.isFormVisible == isFormVisible) {
+        current.isFormVisible == isFormVisible &&
+        current.isLogSurfaceVisible == isLogSurfaceVisible) {
       return;
     }
     value = LogNavigationState(
@@ -95,6 +100,7 @@ class LogPageController extends ValueNotifier<LogNavigationState> {
       hasLoggedToday: hasLoggedToday,
       isSaving: isSaving,
       isFormVisible: isFormVisible,
+      isLogSurfaceVisible: isLogSurfaceVisible,
     );
   }
 
@@ -120,7 +126,7 @@ class LogPage extends StatefulWidget {
     super.key,
     this.controller,
     this.onBaselineRefreshRequired,
-    this.initialPage = 1,
+    this.initialPage = 0,
   }) : assert(initialPage == 0 || initialPage == 1);
 
   @override
@@ -174,9 +180,14 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   List<QuickCheckInPreset> _quickPresets = const [];
   bool _quickPresetsLoading = true;
   bool _quickPresetsStale = false;
+  int _quickPresetRevision = 0;
   bool _presetMutationInProgress = false;
   int? _activePresetId;
   bool _lastSaveSucceeded = false;
+  CheckInDraft? _lastManualSavedDraft;
+  CheckInMode? _lastManualSavedMode;
+  Map<String, int> _lastManualWeeklyAnswers = const {};
+  bool _manualSavedAsPreset = false;
 
   CheckInMode get requiredMode =>
       checkInStatus?.requiredMode ?? CheckInMode.daily;
@@ -191,6 +202,9 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     CheckInStateCoordinator.instance.changes.addListener(
       _handleCheckInStateChanged,
+    );
+    QuickCheckInPresetApi.instance.createdPresets.addListener(
+      _handleQuickPresetCreated,
     );
     widget.controller?.bindSaveAction(_saveLog);
     widget.controller?.bindQuickPresetsAction(_showQuickPresets);
@@ -209,6 +223,9 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     CheckInStateCoordinator.instance.changes.removeListener(
       _handleCheckInStateChanged,
+    );
+    QuickCheckInPresetApi.instance.createdPresets.removeListener(
+      _handleQuickPresetCreated,
     );
     widget.controller?.unbindSaveAction(_saveLog);
     widget.controller?.unbindQuickPresetsAction(_showQuickPresets);
@@ -231,9 +248,9 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   }
 
   void _showQuickPresets() {
-    if (!_logSurfaceController.hasClients || _logSurfaceIndex == 0) return;
+    if (!_logSurfaceController.hasClients || _logSurfaceIndex == 1) return;
     _logSurfaceController.animateToPage(
-      0,
+      1,
       duration: const Duration(milliseconds: 320),
       curve: Curves.easeOutCubic,
     );
@@ -251,6 +268,20 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     final change = CheckInStateCoordinator.instance.changes.value;
     if (change == null || identical(change.source, this) || isSaving) return;
     _loadLogState(showLoader: false);
+  }
+
+  void _handleQuickPresetCreated() {
+    final created = QuickCheckInPresetApi.instance.createdPresets.value;
+    if (created == null || !mounted) return;
+    _quickPresetRevision++;
+    setState(() {
+      _quickPresets = [
+        ..._quickPresets.where((item) => item.presetId != created.presetId),
+        created,
+      ];
+      _quickPresetsLoading = false;
+      _quickPresetsStale = false;
+    });
   }
 
   Future<void> _loadLogState({bool showLoader = true}) async {
@@ -290,6 +321,12 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
         _weeklyReflection = reflection;
         hasSavedLogToday = hasLog;
         isSubmitted = status.isComplete;
+        if (!hasLog) {
+          _lastManualSavedDraft = null;
+          _lastManualSavedMode = null;
+          _lastManualWeeklyAnswers = const {};
+          _manualSavedAsPreset = false;
+        }
         hasPendingSync = pendingCount > 0;
         lastSaveWasOffline = status.isOffline && pendingCount > 0;
         pendingSyncCount = pendingCount;
@@ -324,13 +361,14 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
   }
 
   Future<void> _loadQuickPresets({bool showLoader = true}) async {
+    final revision = _quickPresetRevision;
     if (showLoader && mounted) {
       setState(() => _quickPresetsLoading = true);
     }
 
     try {
       final cached = await QuickCheckInPresetApi.instance.readCache();
-      if (mounted && cached.isNotEmpty) {
+      if (mounted && revision == _quickPresetRevision && cached.isNotEmpty) {
         setState(() {
           _quickPresets = cached;
           _quickPresetsLoading = false;
@@ -343,6 +381,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     try {
       final presets = await QuickCheckInPresetApi.instance.fetch();
       if (!mounted) return;
+      if (revision != _quickPresetRevision) return;
       setState(() {
         _quickPresets = presets;
         _quickPresetsLoading = false;
@@ -350,6 +389,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       });
     } catch (_) {
       if (!mounted) return;
+      if (revision != _quickPresetRevision) return;
       setState(() {
         _quickPresetsLoading = false;
         _quickPresetsStale = true;
@@ -376,7 +416,6 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     try {
       final created = await QuickCheckInPresetApi.instance.create(preset);
       if (!mounted) return;
-      setState(() => _quickPresets = [..._quickPresets, created]);
       final offMode = created.mode != requiredMode;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -385,6 +424,45 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                 ? '${created.name} was saved and will appear on ${created.mode.apiValue} check-in days.'
                 : '${created.name} is ready for quick logging.',
           ),
+        ),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: LocalizedText(error.toString())));
+      }
+    } finally {
+      if (mounted) setState(() => _presetMutationInProgress = false);
+    }
+  }
+
+  Future<void> _saveManualCheckInAsQuickPreset() async {
+    final draft = _lastManualSavedDraft;
+    final mode = _lastManualSavedMode;
+    if (draft == null ||
+        mode == null ||
+        _manualSavedAsPreset ||
+        _presetMutationInProgress) {
+      return;
+    }
+
+    final preset = await showSavedCheckInPresetDialog(
+      context: context,
+      mode: mode,
+      draft: draft,
+      weeklyAnswers: _lastManualWeeklyAnswers,
+    );
+    if (preset == null || !mounted) return;
+
+    setState(() => _presetMutationInProgress = true);
+    try {
+      final created = await QuickCheckInPresetApi.instance.create(preset);
+      if (!mounted) return;
+      setState(() => _manualSavedAsPreset = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: LocalizedText('${created.name} is ready for quick logging.'),
         ),
       );
     } catch (error) {
@@ -517,7 +595,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     setState(() => _activePresetId = null);
     if (_lastSaveSucceeded) {
       await _logSurfaceController.animateToPage(
-        1,
+        0,
         duration: const Duration(milliseconds: 320),
         curve: Curves.easeOutCubic,
       );
@@ -529,7 +607,8 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
       isLoading: isLoading,
       hasLoggedToday: hasSavedLogToday,
       isSaving: isSaving,
-      isFormVisible: _logSurfaceIndex == 1 && !isLoading && !isSubmitted,
+      isFormVisible: _logSurfaceIndex == 0 && !isLoading && !isSubmitted,
+      isLogSurfaceVisible: _logSurfaceIndex == 0 && !isLoading,
     );
   }
 
@@ -670,6 +749,12 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
         currentStreak = LogApi.parseInt(streak?['current_streak']);
         hasSavedLogToday = true;
         isSubmitted = true;
+        _lastManualSavedDraft = draftOverride == null ? draft : null;
+        _lastManualSavedMode = draftOverride == null ? requiredMode : null;
+        _lastManualWeeklyAnswers = draftOverride == null && showWeeklyQuestions
+            ? Map<String, int>.from(weeklyReflection.answers)
+            : const {};
+        _manualSavedAsPreset = false;
         hasPendingSync = pendingCount > 0;
         lastSaveWasOffline = savedOffline;
         pendingSyncCount = pendingCount;
@@ -1023,15 +1108,17 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
         backgroundColor: Colors.transparent,
         body: SafeArea(
           child: isLoading
-              ? AppSkeletonList(
-                  padding: EdgeInsets.fromLTRB(
-                    12,
-                    10,
-                    12,
-                    mainPageBottomContentPadding(context),
-                  ),
-                  cardHeights: const [104, 178, 178, 152, 118],
-                )
+              ? _logSurfaceIndex == 1
+                    ? const QuickCheckInCatalogLoadingView()
+                    : AppSkeletonList(
+                        padding: EdgeInsets.fromLTRB(
+                          12,
+                          10,
+                          12,
+                          mainPageBottomContentPadding(context),
+                        ),
+                        cardHeights: const [104, 178, 178, 152, 118],
+                      )
               : Stack(
                   fit: StackFit.expand,
                   children: [
@@ -1043,17 +1130,6 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                         _publishNavigationState();
                       },
                       children: [
-                        QuickCheckInCatalog(
-                          mode: requiredMode,
-                          presets: _quickPresets,
-                          isLoading: _quickPresetsLoading,
-                          isStale: _quickPresetsStale,
-                          activePresetId: _activePresetId,
-                          onPresetTap: _useQuickPreset,
-                          onPresetLongPress: _openQuickPresetMenu,
-                          onAdd: _createQuickPreset,
-                          onRetry: () => _loadQuickPresets(showLoader: false),
-                        ),
                         AnimatedSwitcher(
                           duration: const Duration(milliseconds: 350),
                           switchInCurve: Curves.easeOut,
@@ -1198,6 +1274,17 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                                   ),
                                 ),
                         ),
+                        QuickCheckInCatalog(
+                          mode: requiredMode,
+                          presets: _quickPresets,
+                          isLoading: _quickPresetsLoading,
+                          isStale: _quickPresetsStale,
+                          activePresetId: _activePresetId,
+                          onPresetTap: _useQuickPreset,
+                          onPresetLongPress: _openQuickPresetMenu,
+                          onAdd: _createQuickPreset,
+                          onRetry: () => _loadQuickPresets(showLoader: false),
+                        ),
                       ],
                     ),
                     _buildQuickPresetSwipeHint(),
@@ -1216,16 +1303,16 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Semantics(
-      label: 'Swipe right for quick check-ins'.localizedCopy(context),
+      label: 'Swipe left for quick check-ins'.localizedCopy(context),
       child: IgnorePointer(
         child: AnimatedOpacity(
           key: const ValueKey('quick-check-in-swipe-hint'),
           duration: const Duration(milliseconds: 180),
-          opacity: _logSurfaceIndex == 1 ? 1 : 0,
+          opacity: _logSurfaceIndex == 0 ? 1 : 0,
           child: Align(
-            alignment: Alignment.centerLeft,
+            alignment: Alignment.centerRight,
             child: Transform.translate(
-              offset: const Offset(-5, 0),
+              offset: const Offset(5, 0),
               child: Container(
                 width: 25,
                 height: 46,
@@ -1240,7 +1327,7 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.chevron_right_rounded, size: 16, color: accent),
+                    Icon(Icons.chevron_left_rounded, size: 16, color: accent),
                     const SizedBox(height: 2),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -1378,6 +1465,11 @@ class _LogPageState extends State<LogPage> with WidgetsBindingObserver {
                 pendingSyncCount: pendingSyncCount,
                 currentStreak: currentStreak,
                 onRedo: _redoLog,
+                onSaveAsQuickCheckIn:
+                    _lastManualSavedDraft != null && !_manualSavedAsPreset
+                    ? _saveManualCheckInAsQuickPreset
+                    : null,
+                isSavingQuickPreset: _presetMutationInProgress,
               ),
             ),
           ),
