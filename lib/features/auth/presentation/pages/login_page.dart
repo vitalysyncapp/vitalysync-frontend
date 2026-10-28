@@ -33,6 +33,7 @@ class _LoginPageState extends State<LoginPage> {
   final FocusNode _passwordFocusNode = FocusNode();
 
   bool isLoading = false;
+  bool _obscurePassword = true;
   final String loginUrl = ApiConfig.auth('/login');
 
   @override
@@ -255,7 +256,18 @@ class _LoginPageState extends State<LoginPage> {
               focusNode: _passwordFocusNode,
               label: 'Password',
               icon: Icons.lock_outline,
-              obscureText: true,
+              obscureText: _obscurePassword,
+              suffixIcon: IconButton(
+                tooltip: _obscurePassword ? 'Show password' : 'Hide password',
+                icon: Icon(
+                  _obscurePassword
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                ),
+                onPressed: () {
+                  setState(() => _obscurePassword = !_obscurePassword);
+                },
+              ),
               textInputAction: TextInputAction.done,
               onFieldSubmitted: (_) => login(),
             ),
