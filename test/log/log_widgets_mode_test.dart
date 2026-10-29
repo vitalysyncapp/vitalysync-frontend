@@ -16,6 +16,37 @@ void main() {
     expect(find.text('Reduced accomplishment'), findsNothing);
   });
 
+  testWidgets('hydration card displays glasses and keeps liter increments', (
+    tester,
+  ) async {
+    double? addedLiters;
+    await _pumpLogWidgets(
+      tester,
+      showWeeklyQuestions: false,
+      revealCards: false,
+      onHydrationAdd: (value) => addedLiters = value,
+    );
+
+    final card = find.byKey(const ValueKey('log-card-hydration'));
+    expect(
+      find.descendant(of: card, matching: find.text('6 glasses')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: card, matching: find.text('Goal: 10 glasses')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: card, matching: find.text('+3')),
+      findsOneWidget,
+    );
+
+    final addThree = find.descendant(of: card, matching: find.text('+3'));
+    await tester.ensureVisible(addThree);
+    await tester.tap(addThree);
+    expect(addedLiters, 0.75);
+  });
+
   testWidgets(
     'weekly mode keeps nine practical inputs and omits five daily reflections',
     (tester) async {
@@ -206,6 +237,7 @@ Future<void> _pumpLogWidgets(
   List<String> exercises = const ['Walking', 'None'],
   List<String> workloadOptions = const ['None', '3-4 hours'],
   ValueChanged<String>? onWorkloadChanged,
+  ValueChanged<double>? onHydrationAdd,
 }) {
   return tester.pumpWidget(
     MaterialApp(
@@ -246,7 +278,7 @@ Future<void> _pumpLogWidgets(
             onSleepQualityChanged: (_) {},
             onMoodChanged: (_) {},
             onEnergyChanged: (_) {},
-            onHydrationAdd: (_) {},
+            onHydrationAdd: onHydrationAdd ?? (_) {},
             onHydrationSubtract: () {},
             onHydrationReset: () {},
             onWorkloadChanged: onWorkloadChanged ?? (_) {},

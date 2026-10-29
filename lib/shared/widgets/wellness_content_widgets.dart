@@ -6,6 +6,55 @@ import '../../features/adaptive/data/wellness_content_api.dart';
 import '../../features/adaptive/data/nudge_alternative_controller.dart';
 import '../../l10n/localized_text.dart';
 
+class MainFactorLegend extends StatelessWidget {
+  final String factor;
+  final Color color;
+
+  const MainFactorLegend({
+    super.key,
+    required this.factor,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.14 : 0.07),
+        borderRadius: BorderRadius.circular(11),
+        border: Border.all(color: color.withValues(alpha: 0.23)),
+      ),
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 7,
+        runSpacing: 3,
+        children: [
+          Icon(Icons.circle, size: 7, color: color),
+          LocalizedText(
+            'Main factor:',
+            style: TextStyle(
+              color: color,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          LocalizedText(
+            factor,
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF263446),
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 final Set<VoidCallback> _visibilityChecks = {};
 bool _hasVisibilityFrameCallback = false;
 

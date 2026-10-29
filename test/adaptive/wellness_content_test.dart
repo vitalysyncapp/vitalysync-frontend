@@ -308,6 +308,7 @@ void main() {
       expect(find.text(content['title']! as String), findsNothing);
       expect(find.text('What this is based on'), findsNothing);
       expect(find.text('Your recent check-in context.'), findsNothing);
+      expect(find.text('Main factor:'), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );

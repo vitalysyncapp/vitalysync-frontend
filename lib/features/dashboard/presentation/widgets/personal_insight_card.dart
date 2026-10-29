@@ -95,6 +95,11 @@ class _PersonalInsightCardState extends State<PersonalInsightCard> {
     final period = item?.metadata['period'] as Map?;
     final start = DateTime.tryParse('${period?['start_date']}');
     final end = DateTime.tryParse('${period?['end_date']}');
+    final highlights = item?.metadata['highlights'];
+    final mainFactor =
+        highlights is List && highlights.isNotEmpty && highlights.first is Map
+        ? '${(highlights.first as Map)['label'] ?? ''}'.trim()
+        : '';
     final isDark = Theme.of(context).brightness == Brightness.dark;
     const purple = Color(0xFF8B5CF6);
 
@@ -194,6 +199,10 @@ class _PersonalInsightCardState extends State<PersonalInsightCard> {
                       color: pageSecondaryTextColor(context),
                     ),
                   ),
+                  if (mainFactor.isNotEmpty) ...[
+                    const SizedBox(height: 11),
+                    MainFactorLegend(factor: mainFactor, color: purple),
+                  ],
 
                   if (item != null) ...[
                     ContentFreshnessNote(metadata: item.metadata),

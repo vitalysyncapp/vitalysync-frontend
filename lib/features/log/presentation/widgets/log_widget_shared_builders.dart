@@ -315,33 +315,37 @@ extension _LogWidgetSharedBuilders on LogWidgets {
     );
   }
 
-  Widget _hydrationButton(String label, double addAmount) {
+  Widget _hydrationButton(int glasses) {
     return Expanded(
       child: Builder(
         builder: (context) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
 
-          return _LogPressable(
-            onTap: () => onHydrationAdd(addAmount),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF00A3D7).withValues(alpha: 0.12)
-                    : const Color(0xFFEAF7F9),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: pageBorderColor(context)),
-              ),
-              child: Center(
-                child: LocalizedText(
-                  label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: isDark
-                        ? const Color(0xFF67E8F9)
-                        : const Color(0xFF0F4C81),
+          return Semantics(
+            label: 'Add $glasses ${glasses == 1 ? 'glass' : 'glasses'}',
+            button: true,
+            child: _LogPressable(
+              onTap: () => onHydrationAdd(glasses * 0.25),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF00A3D7).withValues(alpha: 0.12)
+                      : const Color(0xFFEAF7F9),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: pageBorderColor(context)),
+                ),
+                child: Center(
+                  child: LocalizedText(
+                    '+$glasses',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: isDark
+                          ? const Color(0xFF67E8F9)
+                          : const Color(0xFF0F4C81),
+                    ),
                   ),
                 ),
               ),

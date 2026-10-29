@@ -379,6 +379,19 @@ class _SmartNudgeInsightCard extends StatelessWidget {
     final severity = recommendation?.userFacingSeverity ?? 'steady';
     final severityColor = _severityColor(severity, isDark);
     final metadata = recommendation?.metadata ?? const <String, dynamic>{};
+    final dominantDimension = metadata['dominant_dimension'];
+    final dimensionLabel = dominantDimension is Map
+        ? _metadataText(dominantDimension['label']).trim()
+        : '';
+    final patternLabel = _metadataText(metadata['pattern_title']).trim();
+    final triggerLabel = recommendation?.triggerReason.trim() ?? '';
+    final mainFactor = dimensionLabel.isNotEmpty
+        ? dimensionLabel
+        : patternLabel.isNotEmpty
+        ? patternLabel
+        : triggerLabel == 'Local fallback'
+        ? ''
+        : triggerLabel;
     final actionSteps = _metadataTextList(metadata['ai_action_steps']);
     final actionLabel = recommendation?.actionLabel.trim() ?? '';
     final subtitle =
@@ -500,6 +513,13 @@ class _SmartNudgeInsightCard extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
+          if (mainFactor.isNotEmpty) ...[
+            const SizedBox(height: 11),
+            MainFactorLegend(
+              factor: mainFactor,
+              color: const Color(0xFFD69C12),
+            ),
+          ],
           if (metadata['content_id'] == null && actionSteps.isNotEmpty) ...[
             const SizedBox(height: 10),
             _NudgeActionSteps(

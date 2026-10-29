@@ -33,11 +33,11 @@ const smart = <String, dynamic>{
   },
 };
 
-Widget panel() => AssistantExperiencePanel(
+Widget panel({Map<String, dynamic> nudge = smart}) => AssistantExperiencePanel(
   message: 'A small step for today',
   emoji: 'sparkles',
   recommendations: const [],
-  adaptiveNudges: [AdaptiveNudgeRecommendation.fromJson(smart)],
+  adaptiveNudges: [AdaptiveNudgeRecommendation.fromJson(nudge)],
   nutritionInsight: NutritionInsight.fromJson({
     'id': 'nutrition_one',
     'title': 'A fresh addition',
@@ -135,9 +135,10 @@ void main() {
           );
           await tester.pump();
           expect(find.text('Personal insights'), findsOneWidget);
+          expect(find.text('Main factor:'), findsOneWidget);
           expect(find.text('Sleep'), findsOneWidget);
-          expect(find.text('Daily steps'), findsOneWidget);
-          expect(find.text('Meal logging'), findsOneWidget);
+          expect(find.text('Daily steps'), findsNothing);
+          expect(find.text('Meal logging'), findsNothing);
           expect(find.text('Oct 17 – Oct 23'), findsOneWidget);
           expect(tester.takeException(), isNull);
         },
@@ -153,12 +154,24 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData.dark(),
-          home: Scaffold(body: panel()),
+          home: Scaffold(
+            body: panel(
+              nudge: {
+                ...smart,
+                'metadata': {
+                  ...smart['metadata'] as Map,
+                  'dominant_dimension': {'label': 'Recovery'},
+                },
+              },
+            ),
+          ),
         ),
       );
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('Hidden smart evidence'), findsNothing);
       expect(find.text('Hidden legacy evidence'), findsNothing);
+      expect(find.text('Main factor:'), findsOneWidget);
+      expect(find.text('Recovery'), findsOneWidget);
       expect(find.text('Nutrition context stays visible'), findsOneWidget);
       expect(find.text(smart['message'] as String), findsOneWidget);
       expect(tester.takeException(), isNull);

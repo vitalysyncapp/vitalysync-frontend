@@ -4,6 +4,10 @@ extension _LogHydrationActivityCards on LogWidgets {
   Widget _buildHydrationCard(BuildContext context) {
     final hydrationStatus = LogApi.getHydrationStatus(hydration);
     final hydrationAccent = Color(hydrationStatus.colorValue);
+    final glasses = hydration * 4;
+    final glassCount = glasses
+        .toStringAsFixed(2)
+        .replaceFirst(RegExp(r'\.?0+$'), '');
 
     return _buildCard(
       accentColor: const Color(0xFF00A3D7),
@@ -17,7 +21,7 @@ extension _LogHydrationActivityCards on LogWidgets {
                   iconBg: const Color(0xFFDFF7FB),
                   iconColor: const Color(0xFF00A3D7),
                   title: "Hydration",
-                  subtitle: "1 normal glass is about 0.25L. 10 glasses = 2.5L.",
+                  subtitle: "Tap to add glasses. 1 glass = 250 mL.",
                 ),
               ),
               _iconActionButton(
@@ -36,13 +40,13 @@ extension _LogHydrationActivityCards on LogWidgets {
           const SizedBox(height: 12),
           Row(
             children: [
-              _hydrationButton("+0.25L", 0.25),
+              _hydrationButton(1),
               const SizedBox(width: 8),
-              _hydrationButton("+0.5L", 0.5),
+              _hydrationButton(2),
               const SizedBox(width: 8),
-              _hydrationButton("+0.75L", 0.75),
+              _hydrationButton(3),
               const SizedBox(width: 8),
-              _hydrationButton("+1L", 1.0),
+              _hydrationButton(4),
             ],
           ),
           const SizedBox(height: 10),
@@ -72,7 +76,7 @@ extension _LogHydrationActivityCards on LogWidgets {
                   transitionBuilder: (child, animation) =>
                       ScaleTransition(scale: animation, child: child),
                   child: LocalizedText(
-                    "${hydration.toStringAsFixed(hydration % 1 == 0 ? 0 : 1)}L",
+                    "$glassCount ${glasses == 1 ? 'glass' : 'glasses'}",
                     key: ValueKey(hydration),
                     style: TextStyle(
                       fontSize: 29,
@@ -83,7 +87,7 @@ extension _LogHydrationActivityCards on LogWidgets {
                 ),
                 const SizedBox(height: 4),
                 LocalizedText(
-                  "Goal: 2.5L",
+                  "Goal: 10 glasses",
                   style: TextStyle(
                     fontSize: 14,
                     color: Theme.of(context).brightness == Brightness.dark

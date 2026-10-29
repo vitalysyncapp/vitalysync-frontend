@@ -16,6 +16,7 @@ const Map<String, String> tagalogFeatureCopy = {
   'Updating': 'Nag-a-update',
   'Saved view': 'Huling saved view',
   'Personal insights': 'Mga personal na insight',
+  'Main factor:': 'Pangunahing salik:',
   'Finding another idea…': 'Naghahanap ng ibang idea…',
   'Review earlier ideas': 'Balikan ang mga naunang idea',
   'You’ve explored the ideas that fit right now.':
