@@ -174,4 +174,33 @@ void main() {
       );
     },
   );
+
+  test(
+    'workload hours display labels fix typo while keeping backend values intact',
+    () {
+      expect(
+        CheckInFormOptions.workloadHoursBands
+            .map(CheckInFormOptions.workloadHoursDisplayLabel)
+            .toList(),
+        const [
+          'None',
+          '1-2 hours',
+          '3-4 hours',
+          '5-6 hours',
+          '7-8 hours',
+          '9-10 hours',
+          '11-12 hours',
+        ],
+      );
+
+      final draft = completeDailyDraft.copyWith(
+        workloadHoursBand: '7-8 hours',
+      );
+      expect(draft.validationErrors(CheckInMode.weekly), isEmpty);
+      expect(
+        draft.dailyJson(mode: CheckInMode.weekly)['workload_hours_band'],
+        '6-7 hours',
+      );
+    },
+  );
 }

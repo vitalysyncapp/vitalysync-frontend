@@ -21,6 +21,39 @@ class CheckInFormOptions {
     '8-9 hours',
     '10-12 hours',
   ];
+  static const workloadHoursDisplayBands = [
+    'None',
+    '1-2 hours',
+    '3-4 hours',
+    '5-6 hours',
+    '7-8 hours',
+    '9-10 hours',
+    '11-12 hours',
+  ];
+
+  static const Map<String, String> _workloadHoursDisplayLabels = {
+    '6-7 hours': '7-8 hours',
+    '8-9 hours': '9-10 hours',
+    '10-12 hours': '11-12 hours',
+  };
+
+  static const Map<String, String> _workloadHoursBackendValues = {
+    '7-8 hours': '6-7 hours',
+    '9-10 hours': '8-9 hours',
+    '11-12 hours': '10-12 hours',
+  };
+
+  static String workloadHoursDisplayLabel(String value) {
+    final trimmed = value.trim();
+    return _workloadHoursDisplayLabels[trimmed] ?? trimmed;
+  }
+
+  static String? normalizeWorkloadHoursBand(Object? value) {
+    final trimmed = value?.toString().trim() ?? '';
+    final mapped = _workloadHoursBackendValues[trimmed] ?? trimmed;
+    return workloadHoursBands.contains(mapped) ? mapped : null;
+  }
+
   static const sleepLabels = ['Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
   static const sleepStars = [1, 2, 3, 4, 5];
   static const moods = [
@@ -121,7 +154,10 @@ class CheckInDraft {
           : 0.5,
       workloadHoursBand:
           daily?['workload_hours_band']?.toString().trim().isNotEmpty == true
-          ? daily!['workload_hours_band'].toString()
+          ? (CheckInFormOptions.normalizeWorkloadHoursBand(
+                  daily!['workload_hours_band'],
+                ) ??
+                daily['workload_hours_band'].toString())
           : 'None',
       exerciseNames: exercises,
       symptomNames: _stringSet(daily?['symptom_names']),
@@ -194,7 +230,8 @@ class CheckInDraft {
     if (hydrationLiters <= 0 || hydrationLiters > 20) {
       errors.add('hydration');
     }
-    if (!CheckInFormOptions.workloadHoursBands.contains(workloadHoursBand)) {
+    if (CheckInFormOptions.normalizeWorkloadHoursBand(workloadHoursBand) ==
+        null) {
       errors.add('workload');
     }
     _validateSelection(errors, exerciseNames, 'exercise');
@@ -218,7 +255,9 @@ class CheckInDraft {
       'mood_index': moodIndex,
       'energy_level': energyLevel,
       'hydration_liters': hydrationLiters,
-      'workload_hours_band': workloadHoursBand,
+      'workload_hours_band':
+          CheckInFormOptions.normalizeWorkloadHoursBand(workloadHoursBand) ??
+          workloadHoursBand,
       'exercise_names': exerciseNames.toList()..sort(),
       'symptom_names': symptomNames.toList()..sort(),
       'habit_names': habitNames.toList()..sort(),

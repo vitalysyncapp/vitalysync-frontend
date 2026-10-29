@@ -224,7 +224,12 @@ String _summary(BuildContext context, QuickCheckInPreset preset) {
     ),
     field('Energy', rating(draft.energyLevel)),
     field('Hydration', '${number(draft.hydrationLiters)}L'),
-    field('Workload', translated(draft.workloadHoursBand)),
+    field(
+      'Workload',
+      translated(
+        CheckInFormOptions.workloadHoursDisplayLabel(draft.workloadHoursBand),
+      ),
+    ),
     field('Exercise', selection(draft.exerciseNames)),
     field('Symptoms', selection(draft.symptomNames)),
     field('Recovery habits', selection(draft.habitNames)),

@@ -130,9 +130,12 @@ class LogApi {
     return fallback;
   }
 
+  static String workloadHoursDisplayLabel(String value) =>
+      CheckInFormOptions.workloadHoursDisplayLabel(value);
+
   static String? normalizeWorkloadHoursBand(dynamic value) {
     final normalized = value?.toString().trim() ?? '';
-    return workloadHoursBandOptions.contains(normalized) ? normalized : null;
+    return CheckInFormOptions.normalizeWorkloadHoursBand(normalized);
   }
 
   static String normalizeExerciseNameForLog(String value) {

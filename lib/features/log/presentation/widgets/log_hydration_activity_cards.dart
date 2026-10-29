@@ -304,7 +304,10 @@ extension _LogHydrationActivityCards on LogWidgets {
           _buildCenteredSelectionGrid(
             options: workloadOptions,
             minItemWidth: 116,
-            isSelected: (option) => workloadHoursBand == option,
+            labelFor: LogApi.workloadHoursDisplayLabel,
+            isSelected: (option) =>
+                LogApi.workloadHoursDisplayLabel(workloadHoursBand) ==
+                LogApi.workloadHoursDisplayLabel(option),
             leadingIconFor: (option) => option == 'None'
                 ? Icons.self_improvement_rounded
                 : Icons.schedule_rounded,
@@ -318,6 +321,7 @@ extension _LogHydrationActivityCards on LogWidgets {
   Widget _buildCenteredSelectionGrid({
     required List<String> options,
     required double minItemWidth,
+    String Function(String option)? labelFor,
     required bool Function(String option) isSelected,
     required IconData Function(String option) leadingIconFor,
     required ValueChanged<String> onSelected,
@@ -351,7 +355,7 @@ extension _LogHydrationActivityCards on LogWidgets {
 
         Widget tile(String option) {
           return _selectionBox(
-            label: option,
+            label: labelFor?.call(option) ?? option,
             selected: isSelected(option),
             width: itemWidth,
             height: 36,

@@ -560,7 +560,11 @@ class _DailyLogHistoryCard extends StatelessWidget {
             ),
         _HistoryMetric(
           label: 'Workload',
-          value: log['workload_hours_band']?.toString() ?? '--',
+          value: log['workload_hours_band'] == null
+              ? '--'
+              : LogApi.workloadHoursDisplayLabel(
+                  log['workload_hours_band'].toString(),
+                ),
         ),
         for (final entry in const {
           'exercise_names': 'Exercise',

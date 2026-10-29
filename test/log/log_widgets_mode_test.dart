@@ -139,6 +139,64 @@ void main() {
       );
     }
   });
+
+  testWidgets(
+    'workload hours card renders corrected display bands without changing backend option values',
+    (tester) async {
+      String? selectedBand;
+      await _pumpLogWidgets(
+        tester,
+        showWeeklyQuestions: false,
+        workloadOptions: const [
+          'None',
+          '1-2 hours',
+          '3-4 hours',
+          '5-6 hours',
+          '6-7 hours',
+          '8-9 hours',
+          '10-12 hours',
+        ],
+        onWorkloadChanged: (value) => selectedBand = value,
+      );
+
+      final workloadCard = find.byKey(const ValueKey('log-card-workload'));
+      for (final label in const [
+        'None',
+        '1-2 hours',
+        '3-4 hours',
+        '5-6 hours',
+        '7-8 hours',
+        '9-10 hours',
+        '11-12 hours',
+      ]) {
+        expect(
+          find.descendant(of: workloadCard, matching: find.text(label)),
+          findsOneWidget,
+        );
+      }
+      expect(
+        find.descendant(of: workloadCard, matching: find.text('6-7 hours')),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: workloadCard, matching: find.text('8-9 hours')),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: workloadCard, matching: find.text('10-12 hours')),
+        findsNothing,
+      );
+
+      await tester.ensureVisible(
+        find.descendant(of: workloadCard, matching: find.text('9-10 hours')),
+      );
+      await tester.tap(
+        find.descendant(of: workloadCard, matching: find.text('9-10 hours')),
+      );
+      await tester.pump();
+      expect(selectedBand, '8-9 hours');
+    },
+  );
 }
 
 Future<void> _pumpLogWidgets(
@@ -147,6 +205,7 @@ Future<void> _pumpLogWidgets(
   bool revealCards = true,
   List<String> exercises = const ['Walking', 'None'],
   List<String> workloadOptions = const ['None', '3-4 hours'],
+  ValueChanged<String>? onWorkloadChanged,
 }) {
   return tester.pumpWidget(
     MaterialApp(
@@ -190,7 +249,7 @@ Future<void> _pumpLogWidgets(
             onHydrationAdd: (_) {},
             onHydrationSubtract: () {},
             onHydrationReset: () {},
-            onWorkloadChanged: (_) {},
+            onWorkloadChanged: onWorkloadChanged ?? (_) {},
             onPerceivedStressChanged: (_) {},
             onBreakQualityChanged: (_) {},
             onDailyDetachmentChanged: (_) {},
